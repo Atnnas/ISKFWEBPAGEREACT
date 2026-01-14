@@ -194,5 +194,15 @@ export const eventsData = [
         logo: "FecokaLogo.jpg",
         flag: "CostaRica.jpg",
         description: "Cierre del calendario competitivo nacional."
+    },
+    {
+        id: 19,
+        name: "Copa Zanshin",
+        date: "2026-10-04T12:00:00",
+        type: "Nacional",
+        location: "San José, Costa Rica",
+        logo: "zanshinLogo.jpg",
+        flag: "CostaRica.jpg",
+        description: "Torneo Copa Zanshin."
     }
 ];
