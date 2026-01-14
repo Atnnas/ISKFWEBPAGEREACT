@@ -48,7 +48,7 @@ const Navbar = () => {
                     className="flex items-center gap-4 relative z-50 cursor-pointer"
                     onClick={() => navigate('/')}
                 >
-                    <img src="/iskfFondoBlanco.jpg" alt="ISKF Logo" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
+                    <img src={`${import.meta.env.BASE_URL}iskfFondoBlanco.jpg`} alt="ISKF Logo" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
                     <span className="font-bold text-2xl tracking-[0.2em] text-white">ISKF</span>
                 </div>
 

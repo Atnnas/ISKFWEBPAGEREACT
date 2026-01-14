@@ -54,15 +54,15 @@ const EventsSection = () => {
                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                                 <img
-                                    src={`/${event.logo}`}
+                                    src={`${import.meta.env.BASE_URL}${event.logo}`}
                                     alt={event.name}
                                     className="h-full w-auto object-contain drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500"
-                                    onError={(e) => { e.target.src = '/iskfLogo.png'; }} // Fallback
+                                    onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}iskfLogo.png`; }} // Fallback
                                 />
 
                                 {/* Flag Badge */}
                                 <div className="absolute top-4 right-4 w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-md">
-                                    <img src={`/${event.flag}`} alt="Country" className="w-full h-full object-cover" />
+                                    <img src={`${import.meta.env.BASE_URL}${event.flag}`} alt="Country" className="w-full h-full object-cover" />
                                 </div>
                             </div>
 

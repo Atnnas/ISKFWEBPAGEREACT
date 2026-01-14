@@ -127,10 +127,10 @@ const EventDetailPage = () => {
                         <motion.img
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            src={`/${event.logo}`}
+                            src={`${import.meta.env.BASE_URL}${event.logo}`}
                             alt={event.name}
                             className="w-full h-full object-contain relative z-10 p-4 drop-shadow-2xl"
-                            onError={(e) => e.target.src = '/iskfLogo.png'}
+                            onError={(e) => e.target.src = `${import.meta.env.BASE_URL}iskfLogo.png`}
                         />
                     </div>
 
@@ -162,7 +162,7 @@ const EventDetailPage = () => {
                             <div className="bg-white/5 backdrop-blur-sm rounded-[2rem] p-8 border border-white/10 flex flex-col justify-between h-full hover:bg-white/10 transition-colors group">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-gray-400 text-xs font-bold uppercase tracking-widest group-hover:text-white transition-colors">Sede</span>
-                                    <img src={`/${event.flag}`} className="w-6 h-6 rounded-full shadow-sm" alt="flag" />
+                                    <img src={`${import.meta.env.BASE_URL}${event.flag}`} className="w-6 h-6 rounded-full shadow-sm" alt="flag" />
                                 </div>
                                 <div>
                                     <div className="text-2xl font-bold text-white leading-tight mb-2">{event.location}</div>

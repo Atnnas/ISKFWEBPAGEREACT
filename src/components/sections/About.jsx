@@ -18,7 +18,7 @@ const AboutSection = () => {
         <section id="nosotros" className="py-24 relative overflow-hidden w-full bg-iskf-dark">
             {/* Background Image */}
             <div className="absolute inset-0 z-0 opacity-25 pointer-events-none select-none grayscale mix-blend-luminosity">
-                <img src="/senseiOkazaki.jpg" alt="Sensei Okazaki" className="w-full h-full object-cover" />
+                <img src={`${import.meta.env.BASE_URL}senseiOkazaki.jpg`} alt="Sensei Okazaki" className="w-full h-full object-cover" />
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12">

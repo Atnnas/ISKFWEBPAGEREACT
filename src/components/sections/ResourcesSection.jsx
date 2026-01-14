@@ -28,7 +28,7 @@ const ResourcesSection = () => {
                         {/* Background Image */}
                         <div className="absolute inset-0 z-0">
                             <img
-                                src="/kataImagen.jpg"
+                                src={`${import.meta.env.BASE_URL}kataImagen.jpg`}
                                 alt="Kata Background"
                                 className="w-full h-full object-cover opacity-60 group-hover:opacity-40 group-hover:scale-110 transition-all duration-700 blur-[2px] group-hover:blur-0"
                             />
@@ -64,7 +64,7 @@ const ResourcesSection = () => {
                         {/* Background Image */}
                         <div className="absolute inset-0 z-0">
                             <img
-                                src="/libroTecnica.jpg"
+                                src={`${import.meta.env.BASE_URL}libroTecnica.jpg`}
                                 alt="Exams Background"
                                 className="w-full h-full object-cover opacity-40 group-hover:opacity-30 group-hover:scale-110 transition-all duration-700 blur-[2px] group-hover:blur-0"
                             />

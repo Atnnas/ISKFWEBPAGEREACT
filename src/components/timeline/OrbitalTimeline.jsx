@@ -96,7 +96,7 @@ const OrbitalTimeline = ({ dojos }) => {
 
                     {/* Background Image */}
                     <div className="absolute inset-0 bg-black">
-                        <img src="/iskfFondoRojo.jpg" alt="ISKF Core" className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500" />
+                        <img src={`${import.meta.env.BASE_URL}iskfFondoRojo.jpg`} alt="ISKF Core" className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500" />
                     </div>
 
                     {/* Sphere Depth Overlay */}
@@ -106,7 +106,7 @@ const OrbitalTimeline = ({ dojos }) => {
                     <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/40 to-transparent opacity-60 rounded-t-full"></div>
 
                     {/* Subtle Scanline/Tech Texture */}
-                    <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay"></div>
+                    <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{ backgroundImage: `url('${import.meta.env.BASE_URL}noise.png')` }}></div>
                 </div>
 
                 {/* Gyroscope Rings */}
@@ -228,7 +228,7 @@ const OrbitalTimeline = ({ dojos }) => {
                         <div
                             className={`relative w-16 h-16 md:w-24 md:h-24 bg-black border ${isExpanded ? 'border-iskf-red bg-white' : 'border-white/30'} rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 group hover:border-iskf-red hover:shadow-[0_0_20px_#ce1126] hover:scale-110`}
                         >
-                            <img src={`/${dojo.logo}`} alt={dojo.name} className="w-[85%] h-[85%] object-contain" />
+                            <img src={`${import.meta.env.BASE_URL}${dojo.logo}`} alt={dojo.name} className="w-[85%] h-[85%] object-contain" />
 
                             {!isExpanded && opacity > 0.8 && (
                                 <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-black uppercase tracking-wider text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md bg-black/50 px-2 py-1 rounded backdrop-blur-sm pointer-events-none">
@@ -262,7 +262,7 @@ const OrbitalTimeline = ({ dojos }) => {
                                         </button>
                                         <div className="w-24 h-24 bg-white rounded-2xl mx-auto mb-6 p-4 shadow-inner flex items-center justify-center relative overflow-hidden">
                                             <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-white"></div>
-                                            <img src={`/${dojo.logo}`} alt={dojo.name} className="w-full h-full object-contain relative z-10" />
+                                            <img src={`${import.meta.env.BASE_URL}${dojo.logo}`} alt={dojo.name} className="w-full h-full object-contain relative z-10" />
                                         </div>
                                         <span className="inline-block px-3 py-1 rounded-full bg-iskf-red/10 text-iskf-red text-[10px] font-black uppercase tracking-widest mb-4 border border-iskf-red/20">{dojo.province}</span>
                                         <h3 className="text-2xl font-black text-white uppercase mb-2 leading-none">{dojo.name}</h3>

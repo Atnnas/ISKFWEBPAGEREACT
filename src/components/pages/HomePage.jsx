@@ -46,7 +46,7 @@ function HomePage() {
             <section id="dojos" className="relative min-h-[68vh] py-16 md:py-24 px-4 md:px-16 bg-zinc-900 overflow-hidden border-t border-white/5 flex flex-col items-center">
                 {/* Background Image with Themed Overlay */}
                 <div className="absolute inset-0 z-0 pointer-events-none select-none">
-                    <img src="/dojosFondo.jpg" alt="Background Dojos" className="w-full h-full object-cover opacity-20 mix-blend-luminosity" />
+                    <img src={`${import.meta.env.BASE_URL}dojosFondo.jpg`} alt="Background Dojos" className="w-full h-full object-cover opacity-20 mix-blend-luminosity" />
                     <div className="absolute inset-0 bg-gradient-to-b from-iskf-dark via-iskf-red/5 to-iskf-dark opacity-90"></div>
                 </div>
 
