@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+    --color-iskf-red: #BE1322;
+    --color-iskf-dark: #0a0a0a;
+    --color-iskf-secondary: #141414;
+    --color-iskf-gray: #2a2a2a;
+
+    --font-sans: "Nunito Sans", sans-serif;
+    --font-serif: "Times New Roman", serif;
+
+    --shadow-neon: 0 0 10px rgba(190, 19, 34, 0.5), 0 0 20px rgba(190, 19, 34, 0.3);
+    /* Text shadow isn't a default theme key, usually just class utilities or extend */
+}
+
+/* Custom Utilities for Text Shadow since it's not standard theme key */
+@utility text-shadow-glow {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ce1126;
+}
+
+html {
+    font-size: 75%;
+    /* Base scaling: 16px -> 12px (25% reduction) */
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem;
+    /* Exact Navbar height (py-4 + h-14 = 5.5rem) */
+    background-color: #0a0a0a;
+    font-family: var(--font-sans);
+    color: white;
+}
