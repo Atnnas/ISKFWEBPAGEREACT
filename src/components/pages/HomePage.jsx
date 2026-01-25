@@ -48,8 +48,8 @@ function HomePage() {
                 <div className="absolute inset-0 z-0 pointer-events-none select-none">
                     <img src={`${import.meta.env.BASE_URL}fondoDojos.jpg`} alt="Background Dojos" className="w-full h-full object-cover opacity-80" />
                     {/* Light gradient for readability without obscuring the image */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/90 via-transparent to-zinc-900/90"></div>
-                    <div className="absolute inset-0 bg-black/20"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/40 via-transparent to-zinc-900/40"></div>
+                    <div className="absolute inset-0 bg-black/10"></div>
                 </div>
 
                 {/* Section Header (Matches About.jsx) */}
@@ -66,7 +66,7 @@ function HomePage() {
                     <div className="w-full xl:w-1/2 h-[45vh] xl:h-[60vh] relative p-1">
                         {/* UX HELPER: Map Instructions (External) */}
                         {/* HUD Header: Map */}
-                        <div className="absolute top-0 left-0 w-full z-20 flex flex-col items-center justify-center pointer-events-none pt-4">
+                        <div className="absolute -top-12 left-0 w-full z-20 flex flex-col items-center justify-center pointer-events-none">
                             <h3 className="text-white/90 font-black tracking-[0.3em] uppercase text-xl md:text-2xl drop-shadow-lg flex items-center gap-3">
                                 <svg className="w-5 h-5 text-iskf-red animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 MAPA INTERACTIVO
@@ -92,7 +92,7 @@ function HomePage() {
                     <div className="w-full xl:w-1/2 h-[45vh] xl:h-[60vh] relative p-1">
                         {/* UX HELPER: Timeline Instructions (External) */}
                         {/* HUD Header: Timeline */}
-                        <div className="absolute top-0 left-0 w-full z-20 flex flex-col items-center justify-center pointer-events-none pt-4">
+                        <div className="absolute -top-12 left-0 w-full z-20 flex flex-col items-center justify-center pointer-events-none">
                             <h3 className="text-white/90 font-black tracking-[0.3em] uppercase text-xl md:text-2xl drop-shadow-lg flex items-center gap-3">
                                 <svg className="w-5 h-5 text-blue-400 animate-[spin_4s_linear_infinite]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                                 RED DE DOJOS
@@ -106,7 +106,7 @@ function HomePage() {
 
 
 
-                        <div className="w-full h-full bg-transparent overflow-hidden relative flex items-center justify-center">
+                        <div className="w-full h-full bg-transparent overflow-hidden md:overflow-visible relative flex items-center justify-center">
 
                             <div className="relative z-50 w-full h-full pointer-events-auto flex items-center justify-center">
                                 <OrbitalTimeline dojos={filteredDojos} />
@@ -123,16 +123,39 @@ function HomePage() {
             <EventsRoadmap />
 
             {/* CONTACT & FOOTER */}
-            <footer id="contacto" className="min-h-screen py-24 border-t border-white/5 bg-black text-center relative z-10">
-                <div className="max-w-4xl mx-auto text-center mb-10">
-                    <h2 className="text-4xl font-black text-white mb-8">¿Listo para comenzar?</h2>
+            <footer id="contacto" className="min-h-screen py-24 border-t border-white/5 bg-black text-center relative z-10 overflow-hidden flex flex-col items-center justify-center">
+                {/* Background Image */}
+                <div className="absolute inset-0 z-0 pointer-events-none select-none">
+                    <img src={`${import.meta.env.BASE_URL}fondoListoParaComenzar.jpg`} alt="Background Contacto" className="w-full h-full object-cover opacity-100" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60"></div>
+                </div>
+
+                <div className="max-w-4xl mx-auto text-center mb-10 relative z-10">
+                    <h2 className="text-5xl md:text-6xl font-black text-white mb-8 tracking-tighter uppercase drop-shadow-2xl">¿Listo para comenzar?</h2>
                     <div className="flex justify-center gap-4">
-                        <button className="px-8 py-3 bg-iskf-red text-white uppercase font-bold tracking-widest rounded-full hover:bg-red-700 transition">Encontrar Dojo</button>
+                        <button className="px-10 py-4 bg-iskf-red text-white uppercase font-black tracking-[0.2em] rounded-full hover:bg-red-700 transition shadow-[0_0_30px_rgba(220,38,38,0.5)] hover:shadow-[0_0_50px_rgba(220,38,38,0.8)] hover:scale-105 duration-300">Encontrar Dojo</button>
                     </div>
                 </div>
-                <p className="text-gray-600 text-sm">
-                    &copy; 2026 ISKF Costa Rica. Todos los derechos reservados.
-                </p>
+                {/* Bottom Bar Footer */}
+                <div className="absolute bottom-0 w-full bg-black/60 backdrop-blur-md border-t border-white/5 py-4 px-6 flex flex-col md:flex-row items-center justify-between gap-4 z-20">
+                    <p className="text-gray-400 text-[10px] font-bold tracking-[0.2em] uppercase">
+                        &copy; {new Date().getFullYear()} ISKF Costa Rica
+                    </p>
+
+                    <a href="https://kumadev.in" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity duration-300">
+                        <span className="text-[9px] text-gray-500 font-light tracking-[0.2em] uppercase">Architected by</span>
+                        <span
+                            className="text-[11px] font-black tracking-[0.25em] uppercase transition-all duration-500"
+                            style={{
+                                color: '#4B3621', // Deep Coffee
+                                WebkitTextStroke: '0.5px rgba(255,255,255,0.8)', // White Outline
+                                textShadow: '0 0 10px rgba(206,17,38,0.5), 0 0 20px rgba(75,54,33,0.3)' // Radiant Red & Coffee Glow
+                            }}
+                        >
+                            KumaDev.in
+                        </span>
+                    </a>
+                </div>
             </footer>
         </div>
     );

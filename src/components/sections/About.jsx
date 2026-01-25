@@ -17,10 +17,10 @@ const AboutSection = () => {
     return (
         <section id="nosotros" className="py-24 relative overflow-hidden w-full bg-iskf-dark">
             {/* Background Image */}
-            <div className="absolute inset-0 z-0 opacity-60 pointer-events-none select-none">
+            <div className="absolute inset-0 z-0 opacity-80 pointer-events-none select-none">
                 <img src={`${import.meta.env.BASE_URL}senseiOkazaki.jpg`} alt="Sensei Okazaki" className="w-full h-full object-cover" />
                 {/* Gradient overlay to ensure text readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-iskf-dark via-iskf-dark/70 to-iskf-dark/40"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-iskf-dark/40 to-transparent"></div>
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12">
@@ -58,13 +58,19 @@ const AboutSection = () => {
                             key={index}
                             whileHover={{ scale: 1.02 }}
                             onClick={() => navigate(`/about/${item.key}`)}
-                            className="relative bg-white/5 border border-white/5 rounded-2xl p-10 hover:bg-black/60 transition-all duration-500 cursor-pointer overflow-hidden flex items-center justify-center min-h-[200px] group"
+                            className="relative bg-transparent hover:bg-white/5 hover:backdrop-blur-md rounded-none p-10 cursor-pointer overflow-visible flex items-center justify-center min-h-[250px] group transition-all duration-700 hover:shadow-[0_0_30px_rgba(206,17,38,0.3)] border-transparent"
                         >
-                            <div className="relative z-10 text-center">
-                                <h3 className="text-2xl md:text-3xl font-black uppercase tracking-widest leading-none">
-                                    <span className="block text-white group-hover:scale-105 transition-transform duration-500">{item.title}</span>
-                                    <span className="block text-iskf-red text-2xl md:text-3xl mt-2 group-hover:scale-110 transition-transform duration-500 delay-75 drop-shadow-md">{item.subtitle}</span>
+                            {/* Animated Border Line (Minimalist) */}
+                            <div className="absolute top-0 left-0 w-full h-1 bg-iskf-red scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left z-20"></div>
+                            <div className="absolute bottom-0 right-0 w-full h-1 bg-iskf-red scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-right z-20"></div>
+
+                            <div className="relative z-10 text-center w-full break-words">
+                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-widest leading-none drop-shadow-xl text-shadow-xl break-words whitespace-normal">
+                                    <span className="block text-white group-hover:text-gray-100 group-hover:scale-105 transition-transform duration-500">{item.title}</span>
+                                    <span className="block text-iskf-red text-2xl sm:text-3xl md:text-4xl mt-3 group-hover:text-iskf-red group-hover:scale-110 transition-transform duration-500 delay-75 drop-shadow-lg">{item.subtitle}</span>
                                 </h3>
+                                {/* Decorative underline on hover */}
+                                <div className="w-12 h-1 bg-white/50 group-hover:bg-iskf-red mx-auto mt-6 rounded-full transition-colors duration-500 shadow-[0_0_10px_rgba(255,255,255,0.3)]"></div>
                             </div>
                         </motion.div>
                     ))}

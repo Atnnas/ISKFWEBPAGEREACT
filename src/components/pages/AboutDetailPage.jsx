@@ -62,15 +62,15 @@ const AboutDetailPage = () => {
     const renderPilares = () => (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 max-w-7xl mx-auto">
             {content.map((pilar, index) => (
-                <motion.div key={index} variants={itemVariants} className="space-y-6">
+                <motion.div key={index} variants={itemVariants} className="space-y-6 bg-black/70 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-xl hover:border-iskf-red/30 transition-colors duration-300">
                     <div className="h-1 w-20 bg-iskf-red mb-6 shadow-neon" />
-                    <h3 className="text-3xl font-bold text-white mb-4 tracking-widest uppercase">
-                        {pilar.title} <span className="text-sm block text-gray-500 font-serif italic mt-1 font-normal tracking-normal text-iskf-red">{pilar.subtitle}</span>
+                    <h3 className="text-3xl font-bold text-white mb-4 tracking-widest uppercase drop-shadow-lg">
+                        {pilar.title} <span className="text-sm block text-gray-300 font-serif italic mt-1 font-normal tracking-normal text-iskf-red">{pilar.subtitle}</span>
                     </h3>
-                    <div className="text-gray-400 leading-relaxed font-light text-justify text-sm md:text-base space-y-4">
+                    <div className="text-gray-200 leading-relaxed font-normal text-justify text-sm md:text-base space-y-4 drop-shadow-md">
                         {pilar.content.map((p, i) => <p key={i}>{p}</p>)}
                         {pilar.quote && (
-                            <p className="text-white font-medium border-l-2 border-iskf-red pl-4 italic mt-4">{pilar.quote}</p>
+                            <p className="text-white font-bold border-l-2 border-iskf-red pl-4 italic mt-4 bg-white/5 p-4 rounded-r-lg">{pilar.quote}</p>
                         )}
                     </div>
                 </motion.div>
@@ -80,8 +80,8 @@ const AboutDetailPage = () => {
 
     const renderDojoKun = () => (
         <div className="max-w-4xl mx-auto space-y-12">
-            <div className="text-gray-300 font-light text-lg leading-relaxed text-left md:text-justify mb-10 space-y-6">
-                {content.intro.map((p, i) => <p key={i}>{p}</p>)}
+            <div className="text-gray-200 font-normal text-lg leading-relaxed text-left md:text-justify mb-10 space-y-6 bg-black/60 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-lg">
+                {content.intro.map((p, i) => <p key={i} className="drop-shadow-md">{p}</p>)}
             </div>
 
             <div className="space-y-6">
@@ -89,7 +89,7 @@ const AboutDetailPage = () => {
                     <motion.div
                         key={idx}
                         variants={itemVariants}
-                        className="group relative bg-white/5 border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-colors"
+                        className="group relative bg-black/70 border border-white/10 rounded-2xl p-8 hover:bg-black/80 transition-colors shadow-lg backdrop-blur-md"
                     >
                         <div className="absolute left-0 top-8 w-1 h-12 bg-iskf-red shadow-neon group-hover:h-full group-hover:top-0 transition-all duration-500 rounded-l-2xl"></div>
                         <div className="flex flex-col gap-2 pl-4">
@@ -97,7 +97,7 @@ const AboutDetailPage = () => {
                                 <span className="text-iskf-red font-serif italic text-2xl md:text-3xl">HITOTSU</span>
                                 <span className="text-gray-400 font-light tracking-widest text-sm md:text-base uppercase">{rule.japanese}</span>
                             </h3>
-                            <p className="text-gray-300 text-lg font-light italic pl-0 md:pl-4 border-l-0 md:border-l border-white/10 group-hover:text-white transition-colors">
+                            <p className="text-gray-200 text-lg font-light italic pl-0 md:pl-4 border-l-0 md:border-l border-white/30 group-hover:text-white transition-colors">
                                 {rule.spanish}
                             </p>
                         </div>
@@ -114,8 +114,8 @@ const AboutDetailPage = () => {
 
     const renderNijuKun = () => (
         <div className="max-w-6xl mx-auto space-y-12">
-            <div className="text-gray-300 font-light text-lg leading-relaxed text-left md:text-justify mb-10 space-y-6 max-w-4xl mx-auto">
-                {content.intro.map((p, i) => <p key={i}>{p}</p>)}
+            <div className="text-gray-200 font-normal text-lg leading-relaxed text-left md:text-justify mb-10 space-y-6 max-w-4xl mx-auto bg-black/60 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-lg">
+                {content.intro.map((p, i) => <p key={i} className="drop-shadow-md">{p}</p>)}
 
                 <div className="border-l-4 border-iskf-red pl-6 py-4 my-8 bg-white/5 rounded-r-xl">
                     <p className="italic text-white font-serif mb-2">{content.quote.text}</p>
@@ -128,10 +128,10 @@ const AboutDetailPage = () => {
                     <motion.div
                         key={idx}
                         variants={itemVariants}
-                        className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors group flex items-start gap-4"
+                        className="bg-black/70 border border-white/10 rounded-xl p-6 hover:bg-black/80 transition-colors group flex items-start gap-4 backdrop-blur-md shadow-md"
                     >
-                        <span className="text-iskf-red font-bold text-xl opacity-50 block">{(idx + 1).toString().padStart(2, '0')}</span>
-                        <p className="text-gray-200 font-light group-hover:text-white transition-colors text-sm md:text-base">{rule}</p>
+                        <span className="text-iskf-red font-bold text-xl opacity-80 block shadow-neon">{(idx + 1).toString().padStart(2, '0')}</span>
+                        <p className="text-gray-200 font-medium group-hover:text-white transition-colors text-sm md:text-base drop-shadow-sm">{rule}</p>
                     </motion.div>
                 ))}
             </div>
@@ -212,7 +212,17 @@ const AboutDetailPage = () => {
     }
 
     return (
-        <div className="bg-iskf-dark min-h-screen text-white font-sans selection:bg-iskf-red selection:text-white">
+        <div className="bg-iskf-dark min-h-screen text-white font-sans selection:bg-iskf-red selection:text-white relative">
+            {/* Standardized Fixed Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <img
+                    src={`${import.meta.env.BASE_URL}fondoSonreNosotrosTarjetas.jpg`}
+                    alt="Background"
+                    className="w-full h-full object-cover opacity-100"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/60"></div>
+            </div>
+
             {/* Floating Back Button */}
             <motion.button
                 initial={{ opacity: 0, x: -20 }}

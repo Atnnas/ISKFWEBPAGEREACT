@@ -29,10 +29,10 @@ const KataListPage = () => {
             <SocialSidebar />
 
             <div className="pt-32 pb-24 px-6 md:px-16 min-h-screen flex flex-col items-center relative overflow-hidden">
-                {/* Background Art */}
-                <div className="absolute inset-0 z-0 pointer-events-none">
-                    <img src="/kataImagen.jpg" className="w-full h-full object-cover opacity-20 scale-105 blur-sm" alt="Kata BG" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-iskf-dark via-iskf-dark/80 to-iskf-dark/50"></div>
+                {/* Fixed Background Art */}
+                <div className="fixed inset-0 z-0 pointer-events-none">
+                    <img src={`${import.meta.env.BASE_URL}FondoKatas.jpg`} className="w-full h-full object-cover opacity-100" alt="Kata BG" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-iskf-dark/90 via-iskf-dark/40 to-iskf-dark/80"></div>
                 </div>
 
                 <div className="relative z-10 w-full max-w-6xl">
@@ -67,22 +67,28 @@ const KataListPage = () => {
                                     {category.katas.map((kata) => (
                                         <motion.div
                                             key={kata.id}
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
+                                            whileHover={{ y: -5 }}
                                             onClick={() => navigate(`/resources/kata/${kata.id}`)}
-                                            className="bg-zinc-900 border border-white/10 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-zinc-800 transition-colors group relative overflow-hidden h-48"
+                                            className="group relative h-64 rounded-none bg-transparent overflow-visible cursor-pointer transition-all duration-700 hover:shadow-[0_0_30px_rgba(206,17,38,0.3)] hover:bg-white/5 hover:backdrop-blur-md flex flex-col items-center justify-center text-center p-6 border-transparent"
                                         >
-                                            <div className="absolute inset-0 bg-gradient-to-br from-iskf-red/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                            {/* Animated Border Line (Minimalist) */}
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-iskf-red scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left z-20"></div>
+                                            <div className="absolute bottom-0 right-0 w-full h-1 bg-iskf-red scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-right z-20"></div>
+
+                                            {/* Background Image REMOVED for transparency */}
+                                            <div className="absolute inset-0 z-0 bg-transparent"></div>
 
                                             {/* Epic Kanji Display */}
-                                            <div className="mb-2 relative z-10">
-                                                <span className="text-5xl font-black text-white/20 group-hover:text-iskf-red/30 transition-colors duration-500 font-serif tracking-widest block scale-110 group-hover:scale-125 transform">
+                                            <div className="mb-4 relative z-10">
+                                                <span className="text-6xl font-black text-white group-hover:text-iskf-red transition-colors duration-500 font-serif tracking-widest block scale-110 group-hover:scale-125 transform text-shadow-lg">
                                                     {kata.kanji}
                                                 </span>
                                             </div>
 
-                                            <h4 className="text-xl font-bold text-white group-hover:text-iskf-red transition-colors tracking-wide uppercase relative z-10 mt-auto">{kata.title}</h4>
-                                            <div className="w-12 h-1 bg-iskf-red rounded-full mt-4 group-hover:w-24 transition-all duration-300 relative z-10"></div>
+                                            <h4 className="text-2xl font-black text-white uppercase tracking-widest mb-2 group-hover:tracking-[0.2em] transition-all duration-500 drop-shadow-xl text-shadow-xl relative z-10">{kata.title}</h4>
+
+                                            {/* Decorative underline on hover */}
+                                            <div className="w-12 h-1 bg-white/50 group-hover:bg-iskf-red mx-auto mt-4 rounded-full transition-colors duration-500 shadow-[0_0_10px_rgba(255,255,255,0.3)] relative z-10"></div>
                                         </motion.div>
                                     ))}
                                 </div>

@@ -31,7 +31,7 @@ const Hero = () => {
                 <div className="absolute inset-0 bg-cover bg-center opacity-30 blur-2xl" style={{ backgroundImage: `url('${import.meta.env.BASE_URL}iskfFondoRojo.jpg')` }}></div>
                 <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60" style={{ backgroundImage: `linear-gradient(rgba(10,10,10,0.4), rgba(10,10,10,0.4)), url('${import.meta.env.BASE_URL}iskfFondoRojo.jpg')` }}></div>
                 {/* Gradient Fade to Bottom for Smooth Transition */}
-                <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none"></div>
+                <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#0a0a0a]/60 to-transparent pointer-events-none"></div>
             </div>
 
             {/* The Monolith */}
