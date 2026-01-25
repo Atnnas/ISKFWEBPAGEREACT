@@ -79,5 +79,13 @@ export const dojosData = [
         sensei: "Sensei Christian Castillo",
         logo: "zanshinLogo.jpg",
         detailsUrl: "#"
+    },
+    {
+        id: "tomarite",
+        name: "Dojo Tomarite",
+        province: "San José", // Coronado is in San José
+        sensei: "Sensei Lesly Sequeira",
+        logo: "tomariteLogo.jpg",
+        detailsUrl: "#"
     }
 ];

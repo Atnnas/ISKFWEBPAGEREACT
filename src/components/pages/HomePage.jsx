@@ -62,10 +62,20 @@ function HomePage() {
                 <div className="w-full flex flex-col xl:flex-row gap-8 items-center relative z-10 max-w-8xl mx-auto">
                     {/* Map Column - Holographic Console */}
                     <div className="w-full xl:w-1/2 h-[45vh] xl:h-[60vh] relative p-1">
+                        {/* UX HELPER: Map Instructions (External) */}
+                        <div className="absolute -top-14 left-0 w-full z-20 flex flex-col items-center justify-center pointer-events-none">
+                            <div className="bg-black/80 backdrop-blur-md border border-iskf-red/30 px-5 py-2 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] mb-1 flex items-center gap-2">
+                                <svg className="w-4 h-4 text-iskf-red animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                                <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">Mapa Interactivo</span>
+                            </div>
+                            <span className="text-[9px] md:text-[10px] text-gray-400 font-mono tracking-widest uppercase bg-black/40 px-3 py-0.5 rounded border border-white/5">Seleccione una provincia, haciendo click en el mapa</span>
+                        </div>
+
                         {/* Decorative Glow */}
                         <div className="absolute -inset-1 bg-gradient-to-br from-iskf-red/20 to-transparent rounded-[2.5rem] blur-xl opacity-30 pointer-events-none"></div>
 
                         <div className="w-full h-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative group">
+
                             <div className="relative z-50 w-full h-full pointer-events-auto">
                                 <InteractiveMap activeProvinceId={activeProvince} onProvinceClick={setActiveProvince} />
                             </div>
@@ -77,11 +87,21 @@ function HomePage() {
                     </div>
 
                     {/* Timeline Column - Holographic Cylinder */}
-                    <div className="w-full xl:w-1/2 h-[45vh] xl:h-[60vh] p-1">
+                    <div className="w-full xl:w-1/2 h-[45vh] xl:h-[60vh] relative p-1">
+                        {/* UX HELPER: Timeline Instructions (External) */}
+                        <div className="absolute -top-14 left-0 w-full z-20 flex flex-col items-center justify-center pointer-events-none">
+                            <div className="bg-black/80 backdrop-blur-md border border-blue-500/30 px-5 py-2 rounded-full shadow-[0_0_15px_rgba(0,0,0,0.5)] mb-1 flex items-center gap-2">
+                                <svg className="w-4 h-4 text-blue-400 animate-[spin_4s_linear_infinite]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                <span className="text-[10px] text-white font-bold tracking-[0.2em] uppercase">Red de Dojos</span>
+                            </div>
+                            <span className="text-[9px] md:text-[10px] text-gray-400 font-mono tracking-widest uppercase bg-black/40 px-3 py-0.5 rounded border border-white/5">Haz clic en los nodos</span>
+                        </div>
+
                         {/* Decorative Glow */}
                         <div className="absolute -inset-1 bg-gradient-to-tl from-iskf-red/20 to-transparent rounded-[2.5rem] blur-xl opacity-30 pointer-events-none"></div>
 
                         <div className="w-full h-full bg-white/5 backdrop-blur-sm border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden relative flex items-center justify-center">
+
                             <div className="relative z-50 w-full h-full pointer-events-auto flex items-center justify-center">
                                 <OrbitalTimeline dojos={filteredDojos} />
                             </div>

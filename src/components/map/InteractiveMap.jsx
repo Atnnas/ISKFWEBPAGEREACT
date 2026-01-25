@@ -132,15 +132,7 @@ const MapParticles = () => {
     );
 };
 
-// Helper for Color Interpolation (Linear)
-const interpolateColor = (color1, color2, factor) => {
-    // Simple RGB interp for performance or just use predefined stops based on index?
-    // Let's use thresholds for performance: 
-    // 0-10% White->Gold
-    // 10-50% Gold->Red
-    // 50-100% Red Fade
-    return color1; // Placeholder, logic will be in useLayoutEffect/requestAnimationFrame
-};
+
 
 const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
 

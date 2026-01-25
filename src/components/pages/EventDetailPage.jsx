@@ -1,88 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import SocialSidebar from '../layout/SocialSidebar';
+
 import { eventsData } from '../../data/events';
 
 const EventDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [event, setEvent] = useState(null);
+    const event = React.useMemo(() => eventsData.find(e => e.id === parseInt(id)), [id]);
 
     useEffect(() => {
-        // Find event by ID
-        const foundEvent = eventsData.find(e => e.id === parseInt(id));
-        if (foundEvent) {
-            setEvent(foundEvent);
+        if (event) {
             window.scrollTo(0, 0);
         } else {
-            // Redirect if not found
             navigate('/');
         }
-    }, [id, navigate]);
+    }, [event, navigate]);
 
     if (!event) return null;
 
-    // Helpers
-    const formatDate = (isoString) => {
-        if (!isoString) return '';
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        // Create date with time to ensure correct day
-        return new Date(isoString).toLocaleDateString('es-ES', options);
-    };
-
     const getYear = (isoString) => new Date(isoString).getFullYear();
-
-    const renderMiniCalendar = (evt) => {
-        if (!evt) return null;
-
-        const startDate = new Date(evt.date);
-        const endDate = evt.endDate ? new Date(evt.endDate) : startDate;
-
-        const year = startDate.getFullYear();
-        const month = startDate.getMonth(); // 0-indexed
-
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const firstDayOffset = new Date(year, month, 1).getDay(); // 0 (Sun) - 6 (Sat)
-
-        const days = [];
-        for (let i = 0; i < firstDayOffset; i++) {
-            days.push(<div key={`empty-${i}`} className="h-8 w-8"></div>);
-        }
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const currentDate = new Date(year, month, d);
-            // Ignore time for comparison
-            const isSelected = d === startDate.getDate() && month === startDate.getMonth();
-            const isInRange = endDate && currentDate >= startDate && currentDate <= endDate;
-
-            days.push(
-                <div
-                    key={d}
-                    className={`h-8 w-8 flex items-center justify-center rounded-full text-sm font-bold transition-all
-                    ${isSelected ? 'bg-iskf-red text-white shadow-[0_0_15px_#be1322] scale-110' : isInRange ? 'bg-iskf-red/40 text-white' : 'text-gray-500 hover:text-white'}
-                    `}
-                >
-                    {d}
-                </div>
-            );
-        }
-
-        return (
-            <div className="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-white/10 w-full max-w-sm hover:border-iskf-red/30 transition-colors duration-500">
-                <div className="text-center mb-4 flex items-center justify-between border-b border-white/10 pb-2">
-                    <span className="font-black text-white uppercase text-lg tracking-widest">{startDate.toLocaleString('es-ES', { month: 'long' })}</span>
-                    <span className="text-iskf-red font-bold">{year}</span>
-                </div>
-                <div className="grid grid-cols-7 gap-2">
-                    {['D', 'L', 'K', 'M', 'J', 'V', 'S'].map(d => (
-                        <div key={d} className="text-center text-xs text-iskf-red font-black mb-2">{d}</div>
-                    ))}
-                    {days}
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="bg-iskf-dark min-h-screen text-white font-sans selection:bg-iskf-red selection:text-white pb-24 relative overflow-x-hidden">

@@ -18,13 +18,25 @@ const OrbitalTimeline = ({ dojos }) => {
     const ORBITS = [0, 60, 120];
 
     // Animation Loop
-    const animate = (time) => {
-        if (!startTimeRef.current) startTimeRef.current = time;
-        setRotation(prev => (prev + SPEED) % (Math.PI * 2));
-        requestRef.current = requestAnimationFrame(animate);
-    };
+    // Memoize lightning bolts configuration to avoid impure render
+    const bolts = React.useMemo(() => [
+        "M50 50 L55 35 L48 30 L60 10",
+        "M50 50 L40 45 L35 55 L10 50",
+        "M50 50 L60 65 L55 75 L80 90",
+        "M50 50 L35 35 L40 25 L20 20"
+    ].map(d => ({
+        d,
+        // eslint-disable-next-line react-hooks/purity
+        duration: 0.2 + Math.random() * 0.5,
+        repeatDelay: Math.random() * 2
+    })), []);
 
     useEffect(() => {
+        const animate = (time) => {
+            if (!startTimeRef.current) startTimeRef.current = time;
+            setRotation(prev => (prev + SPEED) % (Math.PI * 2));
+            requestRef.current = requestAnimationFrame(animate);
+        };
         requestRef.current = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(requestRef.current);
     }, []);
@@ -53,15 +65,10 @@ const OrbitalTimeline = ({ dojos }) => {
                         </filter>
                     </defs>
                     {/* Lightning Bolts - Chaotic Flashes */}
-                    {[
-                        "M50 50 L55 35 L48 30 L60 10",
-                        "M50 50 L40 45 L35 55 L10 50",
-                        "M50 50 L60 65 L55 75 L80 90",
-                        "M50 50 L35 35 L40 25 L20 20"
-                    ].map((d, i) => (
+                    {bolts.map((bolt, i) => (
                         <motion.path
                             key={i}
-                            d={d}
+                            d={bolt.d}
                             stroke="white"
                             strokeWidth="0.2"
                             fill="none"
@@ -73,10 +80,10 @@ const OrbitalTimeline = ({ dojos }) => {
                                 strokeWidth: [0.1, 0.8, 0.1]
                             }}
                             transition={{
-                                duration: 0.2 + Math.random() * 0.5,
+                                duration: bolt.duration,
                                 repeat: Infinity,
                                 repeatType: "mirror",
-                                repeatDelay: Math.random() * 2,
+                                repeatDelay: bolt.repeatDelay,
                                 ease: "linear"
                             }}
                         />

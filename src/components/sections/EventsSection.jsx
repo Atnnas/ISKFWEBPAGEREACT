@@ -7,6 +7,8 @@ const EventsSection = () => {
     const sortedEvents = [...eventsData].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     // Helper to format date
+
+    // Helper to format date
     const formatDate = (dateString) => {
         const options = { month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString('es-ES', options).replace('.', '');

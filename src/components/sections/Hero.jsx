@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
+import MonolithShader from '../three/MonolithShader';
+
 const Hero = () => {
     const [glitchText, setGlitchText] = useState("ISKF COSTA RICA");
 
@@ -10,7 +12,7 @@ const Hero = () => {
         const kanji = "国際松濤館空手道連盟";
         let iterations = 0;
         const interval = setInterval(() => {
-            setGlitchText(prev => originalText.split("").map((letter, index) => {
+            setGlitchText(() => originalText.split("").map((letter, index) => {
                 if (index < iterations) return originalText[index];
                 return kanji[Math.floor(Math.random() * kanji.length)];
             }).join(""));
@@ -61,8 +63,8 @@ const Hero = () => {
 
                         <div className="w-full h-full bg-black/80 backdrop-blur-3xl rounded-3xl p-4 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group flex flex-col items-center justify-center">
 
-                            {/* STATIC FALLBACK FOR PERFORMANCE */}
-                            <div className="absolute inset-0 opacity-80 mix-blend-screen z-0 bg-gradient-to-br from-red-900/20 to-black"></div>
+                            {/* 3D SHADER COMPONENT */}
+                            <MonolithShader />
 
                             <motion.img
                                 initial={{ opacity: 0, scale: 0.8 }}
@@ -151,7 +153,7 @@ const Hero = () => {
                                 La <strong className="text-iskf-red font-bold italic">International Shotokan Karate Federation</strong> de Costa Rica les extiende el honor de su visita. Representamos la esencia del Karate-Do tradicional fundado por el Maestro <span className="text-iskf-red font-bold">Teruyuki Okazaki</span>.
                             </p>
                             <p className="text-base md:text-lg text-gray-200 italic font-light border-l-4 border-iskf-red pl-6 py-1">
-                                "Forjando el carácter a través del camino de la mano vacía bajo los principios del Dojo Kun."
+                                "&quot;Forjando el carácter a través del camino de la mano vacía bajo los principios del Dojo Kun.&quot;"
                             </p>
                         </div>
                     </div>

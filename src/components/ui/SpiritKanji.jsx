@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const SpiritKanji = ({ kanji, label, delay = 0 }) => {
+const SpiritKanji = ({ kanji, delay = 0 }) => {
     return (
         <div className="relative flex flex-col items-center justify-center mb-6">
             <motion.div

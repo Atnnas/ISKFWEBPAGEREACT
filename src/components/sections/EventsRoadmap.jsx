@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { eventsData } from '../../data/events';
 import useWindowSize from '../../hooks/useWindowSize';
@@ -66,7 +66,7 @@ const EventsRoadmap = () => {
     }, []);
 
     // Scroll progress
-    const { scrollXProgress } = useScroll({ container: wrapperRef });
+    useScroll({ container: wrapperRef });
 
     // Handle Wheel Zoom
     const handleWheel = (e) => {
@@ -82,7 +82,7 @@ const EventsRoadmap = () => {
         return d.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }).replace('.', '');
     };
 
-    const getYear = (dateStr) => new Date(dateStr).getFullYear();
+
 
     // Calculate total width based on nodes * gap
     // Use a fixed spacing unit that scales with zoom
@@ -165,7 +165,7 @@ const EventsRoadmap = () => {
                     </div>
 
                     {/* 2. EVENT NODES */}
-                    {sortedEvents.map((event, index) => {
+                    {sortedEvents.map((event) => {
                         // Position Logic: STRICTLY check for Costa Rica Flag (or location)
                         const isTopPosition = event.flag === 'CostaRica.jpg' || event.location.includes('Costa Rica');
 

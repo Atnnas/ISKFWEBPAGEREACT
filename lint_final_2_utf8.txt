@@ -1,0 +1,86 @@
+﻿
+> iskf-react@0.0.0 lint
+> eslint .
+
+node.exe : 
+En línea: 1 
+Carácter: 1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (:String   
+ ) [], RemoteExce    
+ption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+Oops! Something went 
+wrong! :(
+
+ESLint: 9.39.2
+
+ConfigError: Config 
+(unnamed): 
+Unexpected key 
+"react/display-name" 
+found.
+    at 
+rethrowConfigError (C
+:\Dev\iskf-web-page\n
+ode_modules\@eslint\c
+onfig-array\dist\cjs\
+index.cjs:343:8)
+    at C:\Dev\iskf-we
+b-page\node_modules\@
+eslint\config-array\d
+ist\cjs\index.cjs:140
+5:5
+    at Array.reduce 
+(<anonymous>)
+    at FlatConfigArra
+y.getConfigWithStatus
+ (C:\Dev\iskf-web-pag
+e\node_modules\@eslin
+t\config-array\dist\c
+js\index.cjs:1398:43)
+    at FlatConfigArra
+y.getConfig (C:\Dev\i
+skf-web-page\node_mod
+ules\@eslint\config-a
+rray\dist\cjs\index.c
+js:1427:15)
+    at entryFilter (C
+:\Dev\iskf-web-page\n
+ode_modules\eslint\li
+b\eslint\eslint-helpe
+rs.js:323:27)
+    at async 
+NodeHfs.<anonymous> (
+file:///C:/Dev/iskf-w
+eb-page/node_modules/
+@humanfs/core/src/hfs
+.js:574:24)
+    at async 
+NodeHfs.walk (file://
+/C:/Dev/iskf-web-page
+/node_modules/@humanf
+s/core/src/hfs.js:614
+:3)
+    at async 
+globSearch (C:\Dev\is
+kf-web-page\node_modu
+les\eslint\lib\eslint
+\eslint-helpers.js:36
+4:20)
+    at async 
+Promise.allSettled 
+(index 0)

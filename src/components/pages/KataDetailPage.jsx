@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SocialSidebar from '../layout/SocialSidebar';
@@ -7,26 +7,21 @@ import { kataCategories, kataDetails } from '../../data/kataData';
 const KataDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [kata, setKata] = useState(null);
-
-    useEffect(() => {
-        // Find the kata in the categories
-        let foundKata = null;
+    const kata = React.useMemo(() => {
         for (const category of kataCategories) {
             const match = category.katas.find(k => k.id === id);
-            if (match) {
-                foundKata = match;
-                break;
-            }
+            if (match) return match;
         }
+        return null;
+    }, [id]);
 
-        if (foundKata) {
-            setKata(foundKata);
-            window.scrollTo(0, 0);
-        } else {
+    useEffect(() => {
+        if (!kata) {
             navigate('/resources/kata');
+        } else {
+            window.scrollTo(0, 0);
         }
-    }, [id, navigate]);
+    }, [kata, navigate]);
 
     if (!kata) return null;
 
