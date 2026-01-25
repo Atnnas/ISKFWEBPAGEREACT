@@ -17,8 +17,10 @@ const AboutSection = () => {
     return (
         <section id="nosotros" className="py-24 relative overflow-hidden w-full bg-iskf-dark">
             {/* Background Image */}
-            <div className="absolute inset-0 z-0 opacity-25 pointer-events-none select-none grayscale mix-blend-luminosity">
+            <div className="absolute inset-0 z-0 opacity-60 pointer-events-none select-none">
                 <img src={`${import.meta.env.BASE_URL}senseiOkazaki.jpg`} alt="Sensei Okazaki" className="w-full h-full object-cover" />
+                {/* Gradient overlay to ensure text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-iskf-dark via-iskf-dark/70 to-iskf-dark/40"></div>
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12">

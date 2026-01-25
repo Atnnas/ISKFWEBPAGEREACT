@@ -12,7 +12,7 @@ const ResourcesSection = () => {
                 {/* Header */}
                 <div className="text-center mb-16 space-y-4">
                     <span className="text-iskf-red font-black text-xs tracking-[0.2em] uppercase">Documentación</span>
-                    <h2 className="text-4xl md:text-5xl font-black text-white">Recursos Técnicos</h2>
+                    <h2 className="text-4xl md:text-5xl font-black text-white uppercase">Recursos Técnicos</h2>
                     <div className="w-32 h-1.5 bg-gradient-to-r from-transparent via-iskf-red to-transparent mx-auto mt-6 rounded-full shadow-[0_0_25px_rgba(220,38,38,0.8)]"></div>
                 </div>
 
