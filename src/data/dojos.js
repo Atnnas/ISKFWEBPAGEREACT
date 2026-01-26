@@ -1,10 +1,22 @@
+import kamaeLogo from '../assets/images/kamaeLogo.jpeg';
+import kumaLogo from '../assets/images/kumaLogo.jpg';
+import kurobiLogo from '../assets/images/kurobiLogo.jpeg';
+import soshinLogo from '../assets/images/soshinLogo.jpg';
+import hikaruLogo from '../assets/images/hikaruLogo.jpeg';
+import furinkazanLogo from '../assets/images/furinkazanLogo.jpg';
+import chikaraLogo from '../assets/images/chikaraLogo.jpeg';
+import kazanLogo from '../assets/images/logoKazan.jpg';
+import keikanLogo from '../assets/images/keikanLogo.jpg';
+import zanshinLogo from '../assets/images/zanshinLogo.jpg';
+import tomariteLogo from '../assets/images/tomariteLogo.jpg';
+
 export const dojosData = [
     {
         id: "kamae",
         name: "Hombu Dojo Kamae",
         province: "Heredia",
         sensei: "Sensei Roy Gatjens",
-        logo: "kamaeLogo.jpeg",
+        logo: kamaeLogo,
         detailsUrl: "#"
     },
     {
@@ -12,7 +24,7 @@ export const dojosData = [
         name: "Dojo Kuma",
         province: "Alajuela",
         sensei: "Sensei David Artavia",
-        logo: "kumaLogo.jpg",
+        logo: kumaLogo,
         detailsUrl: "#"
     },
     {
@@ -20,7 +32,7 @@ export const dojosData = [
         name: "Dojo Kuro Obi",
         province: "Alajuela",
         sensei: "Sensei Roy Lee Gatjens",
-        logo: "kurobiLogo.jpeg",
+        logo: kurobiLogo,
         detailsUrl: "#",
         website: "https://www.kuroobicr.com/"
     },
@@ -29,7 +41,7 @@ export const dojosData = [
         name: "Soshin Academy",
         province: "Heredia",
         sensei: "Sensei Juan Andrés Achío",
-        logo: "soshinLogo.jpg",
+        logo: soshinLogo,
         detailsUrl: "#"
     },
     {
@@ -37,7 +49,7 @@ export const dojosData = [
         name: "Dojo Hikaru",
         province: "San José",
         sensei: "Sensei Josue Valverde",
-        logo: "hikaruLogo.jpeg",
+        logo: hikaruLogo,
         detailsUrl: "#"
     },
     {
@@ -45,7 +57,7 @@ export const dojosData = [
         name: "Dojo Furinkazan",
         province: "San José",
         sensei: "Sensei Juan Barrantes",
-        logo: "furinkazanLogo.jpg",
+        logo: furinkazanLogo,
         detailsUrl: "#"
     },
     {
@@ -53,7 +65,7 @@ export const dojosData = [
         name: "Dojo Chikara",
         province: "Puntarenas",
         sensei: "Sensei Neylin Berrocal",
-        logo: "chikaraLogo.jpeg",
+        logo: chikaraLogo,
         detailsUrl: "#"
     },
     {
@@ -61,7 +73,7 @@ export const dojosData = [
         name: "Dojo Kazan",
         province: "Puntarenas",
         sensei: "Sensei Justin Rojas",
-        logo: "logoKazan.jpg",
+        logo: kazanLogo,
         detailsUrl: "#"
     },
     {
@@ -69,7 +81,7 @@ export const dojosData = [
         name: "Dojo Keikan",
         province: "Heredia",
         sensei: "Sensei Josue Serrano",
-        logo: "keikanLogo.jpg",
+        logo: keikanLogo,
         detailsUrl: "#"
     },
     {
@@ -77,7 +89,7 @@ export const dojosData = [
         name: "Dojo ISKF Zanshin",
         province: "San José",
         sensei: "Sensei Christian Castillo",
-        logo: "zanshinLogo.jpg",
+        logo: zanshinLogo,
         detailsUrl: "#"
     },
     {
@@ -85,7 +97,7 @@ export const dojosData = [
         name: "Dojo Tomarite",
         province: "San José", // Coronado is in San José
         sensei: "Sensei Lesly Sequeira",
-        logo: "tomariteLogo.jpg",
+        logo: tomariteLogo,
         detailsUrl: "#"
     }
 ];

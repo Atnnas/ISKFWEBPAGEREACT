@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import SpiritKanji from '../ui/SpiritKanji';
+import fondoRecursosTecnicos from '../../assets/images/fondoRecursosTecnicos.jpg';
 
 const ResourcesSection = () => {
     const navigate = useNavigate();
@@ -10,7 +11,7 @@ const ResourcesSection = () => {
         <section id="recursos" className="py-24 px-6 md:px-16 bg-iskf-dark relative z-20 border-t border-white/5 overflow-hidden">
             {/* Background Image */}
             <div className="absolute inset-0 z-0 pointer-events-none select-none">
-                <img src={`${import.meta.env.BASE_URL}fondoRecursosTecnicos.jpg`} alt="Background" className="w-full h-full object-cover object-center opacity-90" />
+                <img src={fondoRecursosTecnicos} alt="Background" className="w-full h-full object-cover object-center opacity-90" />
                 <div className="absolute inset-0 bg-gradient-to-b from-iskf-dark/50 via-transparent to-iskf-dark/50"></div>
                 <div className="absolute inset-0 bg-black/10"></div>
             </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SocialSidebar from '../layout/SocialSidebar';
 import { aboutData } from '../../data/aboutData';
+import fondoSonreNosotrosTarjetas from '../../assets/images/fondoSonreNosotrosTarjetas.jpg';
 
 const AboutDetailPage = () => {
     const { section } = useParams();
@@ -216,7 +217,7 @@ const AboutDetailPage = () => {
             {/* Standardized Fixed Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <img
-                    src={`${import.meta.env.BASE_URL}fondoSonreNosotrosTarjetas.jpg`}
+                    src={fondoSonreNosotrosTarjetas}
                     alt="Background"
                     className="w-full h-full object-cover opacity-100"
                 />

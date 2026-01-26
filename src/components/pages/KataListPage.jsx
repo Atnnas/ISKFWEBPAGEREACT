@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import SocialSidebar from '../layout/SocialSidebar';
 import { kataCategories } from '../../data/kataData';
+import fondoKatas from '../../assets/images/FondoKatas.jpg';
 
 const KataListPage = () => {
     const navigate = useNavigate();
@@ -31,7 +32,7 @@ const KataListPage = () => {
             <div className="pt-32 pb-24 px-6 md:px-16 min-h-screen flex flex-col items-center relative overflow-hidden">
                 {/* Fixed Background Art */}
                 <div className="fixed inset-0 z-0 pointer-events-none">
-                    <img src={`${import.meta.env.BASE_URL}FondoKatas.jpg`} className="w-full h-full object-cover opacity-100" alt="Kata BG" />
+                    <img src={fondoKatas} className="w-full h-full object-cover opacity-100" alt="Kata BG" />
                     <div className="absolute inset-0 bg-gradient-to-t from-iskf-dark/90 via-iskf-dark/40 to-iskf-dark/80"></div>
                 </div>
 

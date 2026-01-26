@@ -4,6 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { eventsData } from '../../data/events';
 import useWindowSize from '../../hooks/useWindowSize';
 
+import fondoEventos from '../../assets/images/fondoEventos.jpg';
+import iskfFondoRojo from '../../assets/images/iskfFondoRojo.jpg';
+import iskfLogo from '../../assets/images/iskf.jpg';
+
 const EventsRoadmap = () => {
     const containerRef = useRef(null);
     const wrapperRef = useRef(null);
@@ -97,7 +101,7 @@ const EventsRoadmap = () => {
         >
             {/* BACKGROUND: Digital Horizon + Image */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity" style={{ backgroundImage: `url('${import.meta.env.BASE_URL}fondoEventos.jpg')` }}></div>
+                <div className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity" style={{ backgroundImage: `url('${fondoEventos}')` }}></div>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(190,19,34,0.2),transparent_80%)]"></div>
             </div>
 
@@ -150,7 +154,7 @@ const EventsRoadmap = () => {
                     <div className="relative flex-shrink-0 flex flex-col items-center justify-center mr-16 group">
                         <div className="w-24 h-24 rounded-full bg-black border-2 border-iskf-red/50 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(190,19,34,0.3)] group-hover:scale-110 transition-transform duration-500">
                             {/* Inner Logo */}
-                            <img src={`${import.meta.env.BASE_URL}iskfFondoRojo.jpg`} alt="ISKF" className="w-full h-full object-cover rounded-full opacity-90 group-hover:opacity-100 transition-opacity" />
+                            <img src={iskfFondoRojo} alt="ISKF" className="w-full h-full object-cover rounded-full opacity-90 group-hover:opacity-100 transition-opacity" />
 
                             {/* Pulse Rings */}
                             <div className="absolute inset-0 rounded-full border-4 border-iskf-red opacity-0 animate-[ping_1.5s_ease-out_infinite] z-0"></div>
@@ -254,16 +258,16 @@ const EventsRoadmap = () => {
                                             {/* Organizer Logo */}
                                             <div className={`w-12 h-12 rounded-full bg-white p-0.5 shadow-lg mb-3 transition-transform duration-300 ${isActive || isExpanded ? 'scale-125' : 'group-hover:scale-110'}`}>
                                                 <img
-                                                    src={`${import.meta.env.BASE_URL}${event.logo}`}
+                                                    src={event.logo}
                                                     alt="Logo"
                                                     className="w-full h-full object-contain rounded-full"
-                                                    onError={(e) => e.target.src = `${import.meta.env.BASE_URL}iskf.jpg`}
+                                                    onError={(e) => e.target.src = iskfLogo}
                                                 />
                                             </div>
 
                                             <h4 className={`text-white font-bold text-base leading-tight mb-2 transition-colors ${isActive || isExpanded ? 'text-iskf-red' : 'group-hover:text-iskf-red'}`}>{event.name}</h4>
                                             <div className={`flex items-center justify-center gap-2 text-xs font-mono transition-colors ${isActive || isExpanded ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
-                                                <img src={`${import.meta.env.BASE_URL}${event.flag}`} className="w-4 h-4 rounded-full" alt="flag" />
+                                                <img src={event.flag} className="w-4 h-4 rounded-full" alt="flag" />
                                                 <span>{event.location.split(',')[0]}</span>
                                             </div>
                                         </div>

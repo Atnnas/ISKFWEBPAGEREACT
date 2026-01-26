@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 import MonolithShader from '../three/MonolithShader';
+import iskfFondoRojo from '../../assets/images/iskfFondoRojo.jpg';
 
 const Hero = () => {
     const [glitchText, setGlitchText] = useState("ISKF COSTA RICA");
@@ -28,8 +29,8 @@ const Hero = () => {
 
             {/* Background Magic */}
             <div className="absolute inset-x-0 bottom-0 top-[5.5rem] z-0">
-                <div className="absolute inset-0 bg-cover bg-center opacity-30 blur-2xl" style={{ backgroundImage: `url('${import.meta.env.BASE_URL}iskfFondoRojo.jpg')` }}></div>
-                <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60" style={{ backgroundImage: `linear-gradient(rgba(10,10,10,0.4), rgba(10,10,10,0.4)), url('${import.meta.env.BASE_URL}iskfFondoRojo.jpg')` }}></div>
+                <div className="absolute inset-0 bg-cover bg-center opacity-30 blur-2xl" style={{ backgroundImage: `url('${iskfFondoRojo}')` }}></div>
+                <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60" style={{ backgroundImage: `linear-gradient(rgba(10,10,10,0.4), rgba(10,10,10,0.4)), url('${iskfFondoRojo}')` }}></div>
                 {/* Gradient Fade to Bottom for Smooth Transition */}
                 <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#0a0a0a]/60 to-transparent pointer-events-none"></div>
             </div>
@@ -70,7 +71,7 @@ const Hero = () => {
                                 initial={{ opacity: 0, scale: 0.8 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.8 }}
-                                src={`${import.meta.env.BASE_URL}iskfFondoRojo.jpg`}
+                                src={iskfFondoRojo}
                                 alt="ISKF Logo"
                                 className="w-full h-full object-contain relative z-10 drop-shadow-2xl rounded-2xl"
                             />

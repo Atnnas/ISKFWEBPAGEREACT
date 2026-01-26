@@ -9,6 +9,8 @@ import EventsRoadmap from '../sections/EventsRoadmap';
 import ResourcesSection from '../sections/ResourcesSection';
 import { dojosData } from '../../data/dojos';
 import { crMapFeatures } from '../../data/mapData';
+import fondoDojos from '../../assets/images/fondoDojos.jpg';
+import fondoListoParaComenzar from '../../assets/images/fondoListoParaComenzar.jpg';
 
 function HomePage() {
     const [activeProvince, setActiveProvince] = useState(null);
@@ -46,7 +48,7 @@ function HomePage() {
             <section id="dojos" className="relative min-h-[68vh] py-16 md:py-24 px-4 md:px-16 bg-zinc-900 overflow-hidden border-t border-white/5 flex flex-col items-center">
                 {/* Background Image with Themed Overlay */}
                 <div className="absolute inset-0 z-0 pointer-events-none select-none">
-                    <img src={`${import.meta.env.BASE_URL}fondoDojos.jpg`} alt="Background Dojos" className="w-full h-full object-cover opacity-80" />
+                    <img src={fondoDojos} alt="Background Dojos" className="w-full h-full object-cover opacity-80" />
                     {/* Light gradient for readability without obscuring the image */}
                     <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/40 via-transparent to-zinc-900/40"></div>
                     <div className="absolute inset-0 bg-black/10"></div>
@@ -126,7 +128,7 @@ function HomePage() {
             <footer id="contacto" className="min-h-screen py-24 border-t border-white/5 bg-black text-center relative z-10 overflow-hidden flex flex-col items-center justify-center">
                 {/* Background Image */}
                 <div className="absolute inset-0 z-0 pointer-events-none select-none">
-                    <img src={`${import.meta.env.BASE_URL}fondoListoParaComenzar.jpg`} alt="Background Contacto" className="w-full h-full object-cover opacity-100" />
+                    <img src={fondoListoParaComenzar} alt="Background Contacto" className="w-full h-full object-cover opacity-100" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60"></div>
                 </div>
 

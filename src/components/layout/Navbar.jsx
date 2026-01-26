@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom'; // Import hooks
 import KanjiHoverLink from '../ui/KanjiHoverLink';
 import { navLinks } from '../../data/navigation';
+import iskfFondoBlanco from '../../assets/images/iskfFondoBlanco.jpg';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,7 +42,7 @@ const Navbar = () => {
                     className="flex items-center gap-4 relative z-50 cursor-pointer"
                     onClick={() => navigate('/')}
                 >
-                    <img src={`${import.meta.env.BASE_URL}iskfFondoBlanco.jpg`} alt="ISKF Logo" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
+                    <img src={iskfFondoBlanco} alt="ISKF Logo" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
                     <span className="font-bold text-2xl tracking-[0.2em] text-white">ISKF</span>
                 </div>
 

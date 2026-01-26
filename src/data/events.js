@@ -1,3 +1,19 @@
+import kumaLogo from '../assets/images/kumaLogo.jpg';
+import costaRicaFlag from '../assets/images/CostaRica.jpg';
+import wkfLogo from '../assets/images/wkf.jpg';
+import mexicoFlag from '../assets/images/mexico.jpg';
+import icoderLogo from '../assets/images/icoder.jpg';
+import iskfLogo from '../assets/images/iskf.jpg';
+import kurobiLogo from '../assets/images/kurobiLogo.jpeg';
+import iskfFondoRojo from '../assets/images/iskfFondoRojo.jpg';
+import fecokaLogo from '../assets/images/FecokaLogo.jpg';
+import ccondekaLogo from '../assets/images/LogoCcondeka.jpg';
+import nicaraguaFlag from '../assets/images/nicaragua.jpg';
+import wkfPanamericaLogo from '../assets/images/LogoWKFPanamerica.jpg';
+import brazilFlag from '../assets/images/brazil.jpg';
+import polandFlag from '../assets/images/poland.jpg';
+import zanshinLogo from '../assets/images/zanshinLogo.jpg';
+
 export const eventsData = [
     {
         id: 1,
@@ -5,8 +21,8 @@ export const eventsData = [
         date: "2026-05-04", // YYYY-MM-DD (Corrected for timezone)
         type: "Nacional",
         location: "Costa Rica",
-        logo: "kumaLogo.jpg",
-        flag: "CostaRica.jpg",
+        logo: kumaLogo,
+        flag: costaRicaFlag,
         description: "Torneo Nacional de Karate Do Shotokan."
     },
     {
@@ -16,8 +32,8 @@ export const eventsData = [
         endDate: "2026-09-21",
         type: "Internacional",
         location: "Guadalajara, México",
-        logo: "wkf.jpg",
-        flag: "mexico.jpg",
+        logo: wkfLogo,
+        flag: mexicoFlag,
         description: "Evento internacional juvenil de alto nivel."
     },
     {
@@ -27,8 +43,8 @@ export const eventsData = [
         endDate: "2026-01-23",
         type: "Nacional",
         location: "Limón, Costa Rica",
-        logo: "icoder.jpg",
-        flag: "CostaRica.jpg",
+        logo: icoderLogo,
+        flag: costaRicaFlag,
         description: "La máxima fiesta deportiva de Costa Rica."
     },
     {
@@ -38,8 +54,8 @@ export const eventsData = [
         endDate: "2026-10-26",
         type: "Internacional",
         location: "Guadalajara, México",
-        logo: "iskf.jpg",
-        flag: "mexico.jpg",
+        logo: iskfLogo,
+        flag: mexicoFlag,
         description: "Campeonato Mundial de la International Shotokan Karate Federation."
     },
     {
@@ -49,8 +65,8 @@ export const eventsData = [
         endDate: "2026-06-29",
         type: "Nacional",
         location: "Costa Rica",
-        logo: "kurobiLogo.jpeg",
-        flag: "CostaRica.jpg",
+        logo: kurobiLogo,
+        flag: costaRicaFlag,
         description: "Torneo de invitación abierto."
     },
     {
@@ -60,8 +76,8 @@ export const eventsData = [
         endDate: "2026-09-27",
         type: "Nacional",
         location: "Campamento La Cumbre, Costa Rica",
-        logo: "iskfFondoRojo.jpg",
-        flag: "CostaRica.jpg",
+        logo: iskfFondoRojo,
+        flag: costaRicaFlag,
         description: "Campamento de entrenamiento intensivo."
     },
     {
@@ -71,8 +87,8 @@ export const eventsData = [
         endDate: "2026-02-22T12:00:00",
         type: "Nacional",
         location: "Costa Rica",
-        logo: "FecokaLogo.jpg",
-        flag: "CostaRica.jpg",
+        logo: fecokaLogo,
+        flag: costaRicaFlag,
         description: "Seminario de actualización sobre el reglamento de competencia WKF."
     },
     {
@@ -82,8 +98,8 @@ export const eventsData = [
         endDate: "2026-03-08T12:00:00",
         type: "Internacional",
         location: "Managua, Nicaragua",
-        logo: "LogoCcondeka.jpg",
-        flag: "nicaragua.jpg",
+        logo: ccondekaLogo,
+        flag: nicaraguaFlag,
         description: "Campeonato Centroamericano de Karate CCONDEKA."
     },
     {
@@ -93,8 +109,8 @@ export const eventsData = [
         endDate: "2026-04-19T12:00:00",
         type: "Internacional",
         location: "Costa Rica",
-        logo: "FecokaLogo.jpg",
-        flag: "CostaRica.jpg",
+        logo: fecokaLogo,
+        flag: costaRicaFlag,
         description: "Campeonato Clasificatorio de karate para los Juegos Centroamericanos y del Caribe 2026."
     },
     {
@@ -104,8 +120,8 @@ export const eventsData = [
         endDate: "2026-04-26T12:00:00",
         type: "Nacional",
         location: "Costa Rica",
-        logo: "FecokaLogo.jpg",
-        flag: "CostaRica.jpg",
+        logo: fecokaLogo,
+        flag: costaRicaFlag,
         description: "Evento de ranking nacional - Serie CRC."
     },
     {
@@ -115,8 +131,8 @@ export const eventsData = [
         endDate: "2026-05-30T12:00:00",
         type: "Internacional",
         location: "Rio de Janeiro, Brasil",
-        logo: "LogoWKFPanamerica.jpg",
-        flag: "brazil.jpg",
+        logo: wkfPanamericaLogo,
+        flag: brazilFlag,
         description: "Campeonato Panamericano de Karate para categorías Senior y Sub 21."
     },
     {
@@ -126,8 +142,8 @@ export const eventsData = [
         endDate: "2026-07-19T12:00:00",
         type: "Internacional",
         location: "Guadalajara, México",
-        logo: "wkf.jpg",
-        flag: "mexico.jpg",
+        logo: wkfLogo,
+        flag: mexicoFlag,
         description: "Evento de talla mundial de la WKF - Serie A."
     },
     {
@@ -136,8 +152,8 @@ export const eventsData = [
         date: "2026-08-08T12:00:00",
         type: "Internacional",
         location: "Sede por definir",
-        logo: "LogoCcondeka.jpg",
-        flag: "LogoCcondeka.jpg",
+        logo: ccondekaLogo,
+        flag: ccondekaLogo,
         description: "Posible fecha (por confirmar). Juegos Deportivos Centroamericanos y del Caribe."
     },
     {
@@ -147,8 +163,8 @@ export const eventsData = [
         endDate: "2026-08-30T12:00:00",
         type: "Internacional",
         location: "Costa Rica",
-        logo: "LogoWKFPanamerica.jpg",
-        flag: "CostaRica.jpg",
+        logo: wkfPanamericaLogo,
+        flag: costaRicaFlag,
         description: "Campeonato Panamericano de Karate para categorías U12, U14, Cadete y Junior."
     },
     {
@@ -158,8 +174,8 @@ export const eventsData = [
         endDate: "2026-09-06T12:00:00",
         type: "Nacional",
         location: "Costa Rica",
-        logo: "icoder.jpg",
-        flag: "CostaRica.jpg",
+        logo: icoderLogo,
+        flag: costaRicaFlag,
         description: "Eliminatorias para los Juegos Deportivos Nacionales 2026."
     },
     {
@@ -169,8 +185,8 @@ export const eventsData = [
         endDate: "2026-09-20T12:00:00",
         type: "Internacional",
         location: "Guadalajara, México",
-        logo: "wkf.jpg",
-        flag: "mexico.jpg",
+        logo: wkfLogo,
+        flag: mexicoFlag,
         description: "Evento internacional de la serie Youth League de la WKF."
     },
     {
@@ -180,8 +196,8 @@ export const eventsData = [
         endDate: "2026-10-18T12:00:00",
         type: "Internacional",
         location: "Bielsko-Biała, Polonia",
-        logo: "wkf.jpg",
-        flag: "poland.jpg",
+        logo: wkfLogo,
+        flag: polandFlag,
         description: "Campeonato Mundial para categorías Cadete, Junior y Sub 21."
     },
     {
@@ -191,8 +207,8 @@ export const eventsData = [
         endDate: "2026-12-13T12:00:00",
         type: "Nacional",
         location: "Costa Rica",
-        logo: "FecokaLogo.jpg",
-        flag: "CostaRica.jpg",
+        logo: fecokaLogo,
+        flag: costaRicaFlag,
         description: "Cierre del calendario competitivo nacional."
     },
     {
@@ -201,8 +217,8 @@ export const eventsData = [
         date: "2026-10-04T12:00:00",
         type: "Nacional",
         location: "San José, Costa Rica",
-        logo: "zanshinLogo.jpg",
-        flag: "CostaRica.jpg",
+        logo: zanshinLogo,
+        flag: costaRicaFlag,
         description: "Torneo Copa Zanshin."
     }
 ];

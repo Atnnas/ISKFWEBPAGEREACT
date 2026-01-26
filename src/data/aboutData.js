@@ -1,3 +1,13 @@
+import corbata from '../assets/images/corbata.jpg';
+import dojoKun from '../assets/images/dojoKun.jpg';
+import escudo from '../assets/images/escudo.jpg';
+import jacket from '../assets/images/jacket.jpg';
+import libroTecnica from '../assets/images/libroTecnica.jpg';
+import tituloInternacional from '../assets/images/tituloInternacional.jpg';
+import pasaporte from '../assets/images/pasaporte.jpg';
+import membresiaInternacional from '../assets/images/membresiaInternacional.jpg';
+import senseiRoyGatjens from '../assets/images/senseiRoyGatjens.jpg';
+
 export const aboutData = {
     identidad: {
         title: "Identidad ISKF-CR",
@@ -6,42 +16,42 @@ export const aboutData = {
             {
                 title: "Corbata Oficial",
                 desc: "Distintivo oficial del Sensei.",
-                img: "/corbata.jpg"
+                img: corbata
             },
             {
                 title: "Cuadro Dojo Kun",
                 desc: "Principios rectores del Dojo.",
-                img: "/dojoKun.jpg"
+                img: dojoKun
             },
             {
                 title: "Escudo Internacional",
                 desc: "Shotokan Karate Federation.",
-                img: "/escudo.jpg"
+                img: escudo
             },
             {
                 title: "Jacket I.S.K.F. - CR",
                 desc: "Indumentaria oficial nacional.",
-                img: "/jacket.jpg"
+                img: jacket
             },
             {
                 title: "Libro de Exámenes",
                 desc: "Guía técnica para grados.",
-                img: "/libroTecnica.jpg"
+                img: libroTecnica
             },
             {
                 title: "Título Internacional",
                 desc: "Certificación I.S.K.F. Global.",
-                img: "/tituloInternacional.jpg"
+                img: tituloInternacional
             },
             {
                 title: "Pasaporte I.S.K.F.",
                 desc: "Documento oficial de registro.",
-                img: "/pasaporte.jpg"
+                img: pasaporte
             },
             {
                 title: "Membresía",
                 desc: "Afiliación Internacional.",
-                img: "/membresiaInternacional.jpg"
+                img: membresiaInternacional
             }
         ]
     },
@@ -52,7 +62,7 @@ export const aboutData = {
             name: "Sensei Roy Gatjens",
             role: "Representante País",
             titles: ["Shihan", "Líder Técnico"],
-            img: "/senseiRoyGatjens.jpg"
+            img: senseiRoyGatjens
         },
         gerencia: {
             title: "Gerencia General",
