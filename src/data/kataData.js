@@ -229,19 +229,35 @@ export const kataDetails = {
                 <tr><th class="px-6 py-4 text-iskf-red">#</th><th class="px-6 py-4">Kihon</th><th class="px-6 py-4">Dachi</th><th class="px-6 py-4">Nivel</th></tr>
             </thead>
             <tbody class="divide-y divide-white/10 text-gray-300 font-light">
-                <tr><td class="px-6 py-4 font-bold text-white">1</td><td>Kosa-ashi / Haishu-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">2</td><td>Empi-uchi</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">3</td><td>Gedan-barai</td><td>Kiba-dachi</td><td>Gedan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">4</td><td>Kagi-zuki</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">5</td><td>Uchi-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">6</td><td>Nami-gaeshi</td><td>Kiba-dachi</td><td>Gedan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">7</td><td>Uraken-uchi</td><td>Kiba-dachi</td><td>Jodan</td></tr>
-                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">8 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Nami-gaeshi / Kiai</td><td>Kiba-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">9</td><td>Haishu-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">10</td><td>Empi-uchi</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">11</td><td>Gedan-barai</td><td>Kiba-dachi</td><td>Gedan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">12</td><td>Kagi-zuki</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">15 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Morote-zuki</td><td>Kiba-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">1</td><td>Kosa-ashi / Haishu-uke (Kao-muki)</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">2</td><td>Kake-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">3</td><td>Sokumen-mae-empi-uchi</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">4</td><td>Ryoken-koshi-kamae (Kao-muki)</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">5</td><td>Gedan-barai</td><td>Kiba-dachi</td><td>Gedan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">6</td><td>Kagi-zuki</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">7</td><td>Jotai-sonomama</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">8</td><td>Uchi-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">9</td><td>Uchi-nagashi-uke / Gedan-uke & Uraken</td><td>Kiba-dachi</td><td>Jodan/Gedan/Jodan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">10</td><td>Kao-muki</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">11</td><td>Nami-gaeshi / Sokumen-uke</td><td>Kiba-dachi</td><td>Gedan/Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">12</td><td>Kao-muki</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">13</td><td>Nami-gaeshi / Sokumen-uke</td><td>Kiba-dachi</td><td>Gedan/Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">14</td><td>Ryoken-koshi-kamae (Kao-muki)</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">15 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Morote-zuki (Kagi-zuki)</td><td>Kiba-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">16</td><td>Kake-uke (Haishu)</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">17</td><td>Sokumen-mae-empi-uchi</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">18</td><td>Ryoken-koshi-kamae (Kao-muki)</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">19</td><td>Gedan-barai</td><td>Kiba-dachi</td><td>Gedan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">20</td><td>Kagi-zuki</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">21</td><td>Jotai-sonomama</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">22</td><td>Uchi-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">23</td><td>Uchi-nagashi-uke / Gedan-uke & Uraken</td><td>Kiba-dachi</td><td>Jodan/Gedan/Jodan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">24</td><td>Kao-muki</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">25</td><td>Nami-gaeshi / Sokumen-uke</td><td>Kiba-dachi</td><td>Gedan/Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">26</td><td>Kao-muki</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">27</td><td>Nami-gaeshi / Sokumen-uke</td><td>Kiba-dachi</td><td>Gedan/Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">28</td><td>Ryoken-koshi-kamae (Kao-muki)</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">29 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Morote-zuki (Kagi-zuki)</td><td>Kiba-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
             </tbody>
         </table>
     </div>
@@ -458,38 +474,86 @@ export const kataDetails = {
                 <tr><th class="px-6 py-4 text-iskf-red">#</th><th class="px-6 py-4">Kihon</th><th class="px-6 py-4">Dachi</th><th class="px-6 py-4">Nivel</th></tr>
             </thead>
             <tbody class="divide-y divide-white/10 text-gray-300 font-light">
-                <tr><td class="px-6 py-4 font-bold text-white">1</td><td>Uchi-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">2</td><td>Nagashi-uke / Gedan-barai</td><td>Kiba-dachi</td><td>Jodan/Gedan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">3</td><td>Ura-zuki</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">4</td><td>Mae-empi-uchi</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">5</td><td>Fumikomi-geri</td><td>Kiba-dachi</td><td>Gedan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">11</td><td>Kagi-zuki</td><td>Kiba-dachi</td><td>Chudan</td></tr>
-                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">16 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Morote-zuki</td><td>Kiba-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
-                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">24 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Morote-zuki</td><td>Kiba-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">1</td><td>Zenwan-suihei-kamae (Kao-muki)</td><td>Kiba-dachi</td><td>Jodan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">2</td><td>Zenwan-sokumen-uke / Mune-kamae</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">3</td><td>Zenwan-gedan-kensei</td><td>Kiba-dachi (Kosa-ashi)</td><td>Gedan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">4</td><td>Zenwan-sokumen-gedan-uke (Oshi-uke)</td><td>Kiba-dachi</td><td>Gedan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">5</td><td>Zenwan-suihei-kamae</td><td>Heisoku-dachi</td><td>Jodan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">6</td><td>Zenwan-sokumen-uke / Mune-kamae</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">7</td><td>Zenwan-gedan-kensei</td><td>Kiba-dachi (Kosa-ashi)</td><td>Gedan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">8</td><td>Zenwan-sokumen-gedan-uke (Oshi-uke)</td><td>Kiba-dachi</td><td>Gedan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">9</td><td>Kao-muki / Koshi-kamae</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">10</td><td>Soete-uchi-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">11</td><td>Mae-empi-uchi (Fumikomi)</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">12</td><td>Tsukami-uke (Koko-uke)</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">13</td><td>Kagi-zuki</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">14</td><td>Jotai-sonomama</td><td>Kiba-dachi (Kosa-ashi)</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">15</td><td>Uchi-uke (Fumikomi)</td><td>Kiba-dachi</td><td>Gedan/Chudan</td></tr>
+                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">16 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Nagashi-uke / Ura-zuki</td><td>Kiba-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">17</td><td>Kao-muki / Koshi-kamae</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">18</td><td>Soete-uchi-uke</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">19</td><td>Mae-empi-uchi (Fumikomi)</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">20</td><td>Tsukami-uke (Koko-uke)</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">21</td><td>Kagi-zuki</td><td>Kiba-dachi</td><td>Chudan</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">22</td><td>Jotai-sonomama</td><td>Kiba-dachi (Kosa-ashi)</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">23</td><td>Uchi-uke (Fumikomi)</td><td>Kiba-dachi</td><td>Gedan/Chudan</td></tr>
+                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">24 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Nagashi-uke / Ura-zuki</td><td>Kiba-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
             </tbody>
         </table>
     </div>
     `,
     'hangetsu': `
-     <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm md:text-base">
-            <thead class="bg-iskf-red/20 text-white uppercase text-xs tracking-wider font-bold">
-                <tr><th class="px-6 py-4 text-iskf-red">#</th><th class="px-6 py-4">Kihon</th><th class="px-6 py-4">Dachi</th><th class="px-6 py-4">Nivel</th></tr>
-            </thead>
-            <tbody class="divide-y divide-white/10 text-gray-300 font-light">
-                <tr><td class="px-6 py-4 font-bold text-white">1</td><td>Uchi-uke (Respiración Lenta)</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">2</td><td>Gyaku-zuki (Respiración Lenta)</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">3</td><td>Uchi-uke (Respiración Lenta)</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">4</td><td>Gyaku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">10</td><td>Uchi-uke / Gedan-barai (Doble)</td><td>Hangetsu-dachi</td><td>Chudan/Gedan</td></tr>
-                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">11 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Yama-zuki / Gyaku-zuki</td><td>Hangetsu-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">15</td><td>Mikazuki-geri</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">30</td><td>Tate-shuto / Nukite</td><td>Neko-ashi-dachi</td><td>Jodan</td></tr>
-                <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">41 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Gyaku-zuki / Gedan-zuki</td><td>Kokutsu-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
-            </tbody>
-        </table>
-    </div>
-    `,
+      <div class="overflow-x-auto">
+         <table class="w-full text-left text-sm md:text-base">
+             <thead class="bg-iskf-red/20 text-white uppercase text-xs tracking-wider font-bold">
+                 <tr><th class="px-6 py-4 text-iskf-red">#</th><th class="px-6 py-4">Kihon</th><th class="px-6 py-4">Dachi</th><th class="px-6 py-4">Nivel</th></tr>
+             </thead>
+             <tbody class="divide-y divide-white/10 text-gray-300 font-light">
+                 <tr><td class="px-6 py-4 font-bold text-white">1</td><td>Uchi-uke</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">2</td><td>Gyaku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">3</td><td>Uchi-uke</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">4</td><td>Gyaku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">5</td><td>Uchi-uke</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">6</td><td>Gyaku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">7</td><td>Ippon-ken-kamae</td><td>Hangetsu-dachi</td><td>Jodan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">8</td><td>Morote-ippon-ken-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">9</td><td>Kaishu-yama-gamae</td><td>Hangetsu-dachi</td><td>Jodan/Gedan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">10</td><td>Kaisho-kakiwake-kamae</td><td>Hangetsu-dachi</td><td>Gedan</td></tr>
+                 <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">11 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Kaishu-uchi-uke / Gedan-barai</td><td>Hangetsu-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">12</td><td>Kake-dori (Agarre)</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">13</td><td>Kaishu-uchi-uke / Gedan-barai</td><td>Hangetsu-dachi</td><td>Chudan/Gedan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">14</td><td>Kake-dori (Agarre)</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">15</td><td>Kaishu-uchi-uke / Gedan-barai</td><td>Hangetsu-dachi</td><td>Chudan/Gedan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">16</td><td>Kake-dori (Agarre)</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">17</td><td>Uchi-uke</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">18</td><td>Gyaku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">19</td><td>Choku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">20</td><td>Uchi-uke</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">21</td><td>Gyaku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">22</td><td>Choku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">23</td><td>Uchi-uke</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">24</td><td>Gyaku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">25</td><td>Choku-zuki</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">26</td><td>Uraken-tate-mawashi-uchi</td><td>Kokutsu-dachi</td><td>Jodan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">27</td><td>Jotai-sonomama</td><td>Kosa-ashi</td><td>-</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">28</td><td>Mae-geri / Ken-kata-ue</td><td>Ashi-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">29</td><td>Gedan-zuki</td><td>Zenkutsu-dachi</td><td>Gedan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">30</td><td>Gyaku-zuki</td><td>Zenkutsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">31</td><td>Age-uke</td><td>Zenkutsu-dachi</td><td>Jodan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">32</td><td>Uraken-tate-mawashi-uchi</td><td>Kokutsu-dachi</td><td>Jodan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">33</td><td>Jotai-sonomama</td><td>Kosa-ashi</td><td>-</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">34</td><td>Mae-geri / Ken-kata-ue</td><td>Ashi-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">35</td><td>Gedan-zuki</td><td>Zenkutsu-dachi</td><td>Gedan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">36</td><td>Gyaku-zuki</td><td>Zenkutsu-dachi</td><td>Chudan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">37</td><td>Age-uke</td><td>Zenkutsu-dachi</td><td>Jodan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">38</td><td>Uraken-tate-mawashi-uchi</td><td>Kokutsu-dachi</td><td>Jodan</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">39</td><td>Mikazuki-geri</td><td>Hangetsu-dachi</td><td>Chudan</td></tr>
+                 <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">40 <span class="text-[10px] ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Gyaku-zuki</td><td>Zenkutsu-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
+                 <tr><td class="px-6 py-4 font-bold text-white">41</td><td>Teisho-awase-uke</td><td>Neko-ashi-dachi</td><td>Chudan</td></tr>
+             </tbody>
+         </table>
+     </div>
+     `,
     'jion': `
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm md:text-base">
