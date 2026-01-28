@@ -11,6 +11,7 @@ import ExamsPage from './components/pages/ExamsPage';
 import Navbar from './components/layout/Navbar';
 
 import SocialSidebar from './components/layout/SocialSidebar';
+import WhatsAppFab from './components/ui/WhatsAppFab';
 
 // ScrollToTop Component
 const ScrollToTop = () => {
@@ -46,6 +47,7 @@ function App() {
     <>
       <Navbar />
       <SocialSidebar />
+      <WhatsAppFab />
       <ScrollToTop />
       <AnimatePresence>
         <Routes location={location} key={location.pathname}>
