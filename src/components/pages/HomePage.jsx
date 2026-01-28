@@ -101,7 +101,7 @@ function HomePage() {
                             </h3>
                             <div className="flex items-center gap-3 mt-1 opacity-70">
                                 <span className="w-8 h-[1px] bg-blue-400"></span>
-                                <span className="text-[10px] md:text-xs text-gray-300 font-bold tracking-[0.2em] uppercase">Explora los Nodos</span>
+                                <span className="text-[10px] md:text-xs text-gray-300 font-bold tracking-[0.2em] uppercase">Da click en los logos, para más información</span>
                                 <span className="w-8 h-[1px] bg-blue-400"></span>
                             </div>
                         </div>
