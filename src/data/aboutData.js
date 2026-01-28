@@ -83,7 +83,7 @@ export const aboutData = {
             { title: "C. Competitiva", name: "Luis Román" },
             { title: "Atletas", name: "Fabricio Román" },
             { title: "Mujer & Deporte", name: "S. Campos" },
-            { title: "Arbitraje", name: "María Mendez" },
+            { title: "Arbitraje", name: "María Méndez" },
             { title: "Ambiente", name: "Rosilia Rojas" }
         ]
     },

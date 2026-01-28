@@ -33,7 +33,7 @@ const AboutSection = () => {
                 </div>
 
                 <p className="text-center text-gray-300 max-w-4xl mx-auto mb-16 font-light leading-relaxed text-lg">
-                    La <strong className="text-white font-medium">I.S.K.F. de Costa Rica</strong> es una organización sin fines de lucro, que está integrada por varios dojos, que tienen como fin la enseñanza <span className="text-iskf-red font-semibold tracking-widest">SHOTOKAN KARATE DO</span>.
+                    La <strong className="text-white font-medium">I.S.K.F. de Costa Rica</strong> es una organización sin fines de lucro, que está integrada por varios dojos, que tienen como fin la enseñanza del <span className="text-iskf-red font-semibold tracking-widest">SHOTOKAN KARATE DO</span>.
                 </p>
 
                 {/* Mission/Vision Grid */}

@@ -54,7 +54,7 @@ const ResourcesSection = () => {
                             <div className="w-16 h-1.5 bg-white/50 group-hover:bg-iskf-red mb-8 transition-colors duration-500 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.3)]"></div>
 
                             <p className="text-gray-100 font-bold max-w-xs mx-auto mb-12 text-base md:text-lg leading-relaxed transition-colors duration-500 drop-shadow-md text-shadow-sm">
-                                Biblioteca técnica completa de los 26 Katas de Shotokan y el kihon que las compone.
+                                Biblioteca técnica completa de los 26 Katas de Shotokan y el kihon que los compone.
                             </p>
 
                             <span className="inline-block px-12 py-5 bg-white/10 border-2 border-white/40 group-hover:bg-iskf-red group-hover:border-iskf-red text-white text-sm md:text-base font-black uppercase tracking-[0.25em] transition-all duration-500 backdrop-blur-md group-hover:shadow-[0_0_20px_rgba(206,17,38,0.6)]">

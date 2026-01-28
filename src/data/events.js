@@ -130,7 +130,7 @@ export const eventsData = [
         date: "2026-05-25T12:00:00",
         endDate: "2026-05-30T12:00:00",
         type: "Internacional",
-        location: "Rio de Janeiro, Brasil",
+        location: "Río de Janeiro, Brasil",
         logo: wkfPanamericaLogo,
         flag: brazilFlag,
         description: "Campeonato Panamericano de Karate para categorías Senior y Sub 21."

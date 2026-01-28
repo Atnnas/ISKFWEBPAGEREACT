@@ -48,7 +48,7 @@ export const dojosData = [
         id: "hikaru",
         name: "Dojo Hikaru",
         province: "San José",
-        sensei: "Sensei Josue Valverde",
+        sensei: "Sensei Josué Valverde",
         logo: hikaruLogo,
         detailsUrl: "#"
     },
@@ -80,7 +80,7 @@ export const dojosData = [
         id: "keikan",
         name: "Dojo Keikan",
         province: "Heredia",
-        sensei: "Sensei Josue Serrano",
+        sensei: "Sensei Josué Serrano",
         logo: keikanLogo,
         detailsUrl: "#"
     },
