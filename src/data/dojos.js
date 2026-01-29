@@ -11,6 +11,8 @@ import zanshinLogo from '../assets/images/zanshinLogo.jpg';
 import tomariteLogo from '../assets/images/tomariteLogo.jpg';
 import ToraLogo from '../assets/images/ToraLogo.jpg';
 import fotoJuanAchio from '../assets/images/fotoSenseiJuanAchio.jpg';
+import dohaiLogo from '../assets/images/dohaiLogo.jpeg';
+import nintaiLogo from '../assets/images/nintaiLogo.jpg';
 
 export const dojosData = [
     {
@@ -52,8 +54,10 @@ export const dojosData = [
     {
         id: "hikaru",
         name: "Dojo Hikaru",
-        province: "San José",
-        sensei: "Sensei Josué Valverde",
+        province: "Pérez Zeledón",
+        sensei: "Sensei Josué Valverde Blanco",
+        rank: "1er Dan",
+        profession: "Hotelero",
         logo: hikaruLogo,
         detailsUrl: "#"
     },
@@ -87,17 +91,21 @@ export const dojosData = [
         id: "keikan",
         name: "Dojo Keikan",
         province: "Heredia",
-        sensei: "Sensei Josué Serrano",
+        sensei: "Sensei Josue Serrano Ramirez",
+        rank: "1er Dan",
+        profession: "Chef",
         logo: keikanLogo,
-        detailsUrl: "#"
+        detailsUrl: "https://maps.app.goo.gl/D22RiE6yY6Wfryow6"
     },
     {
         id: "zanshin",
         name: "Dojo ISKF Zanshin",
         province: "San José",
-        sensei: "Sensei Christian Castillo",
+        sensei: "Sensei Christian Castillo Delgado",
+        rank: "3er Dan",
         logo: zanshinLogo,
-        detailsUrl: "#"
+        detailsUrl: "#",
+        website: "https://www.zanshin-iskf.com"
     },
     {
         id: "tomarite",
@@ -116,5 +124,25 @@ export const dojosData = [
         profession: "Test Engineer",
         logo: ToraLogo,
         detailsUrl: "https://waze.com/ul?a=share_drive&locale=es-419&sd=fkYLIj9O-8F-Xath1Q-sd&env=row&utm_source=waze_app&utm_campaign=share_drive"
+    },
+    {
+        id: "dohai",
+        name: "Dojo DOHAI",
+        province: "Heredia",
+        sensei: "Sensei Diego Loaiza",
+        rank: "2do Dan",
+        profession: "Ing. Electrónico",
+        logo: dohaiLogo,
+        detailsUrl: "#" // San Joaquín de Flores - Placeholder until specific link provided or generic search
+    },
+    {
+        id: "nintai",
+        name: "Dojo Nintai",
+        province: "Heredia",
+        sensei: "Sensei Diego Loaiza",
+        rank: "2do Dan",
+        profession: "Ing. Electrónico",
+        logo: nintaiLogo,
+        detailsUrl: "https://maps.app.goo.gl/M5HFeodwU5uakFK18?g_st=iw"
     }
 ];

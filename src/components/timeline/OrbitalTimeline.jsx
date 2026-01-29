@@ -236,7 +236,7 @@ const OrbitalTimeline = ({ dojos }) => {
                                             <img
                                                 src={dojo.senseiImage || dojo.logo}
                                                 alt={dojo.name}
-                                                className={`w-full h-full relative z-10 ${dojo.senseiImage ? 'object-cover rounded-xl' : 'object-contain p-2'}`}
+                                                className={`w-full h-full relative z-10 ${dojo.senseiImage ? 'object-cover object-top rounded-xl' : 'object-contain p-2'}`}
                                             />
                                         </div>
                                         <span className="inline-block px-3 py-1 rounded-full bg-iskf-red/10 text-iskf-red text-[10px] font-black uppercase tracking-widest mb-4 border border-iskf-red/20">{dojo.province}</span>
@@ -273,6 +273,22 @@ const OrbitalTimeline = ({ dojos }) => {
                                                     </a>
                                                 </div>
                                             </div>
+                                            {dojo.website && (
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 text-xl">🌐</div>
+                                                    <div>
+                                                        <span className="block text-[10px] uppercase text-gray-500 font-bold tracking-wider">Sitio Web</span>
+                                                        <a
+                                                            href={dojo.website}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-sm font-medium text-gray-300 hover:text-purple-400 cursor-pointer transition-colors"
+                                                        >
+                                                            Visitar Web
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.div>
                                 </motion.div>
