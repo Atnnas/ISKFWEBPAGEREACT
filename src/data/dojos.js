@@ -13,6 +13,7 @@ import ToraLogo from '../assets/images/ToraLogo.jpg';
 import fotoJuanAchio from '../assets/images/fotoSenseiJuanAchio.jpg';
 import dohaiLogo from '../assets/images/dohaiLogo.jpeg';
 import nintaiLogo from '../assets/images/nintaiLogo.jpg';
+import fotoChristian from '../assets/images/fotoSenseiChristian.jpg';
 
 export const dojosData = [
     {
@@ -54,7 +55,7 @@ export const dojosData = [
     {
         id: "hikaru",
         name: "Dojo Hikaru",
-        province: "Pérez Zeledón",
+        province: "San José",
         sensei: "Sensei Josué Valverde Blanco",
         rank: "1er Dan",
         profession: "Hotelero",
@@ -104,6 +105,7 @@ export const dojosData = [
         sensei: "Sensei Christian Castillo Delgado",
         rank: "3er Dan",
         logo: zanshinLogo,
+        senseiImage: fotoChristian,
         detailsUrl: "#",
         website: "https://www.zanshin-iskf.com"
     },

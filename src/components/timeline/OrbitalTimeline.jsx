@@ -233,11 +233,20 @@ const OrbitalTimeline = ({ dojos }) => {
                                             }}
                                         >
                                             <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-white"></div>
-                                            <img
-                                                src={dojo.senseiImage || dojo.logo}
-                                                alt={dojo.name}
-                                                className={`w-full h-full relative z-10 ${dojo.senseiImage ? 'object-cover object-top rounded-xl' : 'object-contain p-2'}`}
-                                            />
+                                            {dojo.senseiImage ? (
+                                                <img
+                                                    src={dojo.senseiImage}
+                                                    alt={dojo.name}
+                                                    className="w-full h-full relative z-10 object-cover object-top rounded-xl"
+                                                />
+                                            ) : (
+                                                <div className="relative z-10 w-full h-full flex items-center justify-center bg-gray-50 rounded-xl">
+                                                    {/* Generic User Icon/Placeholder */}
+                                                    <svg className="w-12 h-12 text-gray-200" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                    </svg>
+                                                </div>
+                                            )}
                                         </div>
                                         <span className="inline-block px-3 py-1 rounded-full bg-iskf-red/10 text-iskf-red text-[10px] font-black uppercase tracking-widest mb-4 border border-iskf-red/20">{dojo.province}</span>
                                         <h3 className="text-2xl font-black text-white uppercase mb-2 leading-none">{dojo.name}</h3>
