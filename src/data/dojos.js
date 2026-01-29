@@ -14,6 +14,7 @@ import fotoJuanAchio from '../assets/images/fotoSenseiJuanAchio.jpg';
 import dohaiLogo from '../assets/images/dohaiLogo.jpeg';
 import nintaiLogo from '../assets/images/nintaiLogo.jpg';
 import fotoChristian from '../assets/images/fotoSenseiChristian.jpg';
+import meiyoLogo from '../assets/images/meiyoLogo.jpg';
 
 export const dojosData = [
     {
@@ -146,5 +147,15 @@ export const dojosData = [
         profession: "Ing. Electrónico",
         logo: nintaiLogo,
         detailsUrl: "https://maps.app.goo.gl/M5HFeodwU5uakFK18?g_st=iw"
+    },
+    {
+        id: "meiyo",
+        name: "Dojo Meiyo",
+        province: "San José",
+        sensei: "Sensei Delia Calderon",
+        // rank: "", // Rank not provided
+        // profession: "", // Typo in request ("meiyoLogo.jpg"), leaving blank for now
+        logo: meiyoLogo,
+        detailsUrl: "#"
     }
 ];
