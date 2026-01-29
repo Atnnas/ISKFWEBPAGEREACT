@@ -282,12 +282,12 @@ const OrbitalTimeline = ({ dojos }) => {
                                         <button className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors" onClick={() => setExpandedId(null)}>
                                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                         </button>
-                                        <div className="w-24 h-24 bg-white rounded-2xl mx-auto mb-6 p-4 shadow-inner flex items-center justify-center relative overflow-hidden">
+                                        <div className="w-40 h-40 bg-white rounded-2xl mx-auto mb-6 p-1 shadow-inner flex items-center justify-center relative overflow-hidden ring-4 ring-white/10">
                                             <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-white"></div>
                                             <img
                                                 src={dojo.senseiImage || dojo.logo}
                                                 alt={dojo.name}
-                                                className={`w-full h-full relative z-10 ${dojo.senseiImage ? 'object-cover rounded-lg' : 'object-contain'}`}
+                                                className={`w-full h-full relative z-10 ${dojo.senseiImage ? 'object-cover rounded-xl' : 'object-contain p-2'}`}
                                             />
                                         </div>
                                         <span className="inline-block px-3 py-1 rounded-full bg-iskf-red/10 text-iskf-red text-[10px] font-black uppercase tracking-widest mb-4 border border-iskf-red/20">{dojo.province}</span>
@@ -325,15 +325,6 @@ const OrbitalTimeline = ({ dojos }) => {
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <a
-                                            href={dojo.detailsUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="mt-8 w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-iskf-red hover:text-white transition-all duration-300 shadow-xl group flex items-center justify-center gap-2"
-                                        >
-                                            Ir al Dojo <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-                                        </a>
                                     </motion.div>
                                 </motion.div>
                             )}
