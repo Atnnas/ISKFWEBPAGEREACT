@@ -196,7 +196,7 @@ const OrbitalTimeline = ({ dojos }) => {
                         <div className={`relative w-16 h-16 md:w-24 md:h-24 bg-black border ${isExpanded ? 'border-iskf-red bg-white' : 'border-white/30'} rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all duration-300 group hover:border-iskf-red hover:shadow-[0_0_20px_#ce1126] hover:scale-110`}>
                             <img src={dojo.logo} alt={dojo.name} className="w-[85%] h-[85%] object-contain" />
                             {!isExpanded && opacity > 0.8 && (
-                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-black uppercase tracking-wider text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md bg-black/50 px-2 py-1 rounded backdrop-blur-sm pointer-events-none">{dojo.name}</div>
+                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-black uppercase tracking-wider text-white whitespace-normal text-center leading-tight opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md bg-black/60 px-2 py-1 rounded backdrop-blur-sm pointer-events-none w-max max-w-[120px]">{dojo.name}</div>
                             )}
                         </div>
 
