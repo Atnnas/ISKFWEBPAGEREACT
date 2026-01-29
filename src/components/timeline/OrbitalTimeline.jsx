@@ -284,7 +284,11 @@ const OrbitalTimeline = ({ dojos }) => {
                                         </button>
                                         <div className="w-24 h-24 bg-white rounded-2xl mx-auto mb-6 p-4 shadow-inner flex items-center justify-center relative overflow-hidden">
                                             <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-white"></div>
-                                            <img src={dojo.logo} alt={dojo.name} className="w-full h-full object-contain relative z-10" />
+                                            <img
+                                                src={dojo.senseiImage || dojo.logo}
+                                                alt={dojo.name}
+                                                className={`w-full h-full relative z-10 ${dojo.senseiImage ? 'object-cover rounded-lg' : 'object-contain'}`}
+                                            />
                                         </div>
                                         <span className="inline-block px-3 py-1 rounded-full bg-iskf-red/10 text-iskf-red text-[10px] font-black uppercase tracking-widest mb-4 border border-iskf-red/20">{dojo.province}</span>
                                         <h3 className="text-2xl font-black text-white uppercase mb-2 leading-none">{dojo.name}</h3>

@@ -10,6 +10,7 @@ import keikanLogo from '../assets/images/keikanLogo.jpg';
 import zanshinLogo from '../assets/images/zanshinLogo.jpg';
 import tomariteLogo from '../assets/images/tomariteLogo.jpg';
 import ToraLogo from '../assets/images/ToraLogo.jpg';
+import fotoJuanAchio from '../assets/images/fotoSenseiJuanAchio.jpg';
 
 export const dojosData = [
     {
@@ -45,6 +46,7 @@ export const dojosData = [
         rank: "3er Dan",
         profession: "Bach. Promotor de la Salud Física",
         logo: soshinLogo,
+        senseiImage: fotoJuanAchio,
         detailsUrl: "https://maps.app.goo.gl/YHP5uDL3CLpafVhK6?g_st=ac"
     },
     {
