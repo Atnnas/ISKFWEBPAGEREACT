@@ -105,7 +105,8 @@ export const dojosData = [
         id: "tora",
         name: "Dojo Tora",
         province: "Alajuela",
-        sensei: "Sensei Vernny Lopez 3er Dan",
+        sensei: "Sensei Vernny Lopez",
+        rank: "3er Dan",
         profession: "Test Engineer",
         logo: ToraLogo,
         detailsUrl: "https://waze.com/ul?a=share_drive&locale=es-419&sd=fkYLIj9O-8F-Xath1Q-sd&env=row&utm_source=waze_app&utm_campaign=share_drive"

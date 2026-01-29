@@ -44,6 +44,18 @@ const OrbitalTimeline = ({ dojos }) => {
         return () => cancelAnimationFrame(requestRef.current);
     }, []);
 
+    // Close on Scroll
+    useEffect(() => {
+        const handleScroll = () => {
+            if (expandedId) {
+                setExpandedId(null);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [expandedId]);
+
     return (
         <div
             ref={containerRef}
@@ -284,8 +296,11 @@ const OrbitalTimeline = ({ dojos }) => {
                                                 <div>
                                                     <span className="block text-[10px] uppercase text-gray-500 font-bold tracking-wider">Sensei</span>
                                                     <span className="text-lg font-bold text-gray-200 block leading-tight">{dojo.sensei}</span>
+                                                    {dojo.rank && (
+                                                        <span className="text-sm font-bold text-iskf-red italic block">{dojo.rank}</span>
+                                                    )}
                                                     {dojo.profession && (
-                                                        <span className="text-xs font-medium text-iskf-red uppercase tracking-widest block mt-1">{dojo.profession}</span>
+                                                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest block mt-1 border-t border-white/10 pt-1 w-fit">{dojo.profession}</span>
                                                     )}
                                                 </div>
                                             </div>
