@@ -38,8 +38,9 @@ export const dojosData = [
         name: "Dojo Kuro Obi",
         province: "Alajuela",
         sensei: "Sensei Roy Lee Gatjens",
+        profession: "Master en Gestión de Organizaciones Deportivas",
         logo: kurobiLogo,
-        detailsUrl: "#",
+        detailsUrl: "https://waze.com/ul/hd1u0gwsre",
         website: "https://www.kuroobicr.com/"
     },
     {
@@ -153,8 +154,8 @@ export const dojosData = [
         name: "Dojo Meiyo",
         province: "San José",
         sensei: "Sensei Delia Calderon",
-        // rank: "", // Rank not provided
-        // profession: "", // Typo in request ("meiyoLogo.jpg"), leaving blank for now
+        rank: "1er Dan",
+        profession: "Ingeniera en Sistemas",
         logo: meiyoLogo,
         detailsUrl: "#"
     }
