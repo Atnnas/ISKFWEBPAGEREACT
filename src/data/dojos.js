@@ -9,6 +9,7 @@ import kazanLogo from '../assets/images/logoKazan.jpg';
 import keikanLogo from '../assets/images/keikanLogo.jpg';
 import zanshinLogo from '../assets/images/zanshinLogo.jpg';
 import tomariteLogo from '../assets/images/tomariteLogo.jpg';
+import ToraLogo from '../assets/images/ToraLogo.jpg';
 
 export const dojosData = [
     {
@@ -99,5 +100,14 @@ export const dojosData = [
         sensei: "Sensei Lesly Sequeira",
         logo: tomariteLogo,
         detailsUrl: "#"
+    },
+    {
+        id: "tora",
+        name: "Dojo Tora",
+        province: "Alajuela",
+        sensei: "Sensei Vernny Lopez 3er Dan",
+        profession: "Test Engineer",
+        logo: ToraLogo,
+        detailsUrl: "https://waze.com/ul?a=share_drive&locale=es-419&sd=fkYLIj9O-8F-Xath1Q-sd&env=row&utm_source=waze_app&utm_campaign=share_drive"
     }
 ];

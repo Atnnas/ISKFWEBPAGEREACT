@@ -283,21 +283,36 @@ const OrbitalTimeline = ({ dojos }) => {
                                                 <div className="w-10 h-10 rounded-full bg-iskf-red/10 flex items-center justify-center text-iskf-red text-xl">🥋</div>
                                                 <div>
                                                     <span className="block text-[10px] uppercase text-gray-500 font-bold tracking-wider">Sensei</span>
-                                                    <span className="text-lg font-bold text-gray-200">{dojo.sensei}</span>
+                                                    <span className="text-lg font-bold text-gray-200 block leading-tight">{dojo.sensei}</span>
+                                                    {dojo.profession && (
+                                                        <span className="text-xs font-medium text-iskf-red uppercase tracking-widest block mt-1">{dojo.profession}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 text-xl">📍</div>
                                                 <div>
                                                     <span className="block text-[10px] uppercase text-gray-500 font-bold tracking-wider">Ubicación</span>
-                                                    <span className="text-sm font-medium text-gray-300 hover:text-blue-400 cursor-pointer transition-colors">Ver en Google Maps</span>
+                                                    <a
+                                                        href={dojo.detailsUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-sm font-medium text-gray-300 hover:text-blue-400 cursor-pointer transition-colors"
+                                                    >
+                                                        Ver Ubicación
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <button className="mt-8 w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-iskf-red hover:text-white transition-all duration-300 shadow-xl group">
-                                            Contactar Dojo <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-                                        </button>
+                                        <a
+                                            href={dojo.detailsUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-8 w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-iskf-red hover:text-white transition-all duration-300 shadow-xl group flex items-center justify-center gap-2"
+                                        >
+                                            Ir al Dojo <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                                        </a>
                                     </motion.div>
                                 </motion.div>
                             )}
