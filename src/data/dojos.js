@@ -15,6 +15,8 @@ import dohaiLogo from '../assets/images/dohaiLogo.jpeg';
 import nintaiLogo from '../assets/images/nintaiLogo.jpg';
 import fotoChristian from '../assets/images/fotoSenseiChristian.jpg';
 import meiyoLogo from '../assets/images/meiyoLogo.jpg';
+import bushidoKanLogo from '../assets/images/bushidoKanLogo.jpg';
+import fotoSenseiLess from '../assets/images/fotoSenseiLess.jpg';
 
 export const dojosData = [
     {
@@ -116,8 +118,10 @@ export const dojosData = [
         name: "Dojo Tomarite",
         province: "San José", // Coronado is in San José
         sensei: "Sensei Lesly Sequeira",
+        profession: "Empresaria",
         logo: tomariteLogo,
-        detailsUrl: "#"
+        senseiImage: fotoSenseiLess,
+        detailsUrl: "https://maps.app.goo.gl/Acbz8hVP6wvriKWGA"
     },
     {
         id: "tora",
@@ -157,6 +161,16 @@ export const dojosData = [
         rank: "1er Dan",
         profession: "Ingeniera en Sistemas",
         logo: meiyoLogo,
+        detailsUrl: "#"
+    },
+    {
+        id: "bushidokan",
+        name: "Dojo Bushido Kan",
+        province: "San José", // Confirmar provincia
+        sensei: "Sensei Esteban Ruiz García",
+        rank: "1er Dan",
+        profession: "Psicólogo - Ciencias Policiales",
+        logo: bushidoKanLogo,
         detailsUrl: "#"
     }
 ];
