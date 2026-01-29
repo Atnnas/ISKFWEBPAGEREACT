@@ -74,8 +74,10 @@ export const dojosData = [
         name: "Dojo Kazan",
         province: "Puntarenas",
         sensei: "Sensei Justin Rojas",
+        rank: "1er Dan",
+        profession: "Estudiante",
         logo: kazanLogo,
-        detailsUrl: "#"
+        detailsUrl: "https://maps.app.goo.gl/BisVQhFcCAQAAzHD7?g_st=ic"
     },
     {
         id: "keikan",

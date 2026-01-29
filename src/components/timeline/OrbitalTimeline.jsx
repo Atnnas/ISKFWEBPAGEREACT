@@ -300,7 +300,9 @@ const OrbitalTimeline = ({ dojos }) => {
                                                         <span className="text-sm font-bold text-iskf-red italic block">{dojo.rank}</span>
                                                     )}
                                                     {dojo.profession && (
-                                                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest block mt-1 border-t border-white/10 pt-1 w-fit">{dojo.profession}</span>
+                                                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest block mt-1 border-t border-white/10 pt-1 w-fit">
+                                                            <span className="text-gray-600">Profesión: </span>{dojo.profession}
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>
