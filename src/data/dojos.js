@@ -42,8 +42,10 @@ export const dojosData = [
         name: "Soshin Academy",
         province: "Heredia",
         sensei: "Sensei Juan Andrés Achío",
+        rank: "3er Dan",
+        profession: "Bach. Promotor de la Salud Física",
         logo: soshinLogo,
-        detailsUrl: "#"
+        detailsUrl: "https://maps.app.goo.gl/YHP5uDL3CLpafVhK6?g_st=ac"
     },
     {
         id: "hikaru",
