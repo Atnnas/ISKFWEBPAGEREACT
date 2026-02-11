@@ -129,6 +129,10 @@ const EventsRoadmap = () => {
             <div className="absolute inset-0 z-0 pointer-events-none">
                 <div className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity" style={{ backgroundImage: `url('${fondoEventos}')` }}></div>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(190,19,34,0.2),transparent_80%)]"></div>
+
+                {/* Smooth Transitions to other sections */}
+                <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-black via-black/50 to-transparent"></div>
+                <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
             </div>
 
             {/* HEADER */}
