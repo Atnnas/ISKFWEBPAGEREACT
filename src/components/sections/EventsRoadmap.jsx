@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { eventsData } from '../../data/events';
 import useWindowSize from '../../hooks/useWindowSize';
 
-import fondoEventos from '../../assets/images/fondoEventos.jpg';
+import fondoEventos from '../../assets/images/fondo-calendario.jpg';
 import iskfFondoRojo from '../../assets/images/iskfFondoRojo.jpg';
 import iskfLogo from '../../assets/images/iskf.jpg';
 
