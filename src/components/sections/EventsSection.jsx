@@ -10,10 +10,7 @@ const EventsSection = () => {
     // Helper to format date
 
     // Helper to format date
-    const formatDate = (dateString) => {
-        const options = { month: 'short', day: 'numeric' };
-        return new Date(dateString).toLocaleDateString('es-ES', options).replace('.', '');
-    };
+
 
     const getMonth = (dateString) => {
         return new Date(dateString).toLocaleDateString('es-ES', { month: 'short' }).replace('.', '').toUpperCase();

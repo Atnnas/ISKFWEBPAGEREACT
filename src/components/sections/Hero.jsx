@@ -154,7 +154,7 @@ const Hero = () => {
                                 La <strong className="text-iskf-red font-bold italic">International Shotokan Karate Federation</strong> de Costa Rica les extiende el honor de su visita. Representamos la esencia del Karate-Do tradicional fundado por el Maestro <span className="text-iskf-red font-bold">Teruyuki Okazaki</span>.
                             </p>
                             <p className="text-base md:text-lg text-gray-200 italic font-light border-l-4 border-iskf-red pl-6 py-1">
-                                "&quot;Forjando el carácter a través del camino de la mano vacía bajo los principios del Dojo Kun.&quot;"
+                                &quot;Forjando el carácter a través del camino de la mano vacía bajo los principios del Dojo Kun.&quot;
                             </p>
                         </div>
                     </div>

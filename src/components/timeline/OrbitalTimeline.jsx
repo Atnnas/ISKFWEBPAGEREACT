@@ -22,16 +22,23 @@ const OrbitalTimeline = ({ dojos }) => {
     const SPEED = 0.005;
     const ORBITS = [0, 60, 120];
 
-    const bolts = React.useMemo(() => [
-        "M50 50 L55 35 L48 30 L60 10",
-        "M50 50 L40 45 L35 55 L10 50",
-        "M50 50 L60 65 L55 75 L80 90",
-        "M50 50 L35 35 L40 25 L20 20"
-    ].map(d => ({
-        d,
-        duration: 0.2 + Math.random() * 0.5,
-        repeatDelay: Math.random() * 2
-    })), []);
+    const [bolts, setBolts] = useState([]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setBolts([
+                "M50 50 L55 35 L48 30 L60 10",
+                "M50 50 L40 45 L35 55 L10 50",
+                "M50 50 L60 65 L55 75 L80 90",
+                "M50 50 L35 35 L40 25 L20 20"
+            ].map(d => ({
+                d,
+                duration: 0.2 + Math.random() * 0.5,
+                repeatDelay: Math.random() * 2
+            })));
+        }, 0);
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         const animate = (time) => {

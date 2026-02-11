@@ -38,7 +38,7 @@ const AboutSection = () => {
         }, 2000);
 
         return () => clearInterval(interval);
-    }, [activeIndex]);
+    }, [activeIndex, cards.length]);
 
     // Update active index on manual scroll
     const handleScroll = () => {

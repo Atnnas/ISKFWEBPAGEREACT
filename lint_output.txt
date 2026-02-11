@@ -1,0 +1,55 @@
+
+> iskf-react@0.0.0 lint
+> eslint .
+
+
+C:\Dev\iskf-web-page\src\components\layout\Navbar.jsx
+  1:27  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Dev\iskf-web-page\src\components\sections\About.jsx
+  41:8  warning  React Hook React.useEffect has a missing dependency: 'cards.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Dev\iskf-web-page\src\components\sections\EventsRoadmap.jsx
+    2:18  error  'useScroll' is defined but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+   19:23  error  'setZoomLevel' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  262:51  error  'index' is defined but never used. Allowed unused args must match /^[A-Z_]/u                  no-unused-vars
+
+C:\Dev\iskf-web-page\src\components\sections\EventsSection.jsx
+  13:11  error  'formatDate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Dev\iskf-web-page\src\components\sections\Hero.jsx
+  157:33   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  157:137  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Dev\iskf-web-page\src\components\timeline\OrbitalTimeline.jsx
+  32:25  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  30 |     ].map(d => ({
+  31 |         d,
+> 32 |         duration: 0.2 + Math.random() * 0.5,
+     |                         ^^^^^^^^^^^^^ Cannot call impure function
+  33 |         repeatDelay: Math.random() * 2
+  34 |     })), []);
+  35 |   react-hooks/purity
+  33:22  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  31 |         d,
+  32 |         duration: 0.2 + Math.random() * 0.5,
+> 33 |         repeatDelay: Math.random() * 2
+     |                      ^^^^^^^^^^^^^ Cannot call impure function
+  34 |     })), []);
+  35 |
+  36 |     useEffect(() => {  react-hooks/purity
+
+C:\Dev\iskf-web-page\src\data\kataData.js
+  1281:5  error  Duplicate key 'tekki-sandan'  no-dupe-keys
+
+C:\Dev\iskf-web-page\vite.config.js
+  5:32  error  'command' is defined but never used. Allowed unused args must match /^[A-Z_]/u  no-unused-vars
+
+✖ 12 problems (11 errors, 1 warning)
+

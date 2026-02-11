@@ -1,0 +1,13 @@
+
+> iskf-react@0.0.0 lint
+> eslint .
+
+
+C:\Dev\iskf-web-page\src\components\sections\About.jsx
+  41:8  warning  React Hook React.useEffect has a missing dependency: 'cards.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Dev\iskf-web-page\src\data\kataData.js
+  1281:5  error  Duplicate key 'tekki-sandan'  no-dupe-keys
+
+✖ 2 problems (1 error, 1 warning)
+

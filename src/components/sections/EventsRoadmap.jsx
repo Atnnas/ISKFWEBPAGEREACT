@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useScroll } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { eventsData } from '../../data/events';
 import useWindowSize from '../../hooks/useWindowSize';
@@ -11,12 +11,10 @@ import iskfLogo from '../../assets/images/iskf.jpg';
 const EventsRoadmap = () => {
     const containerRef = useRef(null);
     const wrapperRef = useRef(null);
+    const desktopContentRef = useRef(null); // Added ref for desktop content
     const nodeRefs = useRef({});
     const navigate = useNavigate();
     const { width: windowWidth } = useWindowSize();
-
-    // Zoom/Pinch Logic
-    const [zoomLevel, setZoomLevel] = useState(1);
     const [width, setWidth] = useState(0);
 
     // Collision Detection State & Refs
@@ -27,14 +25,33 @@ const EventsRoadmap = () => {
     // Sort events by date
     const sortedEvents = [...eventsData].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Calculate drag constraints (Desktop)
+    // Calculate drag constraints (Desktop) - Dynamic & Robust
     useEffect(() => {
-        if (containerRef.current && wrapperRef.current && windowWidth > 768) {
-            const scrollWidth = containerRef.current.scrollWidth;
-            const visibleWidth = wrapperRef.current.offsetWidth;
-            setWidth(scrollWidth - visibleWidth);
-        }
-    }, [sortedEvents, zoomLevel, hoveredEventId, windowWidth]);
+        if (!desktopContentRef.current || !wrapperRef.current || windowWidth <= 768) return;
+
+        const updateWidth = () => {
+            if (desktopContentRef.current && wrapperRef.current) {
+                const scrollWidth = desktopContentRef.current.scrollWidth;
+                const visibleWidth = wrapperRef.current.offsetWidth;
+                // Ensure width is not negative and provides just enough space
+                const newWidth = scrollWidth - visibleWidth > 0 ? scrollWidth - visibleWidth : 0;
+                setWidth(newWidth);
+            }
+        };
+
+        // Initial calculation
+        updateWidth();
+
+        // Observer for content changes (images loading, etc.)
+        const resizeObserver = new ResizeObserver(() => {
+            updateWidth();
+        });
+
+        resizeObserver.observe(desktopContentRef.current);
+
+        return () => resizeObserver.disconnect();
+    }, [sortedEvents, windowWidth]);
+
 
     // Collision Loop: Check if Comet hits a Node (Desktop & Mobile)
     useEffect(() => {
@@ -143,9 +160,12 @@ const EventsRoadmap = () => {
                 )}
 
                 <motion.div
+                    ref={desktopContentRef}
                     className="flex items-center pl-10 pr-[50vw] h-full"
                     drag="x"
-                    dragConstraints={{ right: 0, left: -width }}
+                    dragConstraints={{ right: 0, left: width > 0 ? -width : -10000 }} // Use large fallback to prevent snap-to-right on init
+                    dragElastic={0.1} // Minimal bounce to stay in control
+                    dragMomentum={true} // Smooth scrolling momentum
                 >
                     {/* START NODE */}
                     <div className="relative flex-shrink-0 flex flex-col items-center justify-center mr-16 group">
@@ -259,7 +279,7 @@ const EventsRoadmap = () => {
                         {/* Static Center Line */}
                         <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-iskf-red via-white/10 to-transparent"></div>
 
-                        {sortedEvents.map((event, index) => {
+                        {sortedEvents.map((event) => {
                             const isNational = event.type === 'Nacional';
                             const isNext = new Date(event.date) >= new Date() && sortedEvents.filter(e => new Date(e.date) >= new Date())[0]?.id === event.id;
                             const isActive = activeEventId === event.id;

@@ -4,7 +4,6 @@ import kurobiLogo from '../assets/images/kurobiLogo.jpeg';
 import soshinLogo from '../assets/images/soshinLogo.jpg';
 import hikaruLogo from '../assets/images/hikaruLogo.jpeg';
 import furinkazanLogo from '../assets/images/furinkazanLogo.jpg';
-import chikaraLogo from '../assets/images/chikaraLogo.jpeg';
 import kazanLogo from '../assets/images/logoKazan.jpg';
 import keikanLogo from '../assets/images/keikanLogo.jpg';
 import zanshinLogo from '../assets/images/zanshinLogo.jpg';
@@ -74,14 +73,7 @@ export const dojosData = [
         logo: furinkazanLogo,
         detailsUrl: "#"
     },
-    {
-        id: "chikara",
-        name: "Dojo Chikara",
-        province: "Puntarenas",
-        sensei: "Sensei Neylin Berrocal",
-        logo: chikaraLogo,
-        detailsUrl: "#"
-    },
+
     {
         id: "kazan",
         name: "Dojo Kazan",
