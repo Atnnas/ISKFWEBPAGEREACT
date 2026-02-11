@@ -151,7 +151,7 @@ const Hero = () => {
 
                         <div className="bg-black/40 backdrop-blur-md rounded-2xl p-8 md:p-10 space-y-6 text-white font-normal leading-relaxed text-lg md:text-xl tracking-wide max-w-3xl mx-auto animate__animated animate__fadeInUp animate__delay-1s border border-white/10 shadow-2xl">
                             <p className="drop-shadow-md">
-                                La <strong className="text-iskf-red font-bold italic">International Shotokan Karate Federation</strong> de Costa Rica les extiende el honor de su visita. Representamos la esencia del Karate-Do tradicional fundado por el Maestro <span className="text-iskf-red font-bold">Teruyuki Okazaki</span>.
+                                La <strong className="text-iskf-red font-bold italic">International Shotokan Karate Federation</strong> de Costa Rica les extiende el honor de su visita. Representamos la esencia del Karate-Do tradicional como integrantes de la ISKF, organización mundial fundada por el Maestro <span className="text-iskf-red font-bold">Teruyuki Okazaki</span>.
                             </p>
                             <p className="text-base md:text-lg text-gray-200 italic font-light border-l-4 border-iskf-red pl-6 py-1">
                                 &quot;Forjando el carácter a través del camino de la mano vacía bajo los principios del Dojo Kun.&quot;
