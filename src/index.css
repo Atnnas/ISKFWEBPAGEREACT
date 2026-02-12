@@ -54,3 +54,30 @@ html {
     font-family: var(--font-sans);
     color: white;
 }
+
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes refract {
+    from { transform: translateX(-200%) skewX(-45deg); }
+    to { transform: translateX(200%) skewX(-45deg); }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 15s linear infinite;
+}
+
+.animate-twinkle {
+    animation: twinkle 3s ease-in-out infinite;
+}
+
+.animate-refract {
+    animation: refract 6s ease-in-out infinite;
+}

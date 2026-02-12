@@ -1,7 +1,7 @@
 import kamaeLogo from '../assets/images/kamaeLogo.jpeg';
 import kumaLogo from '../assets/images/kumaLogo.jpg';
 import kurobiLogo from '../assets/images/kurobiLogo.jpeg';
-import soshinLogo from '../assets/images/soshinLogo.jpg';
+import soshinLogoBlanco from '../assets/images/soshinLogoBlanco.jpg';
 import hikaruLogo from '../assets/images/hikaruLogo.jpeg';
 import furinkazanLogo from '../assets/images/furinkazanLogo.jpg';
 import kazanLogo from '../assets/images/logoKazan.jpg';
@@ -16,6 +16,9 @@ import fotoChristian from '../assets/images/fotoSenseiChristian.jpg';
 import meiyoLogo from '../assets/images/meiyoLogo.jpg';
 import bushidoKanLogo from '../assets/images/bushidoKanLogo.jpg';
 import fotoSenseiLess from '../assets/images/fotoSenseiLess.jpg';
+import fotoSenseiJBarrantes from '../assets/images/fotoSenseiJBarrantes.jpg';
+import fotoSenseiDelia from '../assets/images/fotoSenseiDelia.jpg';
+import fotoSenseiJustin from '../assets/images/fotoSenseiJustin.jpg';
 import fotoSenseiKamae from '../assets/images/sensei-dojo-kamae.jpg';
 
 export const dojosData = [
@@ -53,7 +56,7 @@ export const dojosData = [
         sensei: "Sensei Juan Andrés Achío",
         rank: "3er Dan",
         profession: "Bach. Promotor de la Salud Física",
-        logo: soshinLogo,
+        logo: soshinLogoBlanco,
         senseiImage: fotoJuanAchio,
         detailsUrl: "https://maps.app.goo.gl/YHP5uDL3CLpafVhK6?g_st=ac"
     },
@@ -73,6 +76,7 @@ export const dojosData = [
         province: "San José",
         sensei: "Sensei Juan Barrantes",
         logo: furinkazanLogo,
+        senseiImage: fotoSenseiJBarrantes,
         detailsUrl: "#"
     },
 
@@ -84,6 +88,7 @@ export const dojosData = [
         rank: "1er Dan",
         profession: "Estudiante",
         logo: kazanLogo,
+        senseiImage: fotoSenseiJustin,
         detailsUrl: "https://maps.app.goo.gl/BisVQhFcCAQAAzHD7?g_st=ic"
     },
     {
@@ -155,6 +160,7 @@ export const dojosData = [
         rank: "1er Dan",
         profession: "Ingeniera en Sistemas",
         logo: meiyoLogo,
+        senseiImage: fotoSenseiDelia,
         detailsUrl: "#"
     },
     {
