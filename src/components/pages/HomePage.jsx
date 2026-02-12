@@ -51,7 +51,7 @@ function HomePage() {
                     <img src={fondoDojos} alt="Background Dojos" className="w-full h-full object-cover opacity-80" />
                     {/* Light gradient for readability without obscuring the image */}
                     <div className="absolute inset-0 bg-gradient-to-b from-zinc-900/40 via-transparent to-zinc-900/40"></div>
-                    <div className="absolute inset-0 bg-black/10"></div>
+                    <div className="absolute inset-0 bg-black/40"></div>
                 </div>
 
                 {/* Section Header (Matches About.jsx) */}

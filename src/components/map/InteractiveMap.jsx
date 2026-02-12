@@ -344,7 +344,14 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                     {/* Atmospheric Glow Background */}
                     <rect x={viewBox.split(' ')[0]} y={viewBox.split(' ')[1]} width={viewBox.split(' ')[2]} height={viewBox.split(' ')[3]} fill="url(#map-atmosphere)" className="pointer-events-none" />
 
-                    {/* RADIOACTIVE AURA LAYER (New Background) */}
+                    {/* DATA GRID PATTERN (New Layer for Depth) */}
+                    <defs>
+                        <pattern id="grid-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <circle cx="1" cy="1" r="0.5" fill="rgba(255,255,255,0.15)" />
+                        </pattern>
+                    </defs>
+
+                    {/* RADIOACTIVE AURA LAYER (Strengthened) */}
                     <g className="map-radioactive-aura pointer-events-none">
                         {crMapFeatures.map((feature, i) => (
                             <motion.path
@@ -354,89 +361,88 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                 stroke="#BE1322"
                                 initial={{ opacity: 0 }}
                                 animate={{
-                                    opacity: [0.3, 0.6, 0.3],
-                                    strokeWidth: [6, 14, 6] // Expanding radioactive pulse
+                                    opacity: [0.4, 0.8, 0.4],
+                                    strokeWidth: [8, 18, 8]
                                 }}
                                 transition={{
-                                    duration: 4,
+                                    duration: 5,
                                     repeat: Infinity,
                                     ease: "easeInOut",
-                                    delay: i * 0.05 // Tiny stagger for organic feel
+                                    delay: i * 0.1
                                 }}
-                                className="blur-md mix-blend-screen"
-                            />
-                        ))}
-                    </g>
-
-                    {/* Holographic Wireframe Scan Layer (Backend) */}
-                    <g className="map-wireframe pointer-events-none opacity-50 mix-blend-screen">
-                        {crMapFeatures.map(feature => (
-                            <path
-                                key={`wire-${feature.id}`}
-                                d={getPath(feature)}
-                                fill="none"
-                                stroke="url(#holo-scan)"
-                                strokeWidth="3"
-                                strokeLinecap="round"
+                                className="blur-xl mix-blend-screen"
                             />
                         ))}
                     </g>
 
                     <g className="map-paths">
                         {crMapFeatures.map(feature => {
-                            const isActive = activeProvinceId === feature.id; // Corrected ID check
+                            const isActive = activeProvinceId === feature.id;
                             return (
-                                <motion.path
-                                    key={feature.id}
-                                    d={getPath(feature)}
-                                    className={`province-path cursor-pointer transition-all duration-300 outline-none`}
-                                    initial="idle"
-                                    animate={isActive ? "active" : "idle"}
-                                    whileHover="hover"
-                                    onMouseEnter={() => setHoveredProvince(feature.id)}
-                                    onMouseLeave={() => setHoveredProvince(null)}
-                                    variants={{
-                                        idle: {
-                                            scale: 1,
-                                            fill: 'rgba(255,255,255,0.1)',
-                                            stroke: 'rgba(255,255,255,0.3)',
-                                            strokeWidth: 2,
-                                            filter: 'none',
-                                            opacity: [0.8, 1, 0.8], // Breathing effect
-                                            transition: {
-                                                opacity: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+                                <g key={feature.id}>
+                                    {/* Structural Fill Background */}
+                                    <path
+                                        d={getPath(feature)}
+                                        fill="rgba(10, 10, 10, 0.4)"
+                                        className="pointer-events-none"
+                                    />
+                                    {/* Data Grid Overlay */}
+                                    <path
+                                        d={getPath(feature)}
+                                        fill="url(#grid-pattern)"
+                                        className="pointer-events-none opacity-40"
+                                    />
+
+                                    <motion.path
+                                        d={getPath(feature)}
+                                        className={`province-path cursor-pointer transition-all duration-300 outline-none`}
+                                        initial="idle"
+                                        animate={isActive ? "active" : "idle"}
+                                        whileHover="hover"
+                                        onMouseEnter={() => setHoveredProvince(feature.id)}
+                                        onMouseLeave={() => setHoveredProvince(null)}
+                                        variants={{
+                                            idle: {
+                                                scale: 1,
+                                                fill: 'rgba(255,255,255,0.25)',
+                                                stroke: 'rgba(255,255,255,0.5)',
+                                                strokeWidth: 3,
+                                                filter: 'none',
+                                                opacity: [0.9, 1, 0.9],
+                                                transition: {
+                                                    opacity: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+                                                }
+                                            },
+                                            hover: {
+                                                scale: 1.05,
+                                                fill: 'rgba(190, 19, 34, 0.6)',
+                                                stroke: '#ffffff',
+                                                strokeWidth: 4,
+                                                filter: 'url(#province-lift)',
+                                                zIndex: 10,
+                                                transition: { duration: 0.3, type: "spring", stiffness: 300 }
+                                            },
+                                            active: {
+                                                scale: 1.02,
+                                                fill: '#BE1322',
+                                                stroke: '#ffffff',
+                                                strokeWidth: 5,
+                                                filter: 'drop-shadow(0 0 30px rgba(190,19,34,1))',
+                                                opacity: 1,
+                                                zIndex: 50
                                             }
-                                        },
-                                        hover: {
-                                            scale: 1.05,
-                                            fill: 'rgba(190, 19, 34, 0.4)',
-                                            stroke: '#ffffff',
-                                            strokeWidth: 3,
-                                            filter: 'url(#province-lift)',
-                                            zIndex: 10,
-                                            transition: { duration: 0.3, type: "spring", stiffness: 300 }
-                                        },
-                                        active: {
-                                            scale: 1.02,
-                                            fill: '#BE1322',
-                                            stroke: '#ffffff',
-                                            strokeWidth: 4,
-                                            filter: 'drop-shadow(0 0 20px rgba(190,19,34,0.8))', // Strong neon glow
-                                            opacity: 1,
-                                            zIndex: 50
-                                        }
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Mobile/Touch: Tap to hover/select
-                                        if (!isActive && hoveredProvince !== feature.id) {
-                                            setHoveredProvince(feature.id);
-                                        } else {
-                                            onProvinceClick(isActive ? null : feature.id);
-                                        }
-                                    }}
-                                    style={{ transformOrigin: 'center' }}
-                                />
+                                        }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!isActive && hoveredProvince !== feature.id) {
+                                                setHoveredProvince(feature.id);
+                                            } else {
+                                                onProvinceClick(isActive ? null : feature.id);
+                                            }
+                                        }}
+                                        style={{ transformOrigin: 'center' }}
+                                    />
+                                </g>
                             );
                         })}
                     </g>
