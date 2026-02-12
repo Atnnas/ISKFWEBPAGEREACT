@@ -140,16 +140,13 @@ const Hero = () => {
                                 <span className="text-white drop-shadow-md text-xl">I</span>nternational <span className="text-white drop-shadow-md text-xl">S</span>hotokan <span className="text-white drop-shadow-md text-xl">K</span>arate <span className="text-white drop-shadow-md text-xl">F</span>ederation
                             </span>
                             <h1
-                                className="text-5xl md:text-7xl lg:text-8xl font-black tracking-widest text-white drop-shadow-2xl leading-[1.1] md:leading-tight text-center md:flex md:items-center md:justify-center md:whitespace-nowrap cursor-pointer selection:bg-iskf-red selection:text-white py-4 px-2"
+                                className="w-full text-5xl md:text-7xl lg:text-8xl font-black tracking-widest text-white drop-shadow-2xl leading-[1.1] md:leading-tight text-center md:flex md:items-center md:justify-center md:whitespace-nowrap cursor-pointer selection:bg-iskf-red selection:text-white py-4 px-2"
                                 onMouseEnter={handleGlitch}
                             >
-                                {glitchText.split(" ").map((word, i, arr) => (
-                                    <React.Fragment key={i}>
-                                        {word}
-                                        {i === 0 && <br className="md:hidden" />}
-                                        {i < arr.length - 1 && <span className="hidden md:inline">&nbsp;</span>}
-                                    </React.Fragment>
-                                ))}
+                                <span className="block md:inline">{glitchText.split(" ")[0]}</span>
+                                <br className="md:hidden" />
+                                <span className="hidden md:inline">&nbsp;</span>
+                                <span className="block md:inline">{glitchText.split(" ").slice(1).join(" ")}</span>
                             </h1>
                         </motion.div>
 
