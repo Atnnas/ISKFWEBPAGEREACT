@@ -1,4 +1,4 @@
-import corbata from '../assets/images/corbata.jpg';
+import corbata from '../assets/images/corbata-nuevo.jpg';
 import dojoKun from '../assets/images/dojoKun.jpg';
 import escudo from '../assets/images/escudo.jpg';
 import jacket from '../assets/images/jacket-nueva.jpg';
