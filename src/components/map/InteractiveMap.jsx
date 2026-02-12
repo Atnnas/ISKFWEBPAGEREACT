@@ -370,12 +370,12 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                         strokeWidth: isFocused ? [12, 24, 12] : [8, 18, 8]
                                     }}
                                     transition={{
-                                        duration: isFocused ? 3 : 5,
-                                        repeat: Infinity,
-                                        ease: "easeInOut",
-                                        delay: i * 0.1
+                                        duration: isFocused ? 0.3 : 1, // Rapid focus shift
+                                        repeat: isFocused ? Infinity : 0, // Stop breathing on non-focused
+                                        repeatType: "reverse",
+                                        ease: "easeInOut"
                                     }}
-                                    className="blur-xl mix-blend-screen transition-opacity duration-500"
+                                    className="blur-xl mix-blend-screen"
                                 />
                             );
                         })}
@@ -414,10 +414,9 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                                 stroke: 'rgba(255,255,255,0.5)',
                                                 strokeWidth: 3,
                                                 filter: 'none',
-                                                opacity: [0.9, 1, 0.9],
-                                                transition: {
-                                                    opacity: { duration: 4, repeat: Infinity, ease: "easeInOut" }
-                                                }
+                                                opacity: 1,
+                                                zIndex: 1,
+                                                transition: { duration: 0.3 }
                                             },
                                             hover: {
                                                 scale: 1.05,
@@ -426,7 +425,7 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                                 strokeWidth: 4,
                                                 filter: 'url(#province-lift)',
                                                 zIndex: 10,
-                                                transition: { duration: 0.3, type: "spring", stiffness: 300 }
+                                                transition: { duration: 0.2 }
                                             },
                                             active: {
                                                 scale: 1.02,
