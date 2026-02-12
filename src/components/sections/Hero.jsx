@@ -143,7 +143,13 @@ const Hero = () => {
                                 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-widest text-white drop-shadow-2xl leading-[1.1] md:leading-tight text-center md:flex md:items-center md:justify-center md:whitespace-nowrap cursor-pointer selection:bg-iskf-red selection:text-white py-4 px-2"
                                 onMouseEnter={handleGlitch}
                             >
-                                {glitchText}
+                                {glitchText.split(" ").map((word, i, arr) => (
+                                    <React.Fragment key={i}>
+                                        {word}
+                                        {i === 0 && <br className="md:hidden" />}
+                                        {i < arr.length - 1 && <span className="hidden md:inline">&nbsp;</span>}
+                                    </React.Fragment>
+                                ))}
                             </h1>
                         </motion.div>
 
