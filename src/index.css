@@ -19,8 +19,11 @@
 }
 
 @utility scrollbar-hide {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+
+    /* Firefox */
     &::-webkit-scrollbar {
         display: none;
     }
@@ -56,18 +59,99 @@ html {
 }
 
 @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes twinkle {
-    0%, 100% { opacity: 0.3; transform: scale(0.8); }
-    50% { opacity: 1; transform: scale(1.2); }
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
 }
 
 @keyframes refract {
-    from { transform: translateX(-200%) skewX(-45deg); }
-    to { transform: translateX(200%) skewX(-45deg); }
+    from {
+        transform: translateX(-200%) skewX(-45deg);
+    }
+
+    to {
+        transform: translateX(200%) skewX(-45deg);
+    }
+}
+
+@keyframes electric-flicker {
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+
+    10%,
+    90% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(0.9) skew(2deg);
+    }
+}
+
+@keyframes electric-arc {
+    0% {
+        stroke-dashoffset: 100;
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 0;
+    }
+}
+
+@keyframes perimeter-flow {
+    0% {
+        stroke-dashoffset: 1000;
+    }
+
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes thunder-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(190, 19, 34, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.6), 0 0 50px rgba(255, 255, 255, 0.4);
+    }
 }
 
 .animate-spin-slow {
@@ -80,4 +164,12 @@ html {
 
 .animate-refract {
     animation: refract 6s ease-in-out infinite;
+}
+
+.animate-electric-flicker {
+    animation: electric-flicker 0.15s ease-in-out infinite;
+}
+
+.animate-thunder-glow {
+    animation: thunder-glow 2s ease-in-out infinite;
 }

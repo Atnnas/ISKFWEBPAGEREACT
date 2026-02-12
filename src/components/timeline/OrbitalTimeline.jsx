@@ -403,4 +403,5 @@ const OrbitalTimeline = ({ dojos }) => {
     );
 };
 
+OrbitalTimeline.displayName = 'OrbitalTimeline';
 export default memo(OrbitalTimeline);

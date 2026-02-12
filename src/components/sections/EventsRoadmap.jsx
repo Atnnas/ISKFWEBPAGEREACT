@@ -70,6 +70,13 @@ const EventsRoadmap = () => {
                 Object.keys(nodeRefs.current).forEach((id) => {
                     const nodeEl = nodeRefs.current[id];
                     if (nodeEl) {
+                        const eventId = parseInt(id);
+                        const event = eventsData.find(e => e.id === eventId);
+                        const isPast = event && new Date(event.date) < new Date();
+
+                        // SKIP PAST EVENTS (No reaction)
+                        if (isPast) return;
+
                         const nodeRect = nodeEl.getBoundingClientRect();
 
                         // Check if node is actually visible (scrolled into view)
@@ -145,7 +152,7 @@ const EventsRoadmap = () => {
             </div>
 
             {/* DESKTOP WRAPPER (Horizontal Infinite Scroll) */}
-            <div className="hidden md:flex w-full relative z-20 flex-col md:flex-row md:items-center md:h-[64vh] md:overflow-hidden cursor-grab active:cursor-grabbing md:py-12" ref={wrapperRef}>
+            <div className="hidden md:flex w-full relative z-20 flex-col md:flex-row md:items-center md:h-[75vh] md:overflow-hidden cursor-grab active:cursor-grabbing md:py-24" ref={wrapperRef}>
                 {/* DESKTOP LINE (Infinite Rail) */}
                 <div className="absolute top-1/2 left-0 h-[2px] bg-white/10 w-[200%] z-0 translate-y-[1px]"></div>
 
@@ -158,8 +165,12 @@ const EventsRoadmap = () => {
                         animate={{ left: '110%' }}
                         transition={{ duration: 10, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
                     >
-                        <div className="w-6 h-6 bg-gradient-to-r from-iskf-red to-orange-600 rounded-full shadow-[0_0_25px_#be1322] relative z-10 animate-pulse"></div>
-                        <div className="absolute top-1/2 right-1/2 w-32 h-1 bg-gradient-to-l from-iskf-red/80 to-transparent -translate-y-1/2 blur-[2px]"></div>
+                        <div className="w-6 h-6 bg-gradient-to-r from-iskf-red via-orange-500 to-white rounded-full shadow-[0_0_20px_#be1322] relative z-10 animate-pulse flex items-center justify-center">
+                            {/* Inner core glow */}
+                            <div className="absolute inset-0.5 bg-white rounded-full blur-[1px] opacity-80"></div>
+                        </div>
+                        <div className="absolute top-1/2 right-1/2 w-48 h-2 bg-gradient-to-l from-white via-iskf-red/40 to-transparent -translate-y-1/2 blur-[4px] opacity-40"></div>
+                        <div className="absolute top-1/2 right-1/2 w-32 h-0.5 bg-gradient-to-l from-white/70 to-transparent -translate-y-1/2 blur-[1px] opacity-60"></div>
                     </motion.div>
                 )}
 
@@ -182,8 +193,10 @@ const EventsRoadmap = () => {
 
                     {/* EVENT NODES - DESKTOP */}
                     {sortedEvents.map((event) => {
+                        const isNational = event.type === 'Nacional';
                         const isTopPosition = event.flag === 'CostaRica.jpg' || event.location.includes('Costa Rica');
-                        const isNext = new Date(event.date) >= new Date() && sortedEvents.filter(e => new Date(e.date) >= new Date())[0]?.id === event.id;
+                        const isPast = new Date(event.date) < new Date();
+                        const isNext = !isPast && sortedEvents.find(e => new Date(e.date) >= new Date())?.id === event.id;
                         const isActive = activeEventId === event.id;
                         const isExpanded = hoveredEventId === event.id;
                         const marginWidth = `${overlapSpacingRem}rem`;
@@ -201,9 +214,13 @@ const EventsRoadmap = () => {
                             >
                                 <motion.div
                                     ref={el => { if (windowWidth > 768) nodeRefs.current[event.id] = el }}
-                                    className={`w-8 h-8 rounded-full border-2 relative z-20 cursor-pointer group hover:scale-125 transition-transform duration-300 ${isActive ? 'bg-white border-iskf-red shadow-[0_0_50px_#be1322] scale-150' : isNext ? 'bg-white border-iskf-blue shadow-[0_0_40px_rgba(45,46,131,0.8)]' : 'bg-iskf-dark border-iskf-red shadow-[0_0_20px_#be1322]'}`}
-                                    onClick={() => navigate(`/event/${event.id}`)}
-                                    whileHover={{ scale: 1.3 }}
+                                    className={`w-8 h-8 rounded-full border-2 relative z-20 transition-all duration-300 
+                                        ${isPast ? 'bg-zinc-800 border-zinc-600 opacity-30 cursor-default' :
+                                            isActive ? 'bg-white border-iskf-red shadow-[0_0_50px_#be1322] scale-150 cursor-pointer' :
+                                                isNext ? 'bg-white border-iskf-blue shadow-[0_0_40px_rgba(45,46,131,0.8)] cursor-pointer' :
+                                                    'bg-iskf-dark border-iskf-red shadow-[0_0_20px_#be1322] cursor-pointer group hover:scale-125'}`}
+                                    onClick={() => !isPast && navigate(`/event/${event.id}`)}
+                                    whileHover={!isPast ? { scale: 1.3 } : {}}
                                 >
                                     {(isNext || isActive) && <div className={`absolute -inset-4 rounded-full border-2 ${isActive ? 'border-iskf-red' : 'border-iskf-blue'} opacity-50 animate-ping`}></div>}
                                     <div className={`absolute inset-0 rounded-full opacity-50 animate-pulse ${isNext && !isActive ? 'bg-iskf-blue' : 'bg-iskf-red'}`}></div>
@@ -213,15 +230,14 @@ const EventsRoadmap = () => {
                                 <div className={`absolute left-1/2 w-[1px] from-iskf-red to-transparent z-10 -translate-x-1/2 transition-all duration-300 ${isActive ? 'bg-iskf-red h-20 shadow-[0_0_15px_#be1322]' : 'group-hover:h-20 group-hover:bg-iskf-red'} ${isTopPosition ? 'bottom-8 bg-gradient-to-t' : 'top-8 bg-gradient-to-b'} ${!isActive && (isTopPosition ? 'h-12' : 'h-12')}`}></div>
 
                                 <motion.div
-                                    className={`absolute left-1/2 -translate-x-1/2 w-64 cursor-pointer ${isTopPosition ? 'bottom-1/2 mb-16 origin-bottom' : 'top-1/2 mt-16 origin-top'}`}
-                                    style={{ perspective: 1000 }}
-                                    animate={isActive ? { scale: 1.05, y: isTopPosition ? -5 : 5, filter: "brightness(1.1)", rotateX: isTopPosition ? 2 : -2 } : { scale: 1, y: 0, filter: "brightness(1)", rotateX: 0 }}
-                                    onClick={() => navigate(`/event/${event.id}`)}
-                                    whileHover={{ scale: 1.03, y: isTopPosition ? 5 : -5 }}
+                                    className={`absolute left-1/2 -translate-x-1/2 w-64 ${isPast ? 'pointer-events-none cursor-default' : 'cursor-pointer'} ${isTopPosition ? 'bottom-1/2 mb-16 origin-bottom' : 'top-1/2 mt-16 origin-top'} ${isPast && !isActive && !isExpanded ? 'opacity-30 grayscale-[1]' : 'opacity-100 grayscale-0'}`}
+                                    animate={isPast ? { scale: 1, y: 0 } : isActive ? { scale: 1.05, y: isTopPosition ? -5 : 5, filter: "brightness(1.1)" } : { scale: 1, y: 0, filter: "brightness(1)" }}
+                                    onClick={() => !isPast && navigate(`/event/${event.id}`)}
+                                    whileHover={!isPast ? { scale: 1.03, y: isTopPosition ? -5 : 5 } : {}}
                                     transition={{ type: "spring", stiffness: 200, damping: 25 }}
                                 >
-                                    <div className={`bg-black/60 backdrop-blur-xl border p-5 rounded-2xl relative overflow-hidden transition-all duration-500 group ${isActive || isExpanded ? 'border-iskf-red/50 shadow-[0_0_30px_rgba(190,19,34,0.2)] ring-1 ring-iskf-red/20' : 'border-white/10 hover:border-iskf-red/30 hover:shadow-[0_0_20px_rgba(190,19,34,0.1)]'}`}>
-                                        <div className={`absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 ${isActive || isExpanded ? 'opacity-100' : 'group-hover:opacity-100'}`}></div>
+                                    <div className={`bg-black/60 backdrop-blur-xl border p-5 rounded-2xl relative overflow-hidden transition-all duration-500 group ${isActive || isExpanded ? 'border-iskf-red/50 shadow-[0_0_30px_rgba(190,19,34,0.2)] ring-1 ring-iskf-red/20' : isPast ? 'border-white/5 shadow-none' : 'border-white/10 hover:border-iskf-red/30 hover:shadow-[0_0_20px_rgba(190,19,34,0.1)]'}`}>
+                                        <div className={`absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 ${!isPast && (isActive || isExpanded) ? 'opacity-100' : (!isPast ? 'group-hover:opacity-100' : '')}`}></div>
                                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-iskf-red/5 to-transparent h-[200%] w-full -translate-y-full group-hover:translate-y-full transition-transform duration-1000 ease-in-out"></div>
                                         <div className="relative z-10 text-center flex flex-col items-center">
                                             <div className={`inline-block text-white text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3 shadow-lg transition-transform ${isActive || isExpanded ? 'scale-110' : 'group-hover:scale-110'} ${isTopPosition ? 'bg-iskf-red' : 'bg-blue-600'}`}>
@@ -285,21 +301,22 @@ const EventsRoadmap = () => {
 
                         {sortedEvents.map((event) => {
                             const isNational = event.type === 'Nacional';
-                            const isNext = new Date(event.date) >= new Date() && sortedEvents.filter(e => new Date(e.date) >= new Date())[0]?.id === event.id;
+                            const isPast = new Date(event.date) < new Date();
+                            const isNext = !isPast && sortedEvents.find(e => new Date(e.date) >= new Date())?.id === event.id;
                             const isActive = activeEventId === event.id;
 
                             return (
                                 <div key={event.id} className={`flex w-full items-center mb-8 relative z-10 ${isNational ? 'justify-start' : 'justify-end'}`}>
                                     {/* CARD */}
                                     <div
-                                        className={`w-[45%] relative cursor-pointer ${isNational ? 'mr-auto text-right pr-4' : 'ml-auto text-left pl-4'}`}
-                                        onClick={() => navigate(`/event/${event.id}`)}
+                                        className={`w-[45%] relative ${isNational ? 'mr-auto text-right pr-4' : 'ml-auto text-left pl-4'} ${isPast && !isActive ? 'opacity-30 grayscale cursor-default pointer-events-none' : 'opacity-100 cursor-pointer'}`}
+                                        onClick={() => !isPast && navigate(`/event/${event.id}`)}
                                     >
-                                        <div className={`bg-black/80 backdrop-blur-md border p-3 rounded-xl transition-all duration-300 shadow-lg
-                                            ${isActive ? 'border-iskf-red shadow-[0_0_20px_#be1322] scale-105' : 'border-white/10 hover:border-iskf-red/50'}
+                                        <div className={`bg-black/80 backdrop-blur-md border p-3 rounded-xl transition-all duration-300 shadow-lg relative
+                                            ${isActive ? 'border-iskf-red shadow-[0_0_20px_#be1322] scale-105' : isPast ? 'border-white/5 cursor-default' : 'border-white/10 hover:border-iskf-red/50'}
                                         `}>
                                             {/* Subtle Active flash overlay */}
-                                            {isActive && <div className="absolute inset-0 bg-iskf-red/10 rounded-xl animate-pulse"></div>}
+                                            {isActive && <div className="absolute inset-0 bg-iskf-red/10 rounded-xl animate-pulse z-10"></div>}
 
                                             <div className={`text-xs font-black uppercase tracking-widest inline-block px-2 py-0.5 rounded-full mb-1 ${isNational ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>
                                                 {formatDate(event.date)}
@@ -318,7 +335,8 @@ const EventsRoadmap = () => {
                                         ref={el => { if (windowWidth <= 768) nodeRefs.current[event.id] = el }}
                                         className={`absolute left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full border-2 z-20 transition-all duration-300
                                             ${isActive ? 'bg-iskf-red border-white shadow-[0_0_15px_#be1322] scale-150' :
-                                                isNext ? 'bg-white border-iskf-blue shadow-[0_0_15px_#2d2e83]' : 'bg-black border-iskf-red'}`}
+                                                isNext ? 'bg-white border-iskf-blue shadow-[0_0_15px_#2d2e83]' :
+                                                    isPast ? 'bg-zinc-800 border-zinc-600 opacity-50 grayscale' : 'bg-black border-iskf-red'}`}
                                     >
                                         {(isNext || isActive) && <div className={`absolute -inset-2 rounded-full border ${isActive ? 'border-iskf-red' : 'border-iskf-blue'} opacity-50 animate-ping`}></div>}
                                     </div>
