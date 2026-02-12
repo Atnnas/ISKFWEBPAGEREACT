@@ -164,7 +164,7 @@ function HomePage() {
                     </p>
 
                     <a href="https://kumadev.in" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity duration-300">
-                        <span className="text-[9px] text-gray-500 font-light tracking-[0.2em] uppercase">Architected by</span>
+                        <span className="text-xs text-gray-500 font-light tracking-[0.2em] uppercase">Architected by</span>
                         <span
                             className="text-[11px] font-black tracking-[0.25em] uppercase transition-all duration-500"
                             style={{

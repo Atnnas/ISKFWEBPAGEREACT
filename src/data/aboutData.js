@@ -7,6 +7,8 @@ import tituloInternacional from '../assets/images/tituloInternacional.jpg';
 import pasaporte from '../assets/images/pasaporte.jpg';
 import membresiaInternacional from '../assets/images/membresiaInternacional.jpg';
 import senseiRoyGatjens from '../assets/images/senseiRoyGatjens.jpg';
+import titulosDan from '../assets/images/titulos-dan.jpg';
+import procesosKyu from '../assets/images/Procesos-kyu.jpg';
 
 export const aboutData = {
     identidad: {
@@ -52,6 +54,16 @@ export const aboutData = {
                 title: "Membresía",
                 desc: "Afiliación Internacional.",
                 img: membresiaInternacional
+            },
+            {
+                title: "Titulos de DAN",
+                desc: "Certificaciones de grado cinturón negro.",
+                img: titulosDan
+            },
+            {
+                title: "Procesos de Kyu",
+                desc: "Evaluaciones y seguimiento de grados Kyu.",
+                img: procesosKyu
             }
         ]
     },

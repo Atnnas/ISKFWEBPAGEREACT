@@ -224,7 +224,7 @@ const EventsRoadmap = () => {
                                         <div className={`absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 ${isActive || isExpanded ? 'opacity-100' : 'group-hover:opacity-100'}`}></div>
                                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-iskf-red/5 to-transparent h-[200%] w-full -translate-y-full group-hover:translate-y-full transition-transform duration-1000 ease-in-out"></div>
                                         <div className="relative z-10 text-center flex flex-col items-center">
-                                            <div className={`inline-block text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3 shadow-lg transition-transform ${isActive || isExpanded ? 'scale-110' : 'group-hover:scale-110'} ${isTopPosition ? 'bg-iskf-red' : 'bg-blue-600'}`}>
+                                            <div className={`inline-block text-white text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3 shadow-lg transition-transform ${isActive || isExpanded ? 'scale-110' : 'group-hover:scale-110'} ${isTopPosition ? 'bg-iskf-red' : 'bg-blue-600'}`}>
                                                 {formatDate(event.date)}
                                             </div>
                                             <div className={`w-12 h-12 rounded-full bg-white p-0.5 shadow-lg mb-3 transition-transform duration-300 ${isActive || isExpanded ? 'scale-125' : 'group-hover:scale-110'}`}>
@@ -301,11 +301,11 @@ const EventsRoadmap = () => {
                                             {/* Subtle Active flash overlay */}
                                             {isActive && <div className="absolute inset-0 bg-iskf-red/10 rounded-xl animate-pulse"></div>}
 
-                                            <div className={`text-[9px] font-black uppercase tracking-widest inline-block px-2 py-0.5 rounded-full mb-1 ${isNational ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>
+                                            <div className={`text-xs font-black uppercase tracking-widest inline-block px-2 py-0.5 rounded-full mb-1 ${isNational ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>
                                                 {formatDate(event.date)}
                                             </div>
                                             <h4 className={`font-bold text-xs leading-tight mb-1 transition-colors ${isActive ? 'text-iskf-red' : 'text-white'}`}>{event.name}</h4>
-                                            <div className={`flex items-center gap-1 text-[10px] text-gray-400 ${isNational ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`flex items-center gap-1 text-xs text-gray-400 ${isNational ? 'justify-end' : 'justify-start'}`}>
                                                 {isNational ? <img src={event.flag} className="w-3 h-3 rounded-full" alt="flag" /> : null}
                                                 <span>{event.location.split(',')[0]}</span>
                                                 {!isNational ? <img src={event.flag} className="w-3 h-3 rounded-full" alt="flag" /> : null}

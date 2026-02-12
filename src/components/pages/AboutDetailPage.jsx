@@ -138,7 +138,7 @@ const AboutDetailPage = () => {
                         <h3 className="text-2xl md:text-3xl font-black text-white leading-none">{content.shihan.name}</h3>
                         <div className="flex flex-wrap gap-2 justify-center md:justify-start pt-2">
                             {content.shihan.titles.map((t, i) => (
-                                <span key={i} className="bg-iskf-red text-white px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase shadow-neon">{t}</span>
+                                <span key={i} className="bg-iskf-red text-white px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase shadow-neon">{t}</span>
                             ))}
                         </div>
                     </div>
@@ -148,7 +148,7 @@ const AboutDetailPage = () => {
             {/* Gerencia */}
             <motion.div variants={itemVariants} className="relative z-10 w-full max-w-sm text-center">
                 <div className="bg-[#111] border border-iskf-red/30 rounded-xl p-6 shadow-[0_10px_40px_-10px_rgba(190,19,34,0.3)]">
-                    <h4 className="text-iskf-red font-bold text-[10px] uppercase tracking-widest mb-2 border-b border-iskf-red/20 pb-2 inline-block">{content.gerencia.department}</h4>
+                    <h4 className="text-iskf-red font-bold text-xs uppercase tracking-widest mb-2 border-b border-iskf-red/20 pb-2 inline-block">{content.gerencia.department}</h4>
                     <h3 className="text-xl font-bold text-white uppercase mb-1">{content.gerencia.title}</h3>
                     <p className="text-white/80 font-medium text-sm">{content.gerencia.name}</p>
                 </div>
@@ -177,7 +177,7 @@ const AboutDetailPage = () => {
                     <div className="grid grid-cols-2 gap-4">
                         {content.comisiones.map((comm, i) => (
                             <div key={i} className="bg-iskf-dark border border-iskf-red/20 rounded-xl p-4 text-center hover:bg-white/5 transition-colors">
-                                <h5 className="text-iskf-red font-bold text-[10px] uppercase mb-1">{comm.title}</h5>
+                                <h5 className="text-iskf-red font-bold text-xs uppercase mb-1">{comm.title}</h5>
                                 <p className="text-white text-xs font-medium">{comm.name}</p>
                             </div>
                         ))}

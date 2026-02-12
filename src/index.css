@@ -45,8 +45,8 @@
 }
 
 html {
-    font-size: 75%;
-    /* Base scaling: 16px -> 12px (25% reduction) */
+    font-size: 100%;
+    /* Standard scaling: 16px base (Increased for readability) */
     scroll-behavior: smooth;
     scroll-padding-top: 5.5rem;
     /* Exact Navbar height (py-4 + h-14 = 5.5rem) */
