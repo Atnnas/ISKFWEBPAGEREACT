@@ -20,6 +20,7 @@ import fotoSenseiJBarrantes from '../assets/images/fotoSenseiJBarrantes.jpg';
 import fotoSenseiDelia from '../assets/images/fotoSenseiDelia.jpg';
 import fotoSenseiJustin from '../assets/images/fotoSenseiJustin.jpg';
 import fotoSenseiKamae from '../assets/images/sensei-dojo-kamae.jpg';
+import iskfLogo from '../assets/images/iskf.jpg';
 
 export const dojosData = [
     {
@@ -171,6 +172,15 @@ export const dojosData = [
         rank: "1er Dan",
         profession: "Psicólogo - Ciencias Policiales",
         logo: bushidoKanLogo,
+        detailsUrl: "#"
+    },
+    {
+        id: "kokoro",
+        name: "Dojo Kokoro",
+        province: "Heredia",
+        sensei: "Sensei Antony Ruiz",
+        rank: "1er Dan",
+        logo: iskfLogo,
         detailsUrl: "#"
     }
 ];
