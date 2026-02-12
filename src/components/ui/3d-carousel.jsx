@@ -68,6 +68,28 @@ const Carousel = memo(
             (value) => `rotate3d(0, 1, 0, ${value}deg)`
         )
 
+        // Keyboard navigation
+        useEffect(() => {
+            const handleKeyDown = (e) => {
+                if (!isCarouselActive) return;
+
+                if (e.key === "ArrowLeft") {
+                    controls.start({
+                        rotateY: rotation.get() + (360 / faceCount),
+                        transition: { type: "spring", stiffness: 100, damping: 30, mass: 0.1 }
+                    });
+                } else if (e.key === "ArrowRight") {
+                    controls.start({
+                        rotateY: rotation.get() - (360 / faceCount),
+                        transition: { type: "spring", stiffness: 100, damping: 30, mass: 0.1 }
+                    });
+                }
+            };
+
+            window.addEventListener("keydown", handleKeyDown);
+            return () => window.removeEventListener("keydown", handleKeyDown);
+        }, [isCarouselActive, faceCount, controls, rotation]);
+
         return (
             <div
                 className="flex h-full items-center justify-center"
@@ -86,14 +108,16 @@ const Carousel = memo(
                         width: cylinderWidth,
                         transformStyle: "preserve-3d",
                     }}
-                    onDrag={(_, info) =>
-                        isCarouselActive &&
-                        rotation.set(rotation.get() + info.offset.x * 0.05)
-                    }
+                    onDrag={(_, info) => {
+                        if (isCarouselActive) {
+                            // Reduced drag sensitivity for better control
+                            rotation.set(rotation.get() + info.offset.x * 0.01);
+                        }
+                    }}
                     onDragEnd={(_, info) =>
                         isCarouselActive &&
                         controls.start({
-                            rotateY: rotation.get() + info.velocity.x * 0.05,
+                            rotateY: rotation.get() + info.velocity.x * 0.02,
                             transition: {
                                 type: "spring",
                                 stiffness: 100,
