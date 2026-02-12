@@ -264,21 +264,22 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
             </AnimatePresence>
 
             {/* Persistent Active Label */}
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 {activeProvinceId && activeLabelPos && (
                     <motion.div
-                        initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.8 }}
-                        transition={{ duration: 0.4, type: "spring" }}
+                        key={`label-${activeProvinceId}`}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.3 }}
                         className="absolute z-[40] pointer-events-none transform -translate-x-1/2 -translate-y-1/2"
                         style={{
                             left: activeLabelPos.left,
                             top: activeLabelPos.top,
                         }}
                     >
-                        <div className="bg-black/80 backdrop-blur-md text-white border border-iskf-red/50 px-6 py-3 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.5)] flex items-center gap-3">
-                            <span className="w-2 h-2 rounded-full bg-iskf-red animate-pulse"></span>
+                        <div className="bg-black/90 backdrop-blur-md text-white border border-iskf-red/60 px-6 py-3 rounded-full shadow-[0_0_30px_rgba(190,19,34,0.3)] flex items-center gap-3">
+                            <span className="w-2.5 h-2.5 rounded-full bg-iskf-red shadow-[0_0_10px_#BE1322] animate-pulse"></span>
                             <span className="font-bold tracking-[0.2em] uppercase text-sm whitespace-nowrap">
                                 {crMapFeatures.find(f => f.id === activeProvinceId)?.name}
                             </span>
@@ -351,28 +352,33 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                         </pattern>
                     </defs>
 
-                    {/* RADIOACTIVE AURA LAYER (Strengthened) */}
+                    {/* RADIOACTIVE AURA LAYER (Strengthened & Focus-Aware) */}
                     <g className="map-radioactive-aura pointer-events-none">
-                        {crMapFeatures.map((feature, i) => (
-                            <motion.path
-                                key={`aura-${feature.id}`}
-                                d={getPath(feature)}
-                                fill="none"
-                                stroke="#BE1322"
-                                initial={{ opacity: 0 }}
-                                animate={{
-                                    opacity: [0.4, 0.8, 0.4],
-                                    strokeWidth: [8, 18, 8]
-                                }}
-                                transition={{
-                                    duration: 5,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                    delay: i * 0.1
-                                }}
-                                className="blur-xl mix-blend-screen"
-                            />
-                        ))}
+                        {crMapFeatures.map((feature, i) => {
+                            const isFocused = activeProvinceId === feature.id;
+                            const hasSelection = activeProvinceId !== null;
+                            const targetOpacity = isFocused ? 0.8 : (hasSelection ? 0.1 : 0.4);
+
+                            return (
+                                <motion.path
+                                    key={`aura-${feature.id}`}
+                                    d={getPath(feature)}
+                                    fill="none"
+                                    stroke="#BE1322"
+                                    animate={{
+                                        opacity: [targetOpacity * 0.8, targetOpacity, targetOpacity * 0.8],
+                                        strokeWidth: isFocused ? [12, 24, 12] : [8, 18, 8]
+                                    }}
+                                    transition={{
+                                        duration: isFocused ? 3 : 5,
+                                        repeat: Infinity,
+                                        ease: "easeInOut",
+                                        delay: i * 0.1
+                                    }}
+                                    className="blur-xl mix-blend-screen transition-opacity duration-500"
+                                />
+                            );
+                        })}
                     </g>
 
                     <g className="map-paths">
@@ -429,16 +435,13 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                                 strokeWidth: 5,
                                                 filter: 'drop-shadow(0 0 30px rgba(190,19,34,1))',
                                                 opacity: 1,
-                                                zIndex: 50
+                                                zIndex: 50,
+                                                transition: { duration: 0.4 }
                                             }
                                         }}
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            if (!isActive && hoveredProvince !== feature.id) {
-                                                setHoveredProvince(feature.id);
-                                            } else {
-                                                onProvinceClick(isActive ? null : feature.id);
-                                            }
+                                            onProvinceClick(isActive ? null : feature.id);
                                         }}
                                         style={{ transformOrigin: 'center' }}
                                     />
