@@ -81,12 +81,12 @@ const KataListPage = () => {
 
                                             {/* Epic Kanji Display */}
                                             <div className="mb-4 relative z-10">
-                                                <span className="text-6xl font-black text-white group-hover:text-iskf-red transition-colors duration-500 font-serif tracking-widest block scale-110 group-hover:scale-125 transform text-shadow-lg">
+                                                <span className="text-5xl md:text-6xl font-black text-white group-hover:text-iskf-red transition-colors duration-500 font-serif tracking-widest block transform group-hover:scale-110 transition-transform text-shadow-lg">
                                                     {kata.kanji}
                                                 </span>
                                             </div>
 
-                                            <h4 className="text-2xl font-black text-white uppercase tracking-widest mb-2 group-hover:tracking-[0.2em] transition-all duration-500 drop-shadow-xl text-shadow-xl relative z-10">{kata.title}</h4>
+                                            <h4 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest mb-2 group-hover:tracking-[0.2em] transition-all duration-500 drop-shadow-xl text-shadow-xl relative z-10 transition-transform group-hover:scale-105">{kata.title}</h4>
 
                                             {/* Decorative underline on hover */}
                                             <div className="w-12 h-1 bg-white/50 group-hover:bg-iskf-red mx-auto mt-4 rounded-full transition-colors duration-500 shadow-[0_0_10px_rgba(255,255,255,0.3)] relative z-10"></div>

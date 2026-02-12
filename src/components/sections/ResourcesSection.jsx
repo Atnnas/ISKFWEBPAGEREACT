@@ -30,7 +30,7 @@ const ResourcesSection = () => {
                     <motion.div
                         whileHover={{ y: -5 }}
                         onClick={() => navigate('/resources/kata')}
-                        className="group relative h-[500px] w-full max-w-md rounded-none bg-transparent overflow-visible cursor-pointer transition-all duration-700 hover:shadow-[0_0_50px_rgba(206,17,38,0.4)] hover:bg-white/5 hover:backdrop-blur-md"
+                        className="group relative min-h-[550px] md:min-h-[600px] w-full max-w-md rounded-none bg-transparent overflow-visible cursor-pointer transition-all duration-700 hover:shadow-[0_0_50px_rgba(206,17,38,0.4)] hover:bg-white/5 hover:backdrop-blur-md"
                     >
                         {/* Animated Border Line (Minimalist) */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-iskf-red scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left z-20"></div>
@@ -40,24 +40,24 @@ const ResourcesSection = () => {
                         <div className="absolute inset-0 z-0 bg-transparent"></div>
 
                         {/* Content */}
-                        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-8">
+                        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-6 md:p-10">
 
                             {/* Spirit Kanji - Larger and bolder */}
-                            <div className="text-white group-hover:text-iskf-red transition-colors duration-500 scale-110 group-hover:scale-125 transition-transform origin-center mb-4 text-shadow-lg">
+                            <div className="text-white group-hover:text-iskf-red transition-all duration-500 transform group-hover:scale-110 origin-center mb-2 text-shadow-lg">
                                 <SpiritKanji kanji="型" label="KATA" />
                             </div>
 
-                            <h3 className="text-6xl md:text-7xl font-black text-white uppercase tracking-widest mb-6 mt-2 group-hover:tracking-[0.2em] transition-all duration-500 drop-shadow-xl text-shadow-xl">
+                            <h3 className="text-5xl md:text-6xl font-black text-white uppercase tracking-widest mb-4 group-hover:tracking-[0.2em] transition-all duration-500 drop-shadow-xl text-shadow-xl">
                                 Kata
                             </h3>
 
-                            <div className="w-16 h-1.5 bg-white/50 group-hover:bg-iskf-red mb-8 transition-colors duration-500 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.3)]"></div>
+                            <div className="w-16 h-1 bg-white/50 group-hover:bg-iskf-red mb-6 transition-colors duration-500 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.3)]"></div>
 
-                            <p className="text-gray-100 font-bold max-w-xs mx-auto mb-12 text-base md:text-lg leading-relaxed transition-colors duration-500 drop-shadow-md text-shadow-sm">
+                            <p className="text-gray-100 font-bold max-w-xs mx-auto mb-10 text-sm md:text-base leading-relaxed transition-colors duration-500 drop-shadow-md text-shadow-sm">
                                 Biblioteca técnica completa de los 26 Katas de Shotokan y el kihon que los compone.
                             </p>
 
-                            <span className="inline-block px-12 py-5 bg-white/10 border-2 border-white/40 group-hover:bg-iskf-red group-hover:border-iskf-red text-white text-sm md:text-base font-black uppercase tracking-[0.25em] transition-all duration-500 backdrop-blur-md group-hover:shadow-[0_0_20px_rgba(206,17,38,0.6)]">
+                            <span className="inline-block px-10 py-4 bg-white/10 border-2 border-white/40 group-hover:bg-iskf-red group-hover:border-iskf-red text-white text-xs md:text-sm font-black uppercase tracking-[0.25em] transition-all duration-500 backdrop-blur-md group-hover:shadow-[0_0_20px_rgba(206,17,38,0.6)]">
                                 Acceder
                             </span>
                         </div>
