@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import SocialSidebar from '../layout/SocialSidebar';
 import { aboutData } from '../../data/aboutData';
 import fondoSonreNosotrosTarjetas from '../../assets/images/fondoSonreNosotrosTarjetas.jpg';
+import { ThreeDPhotoCarousel } from '../ui/3d-carousel';
 
 const AboutDetailPage = () => {
     const { section } = useParams();
@@ -39,24 +40,8 @@ const AboutDetailPage = () => {
 
     // Render helpers for specific sections (Migrated from AboutModal)
     const renderIdentidad = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
-            {content.items.map((item, index) => (
-                <motion.div
-                    key={index}
-                    variants={itemVariants}
-                    className="group bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden hover:border-iskf-red/50 hover:shadow-neon transition-all duration-500 hover:-translate-y-2"
-                >
-                    <div className="h-48 md:h-64 overflow-hidden relative">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
-                        <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                    </div>
-                    <div className="p-6 relative z-20 -mt-20">
-                        <div className="w-full h-[1px] bg-iskf-red/50 mb-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <h3 className="text-white font-bold text-lg uppercase tracking-wider mb-2">{item.title}</h3>
-                        <p className="text-gray-400 text-xs font-light">{item.desc}</p>
-                    </div>
-                </motion.div>
-            ))}
+        <div className="w-full -mt-10 overflow-visible">
+            <ThreeDPhotoCarousel items={content.items} />
         </div>
     );
 
@@ -213,7 +198,7 @@ const AboutDetailPage = () => {
     }
 
     return (
-        <div className="bg-iskf-dark min-h-screen text-white font-sans selection:bg-iskf-red selection:text-white relative">
+        <div className={`bg-iskf-dark ${section === 'identidad' ? 'h-screen overflow-hidden' : 'min-h-screen'} text-white font-sans selection:bg-iskf-red selection:text-white relative`}>
             {/* Standardized Fixed Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <img
@@ -239,17 +224,17 @@ const AboutDetailPage = () => {
 
 
 
-            <div className="min-h-screen px-6 py-32 flex flex-col items-center relative w-full max-w-7xl mx-auto">
+            <div className={`min-h-[calc(100vh-80px)] px-6 ${section === 'identidad' ? 'py-0 flex items-center justify-center' : 'py-32'} flex flex-col items-center relative w-full max-w-7xl mx-auto`}>
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center mb-16 relative z-10 w-full"
+                    className={`text-center ${section === 'identidad' ? 'mb-4' : 'mb-16'} relative z-10 w-full`}
                 >
-                    <span className="text-iskf-red font-bold tracking-[0.3em] text-xs uppercase mb-4 block animate-pulse">
+                    <span className="text-iskf-red font-bold tracking-[0.3em] text-xs uppercase mb-2 block animate-pulse">
                         {content.subtitle || "ISKF Costa Rica"}
                     </span>
-                    <h2 className="text-4xl md:text-6xl font-black text-white tracking-widest uppercase mb-6 drop-shadow-2xl">
+                    <h2 className={`font-black text-white tracking-widest uppercase ${section === 'identidad' ? 'text-3xl md:text-5xl mb-2' : 'text-4xl md:text-6xl mb-6'} drop-shadow-2xl`}>
                         {content.title}
                     </h2>
                     <div className="w-24 h-1 bg-gradient-to-r from-transparent via-iskf-red to-transparent mx-auto rounded-full shadow-[0_0_15px_#be1322]"></div>
@@ -260,7 +245,7 @@ const AboutDetailPage = () => {
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="w-full relative z-10"
+                    className={`w-full relative z-10 ${section === 'identidad' ? 'h-auto' : ''}`}
                 >
                     {renderContent()}
                 </motion.div>
