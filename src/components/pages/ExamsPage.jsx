@@ -48,7 +48,7 @@ const ExamsPage = () => {
                     </div>
 
                     {/* Placeholder Content */}
-                    <div className="bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-12 shadow-2xl flex flex-col items-center">
+                    <div className="bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl flex flex-col items-center">
                         <motion.div
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}

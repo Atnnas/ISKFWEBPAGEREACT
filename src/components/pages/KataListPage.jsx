@@ -70,7 +70,7 @@ const KataListPage = () => {
                                             key={kata.id}
                                             whileHover={{ y: -5 }}
                                             onClick={() => navigate(`/resources/kata/${kata.id}`)}
-                                            className="group relative h-64 rounded-none bg-transparent overflow-visible cursor-pointer transition-all duration-700 hover:shadow-[0_0_30px_rgba(206,17,38,0.3)] hover:bg-white/5 hover:backdrop-blur-md flex flex-col items-center justify-center text-center p-6 border-transparent"
+                                            className="group relative min-h-[16rem] h-auto rounded-none bg-transparent overflow-visible cursor-pointer transition-all duration-700 hover:shadow-[0_0_30px_rgba(206,17,38,0.3)] hover:bg-white/5 hover:backdrop-blur-md flex flex-col items-center justify-center text-center p-8 border-transparent"
                                         >
                                             {/* Animated Border Line (Minimalist) */}
                                             <div className="absolute top-0 left-0 w-full h-1 bg-iskf-red scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left z-20"></div>

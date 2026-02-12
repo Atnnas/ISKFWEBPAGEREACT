@@ -63,9 +63,9 @@ const KataDetailPage = () => {
 
                         {/* Furigana Display */}
                         {kata.kanjiParts && (
-                            <div className="flex justify-center gap-4 md:gap-8 mb-8">
+                            <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-8 px-4">
                                 {kata.kanjiParts.map((part, idx) => (
-                                    <div key={idx} className="flex flex-col items-center group cursor-default">
+                                    <div key={idx} className="flex flex-col items-center group cursor-default min-w-[60px]">
                                         <span className="text-iskf-red text-[10px] md:text-xs uppercase font-black tracking-widest mb-1 opacity-70 group-hover:opacity-100 transition-opacity">({part.romaji})</span>
                                         <span className="text-4xl md:text-5xl font-serif text-white opacity-90 group-hover:text-iskf-red transition-colors duration-300 mb-1">{part.char}</span>
                                         <span className="text-gray-400 text-[10px] md:text-xs font-light italic tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">({part.meaning})</span>
@@ -78,7 +78,7 @@ const KataDetailPage = () => {
                     </div>
 
                     {/* Content Box */}
-                    <div className="bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                    <div className="bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-4 md:p-8 lg:p-12 shadow-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                             <span className="text-9xl font-black font-serif">{kata.kanji || '型'}</span>
                         </div>
@@ -103,12 +103,12 @@ const KataDetailPage = () => {
                                 </div>
 
                                 <div
-                                    className="prose prose-invert prose-lg max-w-none 
+                                    className="prose prose-invert prose-sm md:prose-base lg:prose-lg max-w-none 
                                     prose-headings:text-white prose-headings:uppercase prose-headings:tracking-widest prose-headings:font-bold
                                     prose-strong:text-iskf-red
                                     prose-table:border-collapse prose-table:w-full
-                                    prose-th:bg-white/10 prose-th:p-4 prose-th:text-left prose-th:uppercase prose-th:text-sm prose-th:tracking-wider prose-th:border prose-th:border-white/10
-                                    prose-td:p-4 prose-td:border prose-td:border-white/10 prose-td:text-gray-300
+                                    prose-th:bg-white/10 prose-th:p-2 md:prose-th:p-4 prose-th:text-left prose-th:uppercase prose-th:text-xs md:prose-th:text-sm prose-th:tracking-wider prose-th:border prose-th:border-white/10
+                                    prose-td:p-2 md:prose-td:p-4 prose-td:border prose-td:border-white/10 prose-td:text-gray-300
                                     "
                                     dangerouslySetInnerHTML={{ __html: kataDetails[kata.id] }}
                                 />
