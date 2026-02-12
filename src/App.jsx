@@ -9,8 +9,8 @@ import KataDetailPage from './components/pages/KataDetailPage';
 import ExamsPage from './components/pages/ExamsPage';
 
 import Navbar from './components/layout/Navbar';
-
 import SocialSidebar from './components/layout/SocialSidebar';
+import BackToTop from './components/ui/BackToTop';
 
 // ScrollToTop Component
 const ScrollToTop = () => {
@@ -47,6 +47,7 @@ function App() {
       <Navbar />
       <SocialSidebar />
       <ScrollToTop />
+      <BackToTop />
       <AnimatePresence>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
