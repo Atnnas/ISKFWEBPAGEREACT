@@ -16,6 +16,7 @@ import fotoChristian from '../assets/images/fotoSenseiChristian.jpg';
 import meiyoLogo from '../assets/images/meiyoLogo.jpg';
 import bushidoKanLogo from '../assets/images/bushidoKanLogo.jpg';
 import fotoSenseiLess from '../assets/images/fotoSenseiLess.jpg';
+import fotoSenseiKamae from '../assets/images/sensei-dojo-kamae.jpg';
 
 export const dojosData = [
     {
@@ -24,6 +25,7 @@ export const dojosData = [
         province: "Heredia",
         sensei: "Sensei Roy Gatjens",
         logo: kamaeLogo,
+        senseiImage: fotoSenseiKamae,
         detailsUrl: "#"
     },
     {
