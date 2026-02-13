@@ -73,12 +73,12 @@ const AboutDetailPage = () => {
             {/* Premium Video Section */}
             <motion.div
                 variants={itemVariants}
-                className="relative group rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm"
+                className="relative group rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm z-10"
             >
-                <div className="absolute -inset-1 bg-gradient-to-r from-iskf-red/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-1000"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-iskf-red/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-1000 pointer-events-none"></div>
 
                 {/* Header for Video */}
-                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between pointer-events-none">
                     <span className="text-xs font-bold tracking-[0.3em] uppercase text-gray-400 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-iskf-red animate-pulse"></span>
                         Pronunciación Original
@@ -86,9 +86,9 @@ const AboutDetailPage = () => {
                     <span className="text-[10px] text-gray-500 font-serif italic">Video Tutorial Japonés</span>
                 </div>
 
-                <div className="aspect-video w-full relative">
+                <div className="aspect-video w-full relative z-20">
                     <iframe
-                        className="w-full h-full grayscale-[0.3] hover:grayscale-0 transition-all duration-700"
+                        className="w-full h-full md:grayscale-[0.3] md:hover:grayscale-0 transition-all duration-700"
                         src="https://www.youtube.com/embed/EMYbqFzhLs0?rel=0&showinfo=0&modestbranding=1"
                         title="Dojo Kun Pronunciation"
                         frameBorder="0"
