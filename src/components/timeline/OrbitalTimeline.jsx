@@ -270,66 +270,9 @@ const DojoNode = memo(({ dojo, index, totalDojos, rotation, RADIUS_X, RADIUS_Y, 
     );
 });
 
-// Utility for tiny edge sparks
-const generateTinySpark = (radius, angle, length) => {
-    const startX = Math.cos(angle) * radius;
-    const startY = Math.sin(angle) * radius;
-    let path = `M ${startX} ${startY}`;
-    const segments = 2;
-    for (let i = 1; i <= segments; i++) {
-        const t = i / segments;
-        const targetX = startX + Math.cos(angle) * length * t + (Math.random() - 0.5) * 10;
-        const targetY = startY + Math.sin(angle) * length * t + (Math.random() - 0.5) * 10;
-        path += ` L ${targetX} ${targetY}`;
-    }
-    return path;
-};
 
-const AtomicNucleusEffect = memo(({ isMobile }) => {
-    const [sparks, setSparks] = useState([]);
-    const radius = isMobile ? 54 : 62; // Slightly inside the border
 
-    useEffect(() => {
-        const updateSparks = () => {
-            const newSparks = Array.from({ length: 6 }).map((_, i) => ({
-                id: Math.random(),
-                path: generateTinySpark(radius, Math.random() * Math.PI * 2, 8 + Math.random() * 12),
-                color: Math.random() > 0.5 ? '#60a5fa' : '#ef4444', // Blue/Red sparks
-            }));
-            setSparks(newSparks);
-        };
-        const interval = setInterval(updateSparks, 100);
-        return () => clearInterval(interval);
-    }, [radius]);
 
-    return (
-        <div className="absolute inset-0 pointer-events-none z-40 overflow-visible flex items-center justify-center">
-            {/* Edge Sparks */}
-            <svg className="absolute inset-0 w-full h-full overflow-visible">
-                <g transform="translate(50%, 50%)">
-                    <AnimatePresence>
-                        {sparks.map((spark) => (
-                            <motion.path
-                                key={spark.id}
-                                d={spark.path}
-                                stroke={spark.color}
-                                strokeWidth="1.5"
-                                fill="none"
-                                initial={{ opacity: 1, pathLength: 0 }}
-                                animate={{ opacity: 0, pathLength: 1 }}
-                                transition={{ duration: 0.1, ease: "linear" }}
-                                style={{ filter: 'drop-shadow(0 0 4px currentColor)' }}
-                            />
-                        ))}
-                    </AnimatePresence>
-                </g>
-            </svg>
-
-            {/* Core Resonance (Inner Flicker) */}
-            <div className="absolute w-12 h-12 bg-white/20 rounded-full blur-xl animate-pulse mix-blend-overlay"></div>
-        </div>
-    );
-});
 
 DojoNode.displayName = 'DojoNode';
 
@@ -365,14 +308,8 @@ const OrbitalTimeline = ({ dojos }) => {
         <div className="relative w-full h-full min-h-[500px] flex items-center justify-center overflow-visible perspective-1000">
             {/* Sun Center - Nuclear Core Restored */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex items-center justify-center">
-                {/* Atomic Nucleus Effect [NEW] */}
-                <AtomicNucleusEffect isMobile={isMobile} />
-
                 {/* Main Glow Aura */}
                 <div className="absolute w-40 h-40 bg-iskf-red/40 rounded-full blur-[50px] animate-pulse"></div>
-
-                {/* Nuclear Electricity Flicker */}
-                <div className="absolute w-32 h-32 bg-blue-500/30 rounded-full blur-[30px] animate-thunder-glow"></div>
 
                 {/* Core Vessel */}
                 <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-full shadow-[0_0_80px_rgba(190,19,34,0.8)] flex items-center justify-center z-10 overflow-hidden border-2 border-white/40">
