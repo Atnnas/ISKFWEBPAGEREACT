@@ -415,7 +415,6 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                                 strokeWidth: 3,
                                                 filter: 'none',
                                                 opacity: 1,
-                                                zIndex: 1,
                                                 transition: { duration: 0.3 }
                                             },
                                             hover: {
@@ -424,7 +423,6 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                                 stroke: '#ffffff',
                                                 strokeWidth: 4,
                                                 filter: 'url(#province-lift)',
-                                                zIndex: 10,
                                                 transition: { duration: 0.2 }
                                             },
                                             active: {
@@ -434,7 +432,6 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                                 strokeWidth: 5,
                                                 filter: 'drop-shadow(0 0 30px rgba(190,19,34,1))',
                                                 opacity: 1,
-                                                zIndex: 50,
                                                 transition: { duration: 0.4 }
                                             }
                                         }}
