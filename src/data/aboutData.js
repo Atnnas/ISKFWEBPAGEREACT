@@ -9,6 +9,7 @@ import membresiaInternacional from '../assets/images/membresiaInternacional.jpg'
 import senseiRoyGatjens from '../assets/images/senseiRoyGatjens.jpg';
 import titulosDan from '../assets/images/titulos-dan.jpg';
 import procesosKyu from '../assets/images/Procesos-kyu.jpg';
+import dojoKunSonido from '../assets/audio/dojoKunSonido.mp3';
 
 export const aboutData = {
     identidad: {
@@ -136,6 +137,7 @@ export const aboutData = {
             "El Dojo Kun consiste en cinco reglas que se citan en voz alta al final de cada clase de Karate.",
             "El Karate Do Shotokan es una filosofía de vida que el maestro Gichin Funakoshi basó en el respeto, la lealtad y en la búsqueda de ser mejor cada día como persona. Éstos valores de vida se resumen en el Dojo Kun. A continuación, su enunciación original en japonés y su traducción al español, utilizada por la ISKF Costa Rica día tras día."
         ],
+        audio: dojoKunSonido,
         rules: [
             { japanese: "HITOTSU JINKAKU KANSEI NI TSUTOMURU KOTO.", spanish: "Buscar un carácter perfecto" },
             { japanese: "HITOTSU MAKOTO NO MICHI O MAMORU KOTO.", spanish: "Ser leal" },

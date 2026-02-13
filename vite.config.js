@@ -7,21 +7,12 @@ export default defineConfig(() => ({
   // Set base to repo name only when deploying to GitHub Pages
   base: process.env.GITHUB_PAGES ? '/ISKFWEBPAGEREACT/' : '/',
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 2000,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('three') || id.includes('@react-three')) {
-              return 'three';
-            }
-            if (id.includes('framer-motion')) {
-              return 'motion';
-            }
-            return 'vendor';
-          }
-        },
+        manualChunks: undefined
       },
     },
   },
+  assetsInclude: ['**/*.mp3']
 }))

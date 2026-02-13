@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import SocialSidebar from '../layout/SocialSidebar';
@@ -6,10 +6,124 @@ import { aboutData } from '../../data/aboutData';
 import fondoSonreNosotrosTarjetas from '../../assets/images/fondoSonreNosotrosTarjetas.jpg';
 import { ThreeDPhotoCarousel } from '../ui/3d-carousel';
 
+const DojoKunAudioPlayer = ({ src }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const audioRef = useRef(null);
+
+    const togglePlay = () => {
+        if (!audioRef.current) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+    };
+
+    const handleTimeUpdate = () => {
+        if (!audioRef.current) return;
+        const current = audioRef.current.currentTime;
+        const total = audioRef.current.duration;
+        if (total > 0) {
+            setProgress((current / total) * 100);
+        }
+    };
+
+    const handleLoadedMetadata = () => {
+        if (audioRef.current) {
+            setDuration(audioRef.current.duration);
+        }
+    };
+
+    const handleSeek = (e) => {
+        if (!audioRef.current || duration === 0) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const width = rect.width;
+        const percentage = x / width;
+        audioRef.current.currentTime = percentage * duration;
+    };
+
+    const formatTime = (time) => {
+        if (isNaN(time)) return "0:00";
+        const mins = Math.floor(time / 60);
+        const secs = Math.floor(time % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div className="relative group rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-md z-30 p-6 flex flex-col gap-4">
+            <audio
+                ref={audioRef}
+                src={src}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onEnded={() => setIsPlaying(false)}
+            />
+
+            <div className="flex items-center justify-between pointer-events-none mb-2">
+                <span className="text-xs font-bold tracking-[0.3em] uppercase text-gray-400 flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full bg-iskf-red ${isPlaying ? 'animate-pulse' : ''}`}></span>
+                    Pronunciación Original
+                </span>
+                <span className="text-[10px] text-gray-500 font-serif italic">Audio Oficial Dojo Kun</span>
+            </div>
+
+            <div className="flex items-center gap-6">
+                <button
+                    onClick={togglePlay}
+                    className="w-14 h-14 rounded-full bg-iskf-red/90 hover:bg-iskf-red flex items-center justify-center transition-all duration-300 shadow-[0_0_20px_rgba(190,19,34,0.3)] hover:scale-105 active:scale-95"
+                >
+                    {isPlaying ? (
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                        </svg>
+                    ) : (
+                        <svg className="w-6 h-6 text-white translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    )}
+                </button>
+
+                <div className="flex-1 flex flex-col gap-2">
+                    <div
+                        className="h-2 bg-white/10 rounded-full cursor-pointer relative overflow-hidden"
+                        onClick={handleSeek}
+                    >
+                        <motion.div
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-iskf-red to-blue-500 shadow-[0_0_10px_rgba(190,19,34,0.5)]"
+                            style={{ width: `${progress}%` }}
+                            transition={{ type: "spring", bounce: 0, duration: 0.1 }}
+                        />
+                    </div>
+                    <div className="flex justify-between text-[11px] font-mono text-gray-500 tabular-nums">
+                        <span>{formatTime(audioRef.current?.currentTime)}</span>
+                        <span>{formatTime(duration)}</span>
+                    </div>
+                </div>
+            </div>
+
+            {isPlaying && (
+                <div className="flex items-end gap-1 h-3 absolute bottom-2 right-6 opacity-30 pointer-events-none">
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <motion.div
+                            key={i}
+                            animate={{ height: [4, 12, 6, 10, 4] }}
+                            transition={{ duration: 0.8 + (i * 0.1), repeat: Infinity, ease: "easeInOut" }}
+                            className="w-1 bg-iskf-red rounded-full"
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AboutDetailPage = () => {
     const { section } = useParams();
     const navigate = useNavigate();
-
     const content = aboutData[section];
 
     useEffect(() => {
@@ -22,7 +136,6 @@ const AboutDetailPage = () => {
 
     if (!content) return null;
 
-    // Animation variants
     const itemVariants = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0 }
@@ -32,13 +145,10 @@ const AboutDetailPage = () => {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
+            transition: { staggerChildren: 0.1 }
         }
     };
 
-    // Render helpers for specific sections (Migrated from AboutModal)
     const renderIdentidad = () => (
         <div className="w-full -mt-10 overflow-visible">
             <ThreeDPhotoCarousel items={content.items} />
@@ -70,32 +180,7 @@ const AboutDetailPage = () => {
                 {content.intro.map((p, i) => <p key={i} className="drop-shadow-md">{p}</p>)}
             </div>
 
-            {/* Premium Video Section - Simplified for direct mobile interaction */}
-            <div
-                className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm z-30"
-            >
-                <div className="absolute -inset-1 bg-gradient-to-r from-iskf-red/20 to-transparent opacity-0 pointer-events-none transition duration-1000"></div>
-
-                {/* Header for Video */}
-                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between pointer-events-none">
-                    <span className="text-xs font-bold tracking-[0.3em] uppercase text-gray-400 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-iskf-red animate-pulse"></span>
-                        Pronunciación Original
-                    </span>
-                    <span className="text-[10px] text-gray-500 font-serif italic">Video Tutorial Japonés</span>
-                </div>
-
-                <div className="aspect-video w-full relative z-40 pointer-events-auto">
-                    <iframe
-                        className="w-full h-full grayscale-0 md:grayscale-[0.3] md:hover:grayscale-0 transition-all duration-700"
-                        src="https://www.youtube-nocookie.com/embed/EMYbqFzhLs0?rel=0&showinfo=0&modestbranding=1&autoplay=0"
-                        title="Dojo Kun Pronunciation"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    ></iframe>
-                </div>
-            </div>
+            {content.audio && <DojoKunAudioPlayer src={content.audio} />}
 
             <div className="space-y-6">
                 {content.rules.map((rule, idx) => (
@@ -129,13 +214,11 @@ const AboutDetailPage = () => {
         <div className="max-w-6xl mx-auto space-y-12">
             <div className="text-gray-200 font-normal text-lg leading-relaxed text-left md:text-justify mb-10 space-y-6 max-w-4xl mx-auto bg-black/60 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-lg">
                 {content.intro.map((p, i) => <p key={i} className="drop-shadow-md">{p}</p>)}
-
                 <div className="border-l-4 border-iskf-red pl-6 py-4 my-8 bg-white/5 rounded-r-xl">
                     <p className="italic text-white font-serif mb-2">{content.quote.text}</p>
                     <span className="text-sm text-iskf-red font-bold uppercase tracking-wider">— {content.quote.author}</span>
                 </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                 {content.rules.map((rule, idx) => (
                     <motion.div
@@ -153,7 +236,6 @@ const AboutDetailPage = () => {
 
     const renderEstructura = () => (
         <div className="w-full max-w-5xl mx-auto flex flex-col items-center space-y-16">
-            {/* Shihan */}
             <motion.div variants={itemVariants} className="relative group z-20 w-full max-w-2xl">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-900 to-[#2D2E83] rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-500" />
                 <div className="relative bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-2xl hover:border-iskf-red/50 transition-colors duration-300">
@@ -172,20 +254,16 @@ const AboutDetailPage = () => {
                 </div>
             </motion.div>
 
-            {/* Gerencia */}
             <motion.div variants={itemVariants} className="relative z-10 w-full max-w-sm text-center">
                 <div className="bg-[#111] border border-iskf-red/30 rounded-xl p-6 shadow-[0_10px_40px_-10px_rgba(190,19,34,0.3)]">
                     <h4 className="text-iskf-red font-bold text-xs uppercase tracking-widest mb-2 border-b border-iskf-red/20 pb-2 inline-block">{content.gerencia.department}</h4>
                     <h3 className="text-xl font-bold text-white uppercase mb-1">{content.gerencia.title}</h3>
                     <p className="text-white/80 font-medium text-sm">{content.gerencia.name}</p>
                 </div>
-                {/* Decorative Line */}
                 <div className="h-8 w-px bg-white/20 mx-auto mt-4 md:hidden"></div>
             </motion.div>
 
-            {/* Distribution Branches */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full">
-                {/* Board */}
                 <motion.div variants={itemVariants}>
                     <h3 className="text-center text-white font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Junta Directiva</h3>
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-3">
@@ -198,7 +276,6 @@ const AboutDetailPage = () => {
                     </div>
                 </motion.div>
 
-                {/* Commissions */}
                 <motion.div variants={itemVariants}>
                     <h3 className="text-center text-white font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Comisiones</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -226,17 +303,11 @@ const AboutDetailPage = () => {
 
     return (
         <div className={`bg-iskf-dark ${section === 'identidad' ? 'h-screen overflow-hidden' : 'min-h-screen'} text-white font-sans selection:bg-iskf-red selection:text-white relative`}>
-            {/* Standardized Fixed Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
-                <img
-                    src={fondoSonreNosotrosTarjetas}
-                    alt="Background"
-                    className="w-full h-full object-cover opacity-100"
-                />
+                <img src={fondoSonreNosotrosTarjetas} alt="Background" className="w-full h-full object-cover opacity-100" />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/60"></div>
             </div>
 
-            {/* Floating Back Button */}
             <motion.button
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -249,10 +320,7 @@ const AboutDetailPage = () => {
                 </svg>
             </motion.button>
 
-
-
             <div className={`min-h-[calc(100vh-80px)] px-6 ${section === 'identidad' ? 'py-0 flex items-center justify-center' : 'py-32'} flex flex-col items-center relative w-full max-w-7xl mx-auto`}>
-                {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -267,7 +335,6 @@ const AboutDetailPage = () => {
                     <div className="w-24 h-1 bg-gradient-to-r from-transparent via-iskf-red to-transparent mx-auto rounded-full shadow-[0_0_15px_#be1322]"></div>
                 </motion.div>
 
-                {/* Content Body */}
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"
@@ -277,6 +344,7 @@ const AboutDetailPage = () => {
                     {renderContent()}
                 </motion.div>
             </div>
+            <SocialSidebar />
         </div>
     );
 };
