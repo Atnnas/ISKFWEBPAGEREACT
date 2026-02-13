@@ -233,30 +233,101 @@ const DojoNode = memo(({ dojo, index, totalDojos, rotation, RADIUS_X, RADIUS_Y, 
             transition={isExpanded ? { type: 'spring', stiffness: 200, damping: 20 } : { duration: 0 }}
         >
             <motion.div
-                className={`relative w-16 h-16 md:w-24 md:h-24 cursor-pointer bg-zinc-950 border ${isExpanded ? 'border-iskf-red bg-white shadow-[0_0_20px_rgba(190,19,34,0.3)]' : 'border-white/20'} rounded-full flex items-center justify-center transition-all duration-300 group hover:border-blue-400 hover:scale-110 overflow-hidden pointer-events-auto`}
+                className={`relative w-[60px] h-[60px] md:w-24 md:h-24 cursor-pointer bg-zinc-950 border ${isExpanded ? 'border-iskf-red bg-white shadow-[0_0_20px_rgba(190,19,34,0.3)]' : 'border-white/10'} rounded-full flex items-center justify-center transition-all duration-500 group hover:border-blue-400 hover:scale-110 overflow-hidden pointer-events-auto shadow-[0_10px_40px_rgba(0,0,0,0.8)] ring-1 ring-white/10`}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                     e.stopPropagation();
                     setExpandedId(isExpanded ? null : dojo.id);
                 }}
             >
-                <div className="absolute inset-[-50%] bg-[conic-gradient(from_0deg,transparent,rgba(206,17,38,0.15),transparent,rgba(59,130,246,0.15),transparent)] animate-spin-slow opacity-60 z-0" />
+                {/* Inner Depth Gradient */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,_rgba(255,255,255,0.15)_0%,_transparent_70%)] z-10"></div>
+
+                <div className="absolute inset-[-50%] bg-[conic-gradient(from_0deg,transparent,rgba(206,17,38,0.2),transparent,rgba(59,130,246,0.2),transparent)] animate-spin-slow opacity-60 z-0" />
+
                 <img
                     src={dojo.logo}
                     alt={dojo.name}
-                    className={`w-full h-full ${isExpanded ? 'p-2' : 'p-4'} object-contain relative z-10 transition-transform duration-500`}
+                    className={`w-full h-full ${isExpanded ? 'p-2' : 'p-6'} object-contain relative z-20 transition-transform duration-700 group-hover:scale-110`}
                 />
 
-                {/* Visual Glass Effect */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-black/40 pointer-events-none z-20"></div>
+                {/* Crystal Flare/Shine Layer */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/60 pointer-events-none z-30 opacity-60 group-hover:opacity-100 transition-opacity"></div>
+
+                {/* Lens Flare Spot */}
+                <div className="absolute top-2 left-4 w-4 h-2 bg-white/30 blur-[2px] rounded-full rotate-[-30deg] z-40 pointer-events-none"></div>
+
+                {/* Rim Light */}
+                <div className="absolute inset-0 border-b-2 border-r-2 border-white/5 rounded-full z-40 pointer-events-none"></div>
 
                 {!isExpanded && (
-                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-[10px] md:text-xs font-black uppercase tracking-wider text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 px-2 py-1 rounded backdrop-blur-sm pointer-events-none z-30 ring-1 ring-white/10 shadow-xl">
+                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 text-[10px] md:text-xs font-black uppercase tracking-wider text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 px-2 py-1 rounded backdrop-blur-sm pointer-events-none z-50 ring-1 ring-white/10 shadow-xl">
                         {dojo.name}
                     </div>
                 )}
             </motion.div>
         </motion.div>
+    );
+});
+
+// Utility for tiny edge sparks
+const generateTinySpark = (radius, angle, length) => {
+    const startX = Math.cos(angle) * radius;
+    const startY = Math.sin(angle) * radius;
+    let path = `M ${startX} ${startY}`;
+    const segments = 2;
+    for (let i = 1; i <= segments; i++) {
+        const t = i / segments;
+        const targetX = startX + Math.cos(angle) * length * t + (Math.random() - 0.5) * 10;
+        const targetY = startY + Math.sin(angle) * length * t + (Math.random() - 0.5) * 10;
+        path += ` L ${targetX} ${targetY}`;
+    }
+    return path;
+};
+
+const AtomicNucleusEffect = memo(({ isMobile }) => {
+    const [sparks, setSparks] = useState([]);
+    const radius = isMobile ? 54 : 62; // Slightly inside the border
+
+    useEffect(() => {
+        const updateSparks = () => {
+            const newSparks = Array.from({ length: 6 }).map((_, i) => ({
+                id: Math.random(),
+                path: generateTinySpark(radius, Math.random() * Math.PI * 2, 8 + Math.random() * 12),
+                color: Math.random() > 0.5 ? '#60a5fa' : '#ef4444', // Blue/Red sparks
+            }));
+            setSparks(newSparks);
+        };
+        const interval = setInterval(updateSparks, 100);
+        return () => clearInterval(interval);
+    }, [radius]);
+
+    return (
+        <div className="absolute inset-0 pointer-events-none z-40 overflow-visible flex items-center justify-center">
+            {/* Edge Sparks */}
+            <svg className="absolute inset-0 w-full h-full overflow-visible">
+                <g transform="translate(50%, 50%)">
+                    <AnimatePresence>
+                        {sparks.map((spark) => (
+                            <motion.path
+                                key={spark.id}
+                                d={spark.path}
+                                stroke={spark.color}
+                                strokeWidth="1.5"
+                                fill="none"
+                                initial={{ opacity: 1, pathLength: 0 }}
+                                animate={{ opacity: 0, pathLength: 1 }}
+                                transition={{ duration: 0.1, ease: "linear" }}
+                                style={{ filter: 'drop-shadow(0 0 4px currentColor)' }}
+                            />
+                        ))}
+                    </AnimatePresence>
+                </g>
+            </svg>
+
+            {/* Core Resonance (Inner Flicker) */}
+            <div className="absolute w-12 h-12 bg-white/20 rounded-full blur-xl animate-pulse mix-blend-overlay"></div>
+        </div>
     );
 });
 
@@ -292,11 +363,23 @@ const OrbitalTimeline = ({ dojos }) => {
 
     return (
         <div className="relative w-full h-full min-h-[500px] flex items-center justify-center overflow-visible perspective-1000">
-            {/* Sun Center */}
+            {/* Sun Center - Nuclear Core Restored */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex items-center justify-center">
-                <div className="absolute w-32 h-32 bg-iskf-red/40 rounded-full blur-[40px] animate-pulse"></div>
-                <div className="relative w-24 h-24 rounded-full shadow-[0_0_60px_rgba(190,19,34,0.6)] flex items-center justify-center z-10 overflow-hidden border border-white/30">
-                    <img src={iskfFondoRojo} alt="ISKF Core" className="w-full h-full object-cover opacity-90" />
+                {/* Atomic Nucleus Effect [NEW] */}
+                <AtomicNucleusEffect isMobile={isMobile} />
+
+                {/* Main Glow Aura */}
+                <div className="absolute w-40 h-40 bg-iskf-red/40 rounded-full blur-[50px] animate-pulse"></div>
+
+                {/* Nuclear Electricity Flicker */}
+                <div className="absolute w-32 h-32 bg-blue-500/30 rounded-full blur-[30px] animate-thunder-glow"></div>
+
+                {/* Core Vessel */}
+                <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-full shadow-[0_0_80px_rgba(190,19,34,0.8)] flex items-center justify-center z-10 overflow-hidden border-2 border-white/40">
+                    <img src={iskfFondoRojo} alt="ISKF Core" className="w-full h-full object-cover scale-110 opacity-90" />
+
+                    {/* Interior Energy Flow */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 via-transparent to-iskf-red/20 animate-pulse"></div>
                 </div>
             </div>
 
