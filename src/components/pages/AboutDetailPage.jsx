@@ -70,12 +70,11 @@ const AboutDetailPage = () => {
                 {content.intro.map((p, i) => <p key={i} className="drop-shadow-md">{p}</p>)}
             </div>
 
-            {/* Premium Video Section */}
-            <motion.div
-                variants={itemVariants}
-                className="relative group rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm z-10"
+            {/* Premium Video Section - Simplified for direct mobile interaction */}
+            <div
+                className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40 backdrop-blur-sm z-30"
             >
-                <div className="absolute -inset-1 bg-gradient-to-r from-iskf-red/20 to-transparent opacity-0 group-hover:opacity-100 transition duration-1000 pointer-events-none"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-iskf-red/20 to-transparent opacity-0 pointer-events-none transition duration-1000"></div>
 
                 {/* Header for Video */}
                 <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between pointer-events-none">
@@ -86,17 +85,17 @@ const AboutDetailPage = () => {
                     <span className="text-[10px] text-gray-500 font-serif italic">Video Tutorial Japonés</span>
                 </div>
 
-                <div className="aspect-video w-full relative z-20">
+                <div className="aspect-video w-full relative z-40 pointer-events-auto">
                     <iframe
-                        className="w-full h-full md:grayscale-[0.3] md:hover:grayscale-0 transition-all duration-700"
-                        src="https://www.youtube.com/embed/EMYbqFzhLs0?rel=0&showinfo=0&modestbranding=1"
+                        className="w-full h-full grayscale-0 md:grayscale-[0.3] md:hover:grayscale-0 transition-all duration-700"
+                        src="https://www.youtube-nocookie.com/embed/EMYbqFzhLs0?rel=0&showinfo=0&modestbranding=1&autoplay=0"
                         title="Dojo Kun Pronunciation"
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                     ></iframe>
                 </div>
-            </motion.div>
+            </div>
 
             <div className="space-y-6">
                 {content.rules.map((rule, idx) => (
