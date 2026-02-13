@@ -233,7 +233,7 @@ const DojoNode = memo(({ dojo, index, totalDojos, rotation, RADIUS_X, RADIUS_Y, 
             transition={isExpanded ? { type: 'spring', stiffness: 200, damping: 20 } : { duration: 0 }}
         >
             <motion.div
-                className={`relative w-[60px] h-[60px] md:w-24 md:h-24 cursor-pointer bg-zinc-950 border ${isExpanded ? 'border-iskf-red bg-white shadow-[0_0_20px_rgba(190,19,34,0.3)]' : 'border-white/10'} rounded-full flex items-center justify-center transition-all duration-500 group hover:border-blue-400 hover:scale-110 overflow-hidden pointer-events-auto shadow-[0_10px_40px_rgba(0,0,0,0.8)] ring-1 ring-white/10`}
+                className={`relative w-24 h-24 md:w-24 md:h-24 cursor-pointer bg-zinc-950 border ${isExpanded ? 'border-iskf-red bg-white shadow-[0_0_20px_rgba(190,19,34,0.3)]' : 'border-white/10'} rounded-full flex items-center justify-center transition-all duration-500 group hover:border-blue-400 hover:scale-110 overflow-hidden pointer-events-auto shadow-[0_10px_40px_rgba(0,0,0,0.8)] ring-1 ring-white/10`}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -248,7 +248,7 @@ const DojoNode = memo(({ dojo, index, totalDojos, rotation, RADIUS_X, RADIUS_Y, 
                 <img
                     src={dojo.logo}
                     alt={dojo.name}
-                    className={`w-full h-full ${isExpanded ? 'p-2' : 'p-6'} object-contain relative z-20 transition-transform duration-700 group-hover:scale-110`}
+                    className={`w-full h-full ${isExpanded ? 'p-2' : 'p-4 md:p-6'} object-contain relative z-20 transition-transform duration-700 group-hover:scale-110`}
                 />
 
                 {/* Crystal Flare/Shine Layer */}
