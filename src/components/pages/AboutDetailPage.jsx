@@ -9,6 +9,7 @@ import { ThreeDPhotoCarousel } from '../ui/3d-carousel';
 const DojoKunAudioPlayer = ({ src }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const audioRef = useRef(null);
 
@@ -26,6 +27,7 @@ const DojoKunAudioPlayer = ({ src }) => {
         if (!audioRef.current) return;
         const current = audioRef.current.currentTime;
         const total = audioRef.current.duration;
+        setCurrentTime(current);
         if (total > 0) {
             setProgress((current / total) * 100);
         }
@@ -99,7 +101,7 @@ const DojoKunAudioPlayer = ({ src }) => {
                         />
                     </div>
                     <div className="flex justify-between text-[11px] font-mono text-gray-500 tabular-nums">
-                        <span>{formatTime(audioRef.current?.currentTime)}</span>
+                        <span>{formatTime(currentTime)}</span>
                         <span>{formatTime(duration)}</span>
                     </div>
                 </div>

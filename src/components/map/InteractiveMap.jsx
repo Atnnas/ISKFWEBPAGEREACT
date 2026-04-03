@@ -354,7 +354,7 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
 
                     {/* RADIOACTIVE AURA LAYER (Strengthened & Focus-Aware) */}
                     <g className="map-radioactive-aura pointer-events-none">
-                        {crMapFeatures.map((feature, i) => {
+                        {crMapFeatures.map((feature) => {
                             const isFocused = activeProvinceId === feature.id;
                             const hasSelection = activeProvinceId !== null;
                             const targetOpacity = isFocused ? 0.8 : (hasSelection ? 0.1 : 0.4);

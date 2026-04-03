@@ -8,12 +8,12 @@ import {
 } from "framer-motion"
 import { X } from "lucide-react"
 
-export const useIsomorphicLayoutEffect =
+const useIsomorphicLayoutEffect =
     typeof window !== "undefined" ? useLayoutEffect : useEffect
 
 const IS_SERVER = typeof window === "undefined"
 
-export function useMediaQuery(query, defaultValue = false, initializeWithValue = true) {
+function useMediaQuery(query, defaultValue = false, initializeWithValue = true) {
     const getMatches = (query) => {
         if (IS_SERVER) {
             return defaultValue
@@ -168,6 +168,7 @@ const Carousel = memo(
         )
     }
 )
+Carousel.displayName = "Carousel"
 
 function ThreeDPhotoCarousel({ items }) {
     const [activeCard, setActiveCard] = useState(null)

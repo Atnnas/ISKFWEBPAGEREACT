@@ -193,7 +193,6 @@ const EventsRoadmap = () => {
 
                     {/* EVENT NODES - DESKTOP */}
                     {sortedEvents.map((event) => {
-                        const isNational = event.type === 'Nacional';
                         const isTopPosition = event.flag === 'CostaRica.jpg' || event.location.includes('Costa Rica');
                         const isPast = new Date(event.date) < new Date();
                         const isNext = !isPast && sortedEvents.find(e => new Date(e.date) >= new Date())?.id === event.id;
