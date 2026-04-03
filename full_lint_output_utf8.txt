@@ -1,0 +1,48 @@
+﻿
+> iskf-react@0.0.0 lint
+> eslint .
+
+
+C:\Dev\iskf-web-page\src\components\map\InteractiveMap.jsx
+  357:54  error  'i' is defined but never used. Allowed unused args must match /^[A-Z_]/u  no-unused-vars
+
+C:\Dev\iskf-web-page\src\components\pages\AboutDetailPage.jsx
+  102:43  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  100 |                     </div>
+  101 |                     <div className="flex justify-between text-[11px] font-mono text-gray-500 tabular-nums">
+> 102 |                         <span>{formatTime(audioRef.current?.currentTime)}</span>
+      |                                           ^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  103 |                         <span>{formatTime(duration)}</span>
+  104 |                     </div>
+  105 |                 </div>               react-hooks/refs
+  102:43  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  100 |                     </div>
+  101 |                     <div className="flex justify-between text-[11px] font-mono text-gray-500 tabular-nums">
+> 102 |                         <span>{formatTime(audioRef.current?.currentTime)}</span>
+      |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  103 |                         <span>{formatTime(duration)}</span>
+  104 |                     </div>
+  105 |                 </div>  react-hooks/refs
+
+C:\Dev\iskf-web-page\src\components\sections\EventsRoadmap.jsx
+  196:31  error  'isNational' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Dev\iskf-web-page\src\components\ui\3d-carousel.jsx
+  11:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  16:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  53:18  error  Component definition is missing display name                                                                                    react/display-name
+
+C:\Dev\iskf-web-page\src\data\dojos.js
+  23:8  error  'iskfLogo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Dev\iskf-web-page\vite.config.js
+  8:9  error  'process' is not defined  no-undef
+
+Ô£û 9 problems (9 errors, 0 warnings)
+

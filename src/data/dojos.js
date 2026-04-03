@@ -24,9 +24,18 @@ import dojoKokoroLogo from '../assets/images/dojoKokoroLogo.jpg';
 import fotoSenseiMinor from '../assets/images/sensei_minor.jpeg';
 import logoCodea from '../assets/images/logo_dojo_codea.jpeg';
 import fotoJosueValverde from '../assets/images/josue_valverde.jpeg';
-import fotoSenseiRoyLee from '../assets/images/sensei_roy_lee.jpeg';
+import fotoSenseiRoyLee from '../assets/images/sensei_lee_2.jpeg';
 import fotoSenseiLoaiza from '../assets/images/Sensei_loaiza.jpeg';
 import fotoSenseiJosueKeikan from '../assets/images/sensei_josue_keikan.jpeg';
+import shinobuLogo from '../assets/images/dojo_shinobu_logo.jpeg';
+import fotoSenseiEsteban from '../assets/images/sensei_Esteban.jpeg';
+import fotoSenseiVerny from '../assets/images/Sensei_verny_lopez.jpg';
+import sekLogo from '../assets/images/Dojo_sek_logo.jpeg';
+import baransuLogo from '../assets/images/Baransu_dojo_logo.jpeg';
+import fotoSenseiMarioArroyo from '../assets/images/sensei_mario_arroyo.jpeg';
+import saavedraLogo from '../assets/images/Team_savedra_logo.jpeg';
+import fotoSenseiCristel from '../assets/images/Sensei_cristel_foto.jpeg';
+import fotoSenseiDavid from '../assets/images/Sensei_david_artavia.jpeg';
 
 export const dojosData = [
     {
@@ -48,6 +57,7 @@ export const dojosData = [
         name: "TEAM KUMA", 
         province: "Alajuela",
         sensei: "Sensei David Andres Artavia Rodriguez",
+        senseiImage: fotoSenseiDavid,
         logo: kumaLogo,
         phone: "(506) 7291-8289",
         email: "david.artavia.rodriguez@gmail.com",
@@ -170,6 +180,7 @@ export const dojosData = [
         name: "Tora Do Dojo", 
         province: "Alajuela",
         sensei: "Sensei Verny Lopez Solano",
+        senseiImage: fotoSenseiVerny,
         rank: "3er Dan",
         profession: "Test Engineer",
         logo: ToraLogo,
@@ -228,7 +239,8 @@ export const dojosData = [
         id: "bushidokan",
         name: "Bushido Kan", 
         province: "Alajuela", 
-        sensei: "Sensei Estebank Ruiz",
+        sensei: "Sensei Esteban Ruiz",
+        senseiImage: fotoSenseiEsteban,
         rank: "1er Dan",
         profession: "Psicólogo - Ciencias Policiales",
         logo: bushidoKanLogo,
@@ -259,22 +271,11 @@ export const dojosData = [
         phone: "(506) 8352-5233",
         fax: "(506) 2272-5464",
         website: "https://www.iskf-cr.com",
-        logo: null,
+        logo: sekLogo,
         address: "Colegio Internacional SEK, 1.5 km al Norte del Servicentro La Galera, Cipreses de Curridabat. San José.",
         detailsUrl: "#"
     },
-    {
-        id: "toraryu",
-        name: "Dojo Tora Ryu",
-        province: "San José",
-        sensei: "Sensei Ever Jose Cascante Rivera",
-        email: "ecascante@hulteccr.com",
-        phone: "(506) 8389-2800",
-        website: "https://www.iskf-cr.com",
-        logo: null,
-        address: "2do Piso de la Vidriera Nacional, Moravia - Tibás. San José.",
-        detailsUrl: "#"
-    },
+
     {
         id: "ccdralajuela",
         name: "Dojo CODEA",
@@ -294,9 +295,10 @@ export const dojosData = [
         name: "Team Saavedra ISKF",
         province: "San José",
         sensei: "Sensei Kristel Dylana Saavedra Quesada",
+        senseiImage: fotoSenseiCristel,
         email: "krysdyla@gmail.com",
         phone: "506 71089158",
-        logo: null,
+        logo: saavedraLogo,
         address: "Estadio Municipal de Alajuelita. San José.",
         detailsUrl: "#"
     },
@@ -305,9 +307,10 @@ export const dojosData = [
         name: "Baransu Dojo",
         province: "Alajuela",  
         sensei: "Sensei Mario Alberto Arroyo Vásquez",
+        senseiImage: fotoSenseiMarioArroyo,
         email: "baransudojocr@gmail.com",
         phone: "506 87725673",
-        logo: null,
+        logo: baransuLogo,
         address: "Quesada, San Carlos. Alajuela.",
         detailsUrl: "#"
     },
@@ -319,7 +322,7 @@ export const dojosData = [
         senseiImage: fotoSenseiMinor,
         email: "lic.castillozamora@gmail.com",
         phone: "506 83621600",
-        logo: null,
+        logo: shinobuLogo,
         address: "Grecia, Alajuela.",
         detailsUrl: "#"
     }
