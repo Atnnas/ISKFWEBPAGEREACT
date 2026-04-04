@@ -68,15 +68,15 @@ export const dojosData = [
     {
         id: "kurobi",
         name: "Dojo Kuro Obi", 
-        province: "Heredia", 
+        province: "Alajuela", 
         sensei: "Sensei Roy Lee Gatjens Campos",
         senseiImage: fotoSenseiRoyLee,
         profession: "Master en Gestión de Organizaciones Deportivas",
         logo: kurobiLogo,
-        phone: "(506) 8895-8409 / 8511-2835",
+        phone: "8895 8409",
         email: "kuroobicostarica@gmail.com",
         website: "https://www.kuroobicr.com/",
-        address: "Alajuela, frente a la Iglesia del Carmen. Heredia.",
+        address: "Alajuela, frente a la Iglesia del Carmen.",
         detailsUrl: "https://waze.com/ul/hd1u0gwsre"
     },
     {
@@ -283,7 +283,7 @@ export const dojosData = [
         sensei: "Sensei Roy Lee Gatjens Campos",
         senseiImage: fotoSenseiRoyLee,
         email: "royleekamae@hotmail.com",
-        phone: "(506) 8895-8409",
+        phone: "8895 8409",
         fax: "(506) 2277-8279",
         website: "https://www.iskf-cr.com",
         logo: logoCodea,
