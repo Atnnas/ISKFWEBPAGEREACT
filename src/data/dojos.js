@@ -36,6 +36,7 @@ import fotoSenseiMarioArroyo from '../assets/images/sensei_mario_arroyo.jpeg';
 import saavedraLogo from '../assets/images/Team_savedra_logo.jpeg';
 import fotoSenseiCristel from '../assets/images/Sensei_cristel_foto.jpeg';
 import fotoSenseiDavid from '../assets/images/Sensei_david_artavia.jpeg';
+import fotoSenseiAnthony from '../assets/images/sensei_anthony.jpeg';
 
 export const dojosData = [
     {
@@ -255,6 +256,7 @@ export const dojosData = [
         province: "Heredia",
         sensei: "Sensei Anthony Daniel Ruiz Gamboa",
         rank: "1er Dan",
+        senseiImage: fotoSenseiAnthony,
         logo: dojoKokoroLogo,
         email: "dojokokoro.cr@gmail.com / kekogamboa22@gmail.com",
         phone: "(506) 8888-0922",
