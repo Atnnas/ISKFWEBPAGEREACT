@@ -248,6 +248,51 @@ const EventsRoadmap = ({ events = [] }) => {
                 <h2 className="text-4xl md:text-6xl font-black text-[#2D2E83] uppercase tracking-tighter mt-2">
                     Calendario <span className="text-transparent bg-clip-text bg-gradient-to-r from-iskf-red to-red-600">Oficial</span>
                 </h2>
+                
+                {/* Swipe/Drag Invitation (Desktop/Mobile responsive) - UNDER TITLE, LARGER & EYE-CATCHING */}
+                <div className="mt-6 flex flex-col items-center justify-center">
+                    {/* Desktop swipe helper */}
+                    <div className="hidden md:flex items-center gap-4 text-base md:text-lg text-neutral-600 font-bold tracking-wider uppercase">
+                        <motion.span 
+                            animate={{ x: [-8, 8, -8] }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                            className="text-iskf-red text-xl"
+                        >
+                            ←
+                        </motion.span>
+                        <span className="text-neutral-700 bg-neutral-100/60 backdrop-blur-md px-6 py-2.5 rounded-full border border-[#2D2E83]/10 shadow-[0_4px_15px_rgba(45,46,131,0.05)]">
+                            Arrastra horizontalmente para explorar el roadmap
+                        </span>
+                        <motion.span 
+                            animate={{ x: [8, -8, 8] }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                            className="text-iskf-red text-xl"
+                        >
+                            →
+                        </motion.span>
+                    </div>
+
+                    {/* Mobile swipe helper */}
+                    <div className="flex md:hidden items-center gap-3 text-xs md:text-sm text-neutral-600 font-bold tracking-wider uppercase">
+                        <motion.span
+                            animate={{ y: [-4, 4, -4] }}
+                            transition={{ repeat: Infinity, duration: 1.0, ease: "easeInOut" }}
+                            className="text-iskf-red text-base"
+                        >
+                            ↓
+                        </motion.span>
+                        <span className="text-neutral-700 bg-neutral-100/60 backdrop-blur-md px-4 py-2 rounded-full border border-[#2D2E83]/10 shadow-[0_4px_15px_rgba(45,46,131,0.05)]">
+                            Desliza hacia abajo para ver más eventos
+                        </span>
+                        <motion.span
+                            animate={{ y: [4, -4, 4] }}
+                            transition={{ repeat: Infinity, duration: 1.0, ease: "easeInOut" }}
+                            className="text-iskf-red text-base"
+                        >
+                            ↑
+                        </motion.span>
+                    </div>
+                </div>
             </div>
 
             {/* DESKTOP WRAPPER (Horizontal Infinite Scroll) */}
@@ -470,50 +515,8 @@ const EventsRoadmap = ({ events = [] }) => {
                 </div>
             </div>
 
-            {/* INVITACIÓN A DESLIZAR & DISCLAIMER */}
+            {/* DISCLAIMER */}
             <div className="relative z-30 w-full max-w-4xl px-6 mt-8 flex flex-col items-center gap-6 text-center select-none">
-                
-                {/* Swipe/Drag Invitation (Desktop/Mobile responsive) */}
-                <div className="flex flex-col items-center gap-2">
-                    {/* Desktop swipe helper */}
-                    <div className="hidden md:flex items-center gap-3 text-sm text-neutral-500 font-medium tracking-wider uppercase">
-                        <motion.span 
-                            animate={{ x: [-5, 5, -5] }}
-                            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                            className="text-[#2D2E83]"
-                        >
-                            ←
-                        </motion.span>
-                        <span>Arrastra horizontalmente para explorar el roadmap</span>
-                        <motion.span 
-                            animate={{ x: [5, -5, 5] }}
-                            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                            className="text-[#2D2E83]"
-                        >
-                            →
-                        </motion.span>
-                    </div>
-
-                    {/* Mobile swipe helper */}
-                    <div className="flex md:hidden items-center gap-2.5 text-xs text-neutral-500 font-medium tracking-wider uppercase animate-pulse">
-                        <motion.span
-                            animate={{ y: [-3, 3, -3] }}
-                            transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
-                            className="text-iskf-red text-sm"
-                        >
-                            ↓
-                        </motion.span>
-                        <span>Desliza hacia abajo para ver más eventos</span>
-                        <motion.span
-                            animate={{ y: [3, -3, 3] }}
-                            transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
-                            className="text-iskf-red text-sm"
-                        >
-                            ↑
-                        </motion.span>
-                    </div>
-                </div>
-
                 {/* Glassmorphic Disclaimer Card */}
                 <motion.div 
                     initial={{ opacity: 0, y: 15 }}
