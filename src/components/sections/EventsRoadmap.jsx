@@ -1,29 +1,111 @@
+"use client";
 import React, { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { eventsData } from '../../data/events';
+import { motion, useMotionValue, animate } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import useWindowSize from '../../hooks/useWindowSize';
 
-import fondoEventos from '../../assets/images/fondo-calendario-new.jpg';
+import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
 import iskfFondoRojo from '../../assets/images/iskfFondoRojo.jpg';
 import iskfLogo from '../../assets/images/iskf.jpg';
+import kumaLogo from '../../assets/images/kumaLogo.jpg';
+import costaRicaFlag from '../../assets/images/CostaRica.jpg';
+import wkfLogo from '../../assets/images/wkf.jpg';
+import mexicoFlag from '../../assets/images/mexico.jpg';
+import icoderLogo from '../../assets/images/icoder.jpg';
+import kurobiLogo from '../../assets/images/kurobiLogo.jpeg';
+import fecokaLogo from '../../assets/images/FecokaLogo.jpg';
+import ccondekaLogo from '../../assets/images/LogoCcondeka.jpg';
+import nicaraguaFlag from '../../assets/images/nicaragua.jpg';
+import wkfPanamericaLogo from '../../assets/images/LogoWKFPanamerica.jpg';
+import brazilFlag from '../../assets/images/brazil.jpg';
+import polandFlag from '../../assets/images/poland.jpg';
+import zanshinLogo from '../../assets/images/zanshinLogo.jpg';
 
-const EventsRoadmap = () => {
+const imageMap = {
+    kumaLogo,
+    costaRicaFlag,
+    wkfLogo,
+    mexicoFlag,
+    icoderLogo,
+    iskfLogo,
+    kurobiLogo,
+    iskfFondoRojo,
+    fecokaLogo,
+    ccondekaLogo,
+    nicaraguaFlag,
+    wkfPanamericaLogo,
+    brazilFlag,
+    polandFlag,
+    zanshinLogo,
+};
+
+const EventsRoadmap = ({ events = [] }) => {
     const containerRef = useRef(null);
     const wrapperRef = useRef(null);
     const desktopContentRef = useRef(null); // Added ref for desktop content
     const nodeRefs = useRef({});
-    const navigate = useNavigate();
+    const router = useRouter(); // Changed from navigate to router for consistency
     const { width: windowWidth } = useWindowSize();
     const [width, setWidth] = useState(0);
+    const xPos = useMotionValue(0); // Motion value for desktop drag X position
 
     // Collision Detection State & Refs
     const [activeEventId, setActiveEventId] = useState(null);
     const [hoveredEventId, setHoveredEventId] = useState(null);
     const cometRef = useRef(null);
 
-    // Sort events by date
-    const sortedEvents = [...eventsData].sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Sort events by date and map DB structure to component structure
+    const sortedEvents = [...events].map(e => ({
+        id: e.id,
+        name: e.title,
+        date: e.startDate,
+        endDate: e.endDate,
+        type: e.type,
+        locationScope: e.locationScope,
+        location: e.location || 'Costa Rica',
+        logo: imageMap[e.logoName] || e.logoName || iskfLogo,
+        flag: imageMap[e.flagName] || e.flagName || costaRicaFlag,
+        description: e.description,
+    })).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Auto-scroll robusto al próximo evento
+    useEffect(() => {
+        const nextEvent = sortedEvents.find(e => new Date(e.date) >= new Date(new Date().setHours(0,0,0,0)));
+        if (!nextEvent) return;
+
+        let attemptCount = 0;
+        const tryScroll = () => {
+            const node = nodeRefs.current[nextEvent.id];
+            if (!node) {
+                if (attemptCount < 10) {
+                    attemptCount++;
+                    setTimeout(tryScroll, 200);
+                }
+                return;
+            }
+
+            if (windowWidth <= 768) {
+                if (containerRef.current) {
+                    // Mobile: Scroll to position leaving some space at the top
+                    containerRef.current.scrollTo({
+                        top: Math.max(0, node.offsetTop - 150),
+                        behavior: 'smooth'
+                    });
+                }
+            } else {
+                if (wrapperRef.current && desktopContentRef.current) {
+                    // Desktop: Move horizontal timeline so the node is visible on the left
+                    let targetX = -(node.offsetLeft - 300);
+                    if (targetX > 0) targetX = 0;
+                    
+                    animate(xPos, targetX, { type: "spring", stiffness: 50, damping: 20 });
+                }
+            }
+        };
+
+        // Iniciar intentos de scroll poco después de renderizar
+        setTimeout(tryScroll, 500);
+    }, [windowWidth]);
 
     // Calculate drag constraints (Desktop) - Dynamic & Robust
     useEffect(() => {
@@ -70,8 +152,8 @@ const EventsRoadmap = () => {
                 Object.keys(nodeRefs.current).forEach((id) => {
                     const nodeEl = nodeRefs.current[id];
                     if (nodeEl) {
-                        const eventId = parseInt(id);
-                        const event = eventsData.find(e => e.id === eventId);
+                        const eventId = id; // id in sortedEvents is a string or number, we can compare directly
+                        const event = sortedEvents.find(e => e.id.toString() === eventId.toString());
                         const isPast = event && new Date(event.date) < new Date();
 
                         // SKIP PAST EVENTS (No reaction)
@@ -88,7 +170,7 @@ const EventsRoadmap = () => {
 
                         // Threshold: 60px desktop, 50px mobile
                         if (distance < (isMobile ? 50 : 60)) {
-                            hitFound = parseInt(id);
+                            hitFound = id;
                         }
                     }
                 });
@@ -119,9 +201,27 @@ const EventsRoadmap = () => {
         }
     };
 
-    const formatDate = (dateStr) => {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }).replace('.', '');
+    const formatDate = (startDateStr, endDateStr) => {
+        const start = new Date(startDateStr);
+        const end = endDateStr ? new Date(endDateStr) : start;
+        
+        const options = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+        
+        const startFormatted = start.toLocaleDateString('es-ES', options).replace('.', '');
+        
+        if (startDateStr && endDateStr) {
+            const startDayOnly = startDateStr.split('T')[0];
+            const endDayOnly = endDateStr.split('T')[0];
+            if (startDayOnly !== endDayOnly) {
+                if (start.getUTCMonth() === end.getUTCMonth()) {
+                    return `${start.getUTCDate()} - ${end.getUTCDate()} de ${start.toLocaleDateString('es-ES', { month: 'short', timeZone: 'UTC' }).replace('.', '')}`;
+                } else {
+                    const endFormatted = end.toLocaleDateString('es-ES', options).replace('.', '');
+                    return `${startFormatted} - ${endFormatted}`;
+                }
+            }
+        }
+        return startFormatted;
     };
 
     const overlapSpacingRem = 18; // Overlap factor
@@ -129,32 +229,32 @@ const EventsRoadmap = () => {
     return (
         <section
             id="calendario"
-            className="relative min-h-screen bg-black overflow-hidden flex flex-col items-center justify-center border-t border-white/5"
+            className="relative min-h-screen pt-36 pb-24 md:pt-40 md:pb-24 bg-white overflow-hidden flex flex-col items-center justify-center border-t border-black/5"
             onWheel={handleWheel}
         >
             {/* BACKGROUND: Digital Horizon + Image */}
             <div className="absolute inset-0 z-0 pointer-events-none">
-                <div className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity" style={{ backgroundImage: `url('${fondoEventos}')` }}></div>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(190,19,34,0.2),transparent_80%)]"></div>
+                <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{ backgroundImage: `url('${fondoInicioNuevo?.src || fondoInicioNuevo}')` }}></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(190,19,34,0.1),transparent_80%)]"></div>
 
                 {/* Smooth Transitions to other sections */}
-                <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-black via-black/50 to-transparent"></div>
-                <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-white via-white/50 to-transparent"></div>
+                <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white via-white/50 to-transparent"></div>
             </div>
 
             {/* HEADER */}
             <div className="relative z-10 text-center mb-4 md:mb-8 pointer-events-none mt-12">
                 <span className="text-iskf-red font-bold text-xs tracking-[0.3em] uppercase animate-pulse">Roadmap 2026</span>
-                <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter mt-2">
+                <h2 className="text-4xl md:text-6xl font-black text-[#2D2E83] uppercase tracking-tighter mt-2">
                     Calendario <span className="text-transparent bg-clip-text bg-gradient-to-r from-iskf-red to-red-600">Oficial</span>
                 </h2>
-                <div className="w-16 h-1 bg-iskf-red mx-auto mt-4 shadow-[0_0_10px_#be1322]"></div>
+                <div className="w-16 h-1 bg-iskf-red mx-auto mt-4 shadow-[0_0_10px_rgba(190,19,34,0.3)]"></div>
             </div>
 
             {/* DESKTOP WRAPPER (Horizontal Infinite Scroll) */}
             <div className="hidden md:flex w-full relative z-20 flex-col md:flex-row md:items-center md:h-[75vh] md:overflow-hidden cursor-grab active:cursor-grabbing md:py-24" ref={wrapperRef}>
                 {/* DESKTOP LINE (Infinite Rail) */}
-                <div className="absolute top-1/2 left-0 h-[2px] bg-white/10 w-[200%] z-0 translate-y-[1px]"></div>
+                <div className="absolute top-1/2 left-0 h-[2px] bg-black/10 w-[200%] z-0 translate-y-[1px]"></div>
 
                 {/* DESKTOP COMET - Assigned to cometRef when visible */}
                 {windowWidth > 768 && (
@@ -176,7 +276,8 @@ const EventsRoadmap = () => {
 
                 <motion.div
                     ref={desktopContentRef}
-                    className="flex items-center pl-10 pr-[50vw] h-full"
+                    style={{ x: xPos }}
+                    className="relative flex items-center pl-10 pr-[50vw] h-full"
                     drag="x"
                     dragConstraints={{ right: 0, left: width > 0 ? -width : -10000 }} // Use large fallback to prevent snap-to-right on init
                     dragElastic={0.1} // Minimal bounce to stay in control
@@ -184,8 +285,8 @@ const EventsRoadmap = () => {
                 >
                     {/* START NODE */}
                     <div className="relative flex-shrink-0 flex flex-col items-center justify-center mr-16 group">
-                        <div className="w-24 h-24 rounded-full bg-black border-2 border-iskf-red/50 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(190,19,34,0.3)] group-hover:scale-110 transition-transform duration-500">
-                            <img src={iskfFondoRojo} alt="ISKF" className="w-full h-full object-cover rounded-full opacity-90 group-hover:opacity-100 transition-opacity" />
+                        <div className="w-24 h-24 rounded-full bg-white border-2 border-iskf-red/50 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(190,19,34,0.15)] group-hover:scale-110 transition-transform duration-500">
+                            <img src={iskfFondoRojo?.src || iskfFondoRojo} alt="ISKF" className="w-full h-full object-cover rounded-full opacity-90 group-hover:opacity-100 transition-opacity" />
                             <div className="absolute inset-0 rounded-full border-4 border-iskf-red opacity-0 animate-[ping_1.5s_ease-out_infinite] z-0"></div>
                         </div>
                         <div className="absolute top-1/2 left-full h-[2px] bg-gradient-to-r from-iskf-red via-red-500 to-transparent z-0 translate-y-[1px] opacity-80" style={{ width: `${overlapSpacingRem}rem` }}></div>
@@ -193,7 +294,7 @@ const EventsRoadmap = () => {
 
                     {/* EVENT NODES - DESKTOP */}
                     {sortedEvents.map((event) => {
-                        const isTopPosition = event.flag === 'CostaRica.jpg' || event.location.includes('Costa Rica');
+                        const isTopPosition = event.locationScope === 'Nacional';
                         const isPast = new Date(event.date) < new Date();
                         const isNext = !isPast && sortedEvents.find(e => new Date(e.date) >= new Date())?.id === event.id;
                         const isActive = activeEventId === event.id;
@@ -214,11 +315,10 @@ const EventsRoadmap = () => {
                                 <motion.div
                                     ref={el => { if (windowWidth > 768) nodeRefs.current[event.id] = el }}
                                     className={`w-8 h-8 rounded-full border-2 relative z-20 transition-all duration-300 
-                                        ${isPast ? 'bg-zinc-800 border-zinc-600 opacity-30 cursor-default' :
-                                            isActive ? 'bg-white border-iskf-red shadow-[0_0_50px_#be1322] scale-150 cursor-pointer' :
-                                                isNext ? 'bg-white border-iskf-blue shadow-[0_0_40px_rgba(45,46,131,0.8)] cursor-pointer' :
-                                                    'bg-iskf-dark border-iskf-red shadow-[0_0_20px_#be1322] cursor-pointer group hover:scale-125'}`}
-                                    onClick={() => !isPast && navigate(`/event/${event.id}`)}
+                                        ${isPast ? 'bg-gray-200 border-gray-400 opacity-50 cursor-default' :
+                                            isActive ? 'bg-white border-iskf-red shadow-[0_0_20px_#be1322] scale-150 cursor-default' :
+                                                isNext ? 'bg-white border-iskf-blue shadow-[0_0_20px_rgba(45,46,131,0.5)] cursor-default' :
+                                                    'bg-white border-iskf-red shadow-[0_0_10px_rgba(190,19,34,0.3)] cursor-default group hover:scale-125'}`}
                                     whileHover={!isPast ? { scale: 1.3 } : {}}
                                 >
                                     {(isNext || isActive) && <div className={`absolute -inset-4 rounded-full border-2 ${isActive ? 'border-iskf-red' : 'border-iskf-blue'} opacity-50 animate-ping`}></div>}
@@ -229,31 +329,30 @@ const EventsRoadmap = () => {
                                 <div className={`absolute left-1/2 w-[1px] from-iskf-red to-transparent z-10 -translate-x-1/2 transition-all duration-300 ${isActive ? 'bg-iskf-red h-20 shadow-[0_0_15px_#be1322]' : 'group-hover:h-20 group-hover:bg-iskf-red'} ${isTopPosition ? 'bottom-8 bg-gradient-to-t' : 'top-8 bg-gradient-to-b'} ${!isActive && (isTopPosition ? 'h-12' : 'h-12')}`}></div>
 
                                 <motion.div
-                                    className={`absolute left-1/2 -translate-x-1/2 w-64 ${isPast ? 'pointer-events-none cursor-default' : 'cursor-pointer'} ${isTopPosition ? 'bottom-1/2 mb-16 origin-bottom' : 'top-1/2 mt-16 origin-top'} ${isPast && !isActive && !isExpanded ? 'opacity-30 grayscale-[1]' : 'opacity-100 grayscale-0'}`}
+                                    className={`absolute left-1/2 -translate-x-1/2 w-64 ${isPast ? 'pointer-events-none' : ''} cursor-default ${isTopPosition ? 'bottom-1/2 mb-16 origin-bottom' : 'top-1/2 mt-16 origin-top'} ${isPast && !isActive && !isExpanded ? 'opacity-30 grayscale-[1]' : 'opacity-100 grayscale-0'}`}
                                     animate={isPast ? { scale: 1, y: 0 } : isActive ? { scale: 1.05, y: isTopPosition ? -5 : 5, filter: "brightness(1.1)" } : { scale: 1, y: 0, filter: "brightness(1)" }}
-                                    onClick={() => !isPast && navigate(`/event/${event.id}`)}
                                     whileHover={!isPast ? { scale: 1.03, y: isTopPosition ? -5 : 5 } : {}}
                                     transition={{ type: "spring", stiffness: 200, damping: 25 }}
                                 >
-                                    <div className={`bg-black/60 backdrop-blur-xl border p-5 rounded-2xl relative overflow-hidden transition-all duration-500 group ${isActive || isExpanded ? 'border-iskf-red/50 shadow-[0_0_30px_rgba(190,19,34,0.2)] ring-1 ring-iskf-red/20' : isPast ? 'border-white/5 shadow-none' : 'border-white/10 hover:border-iskf-red/30 hover:shadow-[0_0_20px_rgba(190,19,34,0.1)]'}`}>
-                                        <div className={`absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-0 transition-opacity duration-500 ${!isPast && (isActive || isExpanded) ? 'opacity-100' : (!isPast ? 'group-hover:opacity-100' : '')}`}></div>
+                                    <div className={`bg-white/60 backdrop-blur-xl border p-5 rounded-2xl relative overflow-hidden transition-all duration-500 group ${isActive || isExpanded ? 'border-iskf-red/50 shadow-[0_0_30px_rgba(190,19,34,0.15)] ring-1 ring-iskf-red/20' : isPast ? 'border-black/5 shadow-none' : 'border-black/10 hover:border-iskf-red/30 hover:shadow-[0_0_20px_rgba(190,19,34,0.1)]'}`}>
+                                        <div className={`absolute inset-0 bg-gradient-to-tr from-black/5 via-transparent to-transparent opacity-0 transition-opacity duration-500 ${!isPast && (isActive || isExpanded) ? 'opacity-100' : (!isPast ? 'group-hover:opacity-100' : '')}`}></div>
                                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-iskf-red/5 to-transparent h-[200%] w-full -translate-y-full group-hover:translate-y-full transition-transform duration-1000 ease-in-out"></div>
                                         <div className="relative z-10 text-center flex flex-col items-center">
-                                            <div className={`inline-block text-white text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3 shadow-lg transition-transform ${isActive || isExpanded ? 'scale-110' : 'group-hover:scale-110'} ${isTopPosition ? 'bg-iskf-red' : 'bg-blue-600'}`}>
-                                                {formatDate(event.date)}
+                                            <div className={`inline-block text-white text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3 shadow-lg transition-transform ${isActive || isExpanded ? 'scale-110' : 'group-hover:scale-110'} ${isTopPosition ? 'bg-iskf-red' : 'bg-[#2D2E83]'}`}>
+                                                {formatDate(event.date, event.endDate)}
                                             </div>
-                                            <div className={`w-12 h-12 rounded-full bg-white p-0.5 shadow-lg mb-3 transition-transform duration-300 ${isActive || isExpanded ? 'scale-125' : 'group-hover:scale-110'}`}>
-                                                <img src={event.logo} alt="Logo" className="w-full h-full object-contain rounded-full" onError={(e) => e.target.src = iskfLogo} />
+                                            <div className={`w-12 h-12 rounded-full bg-white p-0.5 shadow-lg mb-3 transition-transform duration-300 border border-gray-200 ${isActive || isExpanded ? 'scale-125' : 'group-hover:scale-110'}`}>
+                                                <img src={event.logo?.src || event.logo} alt="Logo" className="w-full h-full object-contain rounded-full" onError={(e) => { e.target.onerror = null; e.target.src = iskfLogo; }} />
                                             </div>
-                                            <h4 className={`text-white font-bold text-base leading-tight mb-2 transition-colors ${isActive || isExpanded ? 'text-iskf-red' : 'group-hover:text-iskf-red'}`}>{event.name}</h4>
-                                            <div className={`flex items-center justify-center gap-2 text-xs font-mono transition-colors ${isActive || isExpanded ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
-                                                <img src={event.flag} className="w-4 h-4 rounded-full" alt="flag" />
+                                            <h4 className={`font-bold text-base leading-tight mb-2 transition-colors ${isActive || isExpanded ? 'text-iskf-red' : 'text-[#2D2E83] group-hover:text-iskf-red'}`}>{event.name}</h4>
+                                            <div className={`flex items-center justify-center gap-2 text-xs font-mono transition-colors ${isActive || isExpanded ? 'text-black' : 'text-gray-500 group-hover:text-black'}`}>
+                                                <img src={event.flag?.src || event.flag} className="w-4 h-4 rounded-full" alt="flag" />
                                                 <span>{event.location.split(',')[0]}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </motion.div>
-                                <div className="absolute top-1/2 left-full h-[2px] bg-white/10 -z-10 translate-y-[1px] transition-[width] duration-300 ease-out" style={{ width: marginWidth }}></div>
+                                <div className="absolute top-1/2 left-full h-[2px] bg-black/10 -z-10 translate-y-[1px] transition-[width] duration-300 ease-out" style={{ width: marginWidth }}></div>
                             </div>
                         )
                     })}
@@ -287,8 +386,8 @@ const EventsRoadmap = () => {
                 >
                     {/* START NODE */}
                     <div className="flex justify-center mb-8 pt-8">
-                        <div className="w-20 h-20 rounded-full bg-black border-2 border-iskf-red/50 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(190,19,34,0.3)]">
-                            <img src={iskfFondoRojo} alt="ISKF" className="w-full h-full object-cover rounded-full opacity-90" />
+                        <div className="w-20 h-20 rounded-full bg-white border-2 border-iskf-red/50 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(190,19,34,0.15)]">
+                            <img src={iskfFondoRojo?.src || iskfFondoRojo} alt="ISKF" className="w-full h-full object-cover rounded-full opacity-90" />
                             <div className="absolute inset-0 rounded-full border-4 border-iskf-red opacity-0 animate-[ping_1.5s_ease-out_infinite] z-0"></div>
                         </div>
                     </div>
@@ -296,10 +395,10 @@ const EventsRoadmap = () => {
                     {/* ZIG-ZAG LIST */}
                     <div className="relative">
                         {/* Static Center Line */}
-                        <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-iskf-red via-white/10 to-transparent"></div>
+                        <div className="absolute left-1/2 transform -translate-x-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-iskf-red via-black/10 to-transparent"></div>
 
                         {sortedEvents.map((event) => {
-                            const isNational = event.type === 'Nacional';
+                            const isNational = event.locationScope === 'Nacional';
                             const isPast = new Date(event.date) < new Date();
                             const isNext = !isPast && sortedEvents.find(e => new Date(e.date) >= new Date())?.id === event.id;
                             const isActive = activeEventId === event.id;
@@ -308,23 +407,22 @@ const EventsRoadmap = () => {
                                 <div key={event.id} className={`flex w-full items-center mb-8 relative z-10 ${isNational ? 'justify-start' : 'justify-end'}`}>
                                     {/* CARD */}
                                     <div
-                                        className={`w-[45%] relative ${isNational ? 'mr-auto text-right pr-4' : 'ml-auto text-left pl-4'} ${isPast && !isActive ? 'opacity-30 grayscale cursor-default pointer-events-none' : 'opacity-100 cursor-pointer'}`}
-                                        onClick={() => !isPast && navigate(`/event/${event.id}`)}
+                                        className={`w-[45%] relative ${isNational ? 'mr-auto text-right pr-4' : 'ml-auto text-left pl-4'} ${isPast && !isActive ? 'opacity-50 grayscale pointer-events-none' : 'opacity-100'} cursor-default`}
                                     >
-                                        <div className={`bg-black/80 backdrop-blur-md border p-3 rounded-xl transition-all duration-300 shadow-lg relative
-                                            ${isActive ? 'border-iskf-red shadow-[0_0_20px_#be1322] scale-105' : isPast ? 'border-white/5 cursor-default' : 'border-white/10 hover:border-iskf-red/50'}
+                                        <div className={`bg-white/80 backdrop-blur-md border p-3 rounded-xl transition-all duration-300 shadow-lg relative
+                                            ${isActive ? 'border-iskf-red shadow-[0_0_20px_rgba(190,19,34,0.2)] scale-105' : isPast ? 'border-black/5 cursor-default' : 'border-black/10 hover:border-iskf-red/50'}
                                         `}>
                                             {/* Subtle Active flash overlay */}
                                             {isActive && <div className="absolute inset-0 bg-iskf-red/10 rounded-xl animate-pulse z-10"></div>}
 
-                                            <div className={`text-xs font-black uppercase tracking-widest inline-block px-2 py-0.5 rounded-full mb-1 ${isNational ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>
-                                                {formatDate(event.date)}
+                                            <div className={`text-xs font-black uppercase tracking-widest inline-block px-2 py-0.5 rounded-full mb-1 ${isNational ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                {formatDate(event.date, event.endDate)}
                                             </div>
-                                            <h4 className={`font-bold text-xs leading-tight mb-1 transition-colors ${isActive ? 'text-iskf-red' : 'text-white'}`}>{event.name}</h4>
-                                            <div className={`flex items-center gap-1 text-xs text-gray-400 ${isNational ? 'justify-end' : 'justify-start'}`}>
-                                                {isNational ? <img src={event.flag} className="w-3 h-3 rounded-full" alt="flag" /> : null}
+                                            <h4 className={`font-bold text-xs leading-tight mb-1 transition-colors ${isActive ? 'text-iskf-red' : 'text-[#2D2E83]'}`}>{event.name}</h4>
+                                            <div className={`flex items-center gap-1 text-xs ${isActive ? 'text-black' : 'text-gray-500'} ${isNational ? 'justify-end' : 'justify-start'}`}>
+                                                {isNational ? <img src={event.flag?.src || event.flag} className="w-3 h-3 rounded-full" alt="flag" /> : null}
                                                 <span>{event.location.split(',')[0]}</span>
-                                                {!isNational ? <img src={event.flag} className="w-3 h-3 rounded-full" alt="flag" /> : null}
+                                                {!isNational ? <img src={event.flag?.src || event.flag} className="w-3 h-3 rounded-full" alt="flag" /> : null}
                                             </div>
                                         </div>
                                     </div>
@@ -335,14 +433,14 @@ const EventsRoadmap = () => {
                                         className={`absolute left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full border-2 z-20 transition-all duration-300
                                             ${isActive ? 'bg-iskf-red border-white shadow-[0_0_15px_#be1322] scale-150' :
                                                 isNext ? 'bg-white border-iskf-blue shadow-[0_0_15px_#2d2e83]' :
-                                                    isPast ? 'bg-zinc-800 border-zinc-600 opacity-50 grayscale' : 'bg-black border-iskf-red'}`}
+                                                    isPast ? 'bg-gray-300 border-gray-400 opacity-50 grayscale' : 'bg-white border-iskf-red'}`}
                                     >
                                         {(isNext || isActive) && <div className={`absolute -inset-2 rounded-full border ${isActive ? 'border-iskf-red' : 'border-iskf-blue'} opacity-50 animate-ping`}></div>}
                                     </div>
 
                                     {/* CONNECTOR */}
                                     <div className={`absolute top-1/2 -translate-y-1/2 h-[1px] w-[5%] transition-colors duration-300 
-                                        ${isActive ? 'bg-iskf-red shadow-[0_0_5px_#be1322]' : 'bg-white/20'}
+                                        ${isActive ? 'bg-iskf-red shadow-[0_0_5px_#be1322]' : 'bg-black/20'}
                                         ${isNational ? 'right-1/2 mr-1.5' : 'left-1/2 ml-1.5'}`}></div>
                                 </div>
                             )
@@ -354,19 +452,19 @@ const EventsRoadmap = () => {
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex flex-col gap-6 z-30">
                     <button
                         onClick={() => scrollMobile('up')}
-                        className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-iskf-red/30 flex items-center justify-center text-white shadow-[0_0_20px_rgba(190,19,34,0.2)] active:scale-95 active:bg-iskf-red/20 active:border-iskf-red transition-all group overflow-hidden relative"
+                        className="w-12 h-12 rounded-full bg-white/60 backdrop-blur-md border border-iskf-red/30 flex items-center justify-center text-iskf-red shadow-[0_0_20px_rgba(190,19,34,0.1)] active:scale-95 active:bg-iskf-red/10 active:border-iskf-red transition-all group overflow-hidden relative"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-b from-iskf-red/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 relative z-10 group-hover:-translate-y-1 transition-transform duration-300 text-iskf-red group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="absolute inset-0 bg-gradient-to-b from-iskf-red/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 relative z-10 group-hover:-translate-y-1 transition-transform duration-300 text-iskf-red group-hover:text-[#2D2E83]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
                         </svg>
                     </button>
                     <button
                         onClick={() => scrollMobile('down')}
-                        className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-iskf-red/30 flex items-center justify-center text-white shadow-[0_0_20px_rgba(190,19,34,0.2)] active:scale-95 active:bg-iskf-red/20 active:border-iskf-red transition-all group overflow-hidden relative"
+                        className="w-12 h-12 rounded-full bg-white/60 backdrop-blur-md border border-iskf-red/30 flex items-center justify-center text-iskf-red shadow-[0_0_20px_rgba(190,19,34,0.1)] active:scale-95 active:bg-iskf-red/10 active:border-iskf-red transition-all group overflow-hidden relative"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-t from-iskf-red/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 relative z-10 group-hover:translate-y-1 transition-transform duration-300 text-iskf-red group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="absolute inset-0 bg-gradient-to-t from-iskf-red/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 relative z-10 group-hover:translate-y-1 transition-transform duration-300 text-iskf-red group-hover:text-[#2D2E83]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>

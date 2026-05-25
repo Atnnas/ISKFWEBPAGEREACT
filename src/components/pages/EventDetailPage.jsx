@@ -1,36 +1,74 @@
+"use client";
 import React, { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { eventsData } from '../../data/events';
 import iskfLogo from '../../assets/images/iskf.jpg';
+import kumaLogo from '../../assets/images/kumaLogo.jpg';
+import costaRicaFlag from '../../assets/images/CostaRica.jpg';
+import wkfLogo from '../../assets/images/wkf.jpg';
+import mexicoFlag from '../../assets/images/mexico.jpg';
+import icoderLogo from '../../assets/images/icoder.jpg';
+import kurobiLogo from '../../assets/images/kurobiLogo.jpeg';
+import iskfFondoRojo from '../../assets/images/iskfFondoRojo.jpg';
+import fecokaLogo from '../../assets/images/FecokaLogo.jpg';
+import ccondekaLogo from '../../assets/images/LogoCcondeka.jpg';
+import nicaraguaFlag from '../../assets/images/nicaragua.jpg';
+import wkfPanamericaLogo from '../../assets/images/LogoWKFPanamerica.jpg';
+import brazilFlag from '../../assets/images/brazil.jpg';
+import polandFlag from '../../assets/images/poland.jpg';
+import zanshinLogo from '../../assets/images/zanshinLogo.jpg';
 
-const EventDetailPage = () => {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const event = React.useMemo(() => eventsData.find(e => e.id === parseInt(id)), [id]);
+const imageMap = {
+    kumaLogo,
+    costaRicaFlag,
+    wkfLogo,
+    mexicoFlag,
+    icoderLogo,
+    iskfLogo,
+    kurobiLogo,
+    iskfFondoRojo,
+    fecokaLogo,
+    ccondekaLogo,
+    nicaraguaFlag,
+    wkfPanamericaLogo,
+    brazilFlag,
+    polandFlag,
+    zanshinLogo,
+};
+
+const EventDetailPage = ({ eventData }) => {
+    const router = useRouter();
 
     useEffect(() => {
-        if (event) {
+        if (eventData) {
             window.scrollTo(0, 0);
         } else {
-            navigate('/');
+            router.push('/');
         }
-    }, [event, navigate]);
+    }, [eventData, router]);
 
-    if (!event) return null;
+    if (!eventData) return null;
 
-    const getYear = (isoString) => new Date(isoString).getFullYear();
+    const event = {
+        ...eventData,
+        name: eventData.title,
+        date: eventData.startDate,
+        logo: imageMap[eventData.logoName] || eventData.logoName || iskfLogo,
+        flag: imageMap[eventData.flagName] || eventData.flagName || costaRicaFlag,
+    };
+
+    const getYear = (isoString) => new Date(isoString).getUTCFullYear();
 
     return (
-        <div className="bg-iskf-dark min-h-screen text-white font-sans selection:bg-iskf-red selection:text-white pb-24 relative overflow-x-hidden">
+        <div className="bg-iskf-dark min-h-screen text-white font-sans  pb-24 relative overflow-x-hidden">
 
             {/* Standard Floating Back Button */}
             <motion.button
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
-                onClick={() => navigate('/', { state: { targetId: 'calendario' } })}
+                onClick={() => router.push('/')}
                 className="fixed top-28 left-6 md:left-12 z-50 w-12 h-12 bg-black/50 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-iskf-red hover:border-iskf-red transition-all duration-300 shadow-lg group"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,7 +81,10 @@ const EventDetailPage = () => {
                 {/* Header Section */}
                 <div className="mb-12 border-l-4 border-iskf-red pl-8">
                     <div className="flex flex-wrap items-center gap-3 mb-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${event.type === 'Internacional' ? 'border-blue-500/30 text-blue-400 bg-blue-500/10' : 'border-green-500/30 text-green-400 bg-green-500/10'}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${event.locationScope === 'Internacional' ? 'border-blue-500/30 text-blue-400 bg-blue-500/10' : 'border-green-500/30 text-green-400 bg-green-500/10'}`}>
+                            {event.locationScope.toUpperCase()}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold border border-gray-500/30 text-gray-300 bg-gray-500/10">
                             {event.type.toUpperCase()}
                         </span>
                         <span className="text-iskf-red text-sm font-bold tracking-wider uppercase">
@@ -65,10 +106,10 @@ const EventDetailPage = () => {
                         <motion.img
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            src={event.logo}
+                            src={event.logo?.src || event.logo || imageMap[event.logoName]?.src || imageMap[event.logoName] || event.logoName}
                             alt={event.name}
                             className="w-full h-full object-contain relative z-10 p-4 drop-shadow-2xl"
-                            onError={(e) => e.target.src = iskfLogo}
+                            onError={(e) => { e.target.onerror = null; e.target.src = iskfLogo.src; }}
                         />
                     </div>
 
@@ -86,11 +127,11 @@ const EventDetailPage = () => {
                                     </svg>
                                 </div>
                                 <div>
-                                    <div className="text-4xl font-black text-white mb-1 tracking-tighter">{new Date(event.date).getDate()}</div>
-                                    <div className="text-lg text-iskf-red font-bold uppercase tracking-wide">{new Date(event.date).toLocaleString('es-ES', { month: 'long' })}</div>
+                                    <div className="text-4xl font-black text-white mb-1 tracking-tighter">{new Date(event.date).getUTCDate()}</div>
+                                    <div className="text-lg text-iskf-red font-bold uppercase tracking-wide">{new Date(event.date).toLocaleString('es-ES', { month: 'long', timeZone: 'UTC' })}</div>
                                     {event.endDate && (
                                         <div className="mt-2 pt-2 border-t border-white/10 text-sm text-gray-500">
-                                            Hasta el {new Date(event.endDate).getDate()} de {new Date(event.endDate).toLocaleString('es-ES', { month: 'long' })}
+                                            Hasta el {new Date(event.endDate).getUTCDate()} de {new Date(event.endDate).toLocaleString('es-ES', { month: 'long', timeZone: 'UTC' })}
                                         </div>
                                     )}
                                 </div>
@@ -100,7 +141,7 @@ const EventDetailPage = () => {
                             <div className="bg-white/5 backdrop-blur-sm rounded-[2rem] p-8 border border-white/10 flex flex-col justify-between h-full hover:bg-white/10 transition-colors group">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-gray-400 text-xs font-bold uppercase tracking-widest group-hover:text-white transition-colors">Sede</span>
-                                    <img src={event.flag} className="w-6 h-6 rounded-full shadow-sm" alt="flag" />
+                                    <img src={event.flag?.src || event.flag} className="w-6 h-6 rounded-full shadow-sm" alt="flag" />
                                 </div>
                                 <div>
                                     <div className="text-2xl font-bold text-white leading-tight mb-2">{event.location}</div>
@@ -131,7 +172,7 @@ const EventDetailPage = () => {
                         {/* Bottom Row: Actions */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <button
-                                className="bg-iskf-red text-white py-4 px-6 rounded-2xl font-bold uppercase tracking-widest hover:bg-red-700 hover:scale-[1.02] transition-all shadow-[0_10px_30px_-10px_rgba(220,38,38,0.5)] flex items-center justify-center gap-3"
+                                className="bg-iskf-red text-white py-4 px-6 rounded-2xl font-bold uppercase tracking-widest hover:bg-red-700 hover:scale-[1.02] transition-all shadow-[0_10px_30px_-10px_rgba(190,22,34,0.5)] flex items-center justify-center gap-3"
                                 onClick={() => {
                                     const startTime = new Date(event.date).toISOString().replace(/-|:|\.\d\d\d/g, "");
                                     const endTime = event.endDate

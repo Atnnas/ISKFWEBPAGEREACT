@@ -1,23 +1,25 @@
+"use client";
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import SocialSidebar from '../layout/SocialSidebar';
+import libroTecnica from '../../assets/images/libroTecnica.jpg';
 
 const ExamsPage = () => {
-    const navigate = useNavigate();
+    const navigate = useRouter();
 
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
 
     return (
-        <div className="bg-iskf-dark min-h-screen text-white font-sans selection:bg-iskf-red selection:text-white">
+        <div className="bg-iskf-dark min-h-screen text-white font-sans ">
             {/* Floating Back Button (Top-Left) */}
             <motion.button
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
-                onClick={() => navigate('/', { state: { targetId: 'recursos' } })}
+                onClick={() => router.push('/', { state: { targetId: 'recursos' } })}
                 className="fixed top-24 left-6 md:left-16 z-50 w-12 h-12 bg-black/50 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-iskf-red hover:border-iskf-red transition-all duration-300 shadow-lg group"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -30,7 +32,7 @@ const ExamsPage = () => {
             <div className="pt-32 pb-24 px-6 md:px-16 min-h-screen flex flex-col items-center relative overflow-hidden">
                 {/* Background Art */}
                 <div className="absolute inset-0 z-0 pointer-events-none">
-                    <img src="/libroTecnica.jpg" className="w-full h-full object-cover opacity-20 scale-105 blur-sm" alt="Exams BG" />
+                    <img src={libroTecnica?.src || libroTecnica} className="w-full h-full object-cover opacity-20 scale-105 blur-sm" alt="Exams BG" />
                     <div className="absolute inset-0 bg-gradient-to-t from-iskf-dark via-iskf-dark/80 to-iskf-dark/50"></div>
                 </div>
 
@@ -43,7 +45,7 @@ const ExamsPage = () => {
                     {/* Header */}
                     <div className="text-center mb-16">
                         <span className="text-iskf-red font-bold tracking-[0.3em] text-xs uppercase mb-4 block">Requisitos de Grado</span>
-                        <h1 className="text-5xl md:text-6xl font-black text-white tracking-widest uppercase mb-6 drop-shadow-2xl">EXÁMENES</h1>
+                        <h1 className="text-4xl md:text-6xl font-black text-white tracking-widest uppercase mb-6 drop-shadow-2xl">EXÁMENES</h1>
                         <div className="w-24 h-1 bg-gradient-to-r from-transparent via-iskf-red to-transparent mx-auto rounded-full shadow-[0_0_15px_#be1322]"></div>
                     </div>
 
@@ -60,13 +62,13 @@ const ExamsPage = () => {
                             </svg>
                         </motion.div>
 
-                        <h3 className="text-2xl font-bold text-white mb-4">Documentación en Proceso</h3>
-                        <p className="text-gray-300 font-light max-w-lg leading-relaxed mb-8">
+                        <h3 className="text-xl md:text-2xl font-bold text-white mb-4">Documentación en Proceso</h3>
+                        <p className="text-gray-300 font-normal text-sm md:text-base max-w-lg leading-relaxed mb-8">
                             Estamos actualizando los requisitos oficiales de grado y los manuales de examen para el periodo 2026. Por favor consulte con su Sensei o regrese pronto para descargar los documentos actualizados.
                         </p>
 
                         <button
-                            onClick={() => navigate('/')}
+                            onClick={() => router.push('/')}
                             className="px-8 py-3 bg-white/5 border border-white/20 rounded-full text-white font-bold uppercase tracking-widest hover:bg-iskf-red hover:border-iskf-red transition-all duration-300"
                         >
                             Volver al Inicio

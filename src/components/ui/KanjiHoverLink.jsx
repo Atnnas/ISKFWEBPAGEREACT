@@ -1,6 +1,7 @@
+"use client";
 import React, { useState, useRef } from 'react';
 
-const KanjiHoverLink = ({ text, href, onClick, className }) => {
+const KanjiHoverLink = ({ text, href, onClick, className, isActive }) => {
     const [displayText, setDisplayText] = useState(text);
     const intervalRef = useRef(null);
 
@@ -43,8 +44,8 @@ const KanjiHoverLink = ({ text, href, onClick, className }) => {
             className={className}
         >
             {displayText}
-            {/* Underline effect (preserved from original CSS) */}
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-iskf-red transition-all duration-300 group-hover:w-full"></span>
+            {/* Underline effect only on hover if not active */}
+            {!isActive && <span className="absolute -bottom-1 left-2 right-2 h-[2px] bg-white/70 transition-all duration-300 scale-x-0 group-hover:scale-x-100"></span>}
         </a>
     );
 };

@@ -1,63 +1,88 @@
+"use client";
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useLocation } from 'react-router-dom'; // Import hooks
+import { useRouter, usePathname } from 'next/navigation';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import KanjiHoverLink from '../ui/KanjiHoverLink';
 import { navLinks } from '../../data/navigation';
 import iskfFondoBlanco from '../../assets/images/iskfFondoBlanco.jpg';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const navigate = useNavigate();
-    const location = useLocation();
-
-
+    const router = useRouter();
+    const location = { pathname: usePathname() };
+    const { data: session } = useSession();
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-
-
 
     // Smart Navigation Handler
     const handleNavClick = (e, href) => {
         e.preventDefault();
-        const targetId = href.replace('#', '');
-
         setIsMenuOpen(false); // Always close mobile menu
 
-        if (location.pathname === '/') {
-            // If already on Home, just scroll
-            const element = document.getElementById(targetId);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (href.startsWith('#')) {
+            const targetId = href.replace('#', '');
+            if (location.pathname === '/') {
+                // If already on Home, just scroll
+                const element = document.getElementById(targetId);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } else {
+                // If on another page, navigate to Home with target state
+                router.push('/', { state: { targetId } });
             }
         } else {
-            // If on another page, navigate to Home with target state
-            navigate('/', { state: { targetId } });
+            // Standard route navigation
+            router.push(href);
         }
     };
 
     return (
         <>
-            <nav id="navbar" className="fixed top-0 w-full px-8 py-4 flex justify-between items-center z-[120] bg-iskf-dark/90 backdrop-blur-xl border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] transition-all duration-300">
+        <nav id="navbar" className="fixed top-0 left-0 w-full px-6 md:px-12 py-3 md:py-4 flex justify-between items-center bg-gradient-to-b from-[#ff4d5a]/90 via-[#be1322]/95 to-[#7a000d]/95 backdrop-blur-2xl border-t-[1px] border-white/60 border-b-[3px] border-[#4a0005]/80 shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.6),inset_0_-4px_10px_rgba(0,0,0,0.2)] transition-all duration-300 z-[120]">
                 <div
                     className="flex items-center gap-4 relative z-50 cursor-pointer"
-                    onClick={() => navigate('/')}
+                    onClick={() => router.push('/')}
                 >
-                    <img src={iskfFondoBlanco} alt="ISKF Logo" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
+                    <img src={iskfFondoBlanco?.src || iskfFondoBlanco} alt="ISKF Logo" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
                     <span className="font-bold text-2xl tracking-[0.2em] text-white">ISKF</span>
                 </div>
 
                 {/* Desktop Menu */}
                 <ul className="hidden md:flex items-center gap-10">
-                    {navLinks.map((link) => (
+                    {navLinks.map((link) => {
+                        const isActive = link.href === '/' ? location.pathname === '/' : location.pathname.startsWith(link.href);
+                        return (
                         <li key={link.name} className="relative group">
                             <KanjiHoverLink
                                 href={link.href}
                                 text={link.name}
+                                isActive={isActive}
                                 onClick={(e) => handleNavClick(e, link.href)}
-                                className="text-sm font-medium tracking-widest text-white hover:text-iskf-red transition-colors duration-300 uppercase relative"
+                                className={`text-sm font-bold tracking-widest transition-all duration-300 uppercase relative px-6 py-3 rounded-full flex items-center justify-center ${isActive ? 'bg-iskf-blue/40 text-white shadow-[0_0_15px_rgba(45,46,131,0.6)] border border-iskf-blue/60' : 'text-white/90 hover:text-white hover:bg-iskf-blue/30'}`}
                             />
                         </li>
-                    ))}
+                    )})}
+                    {/* User Profile / Login */}
+                    <li className="pl-6">
+                        {session ? (
+                            <div className="flex flex-col items-end gap-1">
+                                <div className="flex items-center gap-4">
+                                    <img src={session.user.image?.src || session.user.image} alt="Perfil" className="w-8 h-8 rounded-full border border-white/20" />
+                                    <button onClick={() => signOut()} className="text-xs text-white/70 hover:text-white uppercase tracking-widest transition-colors">Salir</button>
+                                </div>
+                                {session?.user?.role === 'admin' && (
+                                    <button
+                                        onClick={() => router.push('/admin')}
+                                        className="bg-iskf-blue text-white text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full hover:bg-[#1a1b4d] shadow-[0_0_10px_rgba(45,46,131,0.5)] transition-all duration-300 uppercase"
+                                    >
+                                        Panel Admin
+                                    </button>
+                                )}
+                            </div>
+                        ) : null}
+                    </li>
                 </ul>
 
                 {/* Mobile Button */}
@@ -72,7 +97,7 @@ const Navbar = () => {
                 </button>
             </nav>
 
-            {/* Mobile Menu Overlay */}
+        {/* Mobile Menu Overlay */}
             <AnimatePresence>
                 {isMenuOpen && (
                     <motion.div

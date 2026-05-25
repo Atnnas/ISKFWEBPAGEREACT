@@ -1,3 +1,4 @@
+"use client";
 import React, { memo, useEffect, useLayoutEffect, useMemo, useState } from "react"
 import {
     AnimatePresence,
@@ -141,9 +142,8 @@ const Carousel = memo(
                         >
                             <motion.div className="relative w-full aspect-square group">
                                 <motion.img
-                                    src={card.img}
+                                    src={card.img?.src || card.img}
                                     alt={card.title}
-                                    layoutId={`img-${card.img}`}
                                     className="pointer-events-none w-full h-full rounded-xl object-cover shadow-2xl border border-white/10"
                                     initial={{ filter: "blur(4px)" }}
                                     layout="position"
@@ -170,22 +170,29 @@ const Carousel = memo(
 )
 Carousel.displayName = "Carousel"
 
-function ThreeDPhotoCarousel({ items }) {
+function ThreeDPhotoCarousel({ items, onModalChange, forceCloseToggle }) {
     const [activeCard, setActiveCard] = useState(null)
     const [isCarouselActive, setIsCarouselActive] = useState(true)
     const controls = useAnimation()
 
-    const cards = useMemo(() => items || [], [items])
+    const cards = useMemo(() => items || [], [items]);
+    const handleClose = () => {
+        setActiveCard(null)
+        setIsCarouselActive(true)
+        if (onModalChange) onModalChange(false)
+    }
+
+    useEffect(() => {
+        if (forceCloseToggle > 0 && activeCard) {
+            handleClose();
+        }
+    }, [forceCloseToggle]);
 
     const handleClick = (card) => {
         setActiveCard(card)
         setIsCarouselActive(false)
         controls.stop()
-    }
-
-    const handleClose = () => {
-        setActiveCard(null)
-        setIsCarouselActive(true)
+        if (onModalChange) onModalChange(true)
     }
 
     return (
@@ -196,24 +203,22 @@ function ThreeDPhotoCarousel({ items }) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-[100] p-4 md:p-12 lg:p-24"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999] p-4 pt-24 md:p-12 md:pt-32 lg:p-24 lg:pt-32"
                         onClick={handleClose}
                     >
                         <button
                             onClick={handleClose}
-                            className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors"
+                            className="absolute top-24 right-8 md:top-32 text-white/50 hover:text-white transition-colors z-50"
                         >
                             <X size={32} />
                         </button>
 
                         <div className="relative max-w-5xl w-full h-full flex flex-col items-center justify-center gap-8">
                             <motion.div
-                                layoutId={`img-container-${activeCard.img}`}
                                 className="relative w-full max-h-[70vh] flex items-center justify-center"
                             >
                                 <motion.img
-                                    layoutId={`img-${activeCard.img}`}
-                                    src={activeCard.img}
+                                    src={activeCard.img?.src || activeCard.img}
                                     alt={activeCard.title}
                                     className="max-w-full max-h-full rounded-2xl shadow-2xl border border-white/20 object-contain"
                                     transition={transitionOverlay}

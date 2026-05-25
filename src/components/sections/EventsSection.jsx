@@ -1,23 +1,19 @@
+"use client";
 import React from 'react';
 import { motion } from 'framer-motion';
-import { eventsData } from '../../data/events';
 import iskfLogo from '../../assets/images/iskf.jpg';
 
-const EventsSection = () => {
+const EventsSection = ({ events = [] }) => {
     // Sort events by date
-    const sortedEvents = [...eventsData].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    // Helper to format date
-
-    // Helper to format date
+    const sortedEvents = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
 
 
     const getMonth = (dateString) => {
-        return new Date(dateString).toLocaleDateString('es-ES', { month: 'short' }).replace('.', '').toUpperCase();
+        return new Date(dateString).toLocaleDateString('es-ES', { month: 'short', timeZone: 'UTC' }).replace('.', '').toUpperCase();
     };
 
     const getDay = (dateString) => {
-        return new Date(dateString).getDate();
+        return new Date(dateString).getUTCDate();
     };
 
     return (
@@ -31,9 +27,9 @@ const EventsSection = () => {
             <div className="max-w-7xl mx-auto relative z-10">
                 {/* Header */}
                 <div className="text-center mb-16 space-y-4">
-                    <span className="text-iskf-red font-black text-xs tracking-[0.2em] uppercase">Agenda 2026</span>
-                    <h2 className="text-4xl md:text-5xl font-black text-white">Calendario de Eventos</h2>
-                    <div className="w-32 h-1.5 bg-gradient-to-r from-transparent via-iskf-red to-transparent mx-auto mt-6 rounded-full shadow-[0_0_25px_rgba(220,38,38,0.8)]"></div>
+                    <span className="text-iskf-red font-bold text-xs tracking-[0.2em] uppercase">Agenda 2026</span>
+                    <h2 className="text-3xl md:text-5xl font-black text-white tracking-[0.1em] uppercase">Calendario de Eventos</h2>
+                    <div className="w-32 h-1.5 bg-gradient-to-r from-transparent via-iskf-red to-transparent mx-auto mt-6 rounded-full shadow-[0_0_25px_rgba(190,22,34,0.8)]"></div>
                 </div>
 
                 {/* Events Grid / Timeline */}
@@ -87,13 +83,13 @@ const EventsSection = () => {
                                             {/* Image (Small) */}
                                             <div className={`h-20 w-full mb-3 rounded-lg overflow-hidden bg-black/20 relative ${isNational ? 'ml-auto' : 'mr-auto'}`}>
                                                 <img
-                                                    src={event.logo}
+                                                    src={event.logo?.src || event.logo}
                                                     alt={event.name}
                                                     className="w-full h-full object-contain p-2"
-                                                    onError={(e) => { e.target.src = iskfLogo; }}
+                                                    onError={(e) => { e.target.onerror = null; e.target.src = iskfLogo; }}
                                                 />
                                                 <div className="absolute top-1 right-1 w-4 h-4 rounded-full overflow-hidden border border-white/20">
-                                                    <img src={event.flag} alt="flag" className="w-full h-full object-cover" />
+                                                    <img src={event.flag?.src || event.flag} alt="flag" className="w-full h-full object-cover" />
                                                 </div>
                                             </div>
 
@@ -133,15 +129,15 @@ const EventsSection = () => {
                                     <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                                     <img
-                                        src={event.logo}
+                                        src={event.logo?.src || event.logo}
                                         alt={event.name}
                                         className="h-full w-auto object-contain drop-shadow-lg transform group-hover:scale-110 transition-transform duration-500"
-                                        onError={(e) => { e.target.src = iskfLogo; }} // Fallback
+                                        onError={(e) => { e.target.onerror = null; e.target.src = iskfLogo; }} // Fallback
                                     />
 
                                     {/* Flag Badge */}
                                     <div className="absolute top-4 right-4 w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-md">
-                                        <img src={event.flag} alt="Country" className="w-full h-full object-cover" />
+                                        <img src={event.flag?.src || event.flag} alt="Country" className="w-full h-full object-cover" />
                                     </div>
                                 </div>
 

@@ -4,8 +4,8 @@ const useWindowSize = () => {
     // Initialize with undefined to avoid hydration mismatch if using SSR (not the case here but good practice)
     // or just default to logical layout
     const [windowSize, setWindowSize] = useState({
-        width: typeof window !== 'undefined' ? window.innerWidth : 0,
-        height: typeof window !== 'undefined' ? window.innerHeight : 0,
+        width: 0,
+        height: 0,
     });
 
     useEffect(() => {

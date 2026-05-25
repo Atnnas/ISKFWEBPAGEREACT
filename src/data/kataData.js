@@ -776,9 +776,9 @@ export const kataDetails = {
                 <tr><td class="px-6 py-4 font-bold text-white">57</td><td>Mizu-nagare-uraken-kamae</td><td>Neko-ashi-dachi</td><td>Jodan</td></tr>
                 <tr><td class="px-6 py-4 font-bold text-white">58</td><td>Kentsui-uchi-mawashi-uchi</td><td>Zenkutsu-dachi</td><td>Jodan</td></tr>
                 <tr class="bg-iskf-red/10 border-l-4 border-iskf-red"><td class="px-6 py-4 font-black text-iskf-red">59 <span class="text-xs ml-1">KIAI</span></td><td class="px-6 py-4 font-bold text-white">Oi-zuki</td><td>Zenkutsu-dachi</td><td class="px-6 py-4 font-bold text-iskf-red">KIAI!</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">60</td><td>Ryo-hiji-suhei-kamae</td><td>Kiba-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">60</td><td>Ryo-hiji-suihei-kamae</td><td>Kiba-dachi</td><td>-</td></tr>
                 <tr><td class="px-6 py-4 font-bold text-white">61</td><td>Ryo-kentsui-koho-hasami-uchi</td><td>Zenkutsu-dachi</td><td>Chudan</td></tr>
-                <tr><td class="px-6 py-4 font-bold text-white">62</td><td>Ryo-hiji-suhei-kamae</td><td>Zenkutsu-dachi</td><td>-</td></tr>
+                <tr><td class="px-6 py-4 font-bold text-white">62</td><td>Ryo-hiji-suihei-kamae</td><td>Zenkutsu-dachi</td><td>-</td></tr>
                 <tr><td class="px-6 py-4 font-bold text-white">63</td><td>Ryoken-sonomama</td><td>Zenkutsu-dachi</td><td>-</td></tr>
                 <tr><td class="px-6 py-4 font-bold text-white">64</td><td>Ryosho-kakiwake-uke</td><td>Neko-ashi-dachi</td><td>-</td></tr>
                 <tr><td class="px-6 py-4 font-bold text-white">65</td><td>Ryo-keito-hane-age-uke</td><td>Neko-ashi-dachi</td><td>Jodan</td></tr>

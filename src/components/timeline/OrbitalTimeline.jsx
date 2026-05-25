@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
@@ -107,7 +108,7 @@ const ExpandedDojoCard = ({ dojo, onClose }) => {
 
                         {dojo.senseiImage ? (
                             <img
-                                src={dojo.senseiImage}
+                                src={dojo.senseiImage?.src || dojo.senseiImage}
                                 alt={dojo.sensei}
                                 className="w-full h-full relative z-10 object-contain p-8 group-hover/image:scale-[1.03] transition-transform duration-[1.2s] ease-out drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
                             />
@@ -285,7 +286,7 @@ const DojoNode = memo(({ dojo, index, totalDojos, rotation, RADIUS_X, RADIUS_Y, 
 
                 {dojo.logo ? (
                     <img
-                        src={dojo.logo}
+                        src={dojo.logo?.src || dojo.logo}
                         alt={dojo.name}
                         className={`w-full h-full ${isExpanded ? 'p-2' : 'p-4 md:p-6'} object-contain relative z-20 transition-transform duration-700 group-hover:scale-110`}
                     />
@@ -360,7 +361,7 @@ const OrbitalTimeline = ({ dojos }) => {
 
                 {/* Core Vessel */}
                 <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-full shadow-[0_0_80px_rgba(190,19,34,0.8)] flex items-center justify-center z-10 overflow-hidden border-2 border-white/40">
-                    <img src={iskfFondoRojo} alt="ISKF Core" className="w-full h-full object-cover scale-110 opacity-90" />
+                    <img src={iskfFondoRojo?.src || iskfFondoRojo} alt="ISKF Core" className="w-full h-full object-cover scale-110 opacity-90" />
 
                     {/* Interior Energy Flow */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 via-transparent to-iskf-red/20 animate-pulse"></div>

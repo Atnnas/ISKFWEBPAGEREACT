@@ -1,3 +1,4 @@
+"use client";
 import React from 'react';
 import { motion } from 'framer-motion';
 
@@ -13,7 +14,7 @@ const SpiritKanji = ({ kanji, delay = 0 }) => {
                 {/* Main Kanji - Solid White */}
                 <motion.span
                     className="relative block text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-gray-400 drop-shadow-2xl z-20"
-                    whileHover={{ scale: 1.1, textShadow: "0 0 40px rgba(220,38,38,0.8)" }}
+                    whileHover={{ scale: 1.1, textShadow: "0 0 40px rgba(190,22,34,0.8)" }}
                     transition={{ type: "spring", stiffness: 300, damping: 10 }}
                 >
                     {kanji}

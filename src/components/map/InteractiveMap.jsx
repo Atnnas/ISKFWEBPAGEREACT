@@ -1,3 +1,4 @@
+"use client";
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { crMapFeatures } from '../../data/mapData';
@@ -337,7 +338,7 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
 
                         {/* Atmospheric Background Glow */}
                         <radialGradient id="map-atmosphere" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                            <stop offset="0%" stopColor="#BE1322" stopOpacity="0.1" />
+                            <stop offset="0%" stopColor="#2D2E83" stopOpacity="0.05" />
                             <stop offset="100%" stopColor="transparent" stopOpacity="0" />
                         </radialGradient>
                     </defs>
@@ -348,7 +349,7 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                     {/* DATA GRID PATTERN (New Layer for Depth) */}
                     <defs>
                         <pattern id="grid-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                            <circle cx="1" cy="1" r="0.5" fill="rgba(255,255,255,0.15)" />
+                            <circle cx="1" cy="1" r="0.5" fill="rgba(45,46,131,0.15)" />
                         </pattern>
                     </defs>
 
@@ -389,7 +390,7 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                     {/* Structural Fill Background */}
                                     <path
                                         d={getPath(feature)}
-                                        fill="rgba(10, 10, 10, 0.4)"
+                                        fill="rgba(45,46,131, 0.05)"
                                         className="pointer-events-none"
                                     />
                                     {/* Data Grid Overlay */}
@@ -410,8 +411,8 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                         variants={{
                                             idle: {
                                                 scale: 1,
-                                                fill: 'rgba(255,255,255,0.25)',
-                                                stroke: 'rgba(255,255,255,0.5)',
+                                                fill: 'rgba(45,46,131,0.15)',
+                                                stroke: 'rgba(45,46,131,0.4)',
                                                 strokeWidth: 3,
                                                 filter: 'none',
                                                 opacity: 1,
@@ -420,7 +421,7 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                             hover: {
                                                 scale: 1.05,
                                                 fill: 'rgba(190, 19, 34, 0.6)',
-                                                stroke: '#ffffff',
+                                                stroke: '#BE1322',
                                                 strokeWidth: 4,
                                                 filter: 'url(#province-lift)',
                                                 transition: { duration: 0.2 }
@@ -428,9 +429,9 @@ const InteractiveMap = ({ activeProvinceId, onProvinceClick }) => {
                                             active: {
                                                 scale: 1.02,
                                                 fill: '#BE1322',
-                                                stroke: '#ffffff',
+                                                stroke: '#BE1322',
                                                 strokeWidth: 5,
-                                                filter: 'drop-shadow(0 0 30px rgba(190,19,34,1))',
+                                                filter: 'drop-shadow(0 0 15px rgba(190,19,34,0.5))',
                                                 opacity: 1,
                                                 transition: { duration: 0.4 }
                                             }

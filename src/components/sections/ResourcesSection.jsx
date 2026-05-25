@@ -1,27 +1,25 @@
+"use client";
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import SpiritKanji from '../ui/SpiritKanji';
-import fondoRecursosTecnicos from '../../assets/images/fondoRecursosTecnicos.jpg';
+import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
 
 const ResourcesSection = () => {
-    const navigate = useNavigate();
+    const router = useRouter();
 
     return (
-        <section id="recursos" className="py-24 px-6 md:px-16 bg-iskf-dark relative z-20 border-t border-white/5 overflow-hidden">
+        <section id="recursos" className="pt-36 pb-24 md:pt-40 md:pb-24 px-6 md:px-16 relative z-20 border-t border-white/5 overflow-visible">
             {/* Background Image */}
-            <div className="absolute inset-0 z-0 pointer-events-none select-none">
-                <img src={fondoRecursosTecnicos} alt="Background" className="w-full h-full object-cover object-center opacity-90" />
-                <div className="absolute inset-0 bg-gradient-to-b from-iskf-dark/50 via-transparent to-iskf-dark/50"></div>
-                <div className="absolute inset-0 bg-black/10"></div>
+            <div className="fixed inset-0 z-0 pointer-events-none select-none bg-white">
+                <img src={fondoInicioNuevo?.src || fondoInicioNuevo} alt="Background ISKF" className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.25]" />
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-16 space-y-4">
                     <span className="text-iskf-red font-black text-xs tracking-[0.2em] uppercase">Documentación</span>
-                    <h2 className="text-4xl md:text-5xl font-black text-white uppercase">Recursos Técnicos</h2>
-                    <div className="w-32 h-1.5 bg-gradient-to-r from-transparent via-iskf-red to-transparent mx-auto mt-6 rounded-full shadow-[0_0_25px_rgba(220,38,38,0.8)]"></div>
+                    <h2 className="text-4xl md:text-5xl font-black text-[#2D2E83] tracking-[0.2em] uppercase">Recursos Técnicos</h2>
                 </div>
 
                 <div className="flex justify-center max-w-5xl mx-auto">
@@ -29,35 +27,35 @@ const ResourcesSection = () => {
                     {/* Card 1: KATA */}
                     <motion.div
                         whileHover={{ y: -5 }}
-                        onClick={() => navigate('/resources/kata')}
-                        className="group relative min-h-[550px] md:min-h-[600px] w-full max-w-md rounded-none bg-transparent overflow-visible cursor-pointer transition-all duration-700 hover:shadow-[0_0_50px_rgba(206,17,38,0.4)] hover:bg-white/5 hover:backdrop-blur-md"
+                        onClick={() => router.push('/resources/kata')}
+                        className="group relative min-h-[550px] md:min-h-[600px] w-full max-w-md rounded-3xl bg-white/40 backdrop-blur-xl border border-white/60 overflow-visible cursor-pointer transition-all duration-700 shadow-[0_8px_32px_rgba(0,0,0,0.1)] hover:bg-white/60 hover:-translate-y-2"
                     >
-                        {/* Animated Border Line (Minimalist) */}
-                        <div className="absolute top-0 left-0 w-full h-1 bg-iskf-red scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left z-20"></div>
-                        <div className="absolute bottom-0 right-0 w-full h-1 bg-iskf-red scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-right z-20"></div>
+                        {/* Background Glow */}
+                        <div className="absolute inset-0 overflow-hidden rounded-3xl"><div className="absolute -inset-4 bg-gradient-to-r from-iskf-dark/20 to-iskf-red/30 blur-2xl opacity-50 group-hover:opacity-100 transition duration-500"></div></div>
 
-                        {/* Background Image REMOVED for transparency */}
-                        <div className="absolute inset-0 z-0 bg-transparent"></div>
+                        {/* Animated Border Line (Arrows - Desktop Only) */}
+                        <div className="hidden md:block absolute top-0 left-0 h-4 bg-[url('/images/borde-superior-nuevo.png')] bg-[length:auto_100%] bg-repeat-x w-0 group-hover:w-full transition-all duration-700 ease-out z-20 rounded-t-3xl"></div>
+                        <div className="hidden md:block absolute bottom-0 right-0 h-4 bg-[url('/images/borde-inferior-nuevo.png')] bg-[length:auto_100%] bg-repeat-x w-0 group-hover:w-full transition-all duration-700 ease-out z-20 rounded-b-3xl"></div>
 
                         {/* Content */}
                         <div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-6 md:p-10">
 
                             {/* Spirit Kanji - Larger and bolder */}
-                            <div className="text-white group-hover:text-iskf-red transition-all duration-500 transform group-hover:scale-110 origin-center mb-2 text-shadow-lg">
+                            <div className="text-[#2D2E83] group-hover:text-iskf-red transition-all duration-500 transform group-hover:scale-110 origin-center mb-2 drop-shadow-sm">
                                 <SpiritKanji kanji="型" label="KATA" />
                             </div>
 
-                            <h3 className="text-5xl md:text-6xl font-black text-white uppercase tracking-widest mb-4 group-hover:tracking-[0.2em] transition-all duration-500 drop-shadow-xl text-shadow-xl">
+                            <h3 className="text-5xl md:text-6xl font-black text-[#2D2E83] uppercase tracking-widest mb-4 group-hover:tracking-[0.2em] transition-all duration-500 drop-shadow-sm group-hover:text-black">
                                 Kata
                             </h3>
 
-                            <div className="w-16 h-1 bg-white/50 group-hover:bg-iskf-red mb-6 transition-colors duration-500 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.3)]"></div>
+                            <div className="w-16 h-1 bg-black/10 group-hover:bg-iskf-red mb-6 transition-colors duration-500 rounded-full shadow-[0_2px_5px_rgba(0,0,0,0.1)]"></div>
 
-                            <p className="text-gray-100 font-bold max-w-xs mx-auto mb-10 text-sm md:text-base leading-relaxed transition-colors duration-500 drop-shadow-md text-shadow-sm">
+                            <p className="text-gray-700 font-medium max-w-xs mx-auto mb-10 text-base md:text-lg leading-relaxed transition-colors duration-500 tracking-wide">
                                 Biblioteca técnica completa de los 26 Katas de Shotokan y el kihon que los compone.
                             </p>
 
-                            <span className="inline-block px-10 py-4 bg-white/10 border-2 border-white/40 group-hover:bg-iskf-red group-hover:border-iskf-red text-white text-xs md:text-sm font-black uppercase tracking-[0.25em] transition-all duration-500 backdrop-blur-md group-hover:shadow-[0_0_20px_rgba(206,17,38,0.6)]">
+                            <span className="inline-block px-10 py-4 bg-white border border-gray-200 group-hover:bg-iskf-red group-hover:border-iskf-red text-[#2D2E83] group-hover:text-white text-xs md:text-sm font-black uppercase tracking-[0.25em] transition-all duration-500 backdrop-blur-md rounded-xl shadow-sm">
                                 Acceder
                             </span>
                         </div>
@@ -70,4 +68,3 @@ const ResourcesSection = () => {
 };
 
 export default ResourcesSection;
-

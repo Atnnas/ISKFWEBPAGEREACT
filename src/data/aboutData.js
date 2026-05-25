@@ -8,8 +8,8 @@ import pasaporte from '../assets/images/pasaporte.jpg';
 import membresiaInternacional from '../assets/images/membresiaInternacional.jpg';
 import senseiRoyGatjens from '../assets/images/senseiRoyGatjens.jpg';
 import titulosDan from '../assets/images/titulos-dan.jpg';
-import procesosKyu from '../assets/images/Procesos-kyu.jpg';
-import dojoKunSonido from '../assets/audio/dojoKunSonido.mp3';
+import procesosKyu from '../assets/images/foto-kyus.jpg';
+const dojoKunSonido = '/audio/dojoKunSonido.mp3';
 
 export const aboutData = {
     identidad: {
@@ -57,7 +57,7 @@ export const aboutData = {
                 img: membresiaInternacional
             },
             {
-                title: "Titulos de DAN",
+                title: "Títulos de DAN",
                 desc: "Certificaciones de grado cinturón negro.",
                 img: titulosDan
             },
@@ -117,14 +117,14 @@ export const aboutData = {
                 "El kata es el fundamento que nos enseña las posiciones del cuerpo, los movimientos, y los principios para usar manos y piernas. Nos enseña la respiración, la tranquilidad, la seguridad, el ritmo, el espíritu luchador y el poder de decisión.",
                 "El kata es comparable a los juegos de go y shogui (ajedrez japonés), comienza y termina con un saludo. El kata no es una acumulación de técnicas básicas, sino que, constantemente está fluyendo al igual que la sangre circula y nos llena de vida."
             ],
-            quote: "\"El kata es, junto con el kihon y el Kumite uno de los tres pilares del karate. Los tres son independientes pero inseparables y juntos forman al arte del karate do.\""
+            quote: "\"El kata es, junto con el kihon y el kumite, uno de los tres pilares del karate. Los tres son independientes pero inseparables y juntos forman el arte del karate do.\""
         },
         {
             title: "KUMITE",
             subtitle: "Combate",
             content: [
-                "El término Kumite se compone de los caracteres kumi (el encuentro), y te (la mano). Después del kihon y el kata este es el tercer pilar del karate do. Kumite frecuentemente se traduce como lucha, pero debe entenderse como una \"técnica de encuentro\" o \"encuentro de manos\".",
-                "No es una confrontación marcial para determinar el más fuerte ya que en la vida clásica del karate do no existe un oponente sino un compañero con el cual uno se relaciona con una recíproca e inextinguible dependencia.",
+                "El término Kumite se compone de los caracteres kumi (el encuentro), y te (la mano). Después del kihon y el kata, este es el tercer pilar del karate do. Kumite frecuentemente se traduce como lucha, pero debe entenderse como una \"técnica de encuentro\" o \"encuentro de manos\".",
+                "No es una confrontación marcial para determinar el más fuerte ya que en la vida clásica del karate do no existe un oponente, sino un compañero con el cual uno se relaciona con una recíproca e inextinguible dependencia.",
                 "Sin un compañero el Kumite no podría existir. El significado real del Kumite es la gran oportunidad de comprender nuestro ego a través del entrenamiento con un compañero."
             ]
         }
@@ -135,15 +135,15 @@ export const aboutData = {
         intro: [
             "Dentro de la filosofía del Karate Shotokan, el Dojo Kun (o lema del dojo) es la guía básica de los valores morales que debe practicar y vivir un karateka en su día a día, ha sido transmitido desde tiempos antiguos y cumple la función de reforzar constantemente el comportamiento humanitario correcto dentro y fuera de la práctica del arte marcial.",
             "El Dojo Kun consiste en cinco reglas que se citan en voz alta al final de cada clase de Karate.",
-            "El Karate Do Shotokan es una filosofía de vida que el maestro Gichin Funakoshi basó en el respeto, la lealtad y en la búsqueda de ser mejor cada día como persona. Éstos valores de vida se resumen en el Dojo Kun. A continuación, su enunciación original en japonés y su traducción al español, utilizada por la ISKF Costa Rica día tras día."
+            "El Karate Do Shotokan es una filosofía de vida que el maestro Gichin Funakoshi basó en el respeto, la lealtad y en la búsqueda de ser mejor cada día como persona. Estos valores de vida se resumen en el Dojo Kun. A continuación, su enunciación original en japonés y su traducción al español, utilizada por la ISKF Costa Rica día tras día."
         ],
         audio: dojoKunSonido,
         rules: [
-            { japanese: "HITOTSU JINKAKU KANSEI NI TSUTOMURU KOTO.", spanish: "Buscar un carácter perfecto" },
-            { japanese: "HITOTSU MAKOTO NO MICHI O MAMORU KOTO.", spanish: "Ser leal" },
-            { japanese: "HITOTSU DORYOUKU NO SEISHIN O YASHINAU KOTO.", spanish: "Esforzarse" },
-            { japanese: "HITOTSU REIGI O OMONZURU KOTO.", spanish: "Respetar a los demás" },
-            { japanese: "HITOTSU KEKKI NO YU O IMASHIMURU KOTO.", spanish: "Abstenerse de la violencia" }
+            { japanese: "JINKAKU KANSEI NI TSUTOMURU KOTO.", spanish: "Buscar un carácter perfecto" },
+            { japanese: "MAKOTO NO MICHI O MAMORU KOTO.", spanish: "Ser leal" },
+            { japanese: "DORYOUKU NO SEISHIN O YASHINAU KOTO.", spanish: "Esforzarse" },
+            { japanese: "REIGI O OMONZURU KOTO.", spanish: "Respetar a los demás" },
+            { japanese: "KEKKI NO YU O IMASHIMURU KOTO.", spanish: "Abstenerse de la violencia" }
         ],
         quote: {
             text: "\"El objetivo final del Karate no reside en la victoria o la derrota, sino en la perfección del carácter de sus participantes.\"",
@@ -158,7 +158,7 @@ export const aboutData = {
             "Lo anterior es también la visión que tuvo Gichin Funakoshi al escribir el Niju Kun, dejar a sus descendientes en el Karate una guía para alcanzar la perfección del arte marcial y de la integridad humana personal."
         ],
         quote: {
-            text: "\"Cuando tomamos completa responsabilidad para transformarnos en personas de buen carácter e integridad, estaremos contribuyendo para hacer el mundo un lugar mejor y a su vez, a traer paz al mundo\"",
+            text: "\"Cuando tomamos completa responsabilidad para transformarnos en personas de buen carácter e integridad, estaremos contribuyendo para hacer el mundo un lugar mejor y, a su vez, traer paz al mundo\"",
             author: "Maestro Teruyuki Okazaki"
         },
         rules: [
@@ -177,7 +177,7 @@ export const aboutData = {
             "Transfórmese según el oponente",
             "El resultado de la lucha depende de la maniobra",
             "Imagine que sus brazos y piernas son como espadas",
-            "Cuando usted abandona el resguardo del hogar, hay un millón de enemigos mirándote",
+            "Cuando usted abandona el resguardo del hogar, hay un millón de enemigos mirándole",
             "Las posturas son para los principiantes, después vienen las posiciones naturales",
             "Haga el Kata correctamente, la lucha real es una cuestión diferente",
             "No se olvide del control dinámico (potencia), de la elasticidad y la velocidad",
