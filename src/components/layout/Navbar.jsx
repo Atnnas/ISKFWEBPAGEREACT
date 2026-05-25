@@ -81,7 +81,14 @@ const Navbar = () => {
                                     </button>
                                 )}
                             </div>
-                        ) : null}
+                        ) : (
+                            <button
+                                onClick={() => signIn('google')}
+                                className="bg-iskf-blue text-white text-xs font-bold tracking-widest px-5 py-2.5 rounded-full hover:bg-[#1a1b4d] shadow-[0_0_10px_rgba(45,46,131,0.5)] transition-all duration-300 uppercase"
+                            >
+                                Ingresar
+                            </button>
+                        )}
                     </li>
                 </ul>
 
@@ -119,6 +126,36 @@ const Navbar = () => {
                                 {link.name}
                             </motion.a>
                         ))}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: navLinks.length * 0.1 }}
+                            className="flex flex-col items-center gap-4 mt-6"
+                        >
+                            {session ? (
+                                <>
+                                    <div className="flex items-center gap-4">
+                                        <img src={session.user.image?.src || session.user.image} alt="Perfil" className="w-12 h-12 rounded-full border border-white/20" />
+                                        <button onClick={() => { setIsMenuOpen(false); signOut(); }} className="text-lg text-white/70 hover:text-white uppercase tracking-widest transition-colors">Salir</button>
+                                    </div>
+                                    {session?.user?.role === 'admin' && (
+                                        <button
+                                            onClick={() => { setIsMenuOpen(false); router.push('/admin'); }}
+                                            className="bg-iskf-blue text-white text-xs font-bold tracking-widest px-6 py-3 rounded-full hover:bg-[#1a1b4d] shadow-[0_0_10px_rgba(45,46,131,0.5)] transition-all duration-300 uppercase"
+                                        >
+                                            Panel Admin
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => { setIsMenuOpen(false); signIn('google'); }}
+                                    className="bg-iskf-blue text-white text-sm font-bold tracking-widest px-8 py-3.5 rounded-full hover:bg-[#1a1b4d] shadow-[0_0_15px_rgba(45,46,131,0.6)] transition-all duration-300 uppercase"
+                                >
+                                    Ingresar
+                                </button>
+                            )}
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
