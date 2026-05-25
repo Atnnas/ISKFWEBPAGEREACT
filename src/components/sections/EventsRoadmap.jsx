@@ -248,7 +248,6 @@ const EventsRoadmap = ({ events = [] }) => {
                 <h2 className="text-4xl md:text-6xl font-black text-[#2D2E83] uppercase tracking-tighter mt-2">
                     Calendario <span className="text-transparent bg-clip-text bg-gradient-to-r from-iskf-red to-red-600">Oficial</span>
                 </h2>
-                <div className="w-16 h-1 bg-iskf-red mx-auto mt-4 shadow-[0_0_10px_rgba(190,19,34,0.3)]"></div>
             </div>
 
             {/* DESKTOP WRAPPER (Horizontal Infinite Scroll) */}
@@ -471,6 +470,78 @@ const EventsRoadmap = ({ events = [] }) => {
                 </div>
             </div>
 
+            {/* INVITACIÓN A DESLIZAR & DISCLAIMER */}
+            <div className="relative z-30 w-full max-w-4xl px-6 mt-8 flex flex-col items-center gap-6 text-center select-none">
+                
+                {/* Swipe/Drag Invitation (Desktop/Mobile responsive) */}
+                <div className="flex flex-col items-center gap-2">
+                    {/* Desktop swipe helper */}
+                    <div className="hidden md:flex items-center gap-3 text-sm text-neutral-500 font-medium tracking-wider uppercase">
+                        <motion.span 
+                            animate={{ x: [-5, 5, -5] }}
+                            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                            className="text-[#2D2E83]"
+                        >
+                            ←
+                        </motion.span>
+                        <span>Arrastra horizontalmente para explorar el roadmap</span>
+                        <motion.span 
+                            animate={{ x: [5, -5, 5] }}
+                            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                            className="text-[#2D2E83]"
+                        >
+                            →
+                        </motion.span>
+                    </div>
+
+                    {/* Mobile swipe helper */}
+                    <div className="flex md:hidden items-center gap-2.5 text-xs text-neutral-500 font-medium tracking-wider uppercase animate-pulse">
+                        <motion.span
+                            animate={{ y: [-3, 3, -3] }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                            className="text-iskf-red text-sm"
+                        >
+                            ↓
+                        </motion.span>
+                        <span>Desliza hacia abajo para ver más eventos</span>
+                        <motion.span
+                            animate={{ y: [3, -3, 3] }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                            className="text-iskf-red text-sm"
+                        >
+                            ↑
+                        </motion.span>
+                    </div>
+                </div>
+
+                {/* Glassmorphic Disclaimer Card */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="w-full bg-[#2D2E83]/5 backdrop-blur-xl border-l-4 border-iskf-red rounded-r-2xl p-5 md:p-6 text-left shadow-[0_10px_30px_rgba(45,46,131,0.05)] relative overflow-hidden"
+                >
+                    {/* Decorative glow in background */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-iskf-red/5 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 p-2 bg-iskf-red/10 text-iskf-red rounded-lg mt-0.5">
+                            <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div className="space-y-1.5">
+                            <h4 className="font-bold text-sm md:text-base text-[#2D2E83] uppercase tracking-wider">
+                                Nota del Calendario Oficial
+                            </h4>
+                            <p className="text-xs md:text-sm text-neutral-600 leading-relaxed font-medium">
+                                Este cronograma detalla las actividades planificadas para el año en curso. Las fechas y sedes definitivas están sujetas a ajustes de organización. Los eventos de alcance <strong className="text-iskf-red">Nacional</strong> están posicionados arriba y resaltados en rojo, mientras que los eventos <strong className="text-[#2D2E83]">Internacionales</strong> están abajo en color azul.
+                            </p>
+                        </div>
+                    </div>
+                </motion.div>
+
+            </div>
         </section>
     );
 };
