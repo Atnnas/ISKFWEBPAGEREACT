@@ -113,6 +113,7 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                                 <thead>
                                     <tr className="border-b-2 border-gray-100">
                                         <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-xs">Título</th>
+                                        <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-xs">Organizador</th>
                                         <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-xs">Fechas</th>
                                         <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-xs">Tipo</th>
                                         <th className="py-3 px-4 font-bold text-gray-400 uppercase tracking-widest text-xs">Ubicación</th>
@@ -126,9 +127,22 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                                         
                                         return (
                                             <tr key={ev.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                                                <td className="py-4 px-4 font-bold text-gray-900 flex items-center gap-2">
-                                                    <div className={`w-3 h-3 rounded-full ${ev.color || 'bg-iskf-red'}`}></div>
-                                                    {ev.title}
+                                                <td className="py-4 px-4 font-bold text-gray-900">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-3 h-3 rounded-full flex-shrink-0 ${ev.color || 'bg-iskf-red'}`}></div>
+                                                        <span>{ev.title}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-4 text-sm text-gray-600">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <img 
+                                                            src={ev.logoName || '/images/dojos/iskf.jpg'} 
+                                                            alt={ev.organizer || 'ISKF'} 
+                                                            className="w-7 h-7 rounded-full object-contain border border-gray-200 bg-white p-0.5 flex-shrink-0 shadow-sm"
+                                                            onError={(e) => { e.target.onerror = null; e.target.src = '/images/dojos/iskf.jpg'; }}
+                                                        />
+                                                        <span className="font-semibold text-gray-800">{ev.organizer || 'ISKF Costa Rica'}</span>
+                                                    </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-sm text-gray-600 font-medium">
                                                     {start === end ? start : `${start} - ${end}`}
