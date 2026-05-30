@@ -17,6 +17,8 @@ import nicaraguaFlag from '../../assets/images/nicaragua.jpg';
 import wkfPanamericaLogo from '../../assets/images/LogoWKFPanamerica.jpg';
 import brazilFlag from '../../assets/images/brazil.jpg';
 import polandFlag from '../../assets/images/poland.jpg';
+import italiaFlag from '../../assets/images/italia.jpg';
+import dominicanaFlag from '../../assets/images/dominicana.jpg';
 import zanshinLogo from '../../assets/images/zanshinLogo.jpg';
 
 const imageMap = {
@@ -34,6 +36,8 @@ const imageMap = {
     wkfPanamericaLogo,
     brazilFlag,
     polandFlag,
+    italiaFlag,
+    dominicanaFlag,
     zanshinLogo,
 };
 

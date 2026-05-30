@@ -14,7 +14,7 @@ const AboutSection = () => {
         { title: "Pilares", subtitle: "Del Karate Do", key: "pilares" },
         { title: "Dojo", subtitle: "Kun", key: "dojoKun" },
         { title: "Niju", subtitle: "Kun", key: "nijuKun" },
-        { title: "Documentos", subtitle: "Oficiales", key: "identidad" } // Maps to Identidad as it contains documents
+        { title: "ISKF", subtitle: "Internacional", key: "internacional" }
     ];
 
     const [activeIndex, setActiveIndex] = React.useState(0);

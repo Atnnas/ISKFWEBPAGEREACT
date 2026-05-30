@@ -366,6 +366,82 @@ const AboutDetailPage = () => {
         </div>
     );
 
+    const renderInternacional = () => {
+        return (
+            <div className="w-full max-w-[1500px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 z-20 relative animate-fade-in">
+                <div className="relative group overflow-hidden bg-white/40 backdrop-blur-xl border border-white/60 rounded-3xl p-6 sm:p-8 md:p-12 lg:p-16 shadow-[0_8px_32px_rgba(0,0,0,0.1)] hover:bg-white/50 transition-all duration-300 flex flex-col lg:flex-row gap-8 md:gap-12 lg:gap-16 xl:gap-20 items-center">
+                    
+                    <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+                        <div className="absolute -inset-4 bg-gradient-to-r from-iskf-dark/10 to-iskf-red/20 blur-2xl opacity-50 group-hover:opacity-100 transition duration-500"></div>
+                    </div>
+                    
+                    {content.logo && (
+                        <div className="w-60 h-60 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-[450px] lg:h-[450px] xl:w-[500px] xl:h-[500px] flex-shrink-0 flex items-center justify-center">
+                            <img 
+                                src={content.logo?.src || content.logo} 
+                                alt="ISKF Logo" 
+                                className="w-full h-full object-contain drop-shadow-2xl" 
+                            />
+                        </div>
+                    )}
+
+                    <div className="flex-grow flex flex-col items-center lg:items-start text-center lg:text-left w-full">
+                        <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-[#2D2E83] uppercase tracking-wider mb-6 leading-tight max-w-4xl">
+                            {content.welcomeTitle}
+                        </h3>
+
+                        <div className="text-gray-800 font-medium text-base md:text-lg leading-relaxed tracking-wide space-y-4 max-w-5xl text-justify mb-10">
+                            {content.paragraphs.map((para, i) => (
+                                <p key={i}>
+                                    {para}
+                                </p>
+                            ))}
+                        </div>
+
+                        <motion.a
+                            href={content.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            animate={{
+                                boxShadow: [
+                                    "0px 0px 15px rgba(190, 19, 34, 0.4)",
+                                    "0px 0px 30px rgba(190, 19, 34, 0.8)",
+                                    "0px 0px 15px rgba(190, 19, 34, 0.4)"
+                                ],
+                                scale: [1, 1.02, 1]
+                            }}
+                            transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            whileHover={{ 
+                                scale: 1.08,
+                                boxShadow: "0px 0px 35px rgba(190, 19, 34, 0.9)",
+                                transition: { duration: 0.2 }
+                            }}
+                            whileTap={{ scale: 0.96 }}
+                            className="inline-flex items-center gap-3 bg-gradient-to-r from-[#be1322] via-[#e62a3a] to-[#be1322] hover:from-[#ff4d5a] hover:to-[#be1322] text-white font-black tracking-widest uppercase text-sm sm:text-base py-5 px-10 rounded-full border border-white/20 shadow-lg transition-all duration-300 group/btn"
+                        >
+                            <span>
+                                Visitar Sitio Oficial
+                            </span>
+                            <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                className="h-5 w-5 transform group-hover/btn:translate-x-1.5 transition-transform" 
+                                fill="none" 
+                                viewBox="0 0 24 24" 
+                                stroke="currentColor"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </motion.a>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     let renderContent;
     switch (section) {
         case 'identidad': renderContent = renderIdentidad; break;
@@ -373,11 +449,12 @@ const AboutDetailPage = () => {
         case 'dojoKun': renderContent = renderDojoKun; break;
         case 'nijuKun': renderContent = renderNijuKun; break;
         case 'estructura': renderContent = renderEstructura; break;
+        case 'internacional': renderContent = renderInternacional; break;
         default: renderContent = () => null;
     }
 
     const isEstructura = section === 'estructura';
-    const isNoScrollSection = isEstructura || section === 'identidad' || section === 'pilares';
+    const isNoScrollSection = isEstructura || section === 'identidad' || section === 'pilares' || section === 'internacional';
 
     return (
         <div className={`bg-white ${isNoScrollSection ? 'h-screen overflow-y-auto' : 'min-h-screen'} text-iskf-dark font-sans  relative transition-colors duration-500`}>

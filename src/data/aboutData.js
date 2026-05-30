@@ -1,6 +1,8 @@
 import corbata from '../assets/images/corbata-nuevo.jpg';
 import dojoKun from '../assets/images/dojoKun.jpg';
 import escudo from '../assets/images/escudo.jpg';
+import iskfLogo from '../assets/images/iskf.jpg';
+import iskfLogoPng from '../assets/images/iskf-logo.png';
 import jacket from '../assets/images/jacket-nueva.jpg';
 import libroTecnica from '../assets/images/libroTecnica.jpg';
 import tituloInternacional from '../assets/images/tituloInternacional.jpg';
@@ -146,7 +148,7 @@ export const aboutData = {
             { japanese: "KEKKI NO YU O IMASHIMURU KOTO.", spanish: "Abstenerse de la violencia" }
         ],
         quote: {
-            text: "\"El objetivo final del Karate no reside en la victoria o la derrota, sino en la perfección del carácter de sus participantes.\"",
+            text: "\"El objetivo final del Karate no reside en la victoria o la derrota, sino en la perfection del carácter de sus participantes.\"",
             author: "Gichin Funakoshi"
         }
     },
@@ -183,5 +185,17 @@ export const aboutData = {
             "No se olvide del control dinámico (potencia), de la elasticidad y la velocidad",
             "Sea siempre bueno en la aplicación de todo lo que usted ha aprendido"
         ]
+    },
+    internacional: {
+        title: "ISKF Internacional",
+        subtitle: "Federación Global",
+        logo: iskfLogoPng,
+        welcomeTitle: "Bienvenido a la Federación Internacional de Karate Shotokan (ISKF)",
+        paragraphs: [
+            "La ISKF es una comunidad global dedicada al arte del Karate Shotokan tradicional. Fundada por el Maestro Teruyuki Okazaki, discípulo directo del Maestro Gichin Funakoshi —el venerado fundador del Shotokan— nuestra organización preserva y promueve los valores y enseñanzas eternas del karate auténtico.",
+            "Como una organización sin fines de lucro, la ISKF se mantiene firme en el espíritu y los principios del Shotokan a través del Dojo Kun y el Niju Kun, guiando a miembros de todas las edades a cultivar el carácter, el respeto y la resiliencia.",
+            "Le invitamos a explorar nuestro sitio web como un recurso de apoyo en este viaje. Ya sea usted un profesional ocupado, un padre que considera el karate para su hijo, un principiante ansioso por aprender o un practicante experimentado, la ISKF está aquí para inspirar, guiar y alentar en cada paso del camino."
+        ],
+        link: "https://www.iskf.com/"
     }
 };

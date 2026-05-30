@@ -8,11 +8,22 @@ import CustomSelect from '../ui/CustomSelect';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 
+const countries = [
+    { name: 'Costa Rica', flagName: 'costaRicaFlag', emoji: '🇨🇷', isNational: true },
+    { name: 'México', flagName: 'mexicoFlag', emoji: '🇲🇽', isNational: false },
+    { name: 'Nicaragua', flagName: 'nicaraguaFlag', emoji: '🇳🇮', isNational: false },
+    { name: 'Brasil', flagName: 'brazilFlag', emoji: '🇧🇷', isNational: false },
+    { name: 'República Dominicana', flagName: 'dominicanaFlag', emoji: '🇩🇴', isNational: false },
+    { name: 'Italia', flagName: 'italiaFlag', emoji: '🇮🇹', isNational: false },
+    { name: 'Polonia', flagName: 'polandFlag', emoji: '🇵🇱', isNational: false }
+];
+
 export default function AdminCalendar({ initialEvents, organizers = [], isAdmin = true }) {
     const [events, setEvents] = useState(initialEvents);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedCountry, setSelectedCountry] = useState('costaRicaFlag');
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, eventId: null });
@@ -65,6 +76,7 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
         if (!isAdmin) return;
         e.stopPropagation();
         setSelectedEvent(event);
+        setSelectedCountry(event.flagName || 'costaRicaFlag');
         setSelectedDate(null);
         setIsModalOpen(true);
     };
@@ -85,6 +97,7 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                             const today = new Date().toISOString().split('T')[0];
                             setSelectedDate(today);
                             setSelectedEvent(null);
+                            setSelectedCountry('costaRicaFlag');
                             setIsModalOpen(true);
                         }}
                         className="flex items-center gap-2 bg-iskf-dark text-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-iskf-red transition-colors shadow-md"
@@ -158,7 +171,10 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-sm text-gray-600">
-                                                    {ev.location || <span className="text-gray-400 italic">No especificada</span>}
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-base">{countries.find(c => c.flagName === ev.flagName)?.emoji || '🇨🇷'}</span>
+                                                        <span>{ev.location || <span className="text-gray-400 italic">No especificada</span>}</span>
+                                                    </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
@@ -247,42 +263,61 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Tipo de Evento</label>
-                                        <select 
-                                            name="type" 
-                                            defaultValue={selectedEvent?.type || 'Torneo'}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-iskf-red/50 focus:border-iskf-red transition-all"
-                                        >
-                                            <option value="Torneo">Torneo</option>
-                                            <option value="Seminario">Seminario</option>
-                                            <option value="Examen">Examen</option>
-                                            <option value="Campamento">Campamento</option>
-                                            <option value="Otro">Otro</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Alcance</label>
-                                        <select 
-                                            name="locationScope" 
-                                            defaultValue={selectedEvent?.locationScope || 'Nacional'}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-iskf-red/50 focus:border-iskf-red transition-all"
-                                        >
-                                            <option value="Nacional">Nacional</option>
-                                            <option value="Internacional">Internacional</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Organizador</label>
-                                        <CustomSelect 
-                                            name="organizer" 
-                                            defaultValue={selectedEvent?.organizer || (organizers.length > 0 ? organizers[0].value : '')}
-                                            options={organizers}
-                                            placeholder="Seleccionar organizador..."
-                                        />
-                                    </div>
-                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">País del Evento</label>
+                                                        <select 
+                                                            name="flagName" 
+                                                            value={selectedCountry}
+                                                            onChange={(e) => setSelectedCountry(e.target.value)}
+                                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-iskf-red/50 focus:border-iskf-red transition-all"
+                                                        >
+                                                            {countries.map((c) => (
+                                                                <option key={c.flagName} value={c.flagName}>
+                                                                    {c.emoji} {c.name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Alcance (Auto-determinado)</label>
+                                                        <input type="hidden" name="locationScope" value={countries.find(c => c.flagName === selectedCountry)?.isNational ? 'Nacional' : 'Internacional'} />
+                                                        <select 
+                                                            disabled
+                                                            value={countries.find(c => c.flagName === selectedCountry)?.isNational ? 'Nacional' : 'Internacional'}
+                                                            className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-500 cursor-not-allowed"
+                                                        >
+                                                            <option value="Nacional">Nacional</option>
+                                                            <option value="Internacional">Internacional</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Tipo de Evento</label>
+                                                        <select 
+                                                            name="type" 
+                                                            defaultValue={selectedEvent?.type || 'Torneo'}
+                                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-iskf-red/50 focus:border-iskf-red transition-all"
+                                                        >
+                                                            <option value="Torneo">Torneo</option>
+                                                            <option value="Seminario">Seminario</option>
+                                                            <option value="Examen">Examen</option>
+                                                            <option value="Campamento">Campamento</option>
+                                                            <option value="Otro">Otro</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Organizador</label>
+                                                        <CustomSelect 
+                                                            name="organizer" 
+                                                            defaultValue={selectedEvent?.organizer || (organizers.length > 0 ? organizers[0].value : '')}
+                                                            options={organizers}
+                                                            placeholder="Seleccionar organizador..."
+                                                        />
+                                                    </div>
+                                                </div>
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Ubicación</label>
                                     <div className="relative">

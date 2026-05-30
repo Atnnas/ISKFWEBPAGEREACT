@@ -88,6 +88,7 @@ export async function createEvent(formData: FormData) {
         }
 
         const { logoUrl, flagUrl } = await getOrganizerDetails(organizer);
+        const flagName = formData.get('flagName') as string || flagUrl;
 
         const newEvent = new Event({
             title,
@@ -97,7 +98,7 @@ export async function createEvent(formData: FormData) {
             locationScope,
             organizer,
             logoName: logoUrl,
-            flagName: flagUrl,
+            flagName,
             location,
             color
         });
@@ -146,6 +147,7 @@ export async function updateEvent(id: string, formData: FormData) {
         }
 
         const { logoUrl, flagUrl } = await getOrganizerDetails(organizer);
+        const flagName = formData.get('flagName') as string || flagUrl;
 
         await Event.findByIdAndUpdate(id, {
             title,
@@ -155,7 +157,7 @@ export async function updateEvent(id: string, formData: FormData) {
             locationScope,
             organizer,
             logoName: logoUrl,
-            flagName: flagUrl,
+            flagName,
             location,
             color
         });
