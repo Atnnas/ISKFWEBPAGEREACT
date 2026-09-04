@@ -13,7 +13,10 @@ import {
   CheckCircle2, 
   Loader2, 
   Table,
-  Clock
+  Clock,
+  Shield,
+  ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 import { submitStudentExam } from '../../lib/actions/examinations';
 import ConfirmModal from '../ui/ConfirmModal';
@@ -26,6 +29,9 @@ export default function StudentExamTaker({ session, exam }) {
   );
   const [studentRank, setStudentRank] = useState('');
 
+  // Modo de seguridad configurado por el examinador: 'audit' | 'warnings' | 'strict'
+  const securityMode = session?.securityMode || 'audit';
+
   // Respuestas: { [qId]: { selectedOptionIndex, writtenAnswer, matchingMatches: [{ leftIndex, rightIndex }] } }
   const [answers, setAnswers] = useState({});
 
@@ -37,6 +43,21 @@ export default function StudentExamTaker({ session, exam }) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
   const [isAutoSubmittedSuccess, setIsAutoSubmittedSuccess] = useState(false);
+  const [isClosedBySecuritySuccess, setIsClosedBySecuritySuccess] = useState(false);
+
+  // Estados de Seguridad
+  const [_securityViolationsCount, setSecurityViolationsCount] = useState(0);
+  const [isSecurityLocked, setIsSecurityLocked] = useState(false);
+  const [requiresFullscreenPrompt, setRequiresFullscreenPrompt] = useState(securityMode === 'strict');
+  const [securityWarningModal, setSecurityWarningModal] = useState({
+    isOpen: false,
+    attempt: 0,
+    title: '',
+    message: ''
+  });
+
+  const securityViolationsRef = useRef(0);
+  const securityLogsRef = useRef([]);
 
   // Temporizador de tiempo límite
   const [timeLeft, setTimeLeft] = useState(null); // en segundos
@@ -86,12 +107,12 @@ export default function StudentExamTaker({ session, exam }) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Función unificada de envío (manual o automática)
-  const executeSubmission = async (isAuto = false) => {
+  // Función unificada de envío (manual, por tiempo o por infracción de seguridad)
+  const executeSubmission = async (isAuto = false, isSecurityClosed = false, customReport = '') => {
     if (isSubmitting || isSubmitted || isAlreadySubmitted) return;
     setIsSubmitting(true);
     try {
-      const finalStudentName = studentName.trim() || (isAuto ? 'Aspirante (Tiempo Agotado)' : '');
+      const finalStudentName = studentName.trim() || (isAuto ? 'Aspirante (Envío Automático)' : '');
       const finalStudentDojo = studentDojo.trim() || (session?.assignedDojos?.[0]?.name || 'ISKF Dojo');
 
       const formattedAnswers = (exam.questions || []).map(q => {
@@ -108,6 +129,12 @@ export default function StudentExamTaker({ session, exam }) {
         ? Math.max(0, Math.round((Date.now() - startTimeRef.current) / 1000))
         : 0;
 
+      const finalSecurityReport = customReport || (
+        securityViolationsRef.current > 0
+          ? `Se detectaron ${securityViolationsRef.current} salidas de foco de la ventana del examen.`
+          : 'Sin incidencias de salida de ventana detectadas.'
+      );
+
       const res = await submitStudentExam({
         sessionId: session.id || session._id,
         studentName: finalStudentName,
@@ -115,15 +142,23 @@ export default function StudentExamTaker({ session, exam }) {
         studentRank: studentRank.trim(),
         answers: formattedAnswers,
         timeSpentSeconds: elapsedSeconds,
-        isAutoSubmitted: isAuto
+        isAutoSubmitted: isAuto,
+        securityViolationsCount: securityViolationsRef.current,
+        closedBySecurity: isSecurityClosed,
+        securityReport: finalSecurityReport
       });
 
       if (res.success) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem(`iskf_exam_submitted_${session.id || session._id}`, 'true');
+          const sessId = session.id || session._id;
+          localStorage.setItem(`iskf_exam_submitted_${sessId}`, 'true');
+          if (isSecurityClosed) {
+            localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
+          }
         }
         setIsSubmitted(true);
-        setIsAutoSubmittedSuccess(isAuto);
+        setIsAutoSubmittedSuccess(isAuto && !isSecurityClosed);
+        setIsClosedBySecuritySuccess(isSecurityClosed);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         if (res.error?.includes("entrega previa")) {
@@ -143,17 +178,87 @@ export default function StudentExamTaker({ session, exam }) {
   const executeSubmissionRef = useRef(executeSubmission);
   executeSubmissionRef.current = executeSubmission;
 
-  // Inicializar verificación de reingreso y temporizador local
+  // Detección de salida de ventana o cambio de pestaña
+  const handleViolationDetected = (reason = "Salida de ventana") => {
+    if (isSubmitting || isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt) return;
+
+    securityViolationsRef.current += 1;
+    const currentCount = securityViolationsRef.current;
+    setSecurityViolationsCount(currentCount);
+
+    const timestamp = new Date().toLocaleTimeString('es-CR');
+    securityLogsRef.current.push({ timestamp, reason, count: currentCount });
+
+    // MODO 1: AUDITORÍA (FLEXIBLE) - Registra silenciosamente sin interrumpir
+    if (securityMode === 'audit') {
+      return;
+    }
+
+    // MODO 2: CONTROLADO (3 INTENTOS CON ADVERTENCIA)
+    if (securityMode === 'warnings') {
+      if (currentCount === 1) {
+        setSecurityWarningModal({
+          isOpen: true,
+          attempt: 1,
+          title: "Advertencia de Seguridad (1/3)",
+          message: "Has salido de la ventana o pestaña del examen. No está permitido cambiar de aplicación ni minimizar. Esta es tu primera advertencia (1 de 3). Al acumular 3 salidas, tu examen se cerrará y anulará de forma definitiva."
+        });
+      } else if (currentCount === 2) {
+        setSecurityWarningModal({
+          isOpen: true,
+          attempt: 2,
+          title: "Última Advertencia de Seguridad (2/3)",
+          message: "Has vuelto a salir de la ventana de evaluación. Esta es tu ÚLTIMA advertencia (2 de 3). Si sales una vez más por cualquier motivo, el examen será cerrado y enviado inmediatamente con lo que tengas contestado."
+        });
+      } else if (currentCount >= 3) {
+        // Tercera salida: Cierre forzado inmediato
+        setSecurityWarningModal({ isOpen: false, attempt: 3, title: '', message: '' });
+        setIsSecurityLocked(true);
+        if (!isAutoSubmittingRef.current) {
+          isAutoSubmittingRef.current = true;
+          executeSubmissionRef.current?.(
+            true, 
+            true, 
+            `Examen cancelado automáticamente por seguridad: El aspirante acumuló 3 salidas de ventana no autorizadas.`
+          );
+        }
+      }
+    }
+
+    // MODO 3: ESTRICTO (PANTALLA COMPLETA & TOLERANCIA CERO)
+    if (securityMode === 'strict') {
+      setIsSecurityLocked(true);
+      if (!isAutoSubmittingRef.current) {
+        isAutoSubmittingRef.current = true;
+        executeSubmissionRef.current?.(
+          true, 
+          true, 
+          `Examen anulado por seguridad en Modo Estricto: Se detectó salida de ventana o abandono de pantalla completa.`
+        );
+      }
+    }
+  };
+
+  const handleViolationDetectedRef = useRef(handleViolationDetected);
+  handleViolationDetectedRef.current = handleViolationDetected;
+
+  // Inicializar verificación de reingreso, temporizador y estado de seguridad
   useEffect(() => {
     const sessId = session.id || session._id;
     if (typeof window !== 'undefined') {
-      // 1. Verificar si ya se envió previamente desde este navegador
+      // 1. Verificar si fue bloqueado por seguridad
+      if (localStorage.getItem(`iskf_exam_security_locked_${sessId}`)) {
+        setIsSecurityLocked(true);
+        return;
+      }
+
+      // 2. Verificar si ya se envió previamente desde este navegador
       if (localStorage.getItem(`iskf_exam_submitted_${sessId}`)) {
         setIsAlreadySubmitted(true);
         return;
       }
 
-      // 2. Manejo de tiempo límite
+      // 3. Manejo de tiempo límite
       const timeLimitMinutes = session?.timeLimitMinutes || 0;
       if (timeLimitMinutes > 0) {
         const startKey = `iskf_exam_start_${sessId}`;
@@ -173,7 +278,7 @@ export default function StudentExamTaker({ session, exam }) {
           setTimeLeft(0);
           if (!isAutoSubmittingRef.current) {
             isAutoSubmittingRef.current = true;
-            executeSubmissionRef.current?.(true);
+            executeSubmissionRef.current?.(true, false, 'Tiempo límite agotado.');
           }
         } else {
           setTimeLeft(remaining);
@@ -185,12 +290,12 @@ export default function StudentExamTaker({ session, exam }) {
   // Intervalo regresivo para el tiempo límite
   useEffect(() => {
     const timeLimitMinutes = session?.timeLimitMinutes || 0;
-    if (timeLimitMinutes <= 0 || timeLeft === null || isSubmitted || isAlreadySubmitted) return;
+    if (timeLimitMinutes <= 0 || timeLeft === null || isSubmitted || isAlreadySubmitted || isSecurityLocked) return;
 
     if (timeLeft <= 0) {
       if (!isAutoSubmittingRef.current) {
         isAutoSubmittingRef.current = true;
-        executeSubmissionRef.current?.(true);
+        executeSubmissionRef.current?.(true, false, 'Tiempo límite agotado.');
       }
       return;
     }
@@ -201,7 +306,7 @@ export default function StudentExamTaker({ session, exam }) {
           clearInterval(intervalId);
           if (!isAutoSubmittingRef.current) {
             isAutoSubmittingRef.current = true;
-            executeSubmissionRef.current?.(true);
+            executeSubmissionRef.current?.(true, false, 'Tiempo límite agotado.');
           }
           return 0;
         }
@@ -210,7 +315,107 @@ export default function StudentExamTaker({ session, exam }) {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [timeLeft, session, isSubmitted, isAlreadySubmitted]);
+  }, [timeLeft, session, isSubmitted, isAlreadySubmitted, isSecurityLocked]);
+
+  // Monitoreo de Visibilidad y Pérdida de Foco de la Ventana
+  useEffect(() => {
+    if (isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt) return;
+
+    let blurTimer = null;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleViolationDetectedRef.current("Pestaña minimizada o cambio de pestaña");
+      }
+    };
+
+    const handleWindowBlur = () => {
+      blurTimer = setTimeout(() => {
+        if (document.visibilityState === 'hidden' || !document.hasFocus()) {
+          handleViolationDetectedRef.current("Ventana perdió el foco");
+        }
+      }, 400);
+    };
+
+    const handleWindowFocus = () => {
+      if (blurTimer) clearTimeout(blurTimer);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+      if (blurTimer) clearTimeout(blurTimer);
+    };
+  }, [securityMode, isSubmitted, isAlreadySubmitted, isSecurityLocked, requiresFullscreenPrompt]);
+
+  // Monitoreo de Pantalla Completa en Modo Estricto
+  useEffect(() => {
+    if (securityMode !== 'strict' || isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt) return;
+
+    const handleFullscreenChange = () => {
+      const inFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!inFullscreen) {
+        handleViolationDetectedRef.current("Salida no autorizada del modo pantalla completa obligatorio");
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [securityMode, requiresFullscreenPrompt, isSubmitted, isAlreadySubmitted, isSecurityLocked]);
+
+  // Bloqueo Anti-Copia (Clic derecho, Selección, Atajos de teclado) en Modo Estricto
+  useEffect(() => {
+    if (securityMode !== 'strict' || isSubmitted || isAlreadySubmitted || isSecurityLocked) return;
+
+    const preventDefaultAction = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const preventSpecialKeys = (e) => {
+      // Bloquea Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+U, Ctrl+S, Ctrl+P, F12
+      if (
+        (e.ctrlKey && ['c', 'v', 'x', 'u', 's', 'p', 'a'].includes(e.key.toLowerCase())) ||
+        e.key === 'F12'
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    document.addEventListener('copy', preventDefaultAction);
+    document.addEventListener('cut', preventDefaultAction);
+    document.addEventListener('paste', preventDefaultAction);
+    document.addEventListener('contextmenu', preventDefaultAction);
+    document.addEventListener('keydown', preventSpecialKeys);
+
+    return () => {
+      document.removeEventListener('copy', preventDefaultAction);
+      document.removeEventListener('cut', preventDefaultAction);
+      document.removeEventListener('paste', preventDefaultAction);
+      document.removeEventListener('contextmenu', preventDefaultAction);
+      document.removeEventListener('keydown', preventSpecialKeys);
+    };
+  }, [securityMode, isSubmitted, isAlreadySubmitted, isSecurityLocked]);
+
+  // Manejo de ingreso a Pantalla Completa
+  const handleEnterFullscreen = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        await document.documentElement.webkitRequestFullscreen();
+      }
+    } catch (err) {
+      console.warn("Fullscreen request error:", err);
+    }
+    setRequiresFullscreenPrompt(false);
+  };
 
   // Manejo de respuestas de selección única
   const handleSelectOption = (questionId, optionIndex) => {
@@ -270,6 +475,99 @@ export default function StudentExamTaker({ session, exam }) {
       onConfirm: () => executeSubmission(false)
     });
   };
+
+  // =========================================================================
+  // VISTA: PANTALLA DE BLOQUEO POR INFRACCIÓN DE SEGURIDAD
+  // =========================================================================
+  if (isSecurityLocked || isClosedBySecuritySuccess) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 py-16 font-sans">
+        <div className="max-w-md w-full bg-neutral-900 border border-red-500/30 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="w-20 h-20 bg-red-500/10 border border-red-500/20 text-red-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+            <ShieldAlert className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-widest font-mono">
+              Infracción de Seguridad
+            </span>
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+              Examen Cancelado y Bloqueado
+            </h1>
+            <p className="text-neutral-400 text-sm leading-relaxed">
+              El sistema ha detectado reiteradas salidas de la ventana de evaluación o abandono de pantalla completa en la convocatoria <strong className="text-white">{session.title}</strong>.
+            </p>
+          </div>
+
+          <div className="p-4 bg-neutral-950/70 border border-neutral-800 rounded-2xl text-xs text-neutral-300 text-left space-y-2">
+            <div className="flex items-start gap-2 text-red-400">
+              <span>⛔</span>
+              <span>Tus respuestas contestadas hasta este momento fueron remitidas automáticamente al Tribunal Examinador.</span>
+            </div>
+            <div className="flex items-start gap-2 text-neutral-400">
+              <span>•</span>
+              <span>El informe de salidas e incidencias ha sido anexado a tu entrega.</span>
+            </div>
+            <div className="flex items-start gap-2 text-neutral-400">
+              <span>•</span>
+              <span>Este enlace ha quedado inhabilitado de forma permanente para este dispositivo.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VISTA: PANTALLA PREVIA DE PANTALLA COMPLETA EN MODO ESTRICTO
+  // =========================================================================
+  if (requiresFullscreenPrompt && securityMode === 'strict') {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 py-16 font-sans">
+        <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="w-20 h-20 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+            <Shield className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-widest font-mono">
+              Modo Estricto de Seguridad
+            </span>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight">
+              {session.title}
+            </h1>
+            <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed">
+              Esta evaluación teórica oficial ISKF se rige bajo protocolos de máxima seguridad anti-trampa.
+            </p>
+          </div>
+
+          <div className="p-4 bg-neutral-950/70 border border-neutral-800 rounded-2xl text-xs text-neutral-300 text-left space-y-2.5">
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold">1.</span>
+              <span><strong>Pantalla Completa Obligatoria:</strong> Toda la prueba se resolverá en modo inmersivo sin pestañas visibles.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold">2.</span>
+              <span><strong>Anti-Copia Activo:</strong> El copiado de texto, selección y menú contextual están deshabilitados.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-red-400 font-bold">3.</span>
+              <span><strong>Tolerancia Cero:</strong> Minimizar la ventana o cambiar de aplicación cancelará el examen de inmediato.</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleEnterFullscreen}
+            className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Maximize2 className="w-4 h-4" />
+            <span>Activar Pantalla Completa y Comenzar</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // =========================================================================
   // VISTA: PANTALLA DE BLOQUEO POR INTENTO PREVIO
@@ -413,11 +711,29 @@ export default function StudentExamTaker({ session, exam }) {
               <Award className="w-4 h-4 text-red-500" />
               <span>ISKF Karate Do • Evaluación Oficial</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {session?.timeLimitMinutes > 0 && (
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
                   {session.timeLimitMinutes} min límite
+                </span>
+              )}
+              {securityMode === 'strict' && (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Seguridad Estricta
+                </span>
+              )}
+              {securityMode === 'warnings' && (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" />
+                  Seguridad: 3 Intentos
+                </span>
+              )}
+              {securityMode === 'audit' && (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-neutral-800 text-neutral-400 border border-neutral-700 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" />
+                  Seguridad: Auditoría
                 </span>
               )}
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
@@ -442,7 +758,7 @@ export default function StudentExamTaker({ session, exam }) {
         </div>
 
         {/* Formulario de Respuestas */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className={`space-y-6 ${securityMode === 'strict' ? 'select-none' : ''}`}>
 
           {/* Tarjeta de Datos del Aspirante */}
           <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl">
@@ -752,6 +1068,14 @@ export default function StudentExamTaker({ session, exam }) {
         title={alertModal.title}
         message={alertModal.message}
         isError={alertModal.isError}
+      />
+
+      <AlertModal
+        isOpen={securityWarningModal.isOpen}
+        onClose={() => setSecurityWarningModal(prev => ({ ...prev, isOpen: false }))}
+        title={securityWarningModal.title}
+        message={securityWarningModal.message}
+        isError={true}
       />
     </div>
   );

@@ -126,6 +126,19 @@ const ExamSubmissionSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  securityViolationsCount: {
+    type: Number,
+    default: 0
+  },
+  closedBySecurity: {
+    type: Boolean,
+    default: false
+  },
+  securityReport: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   submittedAt: {
     type: Date,
     default: Date.now

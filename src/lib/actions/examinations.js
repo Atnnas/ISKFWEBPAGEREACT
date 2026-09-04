@@ -575,6 +575,7 @@ export async function getExaminationSessions() {
         accessCode: sess.accessCode,
         status: sess.status || 'active',
         timeLimitMinutes: sess.timeLimitMinutes || 0,
+        securityMode: sess.securityMode || 'audit',
         notes: sess.notes || '',
         createdAt: sess.createdAt ? sess.createdAt.toISOString() : null,
         totalSubmissions,
@@ -619,6 +620,7 @@ export async function createExaminationSession(data) {
       accessCode,
       status: 'active',
       timeLimitMinutes: Math.max(0, parseInt(data.timeLimitMinutes, 10) || 0),
+      securityMode: data.securityMode || 'audit',
       notes: data.notes?.trim() || ''
     });
 
@@ -638,6 +640,7 @@ export async function createExaminationSession(data) {
         accessCode: plain.accessCode,
         status: plain.status,
         timeLimitMinutes: plain.timeLimitMinutes || 0,
+        securityMode: plain.securityMode || 'audit',
         notes: plain.notes,
         totalSubmissions: 0,
         pendingSubmissions: 0,
@@ -738,7 +741,8 @@ export async function getPublicExaminationSession(accessCodeOrId) {
         writtenExamName: session.writtenExamName,
         assignedDojos: session.assignedDojos || [],
         accessCode: session.accessCode,
-        timeLimitMinutes: session.timeLimitMinutes || 0
+        timeLimitMinutes: session.timeLimitMinutes || 0,
+        securityMode: session.securityMode || 'audit'
       },
       exam: {
         id: writtenExam._id.toString(),
@@ -761,7 +765,18 @@ export async function submitStudentExam(data) {
   try {
     await dbConnect();
 
-    const { sessionId, studentName, studentDojo, studentRank, answers, timeSpentSeconds, isAutoSubmitted } = data;
+    const { 
+      sessionId, 
+      studentName, 
+      studentDojo, 
+      studentRank, 
+      answers, 
+      timeSpentSeconds, 
+      isAutoSubmitted,
+      securityViolationsCount,
+      closedBySecurity,
+      securityReport
+    } = data;
 
     if (!studentName?.trim() || !studentDojo?.trim()) {
       return { success: false, error: "El nombre del alumno y el Dojo son obligatorios." };
@@ -871,6 +886,9 @@ export async function submitStudentExam(data) {
       percentage: totalQuestions > 0 ? Math.round((autoScore / totalQuestions) * 100) : 0,
       timeSpentSeconds: Math.max(0, parseInt(timeSpentSeconds, 10) || 0),
       isAutoSubmitted: Boolean(isAutoSubmitted),
+      securityViolationsCount: Math.max(0, parseInt(securityViolationsCount, 10) || 0),
+      closedBySecurity: Boolean(closedBySecurity),
+      securityReport: securityReport?.trim() || '',
       status: 'submitted',
       submittedAt: new Date()
     });
@@ -914,6 +932,9 @@ export async function getExamSubmissions(sessionId) {
       percentage: s.percentage || 0,
       timeSpentSeconds: s.timeSpentSeconds || 0,
       isAutoSubmitted: Boolean(s.isAutoSubmitted),
+      securityViolationsCount: s.securityViolationsCount || 0,
+      closedBySecurity: Boolean(s.closedBySecurity),
+      securityReport: s.securityReport || '',
       status: s.status,
       passed: s.passed,
       senseiFeedback: s.senseiFeedback || '',

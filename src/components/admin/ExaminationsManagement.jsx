@@ -25,7 +25,10 @@ import {
   Loader2,
   X,
   Sparkles,
-  Table as TableIcon
+  Table as TableIcon,
+  Shield,
+  ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   getExaminationSessions,
@@ -85,6 +88,7 @@ export default function ExaminationsManagement({
   const [newWrittenExamId, setNewWrittenExamId] = useState('');
   const [selectedDojoIds, setSelectedDojoIds] = useState([]);
   const [newTimeLimitMinutes, setNewTimeLimitMinutes] = useState(0);
+  const [newSecurityMode, setNewSecurityMode] = useState('audit');
   const [newNotes, setNewNotes] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -123,6 +127,7 @@ export default function ExaminationsManagement({
     setNewWrittenExamId(writtenExams.length > 0 ? (writtenExams[0].id || writtenExams[0]._id) : '');
     setSelectedDojoIds(dojos.map(d => d.id || d._id)); // Por defecto todos seleccionados
     setNewTimeLimitMinutes(0);
+    setNewSecurityMode('audit');
     setNewNotes('');
     setIsCreateModalOpen(true);
   };
@@ -161,6 +166,7 @@ export default function ExaminationsManagement({
         writtenExamId: newWrittenExamId,
         assignedDojos,
         timeLimitMinutes: newTimeLimitMinutes,
+        securityMode: newSecurityMode,
         notes: newNotes.trim()
       });
 
@@ -487,6 +493,25 @@ export default function ExaminationsManagement({
                           </span>
                         )}
                         <span>•</span>
+                        {sess.securityMode === 'strict' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md">
+                            <ShieldAlert className="w-3 h-3 text-red-400" />
+                            Seguridad Estricta
+                          </span>
+                        )}
+                        {sess.securityMode === 'warnings' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
+                            <Shield className="w-3 h-3 text-amber-400" />
+                            Seguridad: 3 Intentos
+                          </span>
+                        )}
+                        {(!sess.securityMode || sess.securityMode === 'audit') && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 bg-neutral-900/80 border border-neutral-700/60 px-2 py-0.5 rounded-md">
+                            <Shield className="w-3 h-3 text-neutral-500" />
+                            Seguridad: Auditoría
+                          </span>
+                        )}
+                        <span>•</span>
                         <span>Dojos convocados:</span>
                         <div className="flex flex-wrap gap-1">
                           {(sess.assignedDojos || []).map((d, dIdx) => (
@@ -677,6 +702,7 @@ export default function ExaminationsManagement({
                     <th className="p-4">Dojo</th>
                     <th className="p-4">Kyu / Grado</th>
                     <th className="p-4">Fecha de Envío</th>
+                    <th className="p-4">Seguridad</th>
                     <th className="p-4">Estado / Calificación</th>
                     <th className="p-4 text-right">Acción</th>
                   </tr>
@@ -707,6 +733,30 @@ export default function ExaminationsManagement({
                         </td>
                         <td className="p-4 text-neutral-400 font-mono">
                           {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('es-CR') : '—'}
+                        </td>
+                        <td className="p-4">
+                          {sub.closedBySecurity ? (
+                            <span 
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20"
+                              title={sub.securityReport || "Examen cerrado por seguridad"}
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                              <span>Anulado ({sub.securityViolationsCount || 1} salidas)</span>
+                            </span>
+                          ) : sub.securityViolationsCount > 0 ? (
+                            <span 
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                              title={sub.securityReport || `${sub.securityViolationsCount} salidas registradas`}
+                            >
+                              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                              <span>{sub.securityViolationsCount} {sub.securityViolationsCount === 1 ? 'salida' : 'salidas'}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span>Sin incidencias</span>
+                            </span>
+                          )}
                         </td>
                         <td className="p-4">
                           {isGraded ? (
@@ -799,6 +849,46 @@ export default function ExaminationsManagement({
               </button>
             </div>
           </div>
+
+          {/* Tarjeta de Auditoría de Seguridad e Integridad */}
+          {(selectedSubmission.securityViolationsCount > 0 || selectedSubmission.closedBySecurity) ? (
+            <div className={`border rounded-3xl p-5 shadow-lg space-y-2 ${
+              selectedSubmission.closedBySecurity
+                ? 'bg-red-950/40 border-red-500/40 text-red-200'
+                : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+            }`}>
+              <div className="flex items-center gap-2.5 font-bold text-sm">
+                {selectedSubmission.closedBySecurity ? (
+                  <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                )}
+                <span>
+                  {selectedSubmission.closedBySecurity
+                    ? `Atención: Examen anulado y cerrado por infracción de seguridad (${selectedSubmission.securityViolationsCount} salidas registradas)`
+                    : `Registro de Incidencias de Navegación: ${selectedSubmission.securityViolationsCount} ${selectedSubmission.securityViolationsCount === 1 ? 'salida detectada' : 'salidas detectadas'}`}
+                </span>
+              </div>
+              {selectedSubmission.securityReport && (
+                <p className="text-xs opacity-90 pl-7 font-mono">
+                  {selectedSubmission.securityReport}
+                </p>
+              )}
+              <p className="text-[11px] text-neutral-400 pl-7">
+                {selectedSubmission.closedBySecurity
+                  ? 'El examen fue concluido de manera forzada por el protocolo anti-trampa y el enlace del dispositivo quedó inhabilitado.'
+                  : 'El estudiante alternó de ventana o pestaña durante la resolución del cuestionario oficial.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-neutral-900/60 border border-neutral-700/60 rounded-2xl px-5 py-3 text-xs text-neutral-400 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span><strong>Auditoría de Integridad:</strong> Sin incidencias de cambio de ventana reportadas durante la prueba.</span>
+              </div>
+              <span className="text-[11px] font-mono text-neutral-500">0 salidas de foco</span>
+            </div>
+          )}
 
           {/* Lista de Preguntas y Respuestas del Alumno */}
           <div className="space-y-5">
@@ -1139,6 +1229,100 @@ export default function ExaminationsManagement({
                 <p className="text-[11px] text-neutral-500 leading-relaxed">
                   El cronómetro iniciará de manera individual cuando cada alumno abra su enlace. Al finalizar el tiempo, las respuestas se enviarán automáticamente y el enlace quedará bloqueado.
                 </p>
+              </div>
+
+              {/* Modo de Seguridad Anti-Trampa */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs uppercase font-semibold text-neutral-400">
+                    Protocolo de Seguridad Anti-Trampa *
+                  </label>
+                  <span className="text-[11px] font-mono text-neutral-400">
+                    {newSecurityMode === 'audit' && 'Modo Auditoría'}
+                    {newSecurityMode === 'warnings' && 'Modo 3 Intentos'}
+                    {newSecurityMode === 'strict' && 'Modo Estricto'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Opción 1: Auditoría */}
+                  <button
+                    type="button"
+                    onClick={() => setNewSecurityMode('audit')}
+                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                      newSecurityMode === 'audit'
+                        ? 'bg-neutral-800 border-blue-500 ring-1 ring-blue-500/50 shadow-md'
+                        : 'bg-neutral-950/60 border-neutral-700/80 hover:border-neutral-600 text-neutral-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <Shield className="w-3.5 h-3.5 text-neutral-400" />
+                          Auditoría
+                        </span>
+                        {newSecurityMode === 'audit' && (
+                          <Check className="w-3.5 h-3.5 text-blue-400" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-400 leading-tight">
+                        Permite salir de la ventana. Registra silenciosamente cada salida y avisa al evaluador para llamar la atención.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Opción 2: 3 Intentos */}
+                  <button
+                    type="button"
+                    onClick={() => setNewSecurityMode('warnings')}
+                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                      newSecurityMode === 'warnings'
+                        ? 'bg-neutral-800 border-amber-500 ring-1 ring-amber-500/50 shadow-md'
+                        : 'bg-neutral-950/60 border-neutral-700/80 hover:border-neutral-600 text-neutral-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <Shield className="w-3.5 h-3.5 text-amber-400" />
+                          3 Intentos
+                        </span>
+                        {newSecurityMode === 'warnings' && (
+                          <Check className="w-3.5 h-3.5 text-amber-400" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-400 leading-tight">
+                        Alerta en pantalla en salidas 1 y 2. A la 3ª salida detectada, cierra y anula el examen bloqueando el link.
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Opción 3: Estricto */}
+                  <button
+                    type="button"
+                    onClick={() => setNewSecurityMode('strict')}
+                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                      newSecurityMode === 'strict'
+                        ? 'bg-neutral-800 border-red-500 ring-1 ring-red-500/50 shadow-md'
+                        : 'bg-neutral-950/60 border-neutral-700/80 hover:border-neutral-600 text-neutral-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+                          Estricto
+                        </span>
+                        {newSecurityMode === 'strict' && (
+                          <Check className="w-3.5 h-3.5 text-red-400" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-400 leading-tight">
+                        Pantalla completa obligatoria y anti-copia activo. Cualquier intento de minimizar o salir cancela y bloquea la prueba.
+                      </p>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               {/* Observaciones */}

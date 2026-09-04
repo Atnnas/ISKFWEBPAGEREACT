@@ -35,6 +35,11 @@ const ExaminationSessionSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  securityMode: {
+    type: String,
+    enum: ['audit', 'warnings', 'strict'],
+    default: 'audit'
+  },
   notes: {
     type: String,
     trim: true,
