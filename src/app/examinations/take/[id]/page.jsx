@@ -2,7 +2,7 @@ import { getPublicExaminationSession } from '../../../../lib/actions/examination
 import StudentExamTaker from '../../../../components/examinations/StudentExamTaker';
 import Link from 'next/link';
 import { AlertCircle, Clock, ShieldAlert } from 'lucide-react';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 export const metadata = {
   title: 'Resolución de Examen - ISKF',
@@ -16,14 +16,10 @@ export default async function TakeExamPage({ params }) {
   const id = resolvedParams?.id || '';
 
   const cookieStore = await cookies();
-  const headerStore = await headers();
 
   const deviceToken = cookieStore.get('iskf_device_token')?.value || '';
-  const fingerprint = cookieStore.get('iskf_device_fp')?.value || '';
-  const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() || headerStore.get('x-real-ip') || '';
-  const userAgent = headerStore.get('user-agent') || '';
 
-  const res = await getPublicExaminationSession(id, { deviceToken, fingerprint, ip, userAgent });
+  const res = await getPublicExaminationSession(id, { deviceToken });
 
   if (!res.success) {
     // 1. Bloqueo por Infracción de Seguridad detectado en el Servidor Backend
@@ -158,7 +154,6 @@ export default async function TakeExamPage({ params }) {
       session={res.session} 
       exam={res.exam} 
       initialDeviceToken={deviceToken} 
-      initialFingerprint={fingerprint}
     />
   );
 }

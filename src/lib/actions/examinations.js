@@ -746,25 +746,11 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
     }
 
     // 6. Verificación de Seguridad y Bloqueo de Dispositivo desde el Servidor (MongoDB)
-    const { deviceToken, fingerprint, ip, userAgent } = clientDeviceInfo || {};
+    // Se aísla por client deviceToken para garantizar que 1 solo enlace funcione para N estudiantes de forma independiente
+    const { deviceToken } = clientDeviceInfo || {};
     let lockRecord = null;
-    if (fingerprint) {
-      lockRecord = await ExamDeviceLock.findOne({ sessionId: session._id, fingerprint }).lean();
-    }
-    if (!lockRecord && deviceToken) {
+    if (deviceToken) {
       lockRecord = await ExamDeviceLock.findOne({ sessionId: session._id, deviceToken }).lean();
-    }
-    if (!lockRecord && ip) {
-      // Búsqueda de respaldo por IP y UserAgent para interceptar dispositivos bloqueados
-      const query = {
-        sessionId: session._id,
-        ip,
-        status: { $in: ['locked_by_security', 'submitted', 'time_expired'] }
-      };
-      if (userAgent) {
-        query.userAgent = userAgent;
-      }
-      lockRecord = await ExamDeviceLock.findOne(query).lean();
     }
 
     if (lockRecord) {
@@ -906,7 +892,7 @@ export async function registerExamDeviceSession(data) {
       }
     }
 
-    if (!sessionId || (!deviceToken && !fingerprint)) {
+    if (!sessionId || !deviceToken) {
       return { success: false, error: "Faltan parámetros requeridos." };
     }
 
@@ -915,28 +901,13 @@ export async function registerExamDeviceSession(data) {
       return { success: false, error: "Convocatoria no encontrada." };
     }
 
-    // 1. Buscar primero por Huella Digital de Hardware (permanente, resiste borrado de datos)
-    let record = null;
-    if (fingerprint) {
-      record = await ExamDeviceLock.findOne({ sessionId, fingerprint });
-    }
-    // 2. Si no se encontró por huella, buscar por deviceToken
-    if (!record && deviceToken) {
-      record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
-    }
-    // 3. Si el usuario borró datos pero la IP ya estaba registrada como bloqueada/entregada
-    if (!record && ip) {
-      record = await ExamDeviceLock.findOne({
-        sessionId,
-        ip,
-        status: { $in: ['locked_by_security', 'submitted', 'time_expired'] }
-      });
-    }
+    // Cada dispositivo y cliente se aísla de forma individual por su deviceToken único
+    let record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
 
     if (!record) {
       record = new ExamDeviceLock({
         sessionId,
-        deviceToken: deviceToken || 'unknown',
+        deviceToken,
         fingerprint: fingerprint || '',
         ip: ip || '',
         userAgent: userAgent || '',
@@ -945,15 +916,9 @@ export async function registerExamDeviceSession(data) {
       });
       await record.save();
     } else {
-      // Si ya existía el registro (por ejemplo, el usuario borró datos pero la huella de hardware es idéntica),
-      // actualizamos el nuevo token y la IP, pero MANTENEMOS el estado (ej. locked_by_security)
       let needsSave = false;
       if (fingerprint && !record.fingerprint) {
         record.fingerprint = fingerprint;
-        needsSave = true;
-      }
-      if (deviceToken && record.deviceToken !== deviceToken) {
-        record.deviceToken = deviceToken;
         needsSave = true;
       }
       if (ip && !record.ip) {
@@ -1012,17 +977,11 @@ export async function reportSecurityViolationAction(data) {
       }
     }
 
-    if (!sessionId || (!deviceToken && !fingerprint)) {
+    if (!sessionId || !deviceToken) {
       return { success: false, error: "Faltan parámetros requeridos." };
     }
 
-    let record = null;
-    if (fingerprint) {
-      record = await ExamDeviceLock.findOne({ sessionId, fingerprint });
-    }
-    if (!record && deviceToken) {
-      record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
-    }
+    let record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
 
     if (!record) {
       record = new ExamDeviceLock({
@@ -1198,25 +1157,16 @@ export async function submitStudentExam(data) {
     await submission.save();
 
     // Actualizar el estado del dispositivo en el servidor para bloquear reintentos
-    const { deviceToken, fingerprint } = data || {};
-    if (deviceToken || fingerprint) {
-      const filter = { sessionId: session._id };
-      if (fingerprint) {
-        filter.fingerprint = fingerprint;
-      } else {
-        filter.deviceToken = deviceToken;
-      }
-
+    const { deviceToken } = data || {};
+    if (deviceToken) {
       await ExamDeviceLock.findOneAndUpdate(
-        filter,
+        { sessionId: session._id, deviceToken },
         {
           status: closedBySecurity ? 'locked_by_security' : 'submitted',
           submittedAt: new Date(),
           lockedAt: closedBySecurity ? new Date() : null,
           reason: securityReport || (closedBySecurity ? 'Cerrado por protocolo de seguridad' : 'Entregado con éxito'),
-          securityViolationsCount: Math.max(0, parseInt(securityViolationsCount, 10) || 0),
-          ...(deviceToken ? { deviceToken } : {}),
-          ...(fingerprint ? { fingerprint } : {})
+          securityViolationsCount: Math.max(0, parseInt(securityViolationsCount, 10) || 0)
         },
         { upsert: true }
       );
