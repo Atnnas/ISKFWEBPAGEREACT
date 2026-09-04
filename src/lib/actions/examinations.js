@@ -698,27 +698,69 @@ export async function getPublicExaminationSession(accessCodeOrId) {
   try {
     await dbConnect();
 
-    let session = await ExaminationSession.findOne({ accessCode: accessCodeOrId }).lean();
-    if (!session && accessCodeOrId.match(/^[0-9a-fA-F]{24}$/)) {
-      session = await ExaminationSession.findById(accessCodeOrId).lean();
+    if (!accessCodeOrId) {
+      return { success: false, error: "No se proporcionó un código de acceso válido." };
+    }
+
+    // 1. Limpieza y sanitización del código recibido
+    let clean = decodeURIComponent(accessCodeOrId.toString()).trim().replace(/\/+$/, '');
+
+    // 2. Búsqueda por accessCode (exacto o insensible a mayúsculas/minúsculas)
+    const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let session = await ExaminationSession.findOne({
+      $or: [
+        { accessCode: clean },
+        { accessCode: { $regex: new RegExp(`^${escaped}$`, 'i') } }
+      ]
+    }).lean();
+
+    // 3. Si no se encontró y tiene formato de ObjectId de 24 caracteres hex, buscar por _id
+    if (!session && /^[0-9a-fA-F]{24}$/.test(clean)) {
+      session = await ExaminationSession.findById(clean).lean();
+    }
+
+    // 4. Si aún no se encuentra, intentar buscar por coincidencia en título
+    if (!session) {
+      session = await ExaminationSession.findOne({
+        title: { $regex: new RegExp(`^${escaped}$`, 'i') }
+      }).lean();
     }
 
     if (!session) {
-      return { success: false, error: "Examinación no encontrada o el enlace no es válido." };
+      return { 
+        success: false, 
+        error: `No se encontró ninguna convocatoria activa con el código "${clean}". Verifica el enlace con tu Sensei.` 
+      };
     }
 
+    // 5. Verificar si la convocatoria fue cerrada
     if (session.status === 'closed') {
       return { 
         success: false, 
         isClosed: true, 
         title: session.title,
-        error: "Esta convocatoria de examen ha sido cerrada por el Tribunal Examinador." 
+        error: "Esta convocatoria de examen ha sido cerrada por el Tribunal Examinador. Solicita al Sensei que la active desde el panel de administración." 
       };
     }
 
-    const writtenExam = await WrittenExam.findById(session.writtenExamId).lean();
+    // 6. Cargar el examen escrito base con búsquedas de respaldo
+    let writtenExam = null;
+    if (session.writtenExamId) {
+      writtenExam = await WrittenExam.findById(session.writtenExamId).lean();
+    }
+    if (!writtenExam && session.writtenExamName) {
+      writtenExam = await WrittenExam.findOne({ name: session.writtenExamName }).lean();
+    }
     if (!writtenExam) {
-      return { success: false, error: "El examen escrito base no se encuentra disponible." };
+      writtenExam = await WrittenExam.findOne().lean();
+    }
+
+    if (!writtenExam) {
+      return { 
+        success: false, 
+        title: session.title,
+        error: "El cuestionario base de este examen no se encuentra disponible." 
+      };
     }
 
     // Sanitizar preguntas (no exponer respuestas correctas)
@@ -738,7 +780,7 @@ export async function getPublicExaminationSession(accessCodeOrId) {
         id: session._id.toString(),
         _id: session._id.toString(),
         title: session.title,
-        writtenExamName: session.writtenExamName,
+        writtenExamName: session.writtenExamName || writtenExam.name,
         assignedDojos: session.assignedDojos || [],
         accessCode: session.accessCode,
         timeLimitMinutes: session.timeLimitMinutes || 0,
@@ -753,7 +795,7 @@ export async function getPublicExaminationSession(accessCodeOrId) {
     };
   } catch (err) {
     console.error("Error getting public examination session:", err);
-    return { success: false, error: "Error al cargar la examinación." };
+    return { success: false, error: "Error de conexión al cargar la examinación." };
   }
 }
 

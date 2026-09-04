@@ -279,15 +279,44 @@ export default function ExaminationsManagement({
     }
   };
 
-  const handleCopyLink = (session, e) => {
+  const handleCopyLink = async (session, e) => {
     e?.stopPropagation();
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const link = `${origin}/examinations/take/${session.accessCode}`;
     
-    if (navigator?.clipboard) {
-      navigator.clipboard.writeText(link);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = link;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       setCopiedSessionId(session.id || session._id);
       setTimeout(() => setCopiedSessionId(null), 2500);
+    } catch (err) {
+      console.warn("Clipboard write failed, using fallback:", err);
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = link;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopiedSessionId(session.id || session._id);
+        setTimeout(() => setCopiedSessionId(null), 2500);
+      } catch (e2) {
+        console.error("Copy failed:", e2);
+      }
     }
   };
 
