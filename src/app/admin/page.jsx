@@ -73,6 +73,28 @@ export default async function AdminDashboard() {
             Gestionar Usuarios
           </Link>
         </div>
+
+        {/* Examinations Card */}
+        <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6 shadow-lg flex flex-col">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-amber-500/20 text-amber-500 rounded-lg">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Examinaciones</h3>
+              <p className="text-sm text-neutral-400">Convocatorias y pases de grado</p>
+            </div>
+          </div>
+          <div className="text-4xl font-black text-white mb-6 flex items-baseline gap-2">
+            <span>4</span>
+            <span className="text-xs text-neutral-400 font-normal">convocatorias</span>
+          </div>
+          <Link href="/admin/examinations" className="mt-auto block w-full text-center py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition-colors font-medium">
+            Gestionar Examinaciones
+          </Link>
+        </div>
       </div>
     </div>
   );

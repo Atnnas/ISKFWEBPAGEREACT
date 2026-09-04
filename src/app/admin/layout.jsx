@@ -45,6 +45,31 @@ export default async function AdminLayout({ children }) {
               </svg>
               Calendario
             </Link>
+            {/* Examinaciones Menu with Submenus */}
+            <div className="space-y-1">
+              <Link href="/admin/examinations" className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-neutral-300 rounded-lg hover:bg-neutral-800 hover:text-white transition-colors">
+                <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Examinaciones
+              </Link>
+              <div className="pl-11 pr-2 space-y-1">
+                <Link 
+                  href="/admin/examinations/written" 
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-neutral-400 rounded-md hover:bg-neutral-800 hover:text-blue-400 transition-colors"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                  Exámenes Escritos
+                </Link>
+                <Link 
+                  href="/admin/examinations/technical" 
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-neutral-400 rounded-md hover:bg-neutral-800 hover:text-red-400 transition-colors"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                  Exámenes Técnicos
+                </Link>
+              </div>
+            </div>
             <Link href="/admin/entities" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-neutral-300 rounded-lg hover:bg-neutral-800 hover:text-white transition-colors">
               <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />

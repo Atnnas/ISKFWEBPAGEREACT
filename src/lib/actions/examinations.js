@@ -1,0 +1,971 @@
+"use server";
+
+import { revalidatePath } from 'next/cache';
+import dbConnect from '../mongodb';
+import WrittenExam from '../../models/WrittenExam';
+import Dojo from '../../models/Dojo';
+import ExaminationSession from '../../models/ExaminationSession';
+import ExamSubmission from '../../models/ExamSubmission';
+
+// Seed data inicial con los 3 exámenes requeridos por el usuario
+const DEFAULT_EXAMS_SEED = [
+  {
+    name: "Examen de 4 a 3 Kyu",
+    code: "KYU-4-3",
+    targetRanks: "4 a 3 Kyu",
+    description: "I Examen Oficial de 4° Kyu a 3er Kyu: Terminología, Complete, Posiciones (Dachi) y Desarrollo.",
+    order: 1,
+    questions: [
+      // --- SECCION 1: ASOCIE TERMINOLOGIA (Selección Única) ---
+      {
+        id: "q-pdf-1",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término SHIHAN?",
+        options: ["Maestro de un rango superior", "De menor antigüedad", "Ponerse en fila", "Ponerse de pie"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-2",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término KOHAI?",
+        options: ["De menor antigüedad", "Maestro superior", "De mayor antigüedad", "Instructor"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-3",
+        type: "single_choice",
+        text: "¿Qué significa la orden SEIRETSU?",
+        options: ["Ponerse en fila", "Detenerse", "Ponerse de pie", "Sentarse"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-4",
+        type: "single_choice",
+        text: "¿Qué significa la orden KIRITSU?",
+        options: ["Ponerse de pie", "Ponerse en fila", "Detenerse", "Saludo"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-5",
+        type: "single_choice",
+        text: "¿Qué significa la orden YAME?",
+        options: ["Detenerse", "Empezar", "Continuar", "Ponerse de pie"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-6",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término TE?",
+        options: ["Mano", "Pie", "Vacío", "Derecha"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-7",
+        type: "single_choice",
+        text: "¿Qué significa el término MIGI?",
+        options: ["Derecha", "Izquierda", "Adelante", "Forma"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-8",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término REI?",
+        options: ["Saludo", "Mano", "Vacío", "Forma"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-9",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término KATA?",
+        options: ["Forma", "Combate", "Saludo", "Mano"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-10",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término KARA?",
+        options: ["Vacío", "Mano", "Derecha", "Forma"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-11",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término SHOTOKAN?",
+        options: ["Escuela de Shoto", "Lugar de la vía", "Fundamento básico", "Meditación"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-12",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término DOJO?",
+        options: ["Lugar de la vía", "Escuela de Shoto", "Fundamento básico", "Cinturón"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-13",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término KIHON?",
+        options: ["Fundamento básico", "Lugar de la vía", "Escuela de Shoto", "Meditación"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-14",
+        type: "single_choice",
+        text: "¿Qué significa la orden SEIZA?",
+        options: ["Sentarse con la espalda erguida", "Ponerse de pie", "Ponerse en fila", "Detenerse"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-15",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término MOKUSO?",
+        options: ["Meditación", "Sentarse erguido", "Saludo", "Lugar de la vía"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-16",
+        type: "single_choice",
+        text: "¿Cuál es el significado del concepto DO?",
+        options: ["Camino o vía", "Cinturón", "Instructor", "Palabra"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-17",
+        type: "single_choice",
+        text: "¿Cómo se define tradicionalmente la palabra OSS?",
+        options: ["Palabra de palabras", "Instructor", "Cinturón", "De mayor antigüedad"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-18",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término SENSEI?",
+        options: ["Instructor", "De mayor antigüedad", "Cinturón", "Camino o vía"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-19",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término OBI?",
+        options: ["Cinturón", "Instructor", "Uniforme", "Camino o vía"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-20",
+        type: "single_choice",
+        text: "¿Cuál es el significado del término SEMPAI?",
+        options: ["De mayor antigüedad", "Instructor", "De menor antigüedad", "Cinturón"],
+        correctOptionIndex: 0
+      },
+      // --- SECCION 2: COMPLETE (Respuesta Corta) ---
+      {
+        id: "q-pdf-21",
+        type: "short_answer",
+        text: "Escriba el significado de: KARATE DO",
+        expectedNotes: "Camino de la mano vacía."
+      },
+      {
+        id: "q-pdf-22",
+        type: "short_answer",
+        text: "Escriba el significado de: BASSAI DAI",
+        expectedNotes: "Romper o atravesar la fortaleza (versión mayor)."
+      },
+      {
+        id: "q-pdf-23",
+        type: "short_answer",
+        text: "Escriba el significado de: KANKU DAI",
+        expectedNotes: "Mirar al cielo / contemplar el cielo (versión mayor)."
+      },
+      {
+        id: "q-pdf-24",
+        type: "short_answer",
+        text: "Escriba una oración del DOJO KUN",
+        expectedNotes: "Hitotsu, jinkaku kansei ni tsutomuru koto (o en español: Buscar la perfección del carácter, ser leal, esforzarse, respetar, refrenar la violencia)."
+      },
+      {
+        id: "q-pdf-25",
+        type: "short_answer",
+        text: "¿Cuántas katas oficiales tiene el estilo Shotokan?",
+        expectedNotes: "26 katas oficiales."
+      },
+      {
+        id: "q-pdf-26",
+        type: "short_answer",
+        text: "Escriba el nombre del padre / fundador del estilo Shotokan",
+        expectedNotes: "Gichin Funakoshi."
+      },
+      {
+        id: "q-pdf-27",
+        type: "short_answer",
+        text: "Escriba el origen del Karate Do Shotokan",
+        expectedNotes: "Okinawa, Japón."
+      },
+      {
+        id: "q-pdf-28",
+        type: "short_answer",
+        text: "Escriba el significado de JIYU IPPON KUMITE",
+        expectedNotes: "Combate semi-libre a una técnica / un paso."
+      },
+      {
+        id: "q-pdf-29",
+        type: "short_answer",
+        text: "Mencione un área en las que se divide el KIHON",
+        expectedNotes: "Kihon Ido (desplazamientos), Kihon Waza (técnicas estáticas)."
+      },
+      {
+        id: "q-pdf-30",
+        type: "short_answer",
+        text: "Escriba el nombre en japonés del uniforme de Karate Do",
+        expectedNotes: "Karategi (o Gi / Dogi)."
+      },
+      // --- SECCION 3: POSICIONES (DACHI) (Selección Única) ---
+      {
+        id: "q-pdf-31",
+        type: "single_choice",
+        text: "¿Cuál es la posición de pies juntos completamente pegados (talones y puntas unidos)?",
+        options: ["HEISOKU DACHI", "MUSUBI DACHI", "KIBA DACHI", "ZENKUTSU DACHI", "YOI DACHI", "KOKUTSU DACHI"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-32",
+        type: "single_choice",
+        text: "¿Cuál es la posición de jinete con pies paralelos y peso distribuido al 50/50?",
+        options: ["KIBA DACHI", "ZENKUTSU DACHI", "KOKUTSU DACHI", "MUSUBI DACHI", "YOI DACHI", "HEISOKU DACHI"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-33",
+        type: "single_choice",
+        text: "¿Cuál es la posición con la pierna delantera flexionada y pierna trasera estirada (60% peso adelante, 40% atrás)?",
+        options: ["ZENKUTSU DACHI", "KOKUTSU DACHI", "KIBA DACHI", "YOI DACHI", "MUSUBI DACHI", "HEISOKU DACHI"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-34",
+        type: "single_choice",
+        text: "¿Cuál es la posición de saludo formal en posición erguida con talones juntos y puntas abiertas a 45 grados?",
+        options: ["MUSUBI DACHI", "HEISOKU DACHI", "YOI DACHI", "KIBA DACHI", "ZENKUTSU DACHI", "KOKUTSU DACHI"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-35",
+        type: "single_choice",
+        text: "¿Cuál es la posición defensiva atrasada con 70% del peso en la pierna trasera y 30% en la delantera?",
+        options: ["KOKUTSU DACHI", "ZENKUTSU DACHI", "KIBA DACHI", "YOI DACHI", "MUSUBI DACHI", "HEISOKU DACHI"],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-pdf-36",
+        type: "single_choice",
+        text: "¿Cuál es la posición natural de preparado / listo (Hachiji Dachi) con pies separados al ancho de hombros?",
+        options: ["YOI DACHI", "MUSUBI DACHI", "HEISOKU DACHI", "KOKUTSU DACHI", "ZENKUTSU DACHI", "KIBA DACHI"],
+        correctOptionIndex: 0
+      },
+      // --- SECCION 4: DESARROLLO (Respuesta Larga) ---
+      {
+        id: "q-pdf-37",
+        type: "long_answer",
+        text: "¿Personalmente en qué le ha beneficiado el Karate Do en su vida diaria, salud y formación de carácter?",
+        expectedNotes: "Respuesta reflexiva personal sobre disciplina, respeto, control emocional, salud física y perseverancia."
+      },
+      {
+        id: "q-pdf-38",
+        type: "long_answer",
+        text: "¿Cite un concepto del Niju Kun y relaciónelo con el vivir diario?",
+        expectedNotes: "Citar cualquiera de los 20 preceptos de Funakoshi y su aplicación práctica fuera del dojo."
+      }
+    ]
+  },
+  {
+    name: "Examen de 3 a 2 Kyu",
+    code: "KYU-3-2",
+    targetRanks: "3 a 2 Kyu",
+    description: "Evaluación sobre el kata Tekki Shodan, dinámica de cadera en Kiba Dachi y Jiyu Ippon Kumite.",
+    order: 2,
+    questions: [
+      {
+        id: "q-32-1",
+        type: "single_choice",
+        text: "¿Cuál es el kata Shitei fundamental evaluado para el pase de 3er a 2° Kyu?",
+        options: [
+          "Tekki Shodan",
+          "Heian Godan",
+          "Bassai Dai",
+          "Kanku Dai"
+        ],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-32-2",
+        type: "short_answer",
+        text: "¿Qué significa el nombre del kata 'Tekki' y cuál es la única postura básica en la que se ejecuta?",
+        expectedNotes: "Significa 'Jinete de Hierro' y se ejecuta íntegramente en postura Kiba Dachi."
+      },
+      {
+        id: "q-32-3",
+        type: "long_answer",
+        text: "Describa el principio de rotación interna de cadera (Koshi) y cómo se genera la potencia en golpes de puño directo (Choku Zuki / Kagi Zuki) en Kiba Dachi sin desplazar los pies.",
+        expectedNotes: "Acción de anclaje de piernas al suelo, retroversión pélvica y torsión de cadera con contracción súbita en el instante de impacto (Kime)."
+      },
+      {
+        id: "q-32-4",
+        type: "single_choice",
+        text: "En Jiyu Ippon Kumite, ¿cuál es la distancia de combate (Maai) reglamentaria para iniciar el ataque de Jodan Oi Zuki?",
+        options: [
+          "Maai estándar (un paso largo de distancia)",
+          "Cuerpo a cuerpo cerrado",
+          "Dos pasos largos",
+          "Distancia variable sin control"
+        ],
+        correctOptionIndex: 0
+      }
+    ]
+  },
+  {
+    name: "Examen de 2 a 1 Kyu",
+    code: "KYU-2-1",
+    targetRanks: "2 a 1 Kyu",
+    description: "Evaluación avanzada previa a cinta negra: kata superior Bassai Dai, principios del Dojo Kun y Zanshin.",
+    order: 3,
+    questions: [
+      {
+        id: "q-21-1",
+        type: "single_choice",
+        text: "¿Cuál es el primer kata superior (Sentei / Tokui) que se evalúa formalmente en la preparación hacia 1er Kyu y Shodan?",
+        options: [
+          "Bassai Dai",
+          "Meikyo",
+          "Sochin",
+          "Nijushiho"
+        ],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-21-2",
+        type: "single_choice",
+        text: "¿Cuál es la traducción tradicional del nombre del kata 'Bassai Dai'?",
+        options: [
+          "Atravesar la fortaleza (o romper la fortaleza)",
+          "La mirada al cielo",
+          "Manos de calma",
+          "Camino del espejo"
+        ],
+        correctOptionIndex: 0
+      },
+      {
+        id: "q-21-3",
+        type: "short_answer",
+        text: "Mencione al menos 3 de los 5 preceptos del Dojo Kun que todo aspirante debe dominar.",
+        expectedNotes: "Perfeccionar el carácter, ser leal y fiel, esforzarse y superarse, respetar a los demás, refrenar el comportamiento violento."
+      },
+      {
+        id: "q-21-4",
+        type: "long_answer",
+        text: "Explique el concepto marcial de 'Zanshin' (alerta permanente) y su aplicación práctica antes, durante y después de la ejecución de una técnica o combate.",
+        expectedNotes: "Estado mental de serenidad y vigilancia total; no relajar la postura ni perder el contacto visual tras finalizar el golpe o kata."
+      }
+    ]
+  }
+];
+
+/**
+ * Obtiene todos los exámenes escritos desde MongoDB.
+ * Si la colección está vacía, realiza un auto-seed con los 3 exámenes requeridos.
+ */
+export async function getWrittenExams() {
+  try {
+    await dbConnect();
+    
+    let count = await WrittenExam.countDocuments();
+    if (count === 0) {
+      await WrittenExam.insertMany(DEFAULT_EXAMS_SEED);
+    }
+
+    const exams = await WrittenExam.find({}).sort({ order: 1, createdAt: 1 }).lean();
+
+    return exams.map((exam) => ({
+      id: exam._id.toString(),
+      _id: exam._id.toString(),
+      name: exam.name,
+      code: exam.code || '',
+      targetRanks: exam.targetRanks || '',
+      description: exam.description || '',
+      order: exam.order || 0,
+      questions: (exam.questions || []).map((q) => ({
+        id: q.id,
+        type: q.type,
+        text: q.text,
+        imageUrl: q.imageUrl || '',
+        options: q.options || [],
+        correctOptionIndex: q.correctOptionIndex ?? 0,
+        leftTerms: q.leftTerms || [],
+        topTerms: q.topTerms || [],
+        correctMatches: (q.correctMatches || []).map(m => ({
+          leftIndex: m.leftIndex ?? 0,
+          rightIndex: m.rightIndex ?? 0
+        })),
+        expectedNotes: q.expectedNotes || ''
+      }))
+    }));
+  } catch (error) {
+    console.error('Error en getWrittenExams:', error);
+    return [];
+  }
+}
+
+/**
+ * Crea un nuevo examen en la base de datos.
+ */
+export async function createWrittenExam(data) {
+  try {
+    await dbConnect();
+
+    const count = await WrittenExam.countDocuments();
+    const newExam = new WrittenExam({
+      name: data.name,
+      description: data.description || '',
+      targetRanks: data.targetRanks || '',
+      code: data.code || `KYU-CUSTOM-${Date.now().toString().slice(-4)}`,
+      order: count + 1,
+      questions: data.questions || []
+    });
+
+    await newExam.save();
+    revalidatePath('/admin/examinations/written');
+
+    const plain = newExam.toObject();
+    return {
+      success: true,
+      exam: {
+        id: plain._id.toString(),
+        _id: plain._id.toString(),
+        name: plain.name,
+        code: plain.code,
+        targetRanks: plain.targetRanks,
+        description: plain.description,
+        order: plain.order,
+        questions: plain.questions
+      }
+    };
+  } catch (error) {
+    console.error('Error creando examen:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Actualiza nombre y descripción de un examen.
+ */
+export async function updateWrittenExam(id, data) {
+  try {
+    await dbConnect();
+
+    const updated = await WrittenExam.findByIdAndUpdate(
+      id,
+      {
+        name: data.name,
+        description: data.description || '',
+        targetRanks: data.targetRanks || ''
+      },
+      { new: true }
+    ).lean();
+
+    revalidatePath('/admin/examinations/written');
+
+    return {
+      success: true,
+      exam: {
+        ...updated,
+        id: updated._id.toString(),
+        _id: updated._id.toString()
+      }
+    };
+  } catch (error) {
+    console.error('Error actualizando examen:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Elimina un examen de la base de datos.
+ */
+export async function deleteWrittenExam(id) {
+  try {
+    await dbConnect();
+    await WrittenExam.findByIdAndDelete(id);
+
+    revalidatePath('/admin/examinations/written');
+    return { success: true };
+  } catch (error) {
+    console.error('Error eliminando examen:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Guarda las preguntas de un examen (agregar, editar o quitar).
+ */
+export async function saveExamQuestions(examId, questions) {
+  try {
+    await dbConnect();
+
+    const updated = await WrittenExam.findByIdAndUpdate(
+      examId,
+      { questions },
+      { new: true }
+    ).lean();
+
+    revalidatePath('/admin/examinations/written');
+
+    return {
+      success: true,
+      questions: updated?.questions || []
+    };
+  } catch (error) {
+    console.error('Error guardando preguntas del examen:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// =========================================================================
+// CONVOCATORIAS / SESIONES DE EXAMINACIÓN Y DOJO MANAGEMENT
+// =========================================================================
+
+/**
+ * Obtiene la lista de Dojos registrados para el selector de convocatorias.
+ */
+export async function getDojosForExaminations() {
+  try {
+    await dbConnect();
+    const dojos = await Dojo.find({}).sort({ name: 1 }).lean();
+    return dojos.map(d => ({
+      id: d.idName || d._id.toString(),
+      _id: d._id.toString(),
+      name: d.name,
+      province: d.province || '',
+      sensei: d.sensei || ''
+    }));
+  } catch (err) {
+    console.error("Error fetching dojos for examinations:", err);
+    return [];
+  }
+}
+
+/**
+ * Obtiene todas las convocatorias de examinación con el conteo de entregas.
+ */
+export async function getExaminationSessions() {
+  try {
+    await dbConnect();
+    const sessions = await ExaminationSession.find({}).sort({ createdAt: -1 }).lean();
+
+    const results = await Promise.all(sessions.map(async (sess) => {
+      const sessionId = sess._id.toString();
+      const totalSubmissions = await ExamSubmission.countDocuments({ sessionId });
+      const pendingSubmissions = await ExamSubmission.countDocuments({ sessionId, status: 'submitted' });
+      const gradedSubmissions = await ExamSubmission.countDocuments({ sessionId, status: 'graded' });
+
+      return {
+        id: sessionId,
+        _id: sessionId,
+        title: sess.title,
+        writtenExamId: sess.writtenExamId?.toString(),
+        writtenExamName: sess.writtenExamName,
+        assignedDojos: sess.assignedDojos || [],
+        accessCode: sess.accessCode,
+        status: sess.status || 'active',
+        notes: sess.notes || '',
+        createdAt: sess.createdAt ? sess.createdAt.toISOString() : null,
+        totalSubmissions,
+        pendingSubmissions,
+        gradedSubmissions
+      };
+    }));
+
+    return results;
+  } catch (err) {
+    console.error("Error fetching examination sessions:", err);
+    return [];
+  }
+}
+
+/**
+ * Crea una nueva convocatoria de examinación vinculada a Dojos de BD.
+ */
+export async function createExaminationSession(data) {
+  try {
+    await dbConnect();
+
+    const writtenExam = await WrittenExam.findById(data.writtenExamId).lean();
+    if (!writtenExam) {
+      return { success: false, error: "Examen escrito base no encontrado en la base de datos." };
+    }
+
+    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    const slug = (data.title || 'examen')
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .substring(0, 30);
+    const accessCode = `${slug}-${randomSuffix}`;
+
+    const newSession = new ExaminationSession({
+      title: data.title.trim(),
+      writtenExamId: writtenExam._id,
+      writtenExamName: writtenExam.name,
+      assignedDojos: data.assignedDojos || [],
+      accessCode,
+      status: 'active',
+      notes: data.notes?.trim() || ''
+    });
+
+    await newSession.save();
+    revalidatePath('/admin/examinations');
+
+    const plain = newSession.toObject();
+    return {
+      success: true,
+      session: {
+        id: plain._id.toString(),
+        _id: plain._id.toString(),
+        title: plain.title,
+        writtenExamId: plain.writtenExamId.toString(),
+        writtenExamName: plain.writtenExamName,
+        assignedDojos: plain.assignedDojos,
+        accessCode: plain.accessCode,
+        status: plain.status,
+        notes: plain.notes,
+        totalSubmissions: 0,
+        pendingSubmissions: 0,
+        gradedSubmissions: 0
+      }
+    };
+  } catch (err) {
+    console.error("Error creating examination session:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Elimina una convocatoria y todas las entregas asociadas a ella.
+ */
+export async function deleteExaminationSession(sessionId) {
+  try {
+    await dbConnect();
+    await ExaminationSession.findByIdAndDelete(sessionId);
+    await ExamSubmission.deleteMany({ sessionId });
+
+    revalidatePath('/admin/examinations');
+    return { success: true };
+  } catch (err) {
+    console.error("Error deleting examination session:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Alterna el estado de una examinación entre Activa y Cerrada.
+ */
+export async function toggleExaminationSessionStatus(sessionId) {
+  try {
+    await dbConnect();
+    const session = await ExaminationSession.findById(sessionId);
+    if (!session) return { success: false, error: "Convocatoria no encontrada." };
+
+    session.status = session.status === 'active' ? 'closed' : 'active';
+    await session.save();
+
+    revalidatePath('/admin/examinations');
+    return { success: true, status: session.status };
+  } catch (err) {
+    console.error("Error toggling session status:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Obtiene los datos públicos de una examinación para que el estudiante la resuelva.
+ * Protege las respuestas correctas omitiéndolas del payload enviado al cliente.
+ */
+export async function getPublicExaminationSession(accessCodeOrId) {
+  try {
+    await dbConnect();
+
+    let session = await ExaminationSession.findOne({ accessCode: accessCodeOrId }).lean();
+    if (!session && accessCodeOrId.match(/^[0-9a-fA-F]{24}$/)) {
+      session = await ExaminationSession.findById(accessCodeOrId).lean();
+    }
+
+    if (!session) {
+      return { success: false, error: "Examinación no encontrada o el enlace no es válido." };
+    }
+
+    if (session.status === 'closed') {
+      return { 
+        success: false, 
+        isClosed: true, 
+        title: session.title,
+        error: "Esta convocatoria de examen ha sido cerrada por el Tribunal Examinador." 
+      };
+    }
+
+    const writtenExam = await WrittenExam.findById(session.writtenExamId).lean();
+    if (!writtenExam) {
+      return { success: false, error: "El examen escrito base no se encuentra disponible." };
+    }
+
+    // Sanitizar preguntas (no exponer respuestas correctas)
+    const sanitizedQuestions = (writtenExam.questions || []).map((q) => ({
+      id: q.id,
+      type: q.type,
+      text: q.text,
+      imageUrl: q.imageUrl || '',
+      options: q.options || [],
+      leftTerms: q.leftTerms || [],
+      topTerms: q.topTerms || []
+    }));
+
+    return {
+      success: true,
+      session: {
+        id: session._id.toString(),
+        _id: session._id.toString(),
+        title: session.title,
+        writtenExamName: session.writtenExamName,
+        assignedDojos: session.assignedDojos || [],
+        accessCode: session.accessCode
+      },
+      exam: {
+        id: writtenExam._id.toString(),
+        name: writtenExam.name,
+        description: writtenExam.description || '',
+        questions: sanitizedQuestions
+      }
+    };
+  } catch (err) {
+    console.error("Error getting public examination session:", err);
+    return { success: false, error: "Error al cargar la examinación." };
+  }
+}
+
+/**
+ * Recibe y procesa el examen completado por un estudiante.
+ * Autocalifica preguntas de selección única y asociar términos.
+ */
+export async function submitStudentExam(data) {
+  try {
+    await dbConnect();
+
+    const { sessionId, studentName, studentDojo, studentRank, answers } = data;
+
+    if (!studentName?.trim() || !studentDojo?.trim()) {
+      return { success: false, error: "El nombre del alumno y el Dojo son obligatorios." };
+    }
+
+    const session = await ExaminationSession.findById(sessionId).lean();
+    if (!session || session.status === 'closed') {
+      return { success: false, error: "La convocatoria ha cerrado o no está disponible." };
+    }
+
+    const writtenExam = await WrittenExam.findById(session.writtenExamId).lean();
+    if (!writtenExam) {
+      return { success: false, error: "El examen base no está disponible." };
+    }
+
+    const questionsMap = {};
+    (writtenExam.questions || []).forEach(q => {
+      questionsMap[q.id] = q;
+    });
+
+    let autoScore = 0;
+
+    const processedAnswers = (answers || []).map(ans => {
+      const q = questionsMap[ans.questionId];
+      if (!q) return ans;
+
+      if (q.type === 'single_choice') {
+        const isCorrect = ans.selectedOptionIndex === q.correctOptionIndex;
+        if (isCorrect) autoScore += 1;
+        return {
+          questionId: ans.questionId,
+          questionType: q.type,
+          questionText: q.text,
+          selectedOptionIndex: ans.selectedOptionIndex,
+          isCorrect,
+          earnedPoints: isCorrect ? 1 : 0,
+          maxPoints: 1
+        };
+      }
+
+      if (q.type === 'matching') {
+        const totalRows = (q.leftTerms || []).length;
+        let correctMatchesCount = 0;
+        const studentMatches = ans.matchingMatches || [];
+
+        (q.correctMatches || []).forEach(officialMatch => {
+          const found = studentMatches.find(sm => sm.leftIndex === officialMatch.leftIndex && sm.rightIndex === officialMatch.rightIndex);
+          if (found) correctMatchesCount++;
+        });
+
+        const earned = totalRows > 0 ? (correctMatchesCount / totalRows) : 0;
+        const isAllCorrect = totalRows > 0 && correctMatchesCount === totalRows;
+        autoScore += earned;
+
+        return {
+          questionId: ans.questionId,
+          questionType: q.type,
+          questionText: q.text,
+          matchingMatches: studentMatches,
+          isCorrect: isAllCorrect,
+          earnedPoints: Math.round(earned * 100) / 100,
+          maxPoints: 1
+        };
+      }
+
+      // Respuesta corta o larga: evaluadas manualmente por el Sensei
+      return {
+        questionId: ans.questionId,
+        questionType: q.type,
+        questionText: q.text,
+        writtenAnswer: ans.writtenAnswer || '',
+        isCorrect: null,
+        earnedPoints: 0,
+        maxPoints: 1,
+        senseiComments: ''
+      };
+    });
+
+    const totalQuestions = (writtenExam.questions || []).length;
+
+    const submission = new ExamSubmission({
+      sessionId: session._id,
+      sessionTitle: session.title,
+      writtenExamId: writtenExam._id,
+      studentName: studentName.trim(),
+      studentDojo: studentDojo.trim(),
+      studentRank: studentRank?.trim() || '',
+      answers: processedAnswers,
+      autoScore: Math.round(autoScore * 100) / 100,
+      manualScore: 0,
+      totalScore: Math.round(autoScore * 100) / 100,
+      maxPossibleScore: totalQuestions,
+      percentage: totalQuestions > 0 ? Math.round((autoScore / totalQuestions) * 100) : 0,
+      status: 'submitted',
+      submittedAt: new Date()
+    });
+
+    await submission.save();
+    revalidatePath('/admin/examinations');
+
+    return {
+      success: true,
+      submissionId: submission._id.toString(),
+      studentName: submission.studentName
+    };
+  } catch (err) {
+    console.error("Error submitting student exam:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Obtiene todas las entregas recibidas para una convocatoria de examinación.
+ */
+export async function getExamSubmissions(sessionId) {
+  try {
+    await dbConnect();
+    const submissions = await ExamSubmission.find({ sessionId }).sort({ submittedAt: -1 }).lean();
+
+    return submissions.map(s => ({
+      id: s._id.toString(),
+      _id: s._id.toString(),
+      sessionId: s.sessionId.toString(),
+      sessionTitle: s.sessionTitle,
+      writtenExamId: s.writtenExamId.toString(),
+      studentName: s.studentName,
+      studentDojo: s.studentDojo,
+      studentRank: s.studentRank || '',
+      answers: s.answers || [],
+      autoScore: s.autoScore || 0,
+      manualScore: s.manualScore || 0,
+      totalScore: s.totalScore || 0,
+      maxPossibleScore: s.maxPossibleScore || 100,
+      percentage: s.percentage || 0,
+      status: s.status,
+      passed: s.passed,
+      senseiFeedback: s.senseiFeedback || '',
+      gradedBy: s.gradedBy || '',
+      submittedAt: s.submittedAt ? s.submittedAt.toISOString() : null,
+      gradedAt: s.gradedAt ? s.gradedAt.toISOString() : null
+    }));
+  } catch (err) {
+    console.error("Error fetching exam submissions:", err);
+    return [];
+  }
+}
+
+/**
+ * Guarda la calificación administrativa realizada por el Sensei.
+ */
+export async function gradeExamSubmission(submissionId, gradingData) {
+  try {
+    await dbConnect();
+
+    const submission = await ExamSubmission.findById(submissionId);
+    if (!submission) {
+      return { success: false, error: "Entrega no encontrada en la base de datos." };
+    }
+
+    const { answersGrading, senseiFeedback, passed, gradedBy } = gradingData;
+
+    if (Array.isArray(answersGrading)) {
+      submission.answers = submission.answers.map(ans => {
+        const update = answersGrading.find(g => g.questionId === ans.questionId);
+        if (update) {
+          const earned = typeof update.earnedPoints === 'number' ? update.earnedPoints : (ans.earnedPoints || 0);
+          return {
+            ...ans.toObject(),
+            earnedPoints: earned,
+            senseiComments: update.senseiComments ?? ans.senseiComments,
+            isCorrect: earned > 0
+          };
+        }
+        return ans;
+      });
+    }
+
+    let totalScore = 0;
+    submission.answers.forEach(a => {
+      totalScore += (a.earnedPoints || 0);
+    });
+
+    const max = submission.maxPossibleScore || submission.answers.length || 1;
+    const percentage = Math.min(100, Math.round((totalScore / max) * 100));
+
+    submission.totalScore = Math.round(totalScore * 100) / 100;
+    submission.percentage = percentage;
+    submission.passed = passed !== undefined ? passed : percentage >= 70;
+    submission.status = 'graded';
+    submission.senseiFeedback = senseiFeedback?.trim() || '';
+    submission.gradedBy = gradedBy?.trim() || 'Tribunal Examinador';
+    submission.gradedAt = new Date();
+
+    await submission.save();
+    revalidatePath('/admin/examinations');
+
+    return {
+      success: true,
+      submission: {
+        id: submission._id.toString(),
+        totalScore: submission.totalScore,
+        percentage: submission.percentage,
+        status: submission.status,
+        passed: submission.passed
+      }
+    };
+  } catch (err) {
+    console.error("Error grading exam submission:", err);
+    return { success: false, error: err.message };
+  }
+}
