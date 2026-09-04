@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Check, 
   Send, 
@@ -12,7 +12,8 @@ import {
   X, 
   CheckCircle2, 
   Loader2, 
-  Table 
+  Table,
+  Clock
 } from 'lucide-react';
 import { submitStudentExam } from '../../lib/actions/examinations';
 import ConfirmModal from '../ui/ConfirmModal';
@@ -34,6 +35,13 @@ export default function StudentExamTaker({ session, exam }) {
   // Estados de envío y feedback
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
+  const [isAutoSubmittedSuccess, setIsAutoSubmittedSuccess] = useState(false);
+
+  // Temporizador de tiempo límite
+  const [timeLeft, setTimeLeft] = useState(null); // en segundos
+  const startTimeRef = useRef(null);
+  const isAutoSubmittingRef = useRef(false);
 
   // Modales en página
   const [confirmModal, setConfirmModal] = useState({
@@ -70,6 +78,139 @@ export default function StudentExamTaker({ session, exam }) {
       onConfirm
     });
   };
+
+  const formatTime = (seconds) => {
+    if (seconds <= 0) return "00:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Función unificada de envío (manual o automática)
+  const executeSubmission = async (isAuto = false) => {
+    if (isSubmitting || isSubmitted || isAlreadySubmitted) return;
+    setIsSubmitting(true);
+    try {
+      const finalStudentName = studentName.trim() || (isAuto ? 'Aspirante (Tiempo Agotado)' : '');
+      const finalStudentDojo = studentDojo.trim() || (session?.assignedDojos?.[0]?.name || 'ISKF Dojo');
+
+      const formattedAnswers = (exam.questions || []).map(q => {
+        const ans = answers[q.id] || {};
+        return {
+          questionId: q.id,
+          selectedOptionIndex: ans.selectedOptionIndex ?? null,
+          writtenAnswer: ans.writtenAnswer ?? '',
+          matchingMatches: ans.matchingMatches ?? []
+        };
+      });
+
+      const elapsedSeconds = startTimeRef.current 
+        ? Math.max(0, Math.round((Date.now() - startTimeRef.current) / 1000))
+        : 0;
+
+      const res = await submitStudentExam({
+        sessionId: session.id || session._id,
+        studentName: finalStudentName,
+        studentDojo: finalStudentDojo,
+        studentRank: studentRank.trim(),
+        answers: formattedAnswers,
+        timeSpentSeconds: elapsedSeconds,
+        isAutoSubmitted: isAuto
+      });
+
+      if (res.success) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`iskf_exam_submitted_${session.id || session._id}`, 'true');
+        }
+        setIsSubmitted(true);
+        setIsAutoSubmittedSuccess(isAuto);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        if (res.error?.includes("entrega previa")) {
+          setIsAlreadySubmitted(true);
+        } else {
+          showAlert("Ocurrió un error al enviar el examen: " + (res.error || ""), "Error al enviar", true);
+        }
+      }
+    } catch (err) {
+      console.error("Error submitting exam:", err);
+      showAlert("Error de conexión al enviar el examen. Por favor intenta nuevamente.", "Error de conexión", true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const executeSubmissionRef = useRef(executeSubmission);
+  executeSubmissionRef.current = executeSubmission;
+
+  // Inicializar verificación de reingreso y temporizador local
+  useEffect(() => {
+    const sessId = session.id || session._id;
+    if (typeof window !== 'undefined') {
+      // 1. Verificar si ya se envió previamente desde este navegador
+      if (localStorage.getItem(`iskf_exam_submitted_${sessId}`)) {
+        setIsAlreadySubmitted(true);
+        return;
+      }
+
+      // 2. Manejo de tiempo límite
+      const timeLimitMinutes = session?.timeLimitMinutes || 0;
+      if (timeLimitMinutes > 0) {
+        const startKey = `iskf_exam_start_${sessId}`;
+        let startMs = localStorage.getItem(startKey);
+        if (!startMs) {
+          startMs = Date.now().toString();
+          localStorage.setItem(startKey, startMs);
+        }
+        const startTime = parseInt(startMs, 10);
+        startTimeRef.current = startTime;
+
+        const totalSeconds = timeLimitMinutes * 60;
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const remaining = totalSeconds - elapsedSeconds;
+
+        if (remaining <= 0) {
+          setTimeLeft(0);
+          if (!isAutoSubmittingRef.current) {
+            isAutoSubmittingRef.current = true;
+            executeSubmissionRef.current?.(true);
+          }
+        } else {
+          setTimeLeft(remaining);
+        }
+      }
+    }
+  }, [session]);
+
+  // Intervalo regresivo para el tiempo límite
+  useEffect(() => {
+    const timeLimitMinutes = session?.timeLimitMinutes || 0;
+    if (timeLimitMinutes <= 0 || timeLeft === null || isSubmitted || isAlreadySubmitted) return;
+
+    if (timeLeft <= 0) {
+      if (!isAutoSubmittingRef.current) {
+        isAutoSubmittingRef.current = true;
+        executeSubmissionRef.current?.(true);
+      }
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(intervalId);
+          if (!isAutoSubmittingRef.current) {
+            isAutoSubmittingRef.current = true;
+            executeSubmissionRef.current?.(true);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [timeLeft, session, isSubmitted, isAlreadySubmitted]);
 
   // Manejo de respuestas de selección única
   const handleSelectOption = (questionId, optionIndex) => {
@@ -124,45 +265,49 @@ export default function StudentExamTaker({ session, exam }) {
 
     showConfirm({
       title: "Confirmar Envío de Examen",
-      message: "¿Estás seguro de que deseas enviar tus respuestas? Una vez enviado, el examen será remitido a la mesa examinadora y no podrá ser modificado.",
+      message: "¿Estás seguro de que deseas enviar tus respuestas? Una vez enviado, el examen será remitido a la mesa examinadora y no podrá ser modificado ni volver a abrirse.",
       confirmText: "Enviar Examen",
-      onConfirm: async () => {
-        setIsSubmitting(true);
-        try {
-          // Empaquetar respuestas en el formato esperado por el servidor
-          const formattedAnswers = (exam.questions || []).map(q => {
-            const ans = answers[q.id] || {};
-            return {
-              questionId: q.id,
-              selectedOptionIndex: ans.selectedOptionIndex ?? null,
-              writtenAnswer: ans.writtenAnswer ?? '',
-              matchingMatches: ans.matchingMatches ?? []
-            };
-          });
-
-          const res = await submitStudentExam({
-            sessionId: session.id || session._id,
-            studentName: studentName.trim(),
-            studentDojo: studentDojo.trim(),
-            studentRank: studentRank.trim(),
-            answers: formattedAnswers
-          });
-
-          if (res.success) {
-            setIsSubmitted(true);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          } else {
-            showAlert("Ocurrió un error al enviar el examen: " + (res.error || ""), "Error al enviar", true);
-          }
-        } catch (err) {
-          console.error("Error submitting exam:", err);
-          showAlert("Error de conexión al enviar el examen. Por favor intenta nuevamente.", "Error de conexión", true);
-        } finally {
-          setIsSubmitting(false);
-        }
-      }
+      onConfirm: () => executeSubmission(false)
     });
   };
+
+  // =========================================================================
+  // VISTA: PANTALLA DE BLOQUEO POR INTENTO PREVIO
+  // =========================================================================
+  if (isAlreadySubmitted) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 py-16 font-sans">
+        <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in fade-in duration-300">
+          <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+            <Clock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-widest font-mono">
+              Examen Ya Entregado
+            </span>
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+              Acceso Concluido
+            </h1>
+            <p className="text-neutral-400 text-sm leading-relaxed">
+              Ya se ha registrado una entrega para la convocatoria <strong className="text-white">{session.title}</strong> desde este dispositivo. No está permitido resolver la prueba nuevamente.
+            </p>
+          </div>
+
+          <div className="p-4 bg-neutral-950/60 border border-neutral-800 rounded-2xl text-xs text-neutral-400 text-left space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400">•</span>
+              <span>Tus respuestas previas están resguardadas en la base de datos oficial.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-400">•</span>
+              <span>Los resultados y revisiones serán anunciados directamente por el Sensei de tu Dojo.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // =========================================================================
   // VISTA: PANTALLA DE ÉXITO TRAS EL ENVÍO
@@ -180,21 +325,28 @@ export default function StudentExamTaker({ session, exam }) {
               Examen Entregado
             </span>
             <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-              ¡Muchas Gracias, {studentName}!
+              ¡Muchas Gracias{studentName ? `, ${studentName}` : ''}!
             </h1>
             <p className="text-neutral-400 text-sm leading-relaxed">
               Tus respuestas para la convocatoria <strong className="text-white">{session.title}</strong> han sido recibidas con éxito por el Tribunal Examinador.
             </p>
           </div>
 
+          {isAutoSubmittedSuccess && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 flex items-center justify-center gap-2">
+              <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>El tiempo límite concluyó. El examen fue enviado automáticamente con tus respuestas completadas.</span>
+            </div>
+          )}
+
           <div className="bg-neutral-950/70 border border-neutral-800 rounded-2xl p-4 text-left space-y-2 text-xs text-neutral-300">
             <div className="flex justify-between border-b border-neutral-800/80 pb-2">
               <span className="text-neutral-500">Aspirante:</span>
-              <span className="font-semibold text-white">{studentName}</span>
+              <span className="font-semibold text-white">{studentName || 'Aspirante'}</span>
             </div>
             <div className="flex justify-between border-b border-neutral-800/80 pb-2">
               <span className="text-neutral-500">Dojo:</span>
-              <span className="font-semibold text-white">{studentDojo}</span>
+              <span className="font-semibold text-white">{studentDojo || 'ISKF'}</span>
             </div>
             <div className="flex justify-between border-b border-neutral-800/80 pb-2">
               <span className="text-neutral-500">Evaluación:</span>
@@ -221,6 +373,39 @@ export default function StudentExamTaker({ session, exam }) {
     <div className="min-h-screen bg-neutral-950 text-white py-8 px-4 sm:px-6 md:px-8 font-sans">
       <div className="max-w-3xl mx-auto space-y-8">
         
+        {/* Temporizador Flotante Minimalista */}
+        {session?.timeLimitMinutes > 0 && timeLeft !== null && (
+          <aside 
+            aria-label="Temporizador de examen"
+            className="sticky top-4 z-40 flex justify-center pointer-events-none"
+          >
+            <div className={`pointer-events-auto flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-2xl backdrop-blur-xl transition-all duration-300 ${
+              timeLeft <= 60
+                ? 'bg-red-950/95 border-red-500/80 text-red-300 animate-pulse shadow-red-500/30'
+                : timeLeft <= 300
+                ? 'bg-amber-950/95 border-amber-500/60 text-amber-300 shadow-amber-500/20'
+                : 'bg-neutral-900/95 border-neutral-700 text-neutral-200'
+            }`}>
+              <Clock className={`w-4 h-4 shrink-0 ${
+                timeLeft <= 60 ? 'text-red-400' : timeLeft <= 300 ? 'text-amber-400' : 'text-blue-400'
+              }`} />
+              <div className="flex items-center gap-2 font-mono">
+                <span className="text-[11px] font-sans text-neutral-400 uppercase tracking-wider font-semibold">
+                  Tiempo:
+                </span>
+                <span className="text-sm font-black tracking-widest">
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
+              {timeLeft <= 180 && (
+                <span className="text-[10px] uppercase font-sans font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 tracking-wider">
+                  ¡Por Concluir!
+                </span>
+              )}
+            </div>
+          </aside>
+        )}
+
         {/* Cabecera Oficial */}
         <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl backdrop-blur-md">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-4">
@@ -228,9 +413,17 @@ export default function StudentExamTaker({ session, exam }) {
               <Award className="w-4 h-4 text-red-500" />
               <span>ISKF Karate Do • Evaluación Oficial</span>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              {exam.questions ? exam.questions.length : 0} Preguntas
-            </span>
+            <div className="flex items-center gap-2">
+              {session?.timeLimitMinutes > 0 && (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  {session.timeLimitMinutes} min límite
+                </span>
+              )}
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                {exam.questions ? exam.questions.length : 0} Preguntas
+              </span>
+            </div>
           </div>
 
           <div className="space-y-1.5">

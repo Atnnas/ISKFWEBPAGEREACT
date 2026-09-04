@@ -118,6 +118,14 @@ const ExamSubmissionSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  timeSpentSeconds: {
+    type: Number,
+    default: 0
+  },
+  isAutoSubmitted: {
+    type: Boolean,
+    default: false
+  },
   submittedAt: {
     type: Date,
     default: Date.now

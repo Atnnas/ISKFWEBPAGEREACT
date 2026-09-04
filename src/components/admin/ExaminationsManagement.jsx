@@ -35,7 +35,8 @@ import {
   getDojosForExaminations,
   getWrittenExams,
   getExamSubmissions,
-  gradeExamSubmission 
+  gradeExamSubmission,
+  deleteExamSubmission
 } from '../../lib/actions/examinations';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
@@ -83,6 +84,7 @@ export default function ExaminationsManagement({
   const [newTitle, setNewTitle] = useState('');
   const [newWrittenExamId, setNewWrittenExamId] = useState('');
   const [selectedDojoIds, setSelectedDojoIds] = useState([]);
+  const [newTimeLimitMinutes, setNewTimeLimitMinutes] = useState(0);
   const [newNotes, setNewNotes] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -120,6 +122,7 @@ export default function ExaminationsManagement({
     setNewTitle('');
     setNewWrittenExamId(writtenExams.length > 0 ? (writtenExams[0].id || writtenExams[0]._id) : '');
     setSelectedDojoIds(dojos.map(d => d.id || d._id)); // Por defecto todos seleccionados
+    setNewTimeLimitMinutes(0);
     setNewNotes('');
     setIsCreateModalOpen(true);
   };
@@ -157,6 +160,7 @@ export default function ExaminationsManagement({
         title: newTitle.trim(),
         writtenExamId: newWrittenExamId,
         assignedDojos,
+        timeLimitMinutes: newTimeLimitMinutes,
         notes: newNotes.trim()
       });
 
@@ -174,6 +178,56 @@ export default function ExaminationsManagement({
       setIsCreating(false);
     }
   };
+
+  const handleDeleteSubmission = (submissionId, studentName, e) => {
+    e?.stopPropagation();
+    showConfirm({
+      title: "Eliminar Entrega de Examen",
+      message: `¿Estás seguro de que deseas eliminar la entrega del aspirante "${studentName}"? Esta acción borrará permanentemente sus respuestas y notas de la base de datos.`,
+      confirmText: "Eliminar Entrega",
+      isDanger: true,
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          const res = await deleteExamSubmission(submissionId);
+          if (res.success) {
+            const deleted = submissions.find(s => s.id === submissionId || s._id === submissionId);
+            const wasPending = deleted?.status === 'submitted';
+
+            setSubmissions(prev => prev.filter(s => s.id !== submissionId && s._id !== submissionId));
+
+            // Actualizar conteos en la sesión seleccionada
+            setSessions(prev => prev.map(sess => {
+              if (sess.id === selectedSession?.id || sess._id === selectedSession?._id) {
+                return {
+                  ...sess,
+                  totalSubmissions: Math.max(0, (sess.totalSubmissions || 1) - 1),
+                  pendingSubmissions: wasPending ? Math.max(0, (sess.pendingSubmissions || 1) - 1) : sess.pendingSubmissions,
+                  gradedSubmissions: !wasPending ? Math.max(0, (sess.gradedSubmissions || 1) - 1) : sess.gradedSubmissions
+                };
+              }
+              return sess;
+            }));
+
+            if (activeView === 'grading' && (selectedSubmission?.id === submissionId || selectedSubmission?._id === submissionId)) {
+              setActiveView('inbox');
+              setSelectedSubmission(null);
+            }
+
+            showAlert(`La entrega de ${studentName} ha sido eliminada con éxito.`, "Entrega Eliminada", false);
+          } else {
+            showAlert("Error al eliminar la entrega: " + (res.error || ""), "Error", true);
+          }
+        } catch (err) {
+          console.error(err);
+          showAlert("Error al conectar con la base de datos.", "Error", true);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    });
+  };
+
 
   const handleDeleteSession = (sessionId, e) => {
     e?.stopPropagation();
@@ -421,6 +475,18 @@ export default function ExaminationsManagement({
                           {sess.writtenExamName}
                         </span>
                         <span>•</span>
+                        {sess.timeLimitMinutes > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
+                            <Clock className="w-3 h-3 text-amber-400" />
+                            {sess.timeLimitMinutes} min límite
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 bg-neutral-900/80 border border-neutral-700/60 px-2 py-0.5 rounded-md">
+                            <Clock className="w-3 h-3 text-neutral-500" />
+                            Sin límite de tiempo
+                          </span>
+                        )}
+                        <span>•</span>
                         <span>Dojos convocados:</span>
                         <div className="flex flex-wrap gap-1">
                           {(sess.assignedDojos || []).map((d, dIdx) => (
@@ -621,9 +687,17 @@ export default function ExaminationsManagement({
 
                     return (
                       <tr key={sub.id || sub._id} className="hover:bg-neutral-700/30 transition-colors">
-                        <td className="p-4 font-bold text-white flex items-center gap-2">
-                          <User className="w-3.5 h-3.5 text-blue-400" />
-                          <span>{sub.studentName}</span>
+                        <td className="p-4 font-bold text-white">
+                          <div className="flex items-center gap-2">
+                            <User className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            <span>{sub.studentName}</span>
+                          </div>
+                          {sub.isAutoSubmitted && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded mt-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              Límite de tiempo
+                            </span>
+                          )}
                         </td>
                         <td className="p-4 text-neutral-300">
                           {sub.studentDojo}
@@ -648,12 +722,21 @@ export default function ExaminationsManagement({
                           )}
                         </td>
                         <td className="p-4 text-right">
-                          <button
-                            onClick={() => handleOpenGrading(sub)}
-                            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-all shadow active:scale-95"
-                          >
-                            {isGraded ? 'Revisar / Editar' : 'Calificar'}
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleOpenGrading(sub)}
+                              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-all shadow active:scale-95"
+                            >
+                              {isGraded ? 'Revisar / Editar' : 'Calificar'}
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteSubmission(sub.id || sub._id, sub.studentName, e)}
+                              title="Eliminar entrega de examen"
+                              className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -869,21 +952,32 @@ export default function ExaminationsManagement({
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setActiveView('inbox')}
-                className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition-colors"
+                onClick={(e) => handleDeleteSubmission(selectedSubmission.id || selectedSubmission._id, selectedSubmission.studentName, e)}
+                className="flex items-center gap-1.5 px-4 py-2.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-semibold transition-colors border border-transparent hover:border-red-500/20"
               >
-                Cancelar
+                <Trash2 className="w-4 h-4" />
+                <span>Eliminar esta Entrega</span>
               </button>
-              <button
-                type="submit"
-                disabled={isSavingGrade}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50"
-              >
-                {isSavingGrade ? 'Guardando en BD...' : 'Finalizar y Asentar Calificación'}
-              </button>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => setActiveView('inbox')}
+                  className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingGrade}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50"
+                >
+                  {isSavingGrade ? 'Guardando en BD...' : 'Finalizar y Asentar Calificación'}
+                </button>
+              </div>
             </div>
           </div>
         </form>
@@ -992,6 +1086,59 @@ export default function ExaminationsManagement({
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Tiempo Límite para Resolver */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs uppercase font-semibold text-neutral-400">
+                    Tiempo Límite para Resolver
+                  </label>
+                  <span className="text-[11px] font-mono text-neutral-400">
+                    {newTimeLimitMinutes > 0 ? `${newTimeLimitMinutes} min configurados` : 'Sin límite de tiempo'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { label: 'Sin Límite', val: 0 },
+                    { label: '30 min', val: 30 },
+                    { label: '45 min', val: 45 },
+                    { label: '60 min', val: 60 },
+                    { label: '90 min', val: 90 },
+                  ].map((p) => (
+                    <button
+                      key={p.val}
+                      type="button"
+                      onClick={() => setNewTimeLimitMinutes(p.val)}
+                      className={`py-2 px-1 text-xs rounded-xl font-medium border text-center transition-all ${
+                        newTimeLimitMinutes === p.val
+                          ? 'bg-blue-600/20 border-blue-500 text-blue-400 font-bold shadow-sm'
+                          : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-neutral-600'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 text-xs text-neutral-400">
+                  <span className="text-[11px] text-neutral-400">O personalizar minutos:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="300"
+                    placeholder="Minutos"
+                    value={newTimeLimitMinutes || ''}
+                    onChange={(e) => setNewTimeLimitMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                    className="w-24 px-3 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500"
+                  />
+                  <span className="text-[11px] text-neutral-500">minutos (0 = libre)</span>
+                </div>
+
+                <p className="text-[11px] text-neutral-500 leading-relaxed">
+                  El cronómetro iniciará de manera individual cuando cada alumno abra su enlace. Al finalizar el tiempo, las respuestas se enviarán automáticamente y el enlace quedará bloqueado.
+                </p>
               </div>
 
               {/* Observaciones */}

@@ -31,6 +31,10 @@ const ExaminationSessionSchema = new mongoose.Schema({
     enum: ['active', 'closed'],
     default: 'active'
   },
+  timeLimitMinutes: {
+    type: Number,
+    default: 0
+  },
   notes: {
     type: String,
     trim: true,

@@ -574,6 +574,7 @@ export async function getExaminationSessions() {
         assignedDojos: sess.assignedDojos || [],
         accessCode: sess.accessCode,
         status: sess.status || 'active',
+        timeLimitMinutes: sess.timeLimitMinutes || 0,
         notes: sess.notes || '',
         createdAt: sess.createdAt ? sess.createdAt.toISOString() : null,
         totalSubmissions,
@@ -617,6 +618,7 @@ export async function createExaminationSession(data) {
       assignedDojos: data.assignedDojos || [],
       accessCode,
       status: 'active',
+      timeLimitMinutes: Math.max(0, parseInt(data.timeLimitMinutes, 10) || 0),
       notes: data.notes?.trim() || ''
     });
 
@@ -635,6 +637,7 @@ export async function createExaminationSession(data) {
         assignedDojos: plain.assignedDojos,
         accessCode: plain.accessCode,
         status: plain.status,
+        timeLimitMinutes: plain.timeLimitMinutes || 0,
         notes: plain.notes,
         totalSubmissions: 0,
         pendingSubmissions: 0,
@@ -734,7 +737,8 @@ export async function getPublicExaminationSession(accessCodeOrId) {
         title: session.title,
         writtenExamName: session.writtenExamName,
         assignedDojos: session.assignedDojos || [],
-        accessCode: session.accessCode
+        accessCode: session.accessCode,
+        timeLimitMinutes: session.timeLimitMinutes || 0
       },
       exam: {
         id: writtenExam._id.toString(),
@@ -757,7 +761,7 @@ export async function submitStudentExam(data) {
   try {
     await dbConnect();
 
-    const { sessionId, studentName, studentDojo, studentRank, answers } = data;
+    const { sessionId, studentName, studentDojo, studentRank, answers, timeSpentSeconds, isAutoSubmitted } = data;
 
     if (!studentName?.trim() || !studentDojo?.trim()) {
       return { success: false, error: "El nombre del alumno y el Dojo son obligatorios." };
@@ -766,6 +770,20 @@ export async function submitStudentExam(data) {
     const session = await ExaminationSession.findById(sessionId).lean();
     if (!session || session.status === 'closed') {
       return { success: false, error: "La convocatoria ha cerrado o no está disponible." };
+    }
+
+    // Verificar si ya existe una entrega previa de este estudiante en esta misma sesión
+    const escapedName = studentName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const existingSubmission = await ExamSubmission.findOne({
+      sessionId: session._id,
+      studentName: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+      studentDojo: studentDojo.trim()
+    });
+    if (existingSubmission) {
+      return { 
+        success: false, 
+        error: "Ya se ha registrado una entrega previa de este aspirante en esta convocatoria. No está permitido enviar más de una vez." 
+      };
     }
 
     const writtenExam = await WrittenExam.findById(session.writtenExamId).lean();
@@ -851,6 +869,8 @@ export async function submitStudentExam(data) {
       totalScore: Math.round(autoScore * 100) / 100,
       maxPossibleScore: totalQuestions,
       percentage: totalQuestions > 0 ? Math.round((autoScore / totalQuestions) * 100) : 0,
+      timeSpentSeconds: Math.max(0, parseInt(timeSpentSeconds, 10) || 0),
+      isAutoSubmitted: Boolean(isAutoSubmitted),
       status: 'submitted',
       submittedAt: new Date()
     });
@@ -892,6 +912,8 @@ export async function getExamSubmissions(sessionId) {
       totalScore: s.totalScore || 0,
       maxPossibleScore: s.maxPossibleScore || 100,
       percentage: s.percentage || 0,
+      timeSpentSeconds: s.timeSpentSeconds || 0,
+      isAutoSubmitted: Boolean(s.isAutoSubmitted),
       status: s.status,
       passed: s.passed,
       senseiFeedback: s.senseiFeedback || '',
@@ -966,6 +988,25 @@ export async function gradeExamSubmission(submissionId, gradingData) {
     };
   } catch (err) {
     console.error("Error grading exam submission:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Elimina una entrega individual de examen de la base de datos.
+ */
+export async function deleteExamSubmission(submissionId) {
+  try {
+    await dbConnect();
+    const submission = await ExamSubmission.findByIdAndDelete(submissionId);
+    if (!submission) {
+      return { success: false, error: "La entrega solicitada no existe o ya fue eliminada." };
+    }
+
+    revalidatePath('/admin/examinations');
+    return { success: true };
+  } catch (err) {
+    console.error("Error deleting exam submission:", err);
     return { success: false, error: err.message };
   }
 }
