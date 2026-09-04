@@ -58,6 +58,9 @@ export default function StudentExamTaker({ session, exam }) {
 
   const securityViolationsRef = useRef(0);
   const securityLogsRef = useRef([]);
+  const isAwayRef = useRef(false);
+  const awayTimestampRef = useRef(null);
+  const blurDebounceRef = useRef(null);
 
   // Temporizador de tiempo límite
   const [timeLeft, setTimeLeft] = useState(null); // en segundos
@@ -201,17 +204,17 @@ export default function StudentExamTaker({ session, exam }) {
           isOpen: true,
           attempt: 1,
           title: "Advertencia de Seguridad (1/3)",
-          message: "Has salido de la ventana o pestaña del examen. No está permitido cambiar de aplicación ni minimizar. Esta es tu primera advertencia (1 de 3). Al acumular 3 salidas, tu examen se cerrará y anulará de forma definitiva."
+          message: "Has salido de la pantalla del examen y has vuelto a ingresar. Recuerda que no está permitido salir de la prueba ni cambiar de aplicación. Esta es tu primera falta (1 de 3). Al acumular 3 faltas por salir y volver a entrar, tu examen se cerrará de forma automática y definitiva."
         });
       } else if (currentCount === 2) {
         setSecurityWarningModal({
           isOpen: true,
           attempt: 2,
           title: "Última Advertencia de Seguridad (2/3)",
-          message: "Has vuelto a salir de la ventana de evaluación. Esta es tu ÚLTIMA advertencia (2 de 3). Si sales una vez más por cualquier motivo, el examen será cerrado y enviado inmediatamente con lo que tengas contestado."
+          message: "Has vuelto a salir y reingresar a la pantalla de evaluación. Esta es tu ÚLTIMA advertencia (2 de 3 faltas). Si sales y vuelves a entrar una vez más por cualquier motivo, el examen será cerrado y enviado inmediatamente con lo que tengas contestado."
         });
       } else if (currentCount >= 3) {
-        // Tercera salida: Cierre forzado inmediato
+        // Tercera salida y reingreso: Cierre forzado inmediato
         setSecurityWarningModal({ isOpen: false, attempt: 3, title: '', message: '' });
         setIsSecurityLocked(true);
         if (!isAutoSubmittingRef.current) {
@@ -219,7 +222,7 @@ export default function StudentExamTaker({ session, exam }) {
           executeSubmissionRef.current?.(
             true, 
             true, 
-            `Examen cancelado automáticamente por seguridad: El aspirante acumuló 3 salidas de ventana no autorizadas.`
+            `Examen cancelado automáticamente por seguridad: El aspirante acumuló 3 faltas por salida y reingreso a la ventana.`
           );
         }
       }
@@ -317,39 +320,70 @@ export default function StudentExamTaker({ session, exam }) {
     return () => clearInterval(intervalId);
   }, [timeLeft, session, isSubmitted, isAlreadySubmitted, isSecurityLocked]);
 
-  // Monitoreo de Visibilidad y Pérdida de Foco de la Ventana
+  // Monitoreo de Salida y Reingreso ("Salir y Volver a Entrar" = 1 Falta)
   useEffect(() => {
     if (isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt) return;
 
-    let blurTimer = null;
+    // Detectar salida de la ventana del examen
+    const handleUserLeave = () => {
+      if (isAwayRef.current) return; // Ya está marcado como fuera, no duplicar la falta
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        handleViolationDetectedRef.current("Pestaña minimizada o cambio de pestaña");
+      if (document.visibilityState === 'hidden' || !document.hasFocus()) {
+        isAwayRef.current = true;
+        awayTimestampRef.current = Date.now();
+
+        // En Modo Estricto, la tolerancia es cero inmediata
+        if (securityMode === 'strict') {
+          handleViolationDetectedRef.current("Salida de ventana o minimización en Modo Estricto");
+        }
       }
     };
 
-    const handleWindowBlur = () => {
-      blurTimer = setTimeout(() => {
-        if (document.visibilityState === 'hidden' || !document.hasFocus()) {
-          handleViolationDetectedRef.current("Ventana perdió el foco");
+    // Manejador de blur con debounce para filtrar micro-focos
+    const onWindowBlur = () => {
+      if (blurDebounceRef.current) clearTimeout(blurDebounceRef.current);
+      blurDebounceRef.current = setTimeout(() => {
+        handleUserLeave();
+      }, 350);
+    };
+
+    // Manejador de retorno a la ventana del examen ("Volver a Entrar")
+    const handleUserReturn = () => {
+      if (blurDebounceRef.current) clearTimeout(blurDebounceRef.current);
+
+      if (isAwayRef.current) {
+        const timeAway = Date.now() - (awayTimestampRef.current || 0);
+        isAwayRef.current = false;
+        awayTimestampRef.current = null;
+
+        // Solo cuenta como falta al volver a entrar si estuvo fuera al menos 400ms (evita micro-parpadeos)
+        if (timeAway >= 400) {
+          handleViolationDetectedRef.current("Salida y reingreso a la ventana del examen");
         }
-      }, 400);
+      }
     };
 
-    const handleWindowFocus = () => {
-      if (blurTimer) clearTimeout(blurTimer);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleUserLeave();
+      } else if (document.visibilityState === 'visible') {
+        handleUserReturn();
+      }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
+    const onWindowFocus = () => {
+      handleUserReturn();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onWindowBlur);
+    window.addEventListener('focus', onWindowFocus);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
-      if (blurTimer) clearTimeout(blurTimer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onWindowBlur);
+      window.removeEventListener('focus', onWindowFocus);
+      if (blurDebounceRef.current) clearTimeout(blurDebounceRef.current);
     };
   }, [securityMode, isSubmitted, isAlreadySubmitted, isSecurityLocked, requiresFullscreenPrompt]);
 
