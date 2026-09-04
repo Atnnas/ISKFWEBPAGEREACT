@@ -23,10 +23,11 @@ import {
   registerExamDeviceSession,
   reportSecurityViolationAction
 } from '../../lib/actions/examinations';
+import { getHardwareFingerprint } from '../../lib/deviceFingerprint';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 
-export default function StudentExamTaker({ session, exam, initialDeviceToken = '' }) {
+export default function StudentExamTaker({ session, exam, initialDeviceToken = '', initialFingerprint = '' }) {
   const [studentName, setStudentName] = useState('');
   const [studentDojo, setStudentDojo] = useState(
     session?.assignedDojos?.length === 1 ? session.assignedDojos[0].name : ''
@@ -66,6 +67,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const awayTimestampRef = useRef(null);
   const blurDebounceRef = useRef(null);
   const deviceTokenRef = useRef(initialDeviceToken || '');
+  const fingerprintRef = useRef(initialFingerprint || '');
 
   // Temporizador de tiempo límite
   const [timeLeft, setTimeLeft] = useState(null); // en segundos
@@ -154,7 +156,8 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         securityViolationsCount: securityViolationsRef.current,
         closedBySecurity: isSecurityClosed,
         securityReport: finalSecurityReport,
-        deviceToken: deviceTokenRef.current
+        deviceToken: deviceTokenRef.current,
+        fingerprint: fingerprintRef.current
       });
 
       if (res.success) {
@@ -204,10 +207,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     // Se guarda en tiempo real en la base de datos de forma que un refresco de pantalla
     // o recarga del navegador ya encuentre el estado bloqueado en el servidor.
     const activeToken = deviceTokenRef.current;
-    if (activeToken) {
+    if (activeToken || fingerprintRef.current) {
       reportSecurityViolationAction({
         sessionId: session.id || session._id,
         deviceToken: activeToken,
+        fingerprint: fingerprintRef.current,
         reason: `${reason} (Falta #${currentCount})`,
         isLockout,
         violationsCount: currentCount
@@ -275,7 +279,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const handleViolationDetectedRef = useRef(handleViolationDetected);
   handleViolationDetectedRef.current = handleViolationDetected;
 
-  // Inicializar token de dispositivo persistente, verificación de reingreso, temporizador y estado de seguridad
+  // Inicializar token de dispositivo, huella de hardware inmutable, temporizador y estado de seguridad
   useEffect(() => {
     const sessId = session.id || session._id;
     if (typeof window === 'undefined') return;
@@ -310,25 +314,35 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       return;
     }
 
-    // 2. Registrar sesión de dispositivo en MongoDB y sincronizar reloj / bloqueo con el servidor
-    registerExamDeviceSession({
-      sessionId: sessId,
-      deviceToken: token
-    }).then(res => {
-      if (res.success) {
-        if (res.status === 'locked_by_security') {
-          setIsSecurityLocked(true);
-          localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
-        } else if (res.status === 'submitted') {
-          setIsAlreadySubmitted(true);
-          localStorage.setItem(`iskf_exam_submitted_${sessId}`, 'true');
-        } else if (res.status === 'time_expired') {
-          setTimeLeft(0);
-        } else if (typeof res.remainingSeconds === 'number') {
-          setTimeLeft(prev => prev === null ? res.remainingSeconds : Math.min(prev, res.remainingSeconds));
-        }
+    // 2. Extraer Huella Digital de Hardware Inmutable (resiste borrado de cookies, caché y datos de app)
+    getHardwareFingerprint().then(fp => {
+      if (fp) {
+        fingerprintRef.current = fp;
+        document.cookie = `iskf_device_fp=${encodeURIComponent(fp)}; path=/; max-age=31536000; SameSite=Lax`;
+        localStorage.setItem('iskf_device_fp', fp);
       }
-    }).catch(err => console.error("Error registering device session in MongoDB:", err));
+
+      // Registrar sesión en MongoDB con Huella de Hardware + Token
+      registerExamDeviceSession({
+        sessionId: sessId,
+        deviceToken: token,
+        fingerprint: fp || fingerprintRef.current
+      }).then(res => {
+        if (res.success) {
+          if (res.status === 'locked_by_security') {
+            setIsSecurityLocked(true);
+            localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
+          } else if (res.status === 'submitted') {
+            setIsAlreadySubmitted(true);
+            localStorage.setItem(`iskf_exam_submitted_${sessId}`, 'true');
+          } else if (res.status === 'time_expired') {
+            setTimeLeft(0);
+          } else if (typeof res.remainingSeconds === 'number') {
+            setTimeLeft(prev => prev === null ? res.remainingSeconds : Math.min(prev, res.remainingSeconds));
+          }
+        }
+      }).catch(err => console.error("Error registering device session in MongoDB:", err));
+    });
 
     // 3. Manejo de tiempo límite
     const timeLimitMinutes = session?.timeLimitMinutes || 0;

@@ -13,6 +13,12 @@ const ExamDeviceLockSchema = new mongoose.Schema({
     trim: true,
     index: true
   },
+  fingerprint: {
+    type: String,
+    trim: true,
+    index: true,
+    default: ''
+  },
   ip: {
     type: String,
     trim: true,
@@ -54,6 +60,7 @@ const ExamDeviceLockSchema = new mongoose.Schema({
 });
 
 ExamDeviceLockSchema.index({ sessionId: 1, deviceToken: 1 }, { unique: true });
+ExamDeviceLockSchema.index({ sessionId: 1, fingerprint: 1 });
 ExamDeviceLockSchema.index({ sessionId: 1, ip: 1, userAgent: 1 });
 
 const ExamDeviceLock = mongoose.models.ExamDeviceLock || mongoose.model('ExamDeviceLock', ExamDeviceLockSchema);

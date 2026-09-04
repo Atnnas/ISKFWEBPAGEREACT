@@ -19,10 +19,11 @@ export default async function TakeExamPage({ params }) {
   const headerStore = await headers();
 
   const deviceToken = cookieStore.get('iskf_device_token')?.value || '';
+  const fingerprint = cookieStore.get('iskf_device_fp')?.value || '';
   const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() || headerStore.get('x-real-ip') || '';
   const userAgent = headerStore.get('user-agent') || '';
 
-  const res = await getPublicExaminationSession(id, { deviceToken, ip, userAgent });
+  const res = await getPublicExaminationSession(id, { deviceToken, fingerprint, ip, userAgent });
 
   if (!res.success) {
     // 1. Bloqueo por Infracción de Seguridad detectado en el Servidor Backend
@@ -157,6 +158,7 @@ export default async function TakeExamPage({ params }) {
       session={res.session} 
       exam={res.exam} 
       initialDeviceToken={deviceToken} 
+      initialFingerprint={fingerprint}
     />
   );
 }
