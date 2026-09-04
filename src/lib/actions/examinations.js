@@ -6,6 +6,7 @@ import WrittenExam from '../../models/WrittenExam';
 import Dojo from '../../models/Dojo';
 import ExaminationSession from '../../models/ExaminationSession';
 import ExamSubmission from '../../models/ExamSubmission';
+import ExamDeviceLock from '../../models/ExamDeviceLock';
 
 // Seed data inicial con los 3 exámenes requeridos por el usuario
 const DEFAULT_EXAMS_SEED = [
@@ -694,7 +695,7 @@ export async function toggleExaminationSessionStatus(sessionId) {
  * Obtiene los datos públicos de una examinación para que el estudiante la resuelva.
  * Protege las respuestas correctas omitiéndolas del payload enviado al cliente.
  */
-export async function getPublicExaminationSession(accessCodeOrId) {
+export async function getPublicExaminationSession(accessCodeOrId, clientDeviceInfo = {}) {
   try {
     await dbConnect();
 
@@ -733,7 +734,7 @@ export async function getPublicExaminationSession(accessCodeOrId) {
       };
     }
 
-    // 5. Verificar si la convocatoria fue cerrada
+    // 5. Verificar si la convocatoria fue cerrada por el Sensei
     if (session.status === 'closed') {
       return { 
         success: false, 
@@ -743,7 +744,68 @@ export async function getPublicExaminationSession(accessCodeOrId) {
       };
     }
 
-    // 6. Cargar el examen escrito base con búsquedas de respaldo
+    // 6. Verificación de Seguridad y Bloqueo de Dispositivo desde el Servidor (MongoDB)
+    const { deviceToken, ip, userAgent } = clientDeviceInfo || {};
+    let lockRecord = null;
+    if (deviceToken) {
+      lockRecord = await ExamDeviceLock.findOne({ sessionId: session._id, deviceToken }).lean();
+    }
+    if (!lockRecord && ip && userAgent) {
+      // Búsqueda de respaldo por IP y UserAgent para interceptar dispositivos bloqueados
+      lockRecord = await ExamDeviceLock.findOne({
+        sessionId: session._id,
+        ip,
+        userAgent,
+        status: { $in: ['locked_by_security', 'submitted', 'time_expired'] }
+      }).lean();
+    }
+
+    if (lockRecord) {
+      if (lockRecord.status === 'locked_by_security') {
+        return {
+          success: false,
+          isSecurityLocked: true,
+          title: session.title,
+          error: "Este dispositivo ha sido bloqueado de forma permanente por el servidor debido a reiteradas salidas de la evaluación.",
+          report: lockRecord.reason || 'Bloqueo registrado en el servidor backend.'
+        };
+      }
+
+      if (lockRecord.status === 'submitted') {
+        return {
+          success: false,
+          isAlreadySubmitted: true,
+          title: session.title,
+          error: "Ya se ha registrado una entrega para esta convocatoria desde este dispositivo."
+        };
+      }
+
+      if (lockRecord.status === 'time_expired') {
+        return {
+          success: false,
+          isTimeExpired: true,
+          title: session.title,
+          error: "El tiempo límite asignado para resolver esta prueba ha concluido en este dispositivo."
+        };
+      }
+
+      // Si el tiempo límite ya transcurrió según el reloj del servidor
+      if (session.timeLimitMinutes > 0 && lockRecord.startedAt) {
+        const elapsedSec = Math.floor((Date.now() - new Date(lockRecord.startedAt).getTime()) / 1000);
+        const remainingSec = (session.timeLimitMinutes * 60) - elapsedSec;
+        if (remainingSec <= 0) {
+          await ExamDeviceLock.updateOne({ _id: lockRecord._id }, { status: 'time_expired' });
+          return {
+            success: false,
+            isTimeExpired: true,
+            title: session.title,
+            error: "El tiempo límite asignado para resolver esta prueba ha concluido en este dispositivo."
+          };
+        }
+      }
+    }
+
+    // 7. Cargar el examen escrito base con búsquedas de respaldo
     let writtenExam = null;
     if (session.writtenExamId) {
       writtenExam = await WrittenExam.findById(session.writtenExamId).lean();
@@ -761,6 +823,17 @@ export async function getPublicExaminationSession(accessCodeOrId) {
         title: session.title,
         error: "El cuestionario base de este examen no se encuentra disponible." 
       };
+    }
+
+    // Calcular segundos restantes respaldados por el servidor
+    let serverRemainingSeconds = null;
+    if (session.timeLimitMinutes > 0) {
+      if (lockRecord?.startedAt) {
+        const elapsedSec = Math.floor((Date.now() - new Date(lockRecord.startedAt).getTime()) / 1000);
+        serverRemainingSeconds = Math.max(0, (session.timeLimitMinutes * 60) - elapsedSec);
+      } else {
+        serverRemainingSeconds = session.timeLimitMinutes * 60;
+      }
     }
 
     // Sanitizar preguntas (no exponer respuestas correctas)
@@ -784,7 +857,9 @@ export async function getPublicExaminationSession(accessCodeOrId) {
         assignedDojos: session.assignedDojos || [],
         accessCode: session.accessCode,
         timeLimitMinutes: session.timeLimitMinutes || 0,
-        securityMode: session.securityMode || 'audit'
+        securityMode: session.securityMode || 'audit',
+        serverRemainingSeconds,
+        deviceStatus: lockRecord?.status || 'active'
       },
       exam: {
         id: writtenExam._id.toString(),
@@ -796,6 +871,100 @@ export async function getPublicExaminationSession(accessCodeOrId) {
   } catch (err) {
     console.error("Error getting public examination session:", err);
     return { success: false, error: "Error de conexión al cargar la examinación." };
+  }
+}
+
+/**
+ * Registra o inicializa la sesión de un dispositivo en el servidor.
+ * Garantiza que el tiempo de inicio quede resguardado en MongoDB y el dispositivo quede enlazado.
+ */
+export async function registerExamDeviceSession(data) {
+  try {
+    await dbConnect();
+    const { sessionId, deviceToken, ip, userAgent } = data;
+    if (!sessionId || !deviceToken) {
+      return { success: false, error: "Faltan parámetros requeridos." };
+    }
+
+    const session = await ExaminationSession.findById(sessionId).lean();
+    if (!session) {
+      return { success: false, error: "Convocatoria no encontrada." };
+    }
+
+    let record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
+    if (!record) {
+      record = new ExamDeviceLock({
+        sessionId,
+        deviceToken,
+        ip: ip || '',
+        userAgent: userAgent || '',
+        status: 'active',
+        startedAt: new Date()
+      });
+      await record.save();
+    }
+
+    let remainingSeconds = null;
+    if (session.timeLimitMinutes > 0 && record.startedAt) {
+      const elapsedSec = Math.floor((Date.now() - new Date(record.startedAt).getTime()) / 1000);
+      remainingSeconds = Math.max(0, (session.timeLimitMinutes * 60) - elapsedSec);
+    }
+
+    return { 
+      success: true, 
+      status: record.status, 
+      startedAt: record.startedAt,
+      remainingSeconds,
+      securityViolationsCount: record.securityViolationsCount || 0
+    };
+  } catch (err) {
+    console.error("Error registering exam device session:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Reporta en tiempo real una falta o bloqueo de seguridad directamente en MongoDB.
+ * No depende de localStorage ni del refresco de pantalla del navegador del cliente.
+ */
+export async function reportSecurityViolationAction(data) {
+  try {
+    await dbConnect();
+    const { sessionId, deviceToken, ip, userAgent, reason, isLockout, violationsCount } = data;
+    if (!sessionId || !deviceToken) {
+      return { success: false, error: "Faltan parámetros requeridos." };
+    }
+
+    let record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
+    if (!record) {
+      record = new ExamDeviceLock({
+        sessionId,
+        deviceToken,
+        ip: ip || '',
+        userAgent: userAgent || '',
+        status: isLockout ? 'locked_by_security' : 'active',
+        securityViolationsCount: violationsCount || 1,
+        startedAt: new Date(),
+        lockedAt: isLockout ? new Date() : null,
+        reason: reason || ''
+      });
+    } else {
+      record.securityViolationsCount = violationsCount || (record.securityViolationsCount + 1);
+      if (isLockout) {
+        record.status = 'locked_by_security';
+        record.lockedAt = new Date();
+        record.reason = reason || 'Bloqueo registrado en el servidor por infracción del protocolo de seguridad';
+      }
+      if (ip) record.ip = ip;
+      if (userAgent) record.userAgent = userAgent;
+    }
+
+    await record.save();
+
+    return { success: true, status: record.status };
+  } catch (err) {
+    console.error("Error reporting security violation:", err);
+    return { success: false, error: err.message };
   }
 }
 
@@ -936,6 +1105,22 @@ export async function submitStudentExam(data) {
     });
 
     await submission.save();
+
+    // Actualizar el estado del dispositivo en el servidor para bloquear reintentos
+    if (data.deviceToken) {
+      await ExamDeviceLock.findOneAndUpdate(
+        { sessionId: session._id, deviceToken: data.deviceToken },
+        {
+          status: closedBySecurity ? 'locked_by_security' : 'submitted',
+          submittedAt: new Date(),
+          lockedAt: closedBySecurity ? new Date() : null,
+          reason: securityReport || (closedBySecurity ? 'Cerrado por protocolo de seguridad' : 'Entregado con éxito'),
+          securityViolationsCount: Math.max(0, parseInt(securityViolationsCount, 10) || 0)
+        },
+        { upsert: true }
+      );
+    }
+
     revalidatePath('/admin/examinations');
 
     return {

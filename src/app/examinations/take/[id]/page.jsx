@@ -1,7 +1,8 @@
 import { getPublicExaminationSession } from '../../../../lib/actions/examinations';
 import StudentExamTaker from '../../../../components/examinations/StudentExamTaker';
 import Link from 'next/link';
-import { AlertCircle, Clock } from 'lucide-react';
+import { AlertCircle, Clock, ShieldAlert } from 'lucide-react';
+import { cookies, headers } from 'next/headers';
 
 export const metadata = {
   title: 'Resolución de Examen - ISKF',
@@ -14,9 +15,105 @@ export default async function TakeExamPage({ params }) {
   const resolvedParams = typeof params?.then === 'function' ? await params : params;
   const id = resolvedParams?.id || '';
 
-  const res = await getPublicExaminationSession(id);
+  const cookieStore = await cookies();
+  const headerStore = await headers();
+
+  const deviceToken = cookieStore.get('iskf_device_token')?.value || '';
+  const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() || headerStore.get('x-real-ip') || '';
+  const userAgent = headerStore.get('user-agent') || '';
+
+  const res = await getPublicExaminationSession(id, { deviceToken, ip, userAgent });
 
   if (!res.success) {
+    // 1. Bloqueo por Infracción de Seguridad detectado en el Servidor Backend
+    if (res.isSecurityLocked) {
+      return (
+        <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 font-sans">
+          <div className="max-w-md w-full bg-neutral-900 border border-red-500/30 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-20 h-20 bg-red-500/10 border border-red-500/20 text-red-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+              <ShieldAlert className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-widest font-mono">
+                Infracción de Seguridad
+              </span>
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                Examen Cancelado y Bloqueado
+              </h1>
+              <p className="text-neutral-400 text-sm leading-relaxed">
+                El sistema detectó reiteradas salidas de la ventana de evaluación en la convocatoria <strong className="text-white">{res.title}</strong>.
+              </p>
+            </div>
+
+            <div className="p-4 bg-neutral-950/70 border border-neutral-800 rounded-2xl text-xs text-neutral-300 text-left space-y-2">
+              <div className="flex items-start gap-2 text-red-400">
+                <span>⛔</span>
+                <span>Este dispositivo ha sido bloqueado de forma definitiva en el servidor para esta evaluación.</span>
+              </div>
+              <div className="flex items-start gap-2 text-neutral-400">
+                <span>•</span>
+                <span>Tus respuestas parciales e incidencias fueron remitidas a la mesa examinadora.</span>
+              </div>
+              <div className="flex items-start gap-2 text-neutral-400">
+                <span>•</span>
+                <span>Cualquier intento de refrescar o reiniciar el navegador mantendrá este bloqueo activo.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 2. Examen ya entregado previamente desde este dispositivo
+    if (res.isAlreadySubmitted) {
+      return (
+        <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 font-sans">
+          <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+              <Clock className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-widest font-mono">
+                Examen Ya Entregado
+              </span>
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                Acceso Concluido
+              </h1>
+              <p className="text-neutral-400 text-sm leading-relaxed">
+                Ya se ha registrado una entrega previa para la convocatoria <strong className="text-white">{res.title}</strong> desde este dispositivo.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. Tiempo Límite Agotado
+    if (res.isTimeExpired) {
+      return (
+        <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 font-sans">
+          <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+              <Clock className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-widest font-mono">
+                Tiempo Agotado
+              </span>
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                Acceso Concluido
+              </h1>
+              <p className="text-neutral-400 text-sm leading-relaxed">
+                El tiempo límite asignado para resolver la prueba <strong className="text-white">{res.title}</strong> ha concluido.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 4. Convocatoria Finalizada o Código no disponible
     return (
       <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 font-sans">
         <div className="max-w-md w-full bg-neutral-900 border border-neutral-800 rounded-3xl p-8 text-center space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -56,6 +153,10 @@ export default async function TakeExamPage({ params }) {
   }
 
   return (
-    <StudentExamTaker session={res.session} exam={res.exam} />
+    <StudentExamTaker 
+      session={res.session} 
+      exam={res.exam} 
+      initialDeviceToken={deviceToken} 
+    />
   );
 }

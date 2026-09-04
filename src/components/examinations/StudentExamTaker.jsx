@@ -18,11 +18,15 @@ import {
   ShieldAlert,
   AlertTriangle
 } from 'lucide-react';
-import { submitStudentExam } from '../../lib/actions/examinations';
+import { 
+  submitStudentExam,
+  registerExamDeviceSession,
+  reportSecurityViolationAction
+} from '../../lib/actions/examinations';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 
-export default function StudentExamTaker({ session, exam }) {
+export default function StudentExamTaker({ session, exam, initialDeviceToken = '' }) {
   const [studentName, setStudentName] = useState('');
   const [studentDojo, setStudentDojo] = useState(
     session?.assignedDojos?.length === 1 ? session.assignedDojos[0].name : ''
@@ -61,6 +65,7 @@ export default function StudentExamTaker({ session, exam }) {
   const isAwayRef = useRef(false);
   const awayTimestampRef = useRef(null);
   const blurDebounceRef = useRef(null);
+  const deviceTokenRef = useRef(initialDeviceToken || '');
 
   // Temporizador de tiempo límite
   const [timeLeft, setTimeLeft] = useState(null); // en segundos
@@ -148,7 +153,8 @@ export default function StudentExamTaker({ session, exam }) {
         isAutoSubmitted: isAuto,
         securityViolationsCount: securityViolationsRef.current,
         closedBySecurity: isSecurityClosed,
-        securityReport: finalSecurityReport
+        securityReport: finalSecurityReport,
+        deviceToken: deviceTokenRef.current
       });
 
       if (res.success) {
@@ -192,6 +198,22 @@ export default function StudentExamTaker({ session, exam }) {
     const timestamp = new Date().toLocaleTimeString('es-CR');
     securityLogsRef.current.push({ timestamp, reason, count: currentCount });
 
+    const isLockout = (securityMode === 'strict') || (securityMode === 'warnings' && currentCount >= 3);
+
+    // REGISTRO INMEDIATO EN EL SERVIDOR BACKEND (MongoDB)
+    // Se guarda en tiempo real en la base de datos de forma que un refresco de pantalla
+    // o recarga del navegador ya encuentre el estado bloqueado en el servidor.
+    const activeToken = deviceTokenRef.current;
+    if (activeToken) {
+      reportSecurityViolationAction({
+        sessionId: session.id || session._id,
+        deviceToken: activeToken,
+        reason: `${reason} (Falta #${currentCount})`,
+        isLockout,
+        violationsCount: currentCount
+      }).catch(err => console.error("Error reporting security violation to server:", err));
+    }
+
     // MODO 1: AUDITORÍA (FLEXIBLE) - Registra silenciosamente sin interrumpir
     if (securityMode === 'audit') {
       return;
@@ -217,6 +239,10 @@ export default function StudentExamTaker({ session, exam }) {
         // Tercera salida y reingreso: Cierre forzado inmediato
         setSecurityWarningModal({ isOpen: false, attempt: 3, title: '', message: '' });
         setIsSecurityLocked(true);
+        if (typeof window !== 'undefined') {
+          const sessId = session.id || session._id;
+          localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
+        }
         if (!isAutoSubmittingRef.current) {
           isAutoSubmittingRef.current = true;
           executeSubmissionRef.current?.(
@@ -231,6 +257,10 @@ export default function StudentExamTaker({ session, exam }) {
     // MODO 3: ESTRICTO (PANTALLA COMPLETA & TOLERANCIA CERO)
     if (securityMode === 'strict') {
       setIsSecurityLocked(true);
+      if (typeof window !== 'undefined') {
+        const sessId = session.id || session._id;
+        localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
+      }
       if (!isAutoSubmittingRef.current) {
         isAutoSubmittingRef.current = true;
         executeSubmissionRef.current?.(
@@ -245,47 +275,89 @@ export default function StudentExamTaker({ session, exam }) {
   const handleViolationDetectedRef = useRef(handleViolationDetected);
   handleViolationDetectedRef.current = handleViolationDetected;
 
-  // Inicializar verificación de reingreso, temporizador y estado de seguridad
+  // Inicializar token de dispositivo persistente, verificación de reingreso, temporizador y estado de seguridad
   useEffect(() => {
     const sessId = session.id || session._id;
-    if (typeof window !== 'undefined') {
-      // 1. Verificar si fue bloqueado por seguridad
-      if (localStorage.getItem(`iskf_exam_security_locked_${sessId}`)) {
-        setIsSecurityLocked(true);
-        return;
+    if (typeof window === 'undefined') return;
+
+    // 0. Sincronizar o generar token único persistente de dispositivo en cookies y localStorage
+    let token = deviceTokenRef.current;
+    if (!token) {
+      const match = document.cookie.match(/(?:^|;\s*)iskf_device_token=([^;]+)/);
+      if (match) {
+        token = decodeURIComponent(match[1]);
+      } else {
+        token = localStorage.getItem('iskf_device_token') || '';
       }
+    }
+    if (!token) {
+      token = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    }
+    deviceTokenRef.current = token;
+    document.cookie = `iskf_device_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax`;
+    localStorage.setItem('iskf_device_token', token);
 
-      // 2. Verificar si ya se envió previamente desde este navegador
-      if (localStorage.getItem(`iskf_exam_submitted_${sessId}`)) {
-        setIsAlreadySubmitted(true);
-        return;
-      }
+    // 1. Verificar estado inicial devuelto por el servidor en session
+    if (session?.deviceStatus === 'locked_by_security' || localStorage.getItem(`iskf_exam_security_locked_${sessId}`)) {
+      setIsSecurityLocked(true);
+      return;
+    }
 
-      // 3. Manejo de tiempo límite
-      const timeLimitMinutes = session?.timeLimitMinutes || 0;
-      if (timeLimitMinutes > 0) {
-        const startKey = `iskf_exam_start_${sessId}`;
-        let startMs = localStorage.getItem(startKey);
-        if (!startMs) {
-          startMs = Date.now().toString();
-          localStorage.setItem(startKey, startMs);
-        }
-        const startTime = parseInt(startMs, 10);
-        startTimeRef.current = startTime;
+    if (session?.deviceStatus === 'submitted' || localStorage.getItem(`iskf_exam_submitted_${sessId}`)) {
+      setIsAlreadySubmitted(true);
+      return;
+    }
 
-        const totalSeconds = timeLimitMinutes * 60;
-        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-        const remaining = totalSeconds - elapsedSeconds;
-
-        if (remaining <= 0) {
+    // 2. Registrar sesión de dispositivo en MongoDB y sincronizar reloj / bloqueo con el servidor
+    registerExamDeviceSession({
+      sessionId: sessId,
+      deviceToken: token
+    }).then(res => {
+      if (res.success) {
+        if (res.status === 'locked_by_security') {
+          setIsSecurityLocked(true);
+          localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
+        } else if (res.status === 'submitted') {
+          setIsAlreadySubmitted(true);
+          localStorage.setItem(`iskf_exam_submitted_${sessId}`, 'true');
+        } else if (res.status === 'time_expired') {
           setTimeLeft(0);
-          if (!isAutoSubmittingRef.current) {
-            isAutoSubmittingRef.current = true;
-            executeSubmissionRef.current?.(true, false, 'Tiempo límite agotado.');
-          }
-        } else {
-          setTimeLeft(remaining);
+        } else if (typeof res.remainingSeconds === 'number') {
+          setTimeLeft(prev => prev === null ? res.remainingSeconds : Math.min(prev, res.remainingSeconds));
         }
+      }
+    }).catch(err => console.error("Error registering device session in MongoDB:", err));
+
+    // 3. Manejo de tiempo límite
+    const timeLimitMinutes = session?.timeLimitMinutes || 0;
+    if (timeLimitMinutes > 0) {
+      const startKey = `iskf_exam_start_${sessId}`;
+      let startMs = localStorage.getItem(startKey);
+      if (!startMs) {
+        startMs = Date.now().toString();
+        localStorage.setItem(startKey, startMs);
+      }
+      const startTime = parseInt(startMs, 10);
+      startTimeRef.current = startTime;
+
+      const totalSeconds = timeLimitMinutes * 60;
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      let remaining = totalSeconds - elapsedSeconds;
+
+      if (typeof session?.serverRemainingSeconds === 'number') {
+        remaining = Math.min(remaining, session.serverRemainingSeconds);
+      }
+
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        if (!isAutoSubmittingRef.current) {
+          isAutoSubmittingRef.current = true;
+          executeSubmissionRef.current?.(true, false, 'Tiempo límite agotado.');
+        }
+      } else {
+        setTimeLeft(remaining);
       }
     }
   }, [session]);
