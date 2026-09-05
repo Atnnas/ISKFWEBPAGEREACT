@@ -15,7 +15,8 @@ import {
   ShieldAlert, 
   EyeOff, 
   Copy, 
-  ChevronDown 
+  ChevronDown,
+  Shuffle
 } from 'lucide-react';
 import { 
   submitStudentExam,
@@ -28,6 +29,16 @@ import { detectIncognito } from 'detectincognitojs';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
+
+// Función utilitaria para barajado aleatorio Fisher-Yates (Anti-Colusión)
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 export default function StudentExamTaker({ session, exam, initialDeviceToken = '', initialFingerprint = '' }) {
   const [studentName, setStudentName] = useState('');
@@ -60,6 +71,109 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
   // Respuestas: { [qId]: { selectedOptionIndex, writtenAnswer, matchingMatches: [{ leftIndex, rightIndex }] } }
   const [answers, setAnswers] = useState({});
+
+  // Preguntas barajadas aleatoriamente (Anti-Colusión)
+  const [shuffledQuestions, setShuffledQuestions] = useState([]);
+
+  // Barajado aleatorio de preguntas y opciones con persistencia por sesión en localStorage
+  useEffect(() => {
+    if (!exam?.questions || exam.questions.length === 0) return;
+    const sessId = session?.id || session?._id;
+    const cacheKey = sessId ? `iskf_shuffled_exam_${sessId}` : null;
+
+    if (cacheKey && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length === exam.questions.length) {
+            const currentIds = new Set(exam.questions.map(q => q.id));
+            const allMatch = parsed.every(q => currentIds.has(q.id));
+            if (allMatch) {
+              setShuffledQuestions(parsed);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Error leyendo preguntas barajadas de localStorage:", err);
+      }
+    }
+
+    // Generar nuevo barajado aleatorio de preguntas y opciones
+    const preparedQuestions = exam.questions.map(q => {
+      if (q.type === 'single_choice' && Array.isArray(q.options)) {
+        const mappedOptions = q.options.map((optText, origIdx) => ({
+          text: optText,
+          originalIndex: origIdx
+        }));
+        return {
+          ...q,
+          shuffledOptions: shuffleArray(mappedOptions)
+        };
+      }
+      return { ...q };
+    });
+
+    const randomized = shuffleArray(preparedQuestions);
+    setShuffledQuestions(randomized);
+
+    if (cacheKey && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(randomized));
+      } catch (err) {
+        console.warn("Error guardando preguntas barajadas en localStorage:", err);
+      }
+    }
+  }, [exam, session]);
+
+  // Restaurar respuestas y datos del estudiante si hubo desconexión o recarga accidental
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sessId = session?.id || session?._id;
+    if (!sessId) return;
+
+    try {
+      const savedAnswers = localStorage.getItem(`iskf_exam_answers_${sessId}`);
+      if (savedAnswers) {
+        const parsed = JSON.parse(savedAnswers);
+        if (parsed && typeof parsed === 'object') {
+          setAnswers(prev => ({ ...parsed, ...prev }));
+        }
+      }
+
+      const savedStudent = localStorage.getItem(`iskf_exam_student_${sessId}`);
+      if (savedStudent) {
+        const parsedStudent = JSON.parse(savedStudent);
+        if (parsedStudent.studentName && !studentName) {
+          setStudentName(parsedStudent.studentName);
+        }
+        if (parsedStudent.studentDojo && !studentDojo) {
+          setStudentDojo(parsedStudent.studentDojo);
+        }
+      }
+    } catch (err) {
+      console.warn("Error restaurando borrador de examen desde localStorage:", err);
+    }
+  }, [session]);
+
+  // Auto-guardado continuo de respuestas y datos en localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined' || isSubmitted || isAlreadySubmitted) return;
+    const sessId = session?.id || session?._id;
+    if (!sessId) return;
+
+    try {
+      if (Object.keys(answers).length > 0) {
+        localStorage.setItem(`iskf_exam_answers_${sessId}`, JSON.stringify(answers));
+      }
+      if (studentName || studentDojo) {
+        localStorage.setItem(`iskf_exam_student_${sessId}`, JSON.stringify({ studentName, studentDojo }));
+      }
+    } catch (err) {
+      console.warn("Error auto-guardando borrador de examen:", err);
+    }
+  }, [answers, studentName, studentDojo, session, isSubmitted, isAlreadySubmitted]);
 
   // Lightbox de imagen
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -206,6 +320,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
           if (isSecurityClosed) {
             localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
           }
+          // Limpieza de datos temporales del examen al enviar con éxito
+          localStorage.removeItem(`iskf_shuffled_exam_${sessId}`);
+          localStorage.removeItem(`iskf_exam_answers_${sessId}`);
+          localStorage.removeItem(`iskf_exam_student_${sessId}`);
         }
         setIsSubmitted(true);
         setIsAutoSubmittedSuccess(isAuto && !isSecurityClosed);
@@ -977,9 +1095,12 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     );
   }
 
+  // Preguntas activas (barajadas aleatoriamente para evitar colusión)
+  const activeQuestions = shuffledQuestions.length > 0 ? shuffledQuestions : (exam?.questions || []);
+
   // Conteo de preguntas respondidas para barra de progreso
-  const totalQuestions = (exam?.questions || []).length;
-  const answeredCount = (exam?.questions || []).filter(q => {
+  const totalQuestions = activeQuestions.length;
+  const answeredCount = activeQuestions.filter(q => {
     const ans = answers[q.id];
     if (!ans) return false;
     if (q.type === 'single_choice') return ans.selectedOptionIndex !== null && ans.selectedOptionIndex !== undefined;
@@ -1136,7 +1257,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                 </span>
               )}
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#2D2E83] border border-blue-200">
-                {exam.questions ? exam.questions.length : 0} Preguntas
+                {totalQuestions} Preguntas
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1.5 shadow-sm" title="Orden aleatorio individual de preguntas y opciones para evitar colusión">
+                <Shuffle className="w-3.5 h-3.5 text-purple-600" />
+                Anti-Colusión Activo
               </span>
             </div>
           </div>
@@ -1304,7 +1429,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
           {/* Preguntas */}
           <div className="space-y-5">
-            {(exam.questions || []).map((q, idx) => {
+            {activeQuestions.map((q, idx) => {
               const currentAns = answers[q.id] || {};
 
               return (
@@ -1350,15 +1475,17 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                     </div>
                   )}
 
-                  {/* 1. SELECCIÓN ÚNICA */}
-                  {q.type === 'single_choice' && q.options && (
+                  {/* 1. SELECCIÓN ÚNICA (OPCIONES BARAJADAS) */}
+                  {q.type === 'single_choice' && (q.shuffledOptions || q.options) && (
                     <div className="space-y-2 pt-1 pl-1">
-                      {q.options.map((opt, optIdx) => {
-                        const isSelected = currentAns.selectedOptionIndex === optIdx;
+                      {(q.shuffledOptions || (q.options || []).map((opt, i) => ({ text: opt, originalIndex: i }))).map((optObj, optDisplayIdx) => {
+                        const optText = typeof optObj === 'string' ? optObj : optObj.text;
+                        const origIndex = typeof optObj === 'string' ? optDisplayIdx : optObj.originalIndex;
+                        const isSelected = currentAns.selectedOptionIndex === origIndex;
                         return (
                           <label
-                            key={optIdx}
-                            onClick={() => handleSelectOption(q.id, optIdx)}
+                            key={optDisplayIdx}
+                            onClick={() => handleSelectOption(q.id, origIndex)}
                             className={`flex items-center gap-3 p-3.5 rounded-xl border text-xs sm:text-sm cursor-pointer transition-all ${
                               isSelected
                                 ? 'bg-blue-50/90 border-[#2D2E83] text-[#2D2E83] font-semibold ring-2 ring-[#2D2E83]/20 shadow-sm'
@@ -1372,9 +1499,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                                   : 'border-gray-300 text-gray-500 bg-white'
                               }`}
                             >
-                              {String.fromCharCode(65 + optIdx)}
+                              {String.fromCharCode(65 + optDisplayIdx)}
                             </span>
-                            <span className="flex-1">{opt}</span>
+                            <span className="flex-1">{optText}</span>
                           </label>
                         );
                       })}
