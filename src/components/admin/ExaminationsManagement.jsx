@@ -1117,10 +1117,10 @@ export default function ExaminationsManagement({
       {/* MODAL: CREAR NUEVA CONVOCATORIA (EXAMINACIÓN) */}
       {/* ========================================================================= */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative overflow-hidden bg-white/95 backdrop-blur-2xl border border-gray-200/90 rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-[0_25px_70px_rgba(0,0,0,0.25)] my-auto animate-in fade-in zoom-in-95 duration-200 text-gray-900">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-y-auto">
+          <div className="relative overflow-hidden bg-white/95 backdrop-blur-2xl border border-gray-200/90 rounded-3xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.25)] my-auto animate-in fade-in zoom-in-95 duration-200 text-gray-900">
             {/* Marca de agua / fondo sutil ISKF con el fondo oficial */}
-            <div className="absolute inset-0 z-0 pointer-events-none select-none opacity-[0.10] overflow-hidden">
+            <div className="absolute inset-0 z-0 pointer-events-none select-none opacity-[0.08] overflow-hidden">
               <img
                 src={fondoInicioNuevo?.src || fondoInicioNuevo}
                 alt="ISKF Background"
@@ -1128,8 +1128,9 @@ export default function ExaminationsManagement({
               />
             </div>
 
-            <div className="relative z-10 flex justify-between items-start border-b border-gray-200/80 pb-4">
-              <div className="flex items-center gap-3.5">
+            {/* Cabecera Fija del Modal (Nunca se corta arriba) */}
+            <div className="relative z-10 flex justify-between items-center border-b border-gray-200/80 px-6 sm:px-8 py-4 shrink-0 bg-white/85 backdrop-blur-md">
+              <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-11 h-11 rounded-2xl bg-white border border-gray-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                   <img
                     src="/images/dojos/escudo.jpg"
@@ -1137,294 +1138,297 @@ export default function ExaminationsManagement({
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] uppercase font-mono tracking-widest text-[#be1322] font-bold">
                       ISKF Karate Do • Gestión Oficial
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-[#2D2E83] tracking-tight">
+                  <h3 className="text-lg sm:text-xl font-black text-[#2D2E83] tracking-tight truncate">
                     Nueva Convocatoria de Examinación
                   </h3>
-                  <p className="text-xs text-gray-500 font-medium">
-                    Configura el examen teórico y selecciona los Dojos convocados a calificar.
+                  <p className="text-xs text-gray-500 font-medium truncate">
+                    Configura el examen teórico y selecciona los Dojos convocados.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="p-2 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                className="p-2 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer shrink-0 ml-2"
                 title="Cerrar ventana"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSession} className="relative z-10 space-y-5">
-              {/* Título */}
-              <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
-                  Nombre de la Convocatoria *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: I Convocatoria Nacional de Pases de Grado 2026"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-all placeholder:text-gray-400 font-medium"
-                />
-              </div>
-
-              {/* Examen Escrito Base */}
-              <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
-                  Examen Escrito Base (Cuestionario a aplicar) *
-                </label>
-                <select
-                  required
-                  value={newWrittenExamId}
-                  onChange={(e) => setNewWrittenExamId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-all cursor-pointer font-medium"
-                >
-                  {writtenExams.map((ex) => (
-                    <option key={ex.id || ex._id} value={ex.id || ex._id}>
-                      {ex.name}{ex.targetRanks ? ` • ${ex.targetRanks}` : ''} ({ex.questions ? ex.questions.length : 0} preguntas)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Dojos a Calificar (Desde Base de Datos) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+            <form onSubmit={handleCreateSession} className="relative z-10 flex flex-col flex-1 min-h-0">
+              {/* Cuerpo del Formulario con scroll independiente y espaciado perfecto */}
+              <div className="overflow-y-auto px-6 sm:px-8 py-5 space-y-5 flex-1">
+                {/* Título */}
+                <div className="space-y-1.5">
                   <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
-                    Dojos Convocados a Calificar * ({selectedDojoIds.length} seleccionados)
+                    Nombre de la Convocatoria *
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleToggleSelectAllDojos}
-                    className="text-xs text-[#2D2E83] hover:text-[#be1322] font-bold transition-colors cursor-pointer"
-                  >
-                    {selectedDojoIds.length === dojos.length ? 'Desmarcar todos' : 'Seleccionar todos'}
-                  </button>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: I Convocatoria Nacional de Pases de Grado 2026"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-all placeholder:text-gray-400 font-medium"
+                  />
                 </div>
 
-                <div className="max-h-60 overflow-y-auto border border-gray-200/90 rounded-2xl p-2.5 bg-gray-50/80 space-y-1.5 shadow-inner">
-                  {dojos.map((dojo) => {
-                    const dojoId = dojo.id || dojo._id;
-                    const isChecked = selectedDojoIds.includes(dojoId);
+                {/* Examen Escrito Base */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
+                    Examen Escrito Base (Cuestionario a aplicar) *
+                  </label>
+                  <select
+                    required
+                    value={newWrittenExamId}
+                    onChange={(e) => setNewWrittenExamId(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-all cursor-pointer font-medium"
+                  >
+                    {writtenExams.map((ex) => (
+                      <option key={ex.id || ex._id} value={ex.id || ex._id}>
+                        {ex.name}{ex.targetRanks ? ` • ${ex.targetRanks}` : ''} ({ex.questions ? ex.questions.length : 0} preguntas)
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                    return (
-                      <label
-                        key={dojoId}
-                        className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
-                          isChecked
-                            ? 'bg-blue-50/90 border border-[#2D2E83]/40 shadow-sm'
-                            : 'bg-white/80 hover:bg-blue-50/40 border border-gray-200/70 hover:border-blue-200'
+                {/* Dojos a Calificar (Desde Base de Datos) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
+                      Dojos Convocados a Calificar * ({selectedDojoIds.length} seleccionados)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleToggleSelectAllDojos}
+                      className="text-xs text-[#2D2E83] hover:text-[#be1322] font-bold transition-colors cursor-pointer"
+                    >
+                      {selectedDojoIds.length === dojos.length ? 'Desmarcar todos' : 'Seleccionar todos'}
+                    </button>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto border border-gray-200/90 rounded-2xl p-2.5 bg-gray-50/80 space-y-1.5 shadow-inner">
+                    {dojos.map((dojo) => {
+                      const dojoId = dojo.id || dojo._id;
+                      const isChecked = selectedDojoIds.includes(dojoId);
+
+                      return (
+                        <label
+                          key={dojoId}
+                          className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
+                            isChecked
+                              ? 'bg-blue-50/90 border border-[#2D2E83]/40 shadow-sm'
+                              : 'bg-white/80 hover:bg-blue-50/40 border border-gray-200/70 hover:border-blue-200'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isChecked) {
+                                setSelectedDojoIds(selectedDojoIds.filter(id => id !== dojoId));
+                              } else {
+                                setSelectedDojoIds([...selectedDojoIds, dojoId]);
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-gray-300 text-[#2D2E83] focus:ring-[#2D2E83]/20 bg-white shrink-0 cursor-pointer accent-[#2D2E83]"
+                          />
+                          {/* Escudo del Dojo */}
+                          <div className="w-9 h-9 rounded-xl bg-white border border-gray-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
+                            <img
+                              src={dojo.logo || '/images/dojos/escudo.jpg'}
+                              alt={`Escudo ${dojo.name}`}
+                              className="w-full h-full object-contain"
+                              onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className={`font-bold block text-xs truncate ${isChecked ? 'text-[#2D2E83]' : 'text-gray-900'}`}>
+                              {dojo.name}
+                            </span>
+                            <span className="text-[11px] text-gray-500 block truncate">
+                              {dojo.province || 'Costa Rica'} • Sensei: {dojo.sensei || 'ISKF'}
+                            </span>
+                          </div>
+                          {isChecked && (
+                            <Check className="w-4 h-4 text-[#2D2E83] shrink-0" />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Tiempo Límite para Resolver */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
+                      Tiempo Límite para Resolver
+                    </label>
+                    <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                      {newTimeLimitMinutes > 0 ? `${newTimeLimitMinutes} min configurados` : 'Sin límite de tiempo'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-2">
+                    {[
+                      { label: 'Sin Límite', val: 0 },
+                      { label: '30 min', val: 30 },
+                      { label: '45 min', val: 45 },
+                      { label: '60 min', val: 60 },
+                      { label: '90 min', val: 90 },
+                    ].map((p) => (
+                      <button
+                        key={p.val}
+                        type="button"
+                        onClick={() => setNewTimeLimitMinutes(p.val)}
+                        className={`py-2 px-1 text-xs rounded-xl font-medium border text-center transition-all cursor-pointer ${
+                          newTimeLimitMinutes === p.val
+                            ? 'bg-blue-50 border-[#2D2E83] text-[#2D2E83] font-bold shadow-sm ring-1 ring-[#2D2E83]/30'
+                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {
-                            if (isChecked) {
-                              setSelectedDojoIds(selectedDojoIds.filter(id => id !== dojoId));
-                            } else {
-                              setSelectedDojoIds([...selectedDojoIds, dojoId]);
-                            }
-                          }}
-                          className="w-4 h-4 rounded border-gray-300 text-[#2D2E83] focus:ring-[#2D2E83]/20 bg-white shrink-0 cursor-pointer accent-[#2D2E83]"
-                        />
-                        {/* Escudo del Dojo */}
-                        <div className="w-9 h-9 rounded-xl bg-white border border-gray-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
-                          <img
-                            src={dojo.logo || '/images/dojos/escudo.jpg'}
-                            alt={`Escudo ${dojo.name}`}
-                            className="w-full h-full object-contain"
-                            onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className={`font-bold block text-xs truncate ${isChecked ? 'text-[#2D2E83]' : 'text-gray-900'}`}>
-                            {dojo.name}
-                          </span>
-                          <span className="text-[11px] text-gray-500 block truncate">
-                            {dojo.province || 'Costa Rica'} • Sensei: {dojo.sensei || 'ISKF'}
-                          </span>
-                        </div>
-                        {isChecked && (
-                          <Check className="w-4 h-4 text-[#2D2E83] shrink-0" />
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
 
-              {/* Tiempo Límite para Resolver */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
-                    Tiempo Límite para Resolver
-                  </label>
-                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-                    {newTimeLimitMinutes > 0 ? `${newTimeLimitMinutes} min configurados` : 'Sin límite de tiempo'}
-                  </span>
+                  <div className="flex items-center gap-2 pt-1 text-xs text-gray-600">
+                    <span className="text-[11px] text-gray-600 font-medium">O personalizar minutos:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="300"
+                      placeholder="Minutos"
+                      value={newTimeLimitMinutes || ''}
+                      onChange={(e) => setNewTimeLimitMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                      className="w-24 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm"
+                    />
+                    <span className="text-[11px] text-gray-500 font-medium">minutos (0 = libre)</span>
+                  </div>
+
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    El cronómetro iniciará de manera individual cuando cada alumno abra su enlace. Al finalizar el tiempo, las respuestas se enviarán automáticamente y el enlace quedará bloqueado.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-5 gap-2">
-                  {[
-                    { label: 'Sin Límite', val: 0 },
-                    { label: '30 min', val: 30 },
-                    { label: '45 min', val: 45 },
-                    { label: '60 min', val: 60 },
-                    { label: '90 min', val: 90 },
-                  ].map((p) => (
+                {/* Modo de Seguridad Anti-Trampa */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
+                      Protocolo de Seguridad Anti-Trampa *
+                    </label>
+                    <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 border border-gray-200">
+                      {newSecurityMode === 'audit' && 'Modo Auditoría'}
+                      {newSecurityMode === 'warnings' && 'Modo 3 Intentos'}
+                      {newSecurityMode === 'strict' && 'Modo Estricto'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Opción 1: Auditoría */}
                     <button
-                      key={p.val}
                       type="button"
-                      onClick={() => setNewTimeLimitMinutes(p.val)}
-                      className={`py-2 px-1 text-xs rounded-xl font-medium border text-center transition-all cursor-pointer ${
-                        newTimeLimitMinutes === p.val
-                          ? 'bg-blue-50 border-[#2D2E83] text-[#2D2E83] font-bold shadow-sm ring-1 ring-[#2D2E83]/30'
-                          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                      onClick={() => setNewSecurityMode('audit')}
+                      className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        newSecurityMode === 'audit'
+                          ? 'bg-blue-50/90 border-[#2D2E83] ring-1 ring-[#2D2E83]/50 shadow-sm text-gray-900'
+                          : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
                       }`}
                     >
-                      {p.label}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                            <Shield className="w-3.5 h-3.5 text-[#2D2E83]" />
+                            Auditoría
+                          </span>
+                          {newSecurityMode === 'audit' && (
+                            <Check className="w-3.5 h-3.5 text-[#2D2E83]" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-tight">
+                          Permite salir de la ventana. Registra silenciosamente cada salida y avisa al evaluador para llamar la atención.
+                        </p>
+                      </div>
                     </button>
-                  ))}
+
+                    {/* Opción 2: 3 Intentos */}
+                    <button
+                      type="button"
+                      onClick={() => setNewSecurityMode('warnings')}
+                      className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        newSecurityMode === 'warnings'
+                          ? 'bg-amber-50/90 border-amber-500 ring-1 ring-amber-500/50 shadow-sm text-gray-900'
+                          : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                            <Shield className="w-3.5 h-3.5 text-amber-600" />
+                            3 Intentos
+                          </span>
+                          {newSecurityMode === 'warnings' && (
+                            <Check className="w-3.5 h-3.5 text-amber-600" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-tight">
+                          Alerta en pantalla en salidas 1 y 2. A la 3ª salida detectada, cierra y anula el examen bloqueando el link.
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* Opción 3: Estricto */}
+                    <button
+                      type="button"
+                      onClick={() => setNewSecurityMode('strict')}
+                      className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                        newSecurityMode === 'strict'
+                          ? 'bg-red-50/90 border-[#be1322] ring-1 ring-[#be1322]/50 shadow-sm text-gray-900'
+                          : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                            <ShieldAlert className="w-3.5 h-3.5 text-[#be1322]" />
+                            Estricto
+                          </span>
+                          {newSecurityMode === 'strict' && (
+                            <Check className="w-3.5 h-3.5 text-[#be1322]" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-tight">
+                          Pantalla completa obligatoria y anti-copia activo. Cualquier intento de minimizar o salir cancela y bloquea la prueba.
+                        </p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-1 text-xs text-gray-600">
-                  <span className="text-[11px] text-gray-600 font-medium">O personalizar minutos:</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="300"
-                    placeholder="Minutos"
-                    value={newTimeLimitMinutes || ''}
-                    onChange={(e) => setNewTimeLimitMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                    className="w-24 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm"
-                  />
-                  <span className="text-[11px] text-gray-500 font-medium">minutos (0 = libre)</span>
-                </div>
-
-                <p className="text-[11px] text-gray-500 leading-relaxed">
-                  El cronómetro iniciará de manera individual cuando cada alumno abra su enlace. Al finalizar el tiempo, las respuestas se enviarán automáticamente y el enlace quedará bloqueado.
-                </p>
-              </div>
-
-              {/* Modo de Seguridad Anti-Trampa */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                {/* Observaciones */}
+                <div className="space-y-1.5">
                   <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
-                    Protocolo de Seguridad Anti-Trampa *
+                    Notas Internas (Opcional)
                   </label>
-                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 border border-gray-200">
-                    {newSecurityMode === 'audit' && 'Modo Auditoría'}
-                    {newSecurityMode === 'warnings' && 'Modo 3 Intentos'}
-                    {newSecurityMode === 'strict' && 'Modo Estricto'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {/* Opción 1: Auditoría */}
-                  <button
-                    type="button"
-                    onClick={() => setNewSecurityMode('audit')}
-                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                      newSecurityMode === 'audit'
-                        ? 'bg-blue-50/90 border-[#2D2E83] ring-1 ring-[#2D2E83]/50 shadow-sm text-gray-900'
-                        : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                          <Shield className="w-3.5 h-3.5 text-[#2D2E83]" />
-                          Auditoría
-                        </span>
-                        {newSecurityMode === 'audit' && (
-                          <Check className="w-3.5 h-3.5 text-[#2D2E83]" />
-                        )}
-                      </div>
-                      <p className="text-[11px] text-gray-500 leading-tight">
-                        Permite salir de la ventana. Registra silenciosamente cada salida y avisa al evaluador para llamar la atención.
-                      </p>
-                    </div>
-                  </button>
-
-                  {/* Opción 2: 3 Intentos */}
-                  <button
-                    type="button"
-                    onClick={() => setNewSecurityMode('warnings')}
-                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                      newSecurityMode === 'warnings'
-                        ? 'bg-amber-50/90 border-amber-500 ring-1 ring-amber-500/50 shadow-sm text-gray-900'
-                        : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                          <Shield className="w-3.5 h-3.5 text-amber-600" />
-                          3 Intentos
-                        </span>
-                        {newSecurityMode === 'warnings' && (
-                          <Check className="w-3.5 h-3.5 text-amber-600" />
-                        )}
-                      </div>
-                      <p className="text-[11px] text-gray-500 leading-tight">
-                        Alerta en pantalla en salidas 1 y 2. A la 3ª salida detectada, cierra y anula el examen bloqueando el link.
-                      </p>
-                    </div>
-                  </button>
-
-                  {/* Opción 3: Estricto */}
-                  <button
-                    type="button"
-                    onClick={() => setNewSecurityMode('strict')}
-                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                      newSecurityMode === 'strict'
-                        ? 'bg-red-50/90 border-[#be1322] ring-1 ring-[#be1322]/50 shadow-sm text-gray-900'
-                        : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                          <ShieldAlert className="w-3.5 h-3.5 text-[#be1322]" />
-                          Estricto
-                        </span>
-                        {newSecurityMode === 'strict' && (
-                          <Check className="w-3.5 h-3.5 text-[#be1322]" />
-                        )}
-                      </div>
-                      <p className="text-[11px] text-gray-500 leading-tight">
-                        Pantalla completa obligatoria y anti-copia activo. Cualquier intento de minimizar o salir cancela y bloquea la prueba.
-                      </p>
-                    </div>
-                  </button>
+                  <textarea
+                    rows={2}
+                    placeholder="Instrucciones o recordatorios para el tribunal examinador..."
+                    value={newNotes}
+                    onChange={(e) => setNewNotes(e.target.value)}
+                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm resize-none placeholder:text-gray-400"
+                  />
                 </div>
               </div>
 
-              {/* Observaciones */}
-              <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
-                  Notas Internas (Opcional)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Instrucciones o recordatorios para el tribunal examinador..."
-                  value={newNotes}
-                  onChange={(e) => setNewNotes(e.target.value)}
-                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm resize-none placeholder:text-gray-400"
-                />
-              </div>
-
-              {/* Botones */}
-              <div className="flex justify-end gap-3 pt-3 border-t border-gray-200/80">
+              {/* Pie de Acciones Fijo (Siempre accesible y visible) */}
+              <div className="flex justify-end gap-3 border-t border-gray-200/80 px-6 sm:px-8 py-4 shrink-0 bg-white/85 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
