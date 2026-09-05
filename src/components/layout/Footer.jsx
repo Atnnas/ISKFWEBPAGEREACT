@@ -1,7 +1,13 @@
+"use client";
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const Footer = () => {
+    const pathname = usePathname();
+    if (pathname?.startsWith('/examinations/take')) {
+        return null;
+    }
     const currentYear = new Date().getFullYear();
 
     return (

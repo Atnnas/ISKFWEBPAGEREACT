@@ -13,6 +13,10 @@ const Navbar = () => {
     const location = { pathname: usePathname() };
     const { data: session } = useSession();
 
+    if (location.pathname?.startsWith('/examinations/take')) {
+        return null;
+    }
+
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
     // Smart Navigation Handler

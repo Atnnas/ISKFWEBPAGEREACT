@@ -890,45 +890,114 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     );
   }
 
+  // Conteo de preguntas respondidas para barra de progreso
+  const totalQuestions = (exam?.questions || []).length;
+  const answeredCount = (exam?.questions || []).filter(q => {
+    const ans = answers[q.id];
+    if (!ans) return false;
+    if (q.type === 'single_choice') return ans.selectedOptionIndex !== null && ans.selectedOptionIndex !== undefined;
+    if (q.type === 'short_answer' || q.type === 'long_answer') return Boolean(ans.writtenAnswer?.trim());
+    if (q.type === 'matching') return Boolean(ans.matchingMatches?.length > 0);
+    return false;
+  }).length;
+
   // =========================================================================
   // VISTA: CUESTIONARIO ACTIVO DEL ESTUDIANTE
   // =========================================================================
   return (
-    <div className="min-h-screen bg-neutral-950 text-white py-8 px-4 sm:px-6 md:px-8 font-sans">
-      <div className="max-w-3xl mx-auto space-y-8">
-        
-        {/* Temporizador Flotante Minimalista */}
-        {session?.timeLimitMinutes > 0 && timeLeft !== null && (
-          <aside 
-            aria-label="Temporizador de examen"
-            className="sticky top-4 z-40 flex justify-center pointer-events-none"
-          >
-            <div className={`pointer-events-auto flex items-center gap-3 px-5 py-2.5 rounded-full border shadow-2xl backdrop-blur-xl transition-all duration-300 ${
-              timeLeft <= 60
-                ? 'bg-red-950/95 border-red-500/80 text-red-300 animate-pulse shadow-red-500/30'
-                : timeLeft <= 300
-                ? 'bg-amber-950/95 border-amber-500/60 text-amber-300 shadow-amber-500/20'
-                : 'bg-neutral-900/95 border-neutral-700 text-neutral-200'
-            }`}>
-              <Clock className={`w-4 h-4 shrink-0 ${
-                timeLeft <= 60 ? 'text-red-400' : timeLeft <= 300 ? 'text-amber-400' : 'text-blue-400'
-              }`} />
-              <div className="flex items-center gap-2 font-mono">
-                <span className="text-[11px] font-sans text-neutral-400 uppercase tracking-wider font-semibold">
-                  Tiempo:
-                </span>
-                <span className="text-sm font-black tracking-widest">
-                  {formatTime(timeLeft)}
+    <div className="min-h-screen bg-neutral-950 text-white font-sans flex flex-col selection:bg-blue-600 selection:text-white">
+      {/* ========================================================================= */}
+      {/* 1. BARRA SUPERIOR FIJA / STICKY PREMIUM (NO SE CORTA AL SCROLLEAR) */}
+      {/* ========================================================================= */}
+      <header className="sticky top-0 z-50 w-full bg-neutral-950/85 backdrop-blur-2xl border-b border-neutral-800/80 shadow-[0_10px_30px_rgba(0,0,0,0.5)] transition-all">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3">
+          
+          {/* Lado Izquierdo: Escudo Oficial y Datos de Convocatoria */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-700/80 p-0.5 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
+              <img
+                src="/images/dojos/escudo.jpg"
+                alt="ISKF"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="min-w-0 space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-neutral-400 font-bold truncate">
+                  ISKF Karate Do • {targetRank || 'Evaluación Oficial'}
                 </span>
               </div>
-              {timeLeft <= 180 && (
-                <span className="text-[10px] uppercase font-sans font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 tracking-wider">
-                  ¡Por Concluir!
-                </span>
-              )}
+              <h2 className="text-xs sm:text-sm font-bold text-white truncate max-w-[170px] sm:max-w-sm">
+                {session.title}
+              </h2>
             </div>
-          </aside>
+          </div>
+
+          {/* Lado Derecho: Progreso y Temporizador en Parte Superior Derecha */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Preguntas Respondidas */}
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-neutral-900 border border-neutral-800 text-neutral-300 shadow-inner">
+              <span className="text-neutral-400">Progreso:</span>
+              <span className="text-blue-400 font-bold">{answeredCount}</span>
+              <span className="text-neutral-600">/</span>
+              <span>{totalQuestions}</span>
+            </div>
+
+            {/* Temporizador Destacado en Superior Derecha */}
+            {session?.timeLimitMinutes > 0 && timeLeft !== null ? (
+              <div
+                aria-label="Tiempo restante"
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl border shadow-lg transition-all duration-300 ${
+                  timeLeft <= 60
+                    ? 'bg-red-950/90 border-red-500/80 text-red-300 animate-pulse shadow-red-500/20'
+                    : timeLeft <= 300
+                    ? 'bg-amber-950/85 border-amber-500/60 text-amber-300 shadow-amber-500/10'
+                    : 'bg-neutral-900/90 border-neutral-700/90 text-white shadow-inner'
+                }`}
+              >
+                <Clock className={`w-4 h-4 shrink-0 ${
+                  timeLeft <= 60 ? 'text-red-400' : timeLeft <= 300 ? 'text-amber-400' : 'text-blue-400'
+                }`} />
+                <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-1.5 leading-none">
+                  <span className="hidden md:inline text-[9px] uppercase font-sans text-neutral-400 font-bold tracking-wider">
+                    Tiempo:
+                  </span>
+                  <span className="text-xs sm:text-sm font-black font-mono tracking-wider">
+                    {formatTime(timeLeft)}
+                  </span>
+                </div>
+                {timeLeft <= 180 && (
+                  <span className="hidden sm:inline text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-300 tracking-wider">
+                    ¡Fin!
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-neutral-900/80 border border-neutral-800 text-neutral-400">
+                <Clock className="w-3.5 h-3.5 text-neutral-500" />
+                <span className="hidden sm:inline">Sin límite</span>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Línea de Progreso Sutil al fondo del header */}
+        {totalQuestions > 0 && (
+          <div className="w-full h-[2px] bg-neutral-800/80 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 transition-all duration-300 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+              style={{ width: `${Math.round((answeredCount / totalQuestions) * 100)}%` }}
+            />
+          </div>
         )}
+      </header>
+
+      {/* ========================================================================= */}
+      {/* 2. CONTENIDO PRINCIPAL CON ESPACIADO ELEGANTE */}
+      {/* ========================================================================= */}
+      <main className="flex-1 py-8 px-4 sm:px-6 md:px-8">
+        <div className="max-w-3xl mx-auto space-y-8">
 
         {/* Cabecera Oficial */}
         <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl backdrop-blur-md">
@@ -1335,6 +1404,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         </div>
 
       </div>
+      </main>
 
       {/* Lightbox / Zoom de Imagen en Pantalla Completa */}
       {lightboxImage && (

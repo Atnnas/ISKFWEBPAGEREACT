@@ -1,8 +1,13 @@
 "use client";
 import React from 'react';
 import { motion } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 
 const SocialSidebar = () => {
+    const pathname = usePathname();
+    if (pathname?.startsWith('/examinations/take')) {
+        return null;
+    }
     // Container: Staggers entrance of children
     const containerVariants = {
         hidden: { opacity: 0 },
