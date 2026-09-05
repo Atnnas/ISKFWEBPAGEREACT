@@ -34,7 +34,8 @@ import {
   Play,
   Pause,
   Unlock,
-  Download
+  Download,
+  Shuffle
 } from 'lucide-react';
 import { 
   getExaminationSessions,
@@ -606,182 +607,237 @@ export default function ExaminationsManagement({
             </button>
           </div>
 
-          {/* Lista de Convocatorias Creadas */}
-          <div className="space-y-4">
-            {sessions.map((sess) => {
-              const origin = typeof window !== 'undefined' ? window.location.origin : '';
-              const linkUrl = `${origin}/examinations/take/${sess.accessCode}`;
-              const isCopied = copiedSessionId === (sess.id || sess._id);
-
-              return (
-                <div
-                  key={sess.id || sess._id}
-                  className="bg-neutral-800/80 border border-neutral-700/80 rounded-3xl p-6 space-y-4 shadow-xl hover:border-neutral-600 transition-all"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <h3 className="text-lg md:text-xl font-bold text-white">
-                          {sess.title}
-                        </h3>
-                        <button
-                          onClick={(e) => handleToggleStatus(sess.id || sess._id, e)}
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold uppercase transition-colors ${
-                            sess.status === 'active'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
-                              : 'bg-neutral-700/40 text-neutral-400 border border-neutral-600 hover:bg-neutral-700'
-                          }`}
-                          title="Clic para cambiar estado"
-                        >
-                          {sess.status === 'active' ? '● Activa' : '○ Cerrada'}
-                        </button>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-400 pt-1">
-                        <span className="font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded-lg">
-                          {sess.writtenExamName}
-                        </span>
-                        <span>•</span>
-                        {sess.timeLimitMinutes > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
-                            <Clock className="w-3 h-3 text-amber-400" />
-                            {sess.timeLimitMinutes} min límite
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 bg-neutral-900/80 border border-neutral-700/60 px-2 py-0.5 rounded-md">
-                            <Clock className="w-3 h-3 text-neutral-500" />
-                            Sin límite de tiempo
-                          </span>
-                        )}
-                        <span>•</span>
-                        {sess.securityMode === 'strict' && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md">
-                            <ShieldAlert className="w-3 h-3 text-red-400" />
-                            Seguridad Estricta
-                          </span>
-                        )}
-                        {sess.securityMode === 'warnings' && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
-                            <Shield className="w-3 h-3 text-amber-400" />
-                            Seguridad: 3 Intentos
-                          </span>
-                        )}
-                        {(!sess.securityMode || sess.securityMode === 'audit') && (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 bg-neutral-900/80 border border-neutral-700/60 px-2 py-0.5 rounded-md">
-                            <Shield className="w-3 h-3 text-neutral-500" />
-                            Seguridad: Auditoría
-                          </span>
-                        )}
-                        <span>•</span>
-                        <span>Dojos convocados:</span>
-                        <div className="flex flex-wrap gap-1.5 items-center">
-                          {(sess.assignedDojos || []).map((d, dIdx) => (
-                            <span key={dIdx} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-900/80 text-neutral-300 rounded-lg border border-neutral-700/60 text-[11px]">
-                              <img
-                                src={d.logo || '/images/dojos/escudo.jpg'}
-                                alt={`Escudo ${d.name}`}
-                                className="w-3.5 h-3.5 rounded-full object-contain bg-neutral-950 shrink-0"
-                                onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
-                              />
-                              <span className="font-medium">{d.name}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Botones de acción rápida */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenLiveModal(sess)}
-                        className="flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-all shadow cursor-pointer active:scale-95"
-                        title="Monitorear aspirantes rindiendo examen en vivo"
-                      >
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                        <Radio className="w-3.5 h-3.5" />
-                        <span>Sala en Vivo</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenInbox(sess)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-xs font-semibold transition-colors shadow cursor-pointer"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-blue-400" />
-                        <span>Bandeja de Entregas ({sess.totalSubmissions || 0})</span>
-                      </button>
-
-                      <button
-                        onClick={(e) => handleDeleteSession(sess.id || sess._id, e)}
-                        className="p-2.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20 cursor-pointer"
-                        title="Eliminar convocatoria"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Caja de Enlace Copiable para el Estudiante */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-neutral-900/80 border border-neutral-700/60 rounded-2xl">
-                    <div className="flex items-center gap-2 text-xs text-neutral-400 w-full sm:w-auto truncate">
-                      <ExternalLink className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                      <span className="text-neutral-500 shrink-0">Link para alumnos:</span>
-                      <span className="font-mono text-white select-all truncate">{linkUrl}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      {sess.pendingSubmissions > 0 && (
-                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium shrink-0 animate-pulse">
-                          {sess.pendingSubmissions} por calificar
-                        </span>
-                      )}
-
-                      <button
-                        onClick={(e) => handleCopyLink(sess, e)}
-                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                          isCopied
-                            ? 'bg-emerald-600 text-white shadow-md'
-                            : 'bg-blue-600 hover:bg-blue-500 text-white shadow'
-                        }`}
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check className="w-3.5 h-3.5" />
-                            <span>¡Link Copiado!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Copiar Link</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {sessions.length === 0 && (
-              <div className="p-12 text-center border border-dashed border-neutral-800 rounded-3xl bg-neutral-900/30 space-y-4">
-                <Award className="w-12 h-12 text-neutral-600 mx-auto" />
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-white">No hay convocatorias activas</h3>
-                  <p className="text-neutral-400 text-xs max-w-sm mx-auto">
-                    Crea una examinación seleccionando qué Dojos calificarás y qué examen escrito deberán resolver los alumnos.
-                  </p>
-                </div>
-                <button
-                  onClick={handleOpenCreateModal}
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
-                >
-                  + Crear Primera Convocatoria
-                </button>
+          {/* Listado de Convocatorias en Formato Tabla */}
+          {sessions.length === 0 ? (
+            <div className="p-12 text-center border border-dashed border-neutral-800 rounded-3xl bg-neutral-900/30 space-y-4">
+              <Award className="w-12 h-12 text-neutral-600 mx-auto" />
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-white">No hay convocatorias activas</h3>
+                <p className="text-neutral-400 text-xs max-w-sm mx-auto">
+                  Crea una examinación seleccionando qué Dojos calificarás y qué examen escrito deberán resolver los alumnos.
+                </p>
               </div>
-            )}
-          </div>
+              <button
+                onClick={handleOpenCreateModal}
+                className="px-5 py-2.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                + Crear Primera Convocatoria
+              </button>
+            </div>
+          ) : (
+            <div className="bg-neutral-800/80 border border-neutral-700/80 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-neutral-700 bg-neutral-900/90 text-[11px] uppercase tracking-wider font-mono text-neutral-400">
+                      <th className="py-4 px-5 font-bold">Convocatoria & Examen</th>
+                      <th className="py-4 px-4 font-bold">Dojos Convocados</th>
+                      <th className="py-4 px-4 font-bold">Configuración & Seguridad</th>
+                      <th className="py-4 px-4 font-bold text-center">Estado</th>
+                      <th className="py-4 px-4 font-bold text-center">Entregas</th>
+                      <th className="py-4 px-5 font-bold text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-700/60 text-xs text-neutral-200">
+                    {sessions.map((sess) => {
+                      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                      const linkUrl = `${origin}/examinations/take/${sess.accessCode}`;
+                      const isCopied = copiedSessionId === (sess.id || sess._id);
+
+                      return (
+                        <tr 
+                          key={sess.id || sess._id}
+                          className="hover:bg-neutral-700/30 transition-colors group"
+                        >
+                          {/* Col 1: Convocatoria y Examen */}
+                          <td className="py-4 px-5 align-middle">
+                            <div className="space-y-1.5 max-w-xs sm:max-w-sm">
+                              <div className="font-bold text-sm sm:text-base text-white group-hover:text-blue-400 transition-colors">
+                                {sess.title}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="font-semibold text-[11px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded-md truncate max-w-[220px]" title={sess.writtenExamName}>
+                                  {sess.writtenExamName}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] font-mono text-neutral-400 select-all pt-0.5">
+                                <ExternalLink className="w-3 h-3 text-neutral-500 shrink-0" />
+                                <span className="truncate max-w-[200px]" title={linkUrl}>{linkUrl}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Col 2: Dojos Convocados */}
+                          <td className="py-4 px-4 align-middle">
+                            <div className="flex flex-wrap gap-1.5 items-center max-w-[220px]">
+                              {(sess.assignedDojos || []).length > 0 ? (
+                                (sess.assignedDojos || []).map((d, dIdx) => (
+                                  <span 
+                                    key={dIdx} 
+                                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-neutral-900/90 text-neutral-300 rounded-lg border border-neutral-700/60 text-[11px]"
+                                    title={d.name}
+                                  >
+                                    <img
+                                      src={d.logo || '/images/dojos/escudo.jpg'}
+                                      alt={`Escudo ${d.name}`}
+                                      className="w-3.5 h-3.5 rounded-full object-contain bg-neutral-950 shrink-0"
+                                      onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
+                                    />
+                                    <span className="font-medium truncate max-w-[120px]">{d.name}</span>
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-neutral-500 text-[11px] italic">Sin dojos asignados</span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Col 3: Configuración & Seguridad */}
+                          <td className="py-4 px-4 align-middle">
+                            <div className="flex flex-col gap-1.5 max-w-[210px]">
+                              {/* Seguridad */}
+                              {sess.securityMode === 'strict' && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md w-fit">
+                                  <ShieldAlert className="w-3 h-3 text-red-400 shrink-0" />
+                                  Seguridad Estricta
+                                </span>
+                              )}
+                              {sess.securityMode === 'warnings' && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md w-fit">
+                                  <Shield className="w-3 h-3 text-amber-400 shrink-0" />
+                                  Seguridad: 3 Intentos
+                                </span>
+                              )}
+                              {(!sess.securityMode || sess.securityMode === 'audit') && (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 bg-neutral-900/90 border border-neutral-700/60 px-2 py-0.5 rounded-md w-fit">
+                                  <Shield className="w-3 h-3 text-neutral-500 shrink-0" />
+                                  Seguridad: Auditoría
+                                </span>
+                              )}
+
+                              {/* Anti-Colusión */}
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md w-fit" title="Barajado individual de preguntas y opciones activo">
+                                <Shuffle className="w-3 h-3 text-purple-400 shrink-0" />
+                                Anti-Colusión Activo
+                              </span>
+
+                              {/* Límite de Tiempo */}
+                              {sess.timeLimitMinutes > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md w-fit">
+                                  <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                                  {sess.timeLimitMinutes} min límite
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 bg-neutral-900/80 border border-neutral-700/60 px-2 py-0.5 rounded-md w-fit">
+                                  <Clock className="w-3 h-3 text-neutral-500 shrink-0" />
+                                  Sin límite
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Col 4: Estado */}
+                          <td className="py-4 px-4 align-middle text-center">
+                            <button
+                              onClick={(e) => handleToggleStatus(sess.id || sess._id, e)}
+                              className={`px-3 py-1 rounded-full text-xs font-mono font-semibold uppercase transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer ${
+                                sess.status === 'active'
+                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
+                                  : 'bg-neutral-700/40 text-neutral-400 border border-neutral-600 hover:bg-neutral-700'
+                              }`}
+                              title="Clic para alternar Activa / Cerrada"
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${sess.status === 'active' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-500'}`}></span>
+                              <span>{sess.status === 'active' ? 'Activa' : 'Cerrada'}</span>
+                            </button>
+                          </td>
+
+                          {/* Col 5: Entregas */}
+                          <td className="py-4 px-4 align-middle text-center">
+                            <div className="inline-flex flex-col items-center gap-1">
+                              <span className="px-2.5 py-1 rounded-lg bg-neutral-900/90 border border-neutral-700/60 text-white font-mono font-bold text-xs">
+                                {sess.totalSubmissions || 0}
+                              </span>
+                              {sess.pendingSubmissions > 0 ? (
+                                <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-semibold animate-pulse">
+                                  {sess.pendingSubmissions} pend.
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-neutral-500 font-mono">
+                                  Al día
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Col 6: Acciones */}
+                          <td className="py-4 px-5 align-middle text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Copiar Link */}
+                              <button
+                                onClick={(e) => handleCopyLink(sess, e)}
+                                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                                  isCopied
+                                    ? 'bg-emerald-600 text-white shadow-md'
+                                    : 'bg-neutral-700 hover:bg-neutral-600 text-white border border-neutral-600'
+                                }`}
+                                title="Copiar enlace para los estudiantes"
+                              >
+                                {isCopied ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-white" />
+                                    <span className="hidden lg:inline text-[11px]">¡Copiado!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3.5 h-3.5 text-blue-400" />
+                                    <span className="hidden lg:inline text-[11px]">Link</span>
+                                  </>
+                                )}
+                              </button>
+
+                              {/* Sala en Vivo */}
+                              <button
+                                onClick={() => handleOpenLiveModal(sess)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-all shadow cursor-pointer active:scale-95 shrink-0"
+                                title="Monitorear aspirantes rindiendo examen en tiempo real"
+                              >
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                <Radio className="w-3.5 h-3.5" />
+                                <span className="hidden xl:inline text-[11px]">En Vivo</span>
+                              </button>
+
+                              {/* Bandeja */}
+                              <button
+                                onClick={() => handleOpenInbox(sess)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-semibold transition-colors shadow cursor-pointer shrink-0"
+                                title="Abrir bandeja de exámenes entregados"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-blue-400" />
+                                <span className="hidden lg:inline text-[11px]">Bandeja</span>
+                              </button>
+
+                              {/* Eliminar */}
+                              <button
+                                onClick={(e) => handleDeleteSession(sess.id || sess._id, e)}
+                                className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20 cursor-pointer shrink-0"
+                                title="Eliminar convocatoria"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Accesos a Módulos Base (Constructor y Técnico) */}
           <div className="pt-6 border-t border-neutral-800 space-y-4">

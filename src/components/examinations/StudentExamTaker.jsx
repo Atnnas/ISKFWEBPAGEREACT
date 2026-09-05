@@ -1232,24 +1232,6 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                   {session.timeLimitMinutes} min límite
                 </span>
               )}
-              {securityMode === 'strict' && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
-                  Seguridad Estricta
-                </span>
-              )}
-              {securityMode === 'warnings' && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-amber-600" />
-                  Seguridad: 3 Intentos
-                </span>
-              )}
-              {securityMode === 'audit' && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-gray-500" />
-                  Seguridad: Auditoría
-                </span>
-              )}
               {targetRank && (
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 font-mono">
                   <Award className="w-3.5 h-3.5 text-emerald-600" />
@@ -1258,10 +1240,6 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
               )}
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#2D2E83] border border-blue-200">
                 {totalQuestions} Preguntas
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200 flex items-center gap-1.5 shadow-sm" title="Orden aleatorio individual de preguntas y opciones para evitar colusión">
-                <Shuffle className="w-3.5 h-3.5 text-purple-600" />
-                Anti-Colusión Activo
               </span>
             </div>
           </div>
