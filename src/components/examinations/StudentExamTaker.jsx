@@ -75,6 +75,73 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   // Preguntas barajadas aleatoriamente (Anti-Colusión)
   const [shuffledQuestions, setShuffledQuestions] = useState([]);
 
+  // Lightbox de imagen
+  const [lightboxImage, setLightboxImage] = useState(null);
+
+  // Estados de envío y feedback
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
+  const [isAutoSubmittedSuccess, setIsAutoSubmittedSuccess] = useState(false);
+  const [isClosedBySecuritySuccess, setIsClosedBySecuritySuccess] = useState(false);
+
+  // Estados de Seguridad
+  const [_securityViolationsCount, setSecurityViolationsCount] = useState(0);
+  const [isSecurityLocked, setIsSecurityLocked] = useState(false);
+  const [requiresFullscreenPrompt, setRequiresFullscreenPrompt] = useState(securityMode === 'strict');
+  const [securityWarningModal, setSecurityWarningModal] = useState({
+    isOpen: false,
+    attempt: 0,
+    title: '',
+    message: ''
+  });
+
+  // Detección de Modo Incógnito / Privado
+  const [isIncognitoDetected, setIsIncognitoDetected] = useState(false);
+  const [detectedBrowser, setDetectedBrowser] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyExamLink = async () => {
+    try {
+      if (typeof window !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      }
+    } catch (err) {
+      console.warn("Could not copy link:", err);
+    }
+  };
+
+  const securityViolationsRef = useRef(0);
+  const securityLogsRef = useRef([]);
+  const isAwayRef = useRef(false);
+  const awayTimestampRef = useRef(null);
+  const blurDebounceRef = useRef(null);
+  const deviceTokenRef = useRef(initialDeviceToken || '');
+  const fingerprintRef = useRef(initialFingerprint || '');
+
+  // Temporizador de tiempo límite
+  const [timeLeft, setTimeLeft] = useState(null); // en segundos
+  const startTimeRef = useRef(null);
+  const isAutoSubmittingRef = useRef(false);
+
+  // Modales en página
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '¿Confirmas el envío?',
+    message: '',
+    confirmText: 'Enviar Examen',
+    onConfirm: () => {}
+  });
+
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: 'Atención',
+    message: '',
+    isError: false
+  });
+
   // Barajado aleatorio de preguntas y opciones con persistencia por sesión en localStorage
   useEffect(() => {
     if (!exam?.questions || exam.questions.length === 0) return;
@@ -174,73 +241,6 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       console.warn("Error auto-guardando borrador de examen:", err);
     }
   }, [answers, studentName, studentDojo, session, isSubmitted, isAlreadySubmitted]);
-
-  // Lightbox de imagen
-  const [lightboxImage, setLightboxImage] = useState(null);
-
-  // Estados de envío y feedback
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
-  const [isAutoSubmittedSuccess, setIsAutoSubmittedSuccess] = useState(false);
-  const [isClosedBySecuritySuccess, setIsClosedBySecuritySuccess] = useState(false);
-
-  // Estados de Seguridad
-  const [_securityViolationsCount, setSecurityViolationsCount] = useState(0);
-  const [isSecurityLocked, setIsSecurityLocked] = useState(false);
-  const [requiresFullscreenPrompt, setRequiresFullscreenPrompt] = useState(securityMode === 'strict');
-  const [securityWarningModal, setSecurityWarningModal] = useState({
-    isOpen: false,
-    attempt: 0,
-    title: '',
-    message: ''
-  });
-
-  // Detección de Modo Incógnito / Privado
-  const [isIncognitoDetected, setIsIncognitoDetected] = useState(false);
-  const [detectedBrowser, setDetectedBrowser] = useState('');
-  const [copiedLink, setCopiedLink] = useState(false);
-
-  const handleCopyExamLink = async () => {
-    try {
-      if (typeof window !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(window.location.href);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2500);
-      }
-    } catch (err) {
-      console.warn("Could not copy link:", err);
-    }
-  };
-
-  const securityViolationsRef = useRef(0);
-  const securityLogsRef = useRef([]);
-  const isAwayRef = useRef(false);
-  const awayTimestampRef = useRef(null);
-  const blurDebounceRef = useRef(null);
-  const deviceTokenRef = useRef(initialDeviceToken || '');
-  const fingerprintRef = useRef(initialFingerprint || '');
-
-  // Temporizador de tiempo límite
-  const [timeLeft, setTimeLeft] = useState(null); // en segundos
-  const startTimeRef = useRef(null);
-  const isAutoSubmittingRef = useRef(false);
-
-  // Modales en página
-  const [confirmModal, setConfirmModal] = useState({
-    isOpen: false,
-    title: '¿Confirmas el envío?',
-    message: '',
-    confirmText: 'Enviar Examen',
-    onConfirm: () => {}
-  });
-
-  const [alertModal, setAlertModal] = useState({
-    isOpen: false,
-    title: 'Atención',
-    message: '',
-    isError: false
-  });
 
   const showAlert = (message, title = 'Atención', isError = true) => {
     setAlertModal({
