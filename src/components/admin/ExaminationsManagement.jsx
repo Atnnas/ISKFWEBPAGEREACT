@@ -546,10 +546,16 @@ export default function ExaminationsManagement({
                         )}
                         <span>•</span>
                         <span>Dojos convocados:</span>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1.5 items-center">
                           {(sess.assignedDojos || []).map((d, dIdx) => (
-                            <span key={dIdx} className="px-2 py-0.5 bg-neutral-900/80 text-neutral-300 rounded-md border border-neutral-700/60 text-[11px]">
-                              {d.name}
+                            <span key={dIdx} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-neutral-900/80 text-neutral-300 rounded-lg border border-neutral-700/60 text-[11px]">
+                              <img
+                                src={d.logo || '/images/dojos/escudo.jpg'}
+                                alt={`Escudo ${d.name}`}
+                                className="w-3.5 h-3.5 rounded-full object-contain bg-neutral-950 shrink-0"
+                                onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
+                              />
+                              <span className="font-medium">{d.name}</span>
                             </span>
                           ))}
                         </div>
@@ -1179,7 +1185,7 @@ export default function ExaminationsManagement({
                   </button>
                 </div>
 
-                <div className="max-h-48 overflow-y-auto border border-neutral-700/80 rounded-2xl p-3 bg-neutral-950/60 space-y-2 divide-y divide-neutral-800">
+                <div className="max-h-60 overflow-y-auto border border-neutral-700/80 rounded-2xl p-2.5 bg-neutral-950/60 space-y-1.5">
                   {dojos.map((dojo) => {
                     const dojoId = dojo.id || dojo._id;
                     const isChecked = selectedDojoIds.includes(dojoId);
@@ -1187,7 +1193,11 @@ export default function ExaminationsManagement({
                     return (
                       <label
                         key={dojoId}
-                        className="flex items-center gap-3 pt-2 first:pt-0 cursor-pointer text-xs text-neutral-200 hover:text-white"
+                        className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
+                          isChecked
+                            ? 'bg-blue-600/15 border border-blue-500/30'
+                            : 'hover:bg-neutral-900/70 border border-transparent'
+                        }`}
                       >
                         <input
                           type="checkbox"
@@ -1199,11 +1209,24 @@ export default function ExaminationsManagement({
                               setSelectedDojoIds([...selectedDojoIds, dojoId]);
                             }
                           }}
-                          className="w-4 h-4 rounded border-neutral-700 text-blue-600 focus:ring-0 bg-neutral-800"
+                          className="w-4 h-4 rounded border-neutral-700 text-blue-600 focus:ring-0 bg-neutral-800 shrink-0"
                         />
-                        <div className="flex-1">
-                          <span className="font-semibold text-white block">{dojo.name}</span>
-                          <span className="text-[11px] text-neutral-500">{dojo.province || 'Costa Rica'} • Sensei: {dojo.sensei || 'ISKF'}</span>
+                        {/* Escudo del Dojo */}
+                        <div className="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-700/80 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
+                          <img
+                            src={dojo.logo || '/images/dojos/escudo.jpg'}
+                            alt={`Escudo ${dojo.name}`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-semibold text-white block text-xs truncate">
+                            {dojo.name}
+                          </span>
+                          <span className="text-[11px] text-neutral-400 block truncate">
+                            {dojo.province || 'Costa Rica'} • Sensei: {dojo.sensei || 'ISKF'}
+                          </span>
                         </div>
                       </label>
                     );

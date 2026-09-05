@@ -560,7 +560,16 @@ export async function getDojosForExaminations() {
 export async function getExaminationSessions() {
   try {
     await dbConnect();
-    const sessions = await ExaminationSession.find({}).sort({ createdAt: -1 }).lean();
+    const [sessions, allDojos] = await Promise.all([
+      ExaminationSession.find({}).sort({ createdAt: -1 }).lean(),
+      Dojo.find({}).lean()
+    ]);
+
+    const dojoMap = {};
+    allDojos.forEach(d => {
+      if (d.name) dojoMap[d.name.toLowerCase().trim()] = d.logo || '/images/dojos/escudo.jpg';
+      if (d.idName) dojoMap[d.idName.toLowerCase().trim()] = d.logo || '/images/dojos/escudo.jpg';
+    });
 
     const results = await Promise.all(sessions.map(async (sess) => {
       const sessionId = sess._id.toString();
@@ -568,13 +577,19 @@ export async function getExaminationSessions() {
       const pendingSubmissions = await ExamSubmission.countDocuments({ sessionId, status: 'submitted' });
       const gradedSubmissions = await ExamSubmission.countDocuments({ sessionId, status: 'graded' });
 
+      const enrichedAssignedDojos = (sess.assignedDojos || []).map(d => ({
+        id: d.id,
+        name: d.name,
+        logo: d.logo || dojoMap[d.name?.toLowerCase()?.trim()] || dojoMap[d.id?.toLowerCase()?.trim()] || '/images/dojos/escudo.jpg'
+      }));
+
       return {
         id: sessionId,
         _id: sessionId,
         title: sess.title,
         writtenExamId: sess.writtenExamId?.toString(),
         writtenExamName: sess.writtenExamName,
-        assignedDojos: sess.assignedDojos || [],
+        assignedDojos: enrichedAssignedDojos,
         accessCode: sess.accessCode,
         status: sess.status || 'active',
         timeLimitMinutes: sess.timeLimitMinutes || 0,
