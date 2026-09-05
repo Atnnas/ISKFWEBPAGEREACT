@@ -36,6 +36,24 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const [studentDojo, setStudentDojo] = useState(
     session?.assignedDojos?.length === 1 ? session.assignedDojos[0].name : ''
   );
+  const [isDojoDropdownOpen, setIsDojoDropdownOpen] = useState(false);
+  const dojoDropdownRef = useRef(null);
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dojoDropdownRef.current && !dojoDropdownRef.current.contains(e.target)) {
+        setIsDojoDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedDojoObj = (session?.assignedDojos || []).find(
+    d => d.name === studentDojo || d.id === studentDojo
+  );
+
   // Grado / Kyu predefinido desde la generación del examen o convocatoria
   const targetRank = exam?.targetRanks || session?.targetRanks || exam?.name || session?.writtenExamName || '';
 
@@ -1005,28 +1023,78 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                 />
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" ref={dojoDropdownRef}>
                 <label className="block text-xs uppercase font-semibold text-neutral-400">
                   Dojo al que Pertenece *
                 </label>
                 {session?.assignedDojos && session.assignedDojos.length > 0 ? (
                   <div className="relative">
-                    <select
-                      required
-                      value={studentDojo}
-                      onChange={(e) => setStudentDojo(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500 appearance-none cursor-pointer pr-10 transition-colors"
+                    {/* Botón Selector Personalizado con Escudo y Nombre */}
+                    <button
+                      type="button"
+                      onClick={() => setIsDojoDropdownOpen(prev => !prev)}
+                      className="w-full px-3.5 py-2.5 bg-neutral-800 border border-neutral-700 hover:border-neutral-600 rounded-xl text-left flex items-center justify-between gap-2.5 transition-all focus:outline-none focus:border-blue-500 shadow-sm"
                     >
-                      <option value="">Selecciona tu Dojo...</option>
-                      {session.assignedDojos.map((dojo, dIdx) => (
-                        <option key={dIdx} value={dojo.name} className="bg-neutral-800 text-white">
-                          {dojo.name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-neutral-400">
-                      <ChevronDown className="w-4 h-4" />
-                    </div>
+                      {selectedDojoObj ? (
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-6 h-6 rounded-full bg-neutral-900 border border-neutral-700/80 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-inner">
+                            <img
+                              src={selectedDojoObj.logo || '/images/dojos/escudo.jpg'}
+                              alt={`Escudo ${selectedDojoObj.name}`}
+                              className="w-full h-full object-contain"
+                              onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
+                            />
+                          </div>
+                          <span className="text-sm font-semibold text-white truncate">
+                            {selectedDojoObj.name}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-neutral-400">
+                          Selecciona tu Dojo...
+                        </span>
+                      )}
+                      <ChevronDown className={`w-4 h-4 text-neutral-400 shrink-0 transition-transform duration-200 ${isDojoDropdownOpen ? 'rotate-180 text-blue-400' : ''}`} />
+                    </button>
+
+                    {/* Menú Desplegable con Escudos y Nombres */}
+                    {isDojoDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl py-1.5 max-h-64 overflow-y-auto divide-y divide-neutral-800/50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+                        {session.assignedDojos.map((dojo, dIdx) => {
+                          const isSelected = studentDojo === dojo.name;
+                          return (
+                            <button
+                              key={dIdx}
+                              type="button"
+                              onClick={() => {
+                                setStudentDojo(dojo.name);
+                                setIsDojoDropdownOpen(false);
+                              }}
+                              className={`w-full px-3.5 py-2.5 flex items-center gap-3 text-left transition-colors ${
+                                isSelected
+                                  ? 'bg-blue-600/15 text-blue-300'
+                                  : 'hover:bg-neutral-800/80 text-neutral-200'
+                              }`}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-neutral-950 border border-neutral-700/80 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow">
+                                <img
+                                  src={dojo.logo || '/images/dojos/escudo.jpg'}
+                                  alt={`Escudo ${dojo.name}`}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium flex-1 truncate">
+                                {dojo.name}
+                              </span>
+                              {isSelected && (
+                                <Check className="w-4 h-4 text-blue-400 shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <input
@@ -1040,6 +1108,31 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                 )}
               </div>
             </div>
+
+            {/* Vista Previa Destacada: Escudo Oficial y Nombre del Dojo Seleccionado */}
+            {selectedDojoObj && (
+              <div className="pt-2 border-t border-neutral-800/80">
+                <div className="p-3.5 bg-neutral-950/80 border border-neutral-800 rounded-2xl flex items-center gap-3.5 shadow-inner animate-in fade-in duration-200">
+                  <div className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-700/80 p-1 flex items-center justify-center shrink-0 shadow overflow-hidden">
+                    <img
+                      src={selectedDojoObj.logo || '/images/dojos/escudo.jpg'}
+                      alt={`Escudo ${selectedDojoObj.name}`}
+                      className="w-full h-full object-contain"
+                      onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-neutral-400 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Dojo Seleccionado
+                    </span>
+                    <p className="text-sm font-bold text-white truncate">
+                      {selectedDojoObj.name}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Preguntas */}

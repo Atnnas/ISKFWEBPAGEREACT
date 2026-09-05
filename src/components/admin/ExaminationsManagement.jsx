@@ -157,7 +157,11 @@ export default function ExaminationsManagement({
 
     const assignedDojos = dojos
       .filter(d => selectedDojoIds.includes(d.id || d._id))
-      .map(d => ({ id: d.id || d._id, name: d.name }));
+      .map(d => ({ 
+        id: d.id || d._id, 
+        name: d.name,
+        logo: d.logo || '/images/dojos/escudo.jpg'
+      }));
 
     setIsCreating(true);
     try {

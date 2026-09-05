@@ -545,7 +545,8 @@ export async function getDojosForExaminations() {
       _id: d._id.toString(),
       name: d.name,
       province: d.province || '',
-      sensei: d.sensei || ''
+      sensei: d.sensei || '',
+      logo: d.logo || '/images/dojos/escudo.jpg'
     }));
   } catch (err) {
     console.error("Error fetching dojos for examinations:", err);
@@ -840,6 +841,27 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
       topTerms: q.topTerms || []
     }));
 
+    // Enriquecer o respaldar logos de los Dojos asignados
+    const dojoNamesOrIds = (session.assignedDojos || []).map(d => d.name || d.id);
+    const dbDojos = await Dojo.find({
+      $or: [
+        { name: { $in: dojoNamesOrIds } },
+        { idName: { $in: dojoNamesOrIds } }
+      ]
+    }).lean();
+
+    const dojoMap = {};
+    dbDojos.forEach(d => {
+      if (d.name) dojoMap[d.name.toLowerCase().trim()] = d.logo || '/images/dojos/escudo.jpg';
+      if (d.idName) dojoMap[d.idName.toLowerCase().trim()] = d.logo || '/images/dojos/escudo.jpg';
+    });
+
+    const enrichedAssignedDojos = (session.assignedDojos || []).map(d => ({
+      id: d.id,
+      name: d.name,
+      logo: d.logo || dojoMap[d.name?.toLowerCase()?.trim()] || dojoMap[d.id?.toLowerCase()?.trim()] || '/images/dojos/escudo.jpg'
+    }));
+
     return {
       success: true,
       session: {
@@ -848,7 +870,7 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
         title: session.title,
         writtenExamName: session.writtenExamName || writtenExam.name,
         targetRanks: writtenExam.targetRanks || '',
-        assignedDojos: session.assignedDojos || [],
+        assignedDojos: enrichedAssignedDojos,
         accessCode: session.accessCode,
         timeLimitMinutes: session.timeLimitMinutes || 0,
         securityMode: session.securityMode || 'audit',

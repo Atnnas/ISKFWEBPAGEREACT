@@ -18,7 +18,8 @@ const ExaminationSessionSchema = new mongoose.Schema({
   },
   assignedDojos: [{
     id: { type: String, trim: true },
-    name: { type: String, trim: true }
+    name: { type: String, trim: true },
+    logo: { type: String, trim: true, default: '' }
   }],
   accessCode: {
     type: String,
