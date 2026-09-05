@@ -20,7 +20,8 @@ import {
 import { 
   submitStudentExam,
   registerExamDeviceSession,
-  reportSecurityViolationAction
+  reportSecurityViolationAction,
+  pingExamDeviceHeartbeat
 } from '../../lib/actions/examinations';
 import { getHardwareFingerprint } from '../../lib/deviceFingerprint';
 import { detectIncognito } from 'detectincognitojs';
@@ -374,11 +375,15 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         localStorage.setItem('iskf_device_fp', fp);
       }
 
-      // Registrar sesión en MongoDB con Huella de Hardware + Token
+      // Registrar sesión en MongoDB con Huella de Hardware + Token + Datos de Aspirante
       registerExamDeviceSession({
         sessionId: sessId,
         deviceToken: token,
-        fingerprint: fp || fingerprintRef.current
+        fingerprint: fp || fingerprintRef.current,
+        studentName,
+        studentDojo,
+        studentRank: targetRank,
+        totalQuestionsCount: (exam?.questions || []).length
       }).then(res => {
         if (res.success) {
           if (res.status === 'locked_by_security') {
@@ -457,6 +462,49 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
     return () => clearInterval(intervalId);
   }, [timeLeft, session, isSubmitted, isAlreadySubmitted, isSecurityLocked, isIncognitoDetected]);
+
+  // Heartbeat periódico hacia la mesa examinadora (Live Proctoring)
+  useEffect(() => {
+    if (isSubmitted || isAlreadySubmitted || isIncognitoDetected) return;
+
+    const sendHeartbeat = () => {
+      const sessId = session?.id || session?._id;
+      const token = deviceTokenRef.current;
+      if (!sessId || !token) return;
+
+      const answeredCount = Object.keys(answers).filter(qId => {
+        const a = answers[qId];
+        if (!a) return false;
+        if (typeof a.selectedOptionIndex === 'number') return true;
+        if (a.writtenAnswer && a.writtenAnswer.trim()) return true;
+        if (a.matchingMatches && a.matchingMatches.length > 0) return true;
+        return false;
+      }).length;
+
+      pingExamDeviceHeartbeat({
+        sessionId: sessId,
+        deviceToken: token,
+        studentName,
+        studentDojo,
+        studentRank: targetRank,
+        answeredQuestionsCount: answeredCount,
+        totalQuestionsCount: (exam?.questions || []).length
+      }).then(res => {
+        if (res?.success) {
+          if (res.status === 'locked_by_security') {
+            setIsSecurityLocked(true);
+          } else if (res.status === 'active' && isSecurityLocked) {
+            // El Sensei ha desbloqueado al alumno remotamente desde la Sala en Vivo
+            setIsSecurityLocked(false);
+            localStorage.removeItem(`iskf_exam_security_locked_${sessId}`);
+          }
+        }
+      }).catch(err => void err);
+    };
+
+    const interval = setInterval(sendHeartbeat, 15000);
+    return () => clearInterval(interval);
+  }, [studentName, studentDojo, answers, isSubmitted, isAlreadySubmitted, isSecurityLocked, isIncognitoDetected, targetRank, exam?.questions, session]);
 
   // Monitoreo de Salida y Reingreso ("Salir y Volver a Entrar" = 1 Falta)
   useEffect(() => {

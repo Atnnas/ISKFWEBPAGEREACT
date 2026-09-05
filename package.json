@@ -17,6 +17,8 @@
     "detectincognitojs": "^1.9.0",
     "dotenv": "^17.4.2",
     "framer-motion": "^12.26.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.563.0",
     "mongoose": "^9.6.2",
     "next": "^16.2.6",

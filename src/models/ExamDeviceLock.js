@@ -53,6 +53,33 @@ const ExamDeviceLockSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: ''
+  },
+  studentName: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  studentDojo: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  studentRank: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  answeredQuestionsCount: {
+    type: Number,
+    default: 0
+  },
+  totalQuestionsCount: {
+    type: Number,
+    default: 0
+  },
+  lastPingAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true,

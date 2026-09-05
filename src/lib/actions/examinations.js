@@ -915,7 +915,7 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
 export async function registerExamDeviceSession(data) {
   try {
     await dbConnect();
-    let { sessionId, deviceToken, fingerprint, ip, userAgent } = data || {};
+    let { sessionId, deviceToken, fingerprint, ip, userAgent, studentName, studentDojo, studentRank, totalQuestionsCount } = data || {};
 
     // Extracción forzada de headers reales en el servidor si no fueron provistos
     if (!ip || !userAgent) {
@@ -952,7 +952,12 @@ export async function registerExamDeviceSession(data) {
         ip: ip || '',
         userAgent: userAgent || '',
         status: 'active',
-        startedAt: new Date()
+        startedAt: new Date(),
+        studentName: studentName || '',
+        studentDojo: studentDojo || '',
+        studentRank: studentRank || '',
+        totalQuestionsCount: totalQuestionsCount || 0,
+        lastPingAt: new Date()
       });
       await record.save();
     } else {
@@ -969,6 +974,24 @@ export async function registerExamDeviceSession(data) {
         record.userAgent = userAgent;
         needsSave = true;
       }
+      if (studentName && record.studentName !== studentName) {
+        record.studentName = studentName;
+        needsSave = true;
+      }
+      if (studentDojo && record.studentDojo !== studentDojo) {
+        record.studentDojo = studentDojo;
+        needsSave = true;
+      }
+      if (studentRank && record.studentRank !== studentRank) {
+        record.studentRank = studentRank;
+        needsSave = true;
+      }
+      if (totalQuestionsCount && record.totalQuestionsCount !== totalQuestionsCount) {
+        record.totalQuestionsCount = totalQuestionsCount;
+        needsSave = true;
+      }
+      record.lastPingAt = new Date();
+      needsSave = true;
       if (needsSave) {
         await record.save();
       }
@@ -989,6 +1012,176 @@ export async function registerExamDeviceSession(data) {
     };
   } catch (err) {
     console.error("Error registering exam device session:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Emite un latido (heartbeat) periódico desde el dispositivo del aspirante.
+ * Actualiza en tiempo real el nombre, dojo, preguntas respondidas y lastPingAt.
+ */
+export async function pingExamDeviceHeartbeat(data) {
+  try {
+    await dbConnect();
+    const { 
+      sessionId, 
+      deviceToken, 
+      studentName, 
+      studentDojo, 
+      studentRank, 
+      answeredQuestionsCount, 
+      totalQuestionsCount 
+    } = data || {};
+
+    if (!sessionId || !deviceToken) {
+      return { success: false, error: "Parámetros incompletos." };
+    }
+
+    const updateFields = {
+      lastPingAt: new Date()
+    };
+    if (studentName) updateFields.studentName = studentName.trim();
+    if (studentDojo) updateFields.studentDojo = studentDojo.trim();
+    if (studentRank) updateFields.studentRank = studentRank.trim();
+    if (typeof answeredQuestionsCount === 'number') updateFields.answeredQuestionsCount = answeredQuestionsCount;
+    if (typeof totalQuestionsCount === 'number') updateFields.totalQuestionsCount = totalQuestionsCount;
+
+    const record = await ExamDeviceLock.findOneAndUpdate(
+      { sessionId, deviceToken },
+      { $set: updateFields },
+      { new: true }
+    ).lean();
+
+    return { 
+      success: true, 
+      status: record?.status || 'active',
+      securityViolationsCount: record?.securityViolationsCount || 0
+    };
+  } catch (err) {
+    console.error("Error updating exam device heartbeat:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Obtiene los datos en tiempo real de la sala de examen (Live Proctoring).
+ * Combina dispositivos activos (ExamDeviceLock) y entregas finalizadas (ExamSubmission).
+ */
+export async function getLiveProctoringData(sessionId) {
+  try {
+    await dbConnect();
+
+    const session = await ExaminationSession.findById(sessionId).lean();
+    if (!session) {
+      return { success: false, error: "Convocatoria no encontrada." };
+    }
+
+    const [deviceLocks, submissions] = await Promise.all([
+      ExamDeviceLock.find({ sessionId }).sort({ startedAt: -1 }).lean(),
+      ExamSubmission.find({ sessionId }).sort({ submittedAt: -1 }).lean()
+    ]);
+
+    const now = Date.now();
+    const timeLimitSec = (session.timeLimitMinutes || 0) * 60;
+
+    const candidates = deviceLocks.map(lock => {
+      const startedMs = lock.startedAt ? new Date(lock.startedAt).getTime() : now;
+      const elapsedSec = Math.floor((now - startedMs) / 1000);
+      let remainingSec = null;
+      if (timeLimitSec > 0) {
+        remainingSec = Math.max(0, timeLimitSec - elapsedSec);
+      }
+
+      const lastPingMs = lock.lastPingAt ? new Date(lock.lastPingAt).getTime() : startedMs;
+      const isOnline = (now - lastPingMs) < 60000; // Activo en el último minuto
+
+      // Verificar si ya entregó
+      const matchingSub = submissions.find(s => 
+        (lock.studentName && s.studentName && s.studentName.toLowerCase().trim() === lock.studentName.toLowerCase().trim()) ||
+        (s.sessionId?.toString() === lock.sessionId?.toString() && s.deviceToken && s.deviceToken === lock.deviceToken)
+      );
+
+      let computedStatus = lock.status; // 'active', 'locked_by_security', 'submitted', 'time_expired'
+      if (matchingSub || lock.status === 'submitted') {
+        computedStatus = 'submitted';
+      } else if (lock.status === 'locked_by_security') {
+        computedStatus = 'locked_by_security';
+      } else if (remainingSec === 0 && timeLimitSec > 0) {
+        computedStatus = 'time_expired';
+      } else if (!isOnline) {
+        computedStatus = 'idle'; // Desconectado o pestaña en background prolongado
+      } else {
+        computedStatus = 'in_progress';
+      }
+
+      return {
+        id: lock._id.toString(),
+        deviceToken: lock.deviceToken,
+        studentName: lock.studentName || matchingSub?.studentName || 'Aspirante en proceso',
+        studentDojo: lock.studentDojo || matchingSub?.studentDojo || 'Por definir',
+        studentRank: lock.studentRank || matchingSub?.studentRank || '',
+        status: computedStatus,
+        isOnline,
+        startedAt: lock.startedAt ? lock.startedAt.toISOString() : null,
+        lastPingAt: lock.lastPingAt ? lock.lastPingAt.toISOString() : null,
+        remainingSec,
+        securityViolationsCount: lock.securityViolationsCount || matchingSub?.securityViolationsCount || 0,
+        answeredQuestionsCount: matchingSub ? (matchingSub.answers?.length || 0) : (lock.answeredQuestionsCount || 0),
+        totalQuestionsCount: lock.totalQuestionsCount || matchingSub?.answers?.length || 0,
+        submissionScore: matchingSub?.percentage ?? null,
+        submissionPassed: matchingSub?.passed ?? null,
+        isAutoSubmitted: Boolean(matchingSub?.isAutoSubmitted),
+        ip: lock.ip ? lock.ip.replace(/::ffff:/, '') : '',
+        reason: lock.reason || ''
+      };
+    });
+
+    // Resumen de métricas en vivo
+    const metrics = {
+      totalConnected: candidates.length,
+      inProgress: candidates.filter(c => c.status === 'in_progress').length,
+      submitted: candidates.filter(c => c.status === 'submitted').length,
+      securityAlerts: candidates.filter(c => c.securityViolationsCount > 0 && c.status !== 'locked_by_security').length,
+      lockedBySecurity: candidates.filter(c => c.status === 'locked_by_security').length,
+      idle: candidates.filter(c => c.status === 'idle').length
+    };
+
+    return {
+      success: true,
+      sessionTitle: session.title,
+      timeLimitMinutes: session.timeLimitMinutes || 0,
+      securityMode: session.securityMode || 'audit',
+      candidates,
+      metrics
+    };
+  } catch (err) {
+    console.error("Error fetching live proctoring data:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Permite al Sensei/Tribunal perdonar una salida accidental o desbloquear un dispositivo
+ * para que el estudiante pueda continuar si el tribunal lo autoriza.
+ */
+export async function resetStudentDeviceLock(sessionId, deviceToken, unlockReason = '') {
+  try {
+    await dbConnect();
+    const record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
+    if (!record) {
+      return { success: false, error: "Registro de dispositivo no encontrado." };
+    }
+
+    record.status = 'active';
+    record.lockedAt = null;
+    record.securityViolationsCount = 0;
+    record.reason = unlockReason ? `Desbloqueado por Sensei: ${unlockReason}` : 'Desbloqueado administrativamente';
+    record.lastPingAt = new Date();
+    await record.save();
+
+    return { success: true, message: "Aspirante desbloqueado con éxito." };
+  } catch (err) {
+    console.error("Error resetting student device lock:", err);
     return { success: false, error: err.message };
   }
 }

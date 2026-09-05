@@ -28,7 +28,13 @@ import {
   Table as TableIcon,
   Shield,
   ShieldAlert,
-  AlertTriangle
+  AlertTriangle,
+  Radio,
+  RefreshCw,
+  Play,
+  Pause,
+  Unlock,
+  Download
 } from 'lucide-react';
 import { 
   getExaminationSessions,
@@ -39,8 +45,12 @@ import {
   getWrittenExams,
   getExamSubmissions,
   gradeExamSubmission,
-  deleteExamSubmission
+  deleteExamSubmission,
+  getLiveProctoringData,
+  resetStudentDeviceLock
 } from '../../lib/actions/examinations';
+import { generateExaminationActaPDF } from '../../lib/pdf/examinationActaGenerator';
+import { generateSingleDiplomaPDF, generateBatchDiplomasPDF } from '../../lib/pdf/examinationDiplomaGenerator';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
@@ -119,6 +129,123 @@ export default function ExaminationsManagement({
 
   const showConfirm = ({ title, message, onConfirm, confirmText = 'Confirmar', isDanger = true }) => {
     setConfirmModal({ isOpen: true, title, message, onConfirm, confirmText, isDanger });
+  };
+
+  // --- ESTADO Y ACCIONES: SALA EN VIVO (LIVE PROCTORING) ---
+  const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
+  const [liveSession, setLiveSession] = useState(null);
+  const [liveData, setLiveData] = useState(null);
+  const [isLiveLoading, setIsLiveLoading] = useState(false);
+  const [isAutoRefreshLive, setIsAutoRefreshLive] = useState(true);
+
+  // Auto-refresco en vivo cada 5 segundos
+  useEffect(() => {
+    if (!isLiveModalOpen || !liveSession || !isAutoRefreshLive) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await getLiveProctoringData(liveSession.id || liveSession._id);
+        if (res?.success) {
+          setLiveData(res);
+        }
+      } catch (err) {
+        console.error("Error auto-refreshing live proctoring:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [isLiveModalOpen, liveSession, isAutoRefreshLive]);
+
+  const handleOpenLiveModal = async (sessionToWatch) => {
+    setLiveSession(sessionToWatch);
+    setIsLiveModalOpen(true);
+    setIsLiveLoading(true);
+    try {
+      const res = await getLiveProctoringData(sessionToWatch.id || sessionToWatch._id);
+      if (res.success) {
+        setLiveData(res);
+      } else {
+        showAlert("No se pudo cargar la sala en vivo: " + (res.error || ""), "Error", true);
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert("Error al conectar con la sala en vivo.", "Error", true);
+    } finally {
+      setIsLiveLoading(false);
+    }
+  };
+
+  const handleManualRefreshLive = async () => {
+    if (!liveSession) return;
+    setIsLiveLoading(true);
+    try {
+      const res = await getLiveProctoringData(liveSession.id || liveSession._id);
+      if (res.success) {
+        setLiveData(res);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLiveLoading(false);
+    }
+  };
+
+  const handleUnlockCandidate = (candidate) => {
+    if (!liveSession || !candidate) return;
+    showConfirm({
+      title: "Desbloquear Aspirante",
+      message: `¿Deseas desbloquear a "${candidate.studentName}" y reiniciar su contador de infracciones para que pueda continuar su examen?`,
+      confirmText: "Desbloquear",
+      isDanger: false,
+      onConfirm: async () => {
+        try {
+          const res = await resetStudentDeviceLock(liveSession.id || liveSession._id, candidate.deviceToken, "Autorizado por mesa examinadora");
+          if (res.success) {
+            showAlert(`Aspirante "${candidate.studentName}" desbloqueado con éxito. Su prueba se reanudará en su dispositivo.`, "Aspirante Desbloqueado", false);
+            handleManualRefreshLive();
+          } else {
+            showAlert("No se pudo desbloquear: " + (res.error || ""), "Error", true);
+          }
+        } catch (err) {
+          console.error(err);
+          showAlert("Error al comunicar el desbloqueo.", "Error", true);
+        }
+      }
+    });
+  };
+
+  // --- GENERACIÓN DE PDF: ACTA Y DIPLOMAS ---
+  const handleDownloadActa = () => {
+    if (!selectedSession) return;
+    try {
+      generateExaminationActaPDF(selectedSession, submissions);
+      showAlert("El Acta Oficial en PDF ha sido generada y descargada exitosamente.", "Acta Generada", false);
+    } catch (err) {
+      console.error("Error generating acta:", err);
+      showAlert("Ocurrió un error al generar el Acta Oficial: " + err.message, "Error al Generar PDF", true);
+    }
+  };
+
+  const handleDownloadSingleDiploma = (submission) => {
+    if (!submission || !selectedSession) return;
+    try {
+      generateSingleDiplomaPDF(submission, selectedSession);
+      showAlert(`El diploma para ${submission.studentName} ha sido generado y descargado exitosamente.`, "Diploma Generado", false);
+    } catch (err) {
+      console.error("Error generating diploma:", err);
+      showAlert("Ocurrió un error al generar el Diploma: " + err.message, "Error al Generar PDF", true);
+    }
+  };
+
+  const handleDownloadBatchDiplomas = () => {
+    if (!selectedSession) return;
+    try {
+      generateBatchDiplomasPDF(submissions, selectedSession);
+      showAlert("El lote completo de diplomas para todos los aspirantes aprobados ha sido generado y descargado.", "Diplomas en Lote", false);
+    } catch (err) {
+      console.error("Error generating batch diplomas:", err);
+      showAlert("No se pudo generar el lote de diplomas: " + err.message, "Atención", true);
+    }
   };
 
   // --- ACCIONES DE CONVOCATORIAS ---
@@ -566,8 +693,21 @@ export default function ExaminationsManagement({
                     {/* Botones de acción rápida */}
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => handleOpenLiveModal(sess)}
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-all shadow cursor-pointer active:scale-95"
+                        title="Monitorear aspirantes rindiendo examen en vivo"
+                      >
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <Radio className="w-3.5 h-3.5" />
+                        <span>Sala en Vivo</span>
+                      </button>
+
+                      <button
                         onClick={() => handleOpenInbox(sess)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-xs font-semibold transition-colors shadow"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-neutral-700 hover:bg-neutral-600 text-white rounded-xl text-xs font-semibold transition-colors shadow cursor-pointer"
                       >
                         <FileText className="w-3.5 h-3.5 text-blue-400" />
                         <span>Bandeja de Entregas ({sess.totalSubmissions || 0})</span>
@@ -575,7 +715,7 @@ export default function ExaminationsManagement({
 
                       <button
                         onClick={(e) => handleDeleteSession(sess.id || sess._id, e)}
-                        className="p-2.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20"
+                        className="p-2.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20 cursor-pointer"
                         title="Eliminar convocatoria"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -722,12 +862,45 @@ export default function ExaminationsManagement({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => handleOpenLiveModal(selectedSession)}
+                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                title="Abrir sala de monitoreo en tiempo real"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <Radio className="w-3.5 h-3.5" />
+                <span>Sala en Vivo</span>
+              </button>
+
+              <button
+                onClick={handleDownloadActa}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-semibold transition-all shadow cursor-pointer active:scale-95"
+                title="Descargar Acta Oficial en PDF para el Tribunal Examinador"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Acta Oficial (PDF)</span>
+              </button>
+
+              {submissions.some(s => s.passed === true) && (
+                <button
+                  onClick={handleDownloadBatchDiplomas}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-xl text-xs font-semibold transition-all shadow cursor-pointer active:scale-95"
+                  title="Descargar todos los diplomas de aspirantes aprobados en un solo PDF"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Diplomas en Lote ({submissions.filter(s => s.passed === true).length})</span>
+                </button>
+              )}
+
               <button
                 onClick={() => handleOpenInbox(selectedSession)}
-                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-semibold transition-colors"
+                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
               >
-                Refrescar Bandeja
+                Refrescar
               </button>
             </div>
           </div>
@@ -813,16 +986,25 @@ export default function ExaminationsManagement({
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {sub.passed === true && (
+                              <button
+                                onClick={() => handleDownloadSingleDiploma(sub)}
+                                title="Descargar Diploma Oficial en PDF"
+                                className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors border border-amber-500/30 cursor-pointer"
+                              >
+                                <Award className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleOpenGrading(sub)}
-                              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-all shadow active:scale-95"
+                              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-all shadow active:scale-95 cursor-pointer"
                             >
                               {isGraded ? 'Revisar / Editar' : 'Calificar'}
                             </button>
                             <button
                               onClick={(e) => handleDeleteSubmission(sub.id || sub._id, sub.studentName, e)}
                               title="Eliminar entrega de examen"
-                              className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+                              className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20 cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1446,6 +1628,319 @@ export default function ExaminationsManagement({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: SALA DE EXAMEN EN VIVO (LIVE PROCTORING) */}
+      {/* ========================================================================= */}
+      {isLiveModalOpen && liveSession && (
+        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-y-auto">
+          <div className="relative overflow-hidden bg-neutral-900 border border-neutral-700/80 rounded-3xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200 text-white">
+            
+            {/* Header de la Sala en Vivo */}
+            <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-4 shrink-0 bg-neutral-950/80">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Radio className="w-5 h-5 animate-pulse" />
+                </div>
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase tracking-widest font-mono flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                      Mesa Examinadora en Vivo
+                    </span>
+                    <span className="text-xs text-neutral-400 truncate font-medium">
+                      {liveSession.title}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white tracking-tight truncate">
+                    Monitoreo y Control de Aspirantes
+                  </h3>
+                </div>
+              </div>
+
+              {/* Controles de Refresco */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsAutoRefreshLive(!isAutoRefreshLive)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+                    isAutoRefreshLive
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                      : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white'
+                  }`}
+                  title={isAutoRefreshLive ? "Pausar auto-actualización" : "Activar auto-actualización cada 5s"}
+                >
+                  {isAutoRefreshLive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                  <span>{isAutoRefreshLive ? 'En vivo (5s)' : 'Pausado'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleManualRefreshLive}
+                  disabled={isLiveLoading}
+                  className="p-2 text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-neutral-700 cursor-pointer disabled:opacity-50"
+                  title="Refrescar datos ahora"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLiveLoading ? 'animate-spin text-blue-400' : ''}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setIsLiveModalOpen(false); setLiveData(null); }}
+                  className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer ml-1"
+                  title="Cerrar sala en vivo"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido con scroll independiente */}
+            <div className="overflow-y-auto p-6 space-y-6 flex-1">
+              
+              {/* Tarjetas de Métricas en Vivo */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="bg-neutral-800/60 border border-neutral-700/60 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[11px] font-semibold text-neutral-400 block uppercase tracking-wider">
+                    Total Conectados
+                  </span>
+                  <div className="text-2xl font-black text-white">
+                    {liveData?.metrics?.totalConnected ?? (isLiveLoading ? '...' : 0)}
+                  </div>
+                </div>
+
+                <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[11px] font-semibold text-emerald-400 block uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    Rindiendo Ahora
+                  </span>
+                  <div className="text-2xl font-black text-emerald-400">
+                    {liveData?.metrics?.inProgress ?? (isLiveLoading ? '...' : 0)}
+                  </div>
+                </div>
+
+                <div className="bg-blue-950/20 border border-blue-500/30 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[11px] font-semibold text-blue-400 block uppercase tracking-wider flex items-center gap-1.5">
+                    <Check className="w-3 h-3" />
+                    Entregados
+                  </span>
+                  <div className="text-2xl font-black text-blue-400">
+                    {liveData?.metrics?.submitted ?? (isLiveLoading ? '...' : 0)}
+                  </div>
+                </div>
+
+                <div className="bg-amber-950/20 border border-amber-500/30 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[11px] font-semibold text-amber-400 block uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle className="w-3 h-3" />
+                    Alertas Pantalla
+                  </span>
+                  <div className="text-2xl font-black text-amber-400">
+                    {liveData?.metrics?.securityAlerts ?? (isLiveLoading ? '...' : 0)}
+                  </div>
+                </div>
+
+                <div className="bg-red-950/20 border border-red-500/30 rounded-2xl p-3.5 space-y-1 col-span-2 sm:col-span-1">
+                  <span className="text-[11px] font-semibold text-red-400 block uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldAlert className="w-3 h-3" />
+                    Bloqueados
+                  </span>
+                  <div className="text-2xl font-black text-red-400">
+                    {liveData?.metrics?.lockedBySecurity ?? (isLiveLoading ? '...' : 0)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Lista de Aspirantes en Vivo */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
+                    Aspirantes Detectados en la Sesión ({liveData?.candidates?.length || 0})
+                  </h4>
+                  <span className="text-[11px] text-neutral-500">
+                    Límite: {liveSession.timeLimitMinutes > 0 ? `${liveSession.timeLimitMinutes} min` : 'Sin límite'} • Protocolo: {liveSession.securityMode || 'Auditoría'}
+                  </span>
+                </div>
+
+                {isLiveLoading && !liveData && (
+                  <div className="p-12 text-center text-neutral-400 space-y-3">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-400" />
+                    <p className="text-xs">Sincronizando con los dispositivos de los aspirantes...</p>
+                  </div>
+                )}
+
+                {liveData?.candidates && liveData.candidates.length === 0 && (
+                  <div className="p-10 text-center border border-dashed border-neutral-800 rounded-2xl bg-neutral-950/30 space-y-2">
+                    <Radio className="w-8 h-8 mx-auto text-neutral-600" />
+                    <p className="text-sm font-semibold text-neutral-300">Aún no hay aspirantes conectados en esta sala.</p>
+                    <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+                      Envíe el enlace de la convocatoria para que los alumnos ingresen y se visualicen aquí en tiempo real.
+                    </p>
+                  </div>
+                )}
+
+                {liveData?.candidates && liveData.candidates.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {liveData.candidates.map((cand) => {
+                      const isCandidateSubmitted = cand.status === 'submitted';
+                      const isLocked = cand.status === 'locked_by_security';
+                      const isInProgress = cand.status === 'in_progress';
+                      const isIdle = cand.status === 'idle';
+                      const isExpired = cand.status === 'time_expired';
+
+                      // Porcentaje de avance de preguntas
+                      const totalQ = cand.totalQuestionsCount || 0;
+                      const answeredQ = cand.answeredQuestionsCount || 0;
+                      const progressPct = totalQ > 0 ? Math.min(100, Math.round((answeredQ / totalQ) * 100)) : 0;
+
+                      // Formateo de tiempo restante
+                      let timeString = 'Libre';
+                      if (typeof cand.remainingSec === 'number') {
+                        const m = Math.floor(cand.remainingSec / 60);
+                        const s = cand.remainingSec % 60;
+                        timeString = `${m}:${s < 10 ? '0' : ''}${s}`;
+                      }
+
+                      return (
+                        <div
+                          key={cand.id || cand.deviceToken}
+                          className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                            isLocked
+                              ? 'bg-red-950/20 border-red-500/40 shadow-sm'
+                              : cand.securityViolationsCount > 0
+                              ? 'bg-amber-950/15 border-amber-500/40'
+                              : isCandidateSubmitted
+                              ? 'bg-blue-950/15 border-blue-500/30'
+                              : 'bg-neutral-800/80 border-neutral-700/80'
+                          }`}
+                        >
+                          {/* Fila Superior: Nombre y Estado */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-0.5 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-white truncate">
+                                  {cand.studentName}
+                                </span>
+                              </div>
+                              <p className="text-xs text-neutral-400 truncate">
+                                Dojo: <strong className="text-neutral-200">{cand.studentDojo}</strong> {cand.studentRank ? `• ${cand.studentRank}` : ''}
+                              </p>
+                            </div>
+
+                            {/* Badge de Estatus */}
+                            <div className="shrink-0">
+                              {isInProgress && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                  En examen
+                                </span>
+                              )}
+                              {isCandidateSubmitted && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                                  <Check className="w-3 h-3" />
+                                  {cand.submissionScore !== null ? `Nota: ${cand.submissionScore}%` : 'Entregado'}
+                                </span>
+                              )}
+                              {isLocked && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-400 border border-red-500/30">
+                                  <ShieldAlert className="w-3 h-3" />
+                                  Bloqueado
+                                </span>
+                              )}
+                              {isExpired && !isCandidateSubmitted && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                  <Clock className="w-3 h-3" />
+                                  Tiempo vencido
+                                </span>
+                              )}
+                              {isIdle && !isCandidateSubmitted && !isLocked && !isExpired && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-neutral-700/40 text-neutral-400 border border-neutral-600/40">
+                                  ○ Segundo plano
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Avance de preguntas y tiempo */}
+                          {!isCandidateSubmitted && (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-neutral-400">
+                                  Progreso: <strong className="text-white">{answeredQ}</strong> de {totalQ > 0 ? totalQ : '?'} preguntas
+                                </span>
+                                {typeof cand.remainingSec === 'number' && (
+                                  <span className={`font-mono font-bold flex items-center gap-1 ${
+                                    cand.remainingSec <= 300 ? 'text-red-400 animate-pulse' : 'text-amber-400'
+                                  }`}>
+                                    <Clock className="w-3 h-3" />
+                                    {timeString}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all duration-300 ${
+                                    isLocked ? 'bg-red-500' : progressPct === 100 ? 'bg-blue-500' : 'bg-emerald-500'
+                                  }`}
+                                  style={{ width: `${progressPct}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Indicador de Seguridad e Incidencias */}
+                          <div className="flex items-center justify-between pt-1 border-t border-neutral-700/50 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              {cand.securityViolationsCount > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400">
+                                  <AlertTriangle className="w-3 h-3 text-amber-400" />
+                                  <span>{cand.securityViolationsCount} {cand.securityViolationsCount === 1 ? 'salida detectada' : 'salidas detectadas'}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                  <span>Sin salidas detectadas</span>
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Botón de Desbloqueo / Reinicio para el Sensei */}
+                            {(isLocked || cand.securityViolationsCount > 0) && !isCandidateSubmitted && (
+                              <button
+                                type="button"
+                                onClick={() => handleUnlockCandidate(cand)}
+                                className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/30 transition-colors cursor-pointer"
+                                title="Desbloquear o perdonar salidas para que el alumno pueda continuar"
+                              >
+                                <Unlock className="w-3 h-3" />
+                                <span>Desbloquear Alumno</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer de la Sala */}
+            <div className="flex items-center justify-between border-t border-neutral-800 px-6 py-3.5 shrink-0 bg-neutral-950/80 text-xs text-neutral-400">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>Actualización en tiempo real activa. Los cambios en los dispositivos se sincronizan al instante.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsLiveModalOpen(false); setLiveData(null); }}
+                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-semibold transition-colors cursor-pointer"
+              >
+                Cerrar Sala
+              </button>
+            </div>
           </div>
         </div>
       )}
