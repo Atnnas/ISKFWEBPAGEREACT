@@ -774,7 +774,7 @@ export default function WrittenExamsView({ initialExams = [] }) {
       {/* MODAL: CREAR O EDITAR EXAMEN (NOMBRE Y DESCRIPCIÓN) */}
       {/* ========================================================================= */}
       {isExamModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[500] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
             <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
               <h3 className="text-lg font-bold text-white">
@@ -841,7 +841,7 @@ export default function WrittenExamsView({ initialExams = [] }) {
       {/* MODAL: CONFECCIÓN / EDICIÓN DE PREGUNTA */}
       {/* ========================================================================= */}
       {isQuestionModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[500] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 space-y-5 shadow-2xl">
             <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
               <h3 className="text-base font-bold text-white">
@@ -1240,7 +1240,7 @@ export default function WrittenExamsView({ initialExams = [] }) {
       {/* MODAL: VISTA PREVIA DEL EXAMEN (MODO RESOLUCIÓN ESTUDIANTE) */}
       {/* ========================================================================= */}
       {isStudentPreviewOpen && activeExam && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-neutral-900 border border-neutral-700/80 rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/90 sticky top-0 z-20">

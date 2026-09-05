@@ -1117,8 +1117,8 @@ export default function ExaminationsManagement({
       {/* MODAL: CREAR NUEVA CONVOCATORIA (EXAMINACIÓN) */}
       {/* ========================================================================= */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-y-auto">
-          <div className="relative overflow-hidden bg-white/95 backdrop-blur-2xl border border-gray-200/90 rounded-3xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.25)] my-auto animate-in fade-in zoom-in-95 duration-200 text-gray-900">
+        <div className="fixed inset-0 z-[500] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto">
+          <div className="relative overflow-hidden bg-white/95 backdrop-blur-2xl border border-gray-200/90 rounded-3xl max-w-xl w-full max-h-[85vh] flex flex-col shadow-[0_25px_70px_rgba(0,0,0,0.3)] my-auto animate-in fade-in zoom-in-95 duration-200 text-gray-900">
             {/* Marca de agua / fondo sutil ISKF con el fondo oficial */}
             <div className="absolute inset-0 z-0 pointer-events-none select-none opacity-[0.08] overflow-hidden">
               <img

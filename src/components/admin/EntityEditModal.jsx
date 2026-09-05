@@ -59,7 +59,7 @@ export default function EntityEditModal({ isOpen, onClose, entity, onSaveSuccess
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/50">

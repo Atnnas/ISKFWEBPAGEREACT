@@ -5,7 +5,7 @@ export default function AlertModal({ isOpen, onClose, title, message, isError = 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">
