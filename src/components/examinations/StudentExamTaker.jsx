@@ -18,7 +18,8 @@ import {
   ShieldAlert,
   AlertTriangle,
   EyeOff,
-  Copy
+  Copy,
+  ChevronDown
 } from 'lucide-react';
 import { 
   submitStudentExam,
@@ -35,7 +36,8 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const [studentDojo, setStudentDojo] = useState(
     session?.assignedDojos?.length === 1 ? session.assignedDojos[0].name : ''
   );
-  const [studentRank, setStudentRank] = useState('');
+  // Grado / Kyu predefinido desde la generación del examen o convocatoria
+  const targetRank = exam?.targetRanks || session?.targetRanks || exam?.name || session?.writtenExamName || '';
 
   // Modo de seguridad configurado por el examinador: 'audit' | 'warnings' | 'strict'
   const securityMode = session?.securityMode || 'audit';
@@ -144,6 +146,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     try {
       const finalStudentName = studentName.trim() || (isAuto ? 'Aspirante (Envío Automático)' : '');
       const finalStudentDojo = studentDojo.trim() || (session?.assignedDojos?.[0]?.name || 'ISKF Dojo');
+      const finalStudentRank = targetRank.trim();
 
       const formattedAnswers = (exam.questions || []).map(q => {
         const ans = answers[q.id] || {};
@@ -169,7 +172,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         sessionId: session.id || session._id,
         studentName: finalStudentName,
         studentDojo: finalStudentDojo,
-        studentRank: studentRank.trim(),
+        studentRank: finalStudentRank,
         answers: formattedAnswers,
         timeSpentSeconds: elapsedSeconds,
         isAutoSubmitted: isAuto,
@@ -620,7 +623,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     }
 
     if (!studentDojo.trim()) {
-      showAlert("Por favor selecciona o indica tu Dojo de procedencia.", "Dojo requerido", false);
+      showAlert("Por favor selecciona tu Dojo de procedencia.", "Dojo requerido", false);
       return;
     }
 
@@ -941,6 +944,12 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                   Seguridad: Auditoría
                 </span>
               )}
+              {targetRank && (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 font-mono">
+                  <Award className="w-3.5 h-3.5" />
+                  {targetRank}
+                </span>
+              )}
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                 {exam.questions ? exam.questions.length : 0} Preguntas
               </span>
@@ -966,11 +975,20 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         <form onSubmit={handleSubmit} className={`space-y-6 ${securityMode === 'strict' ? 'select-none' : ''}`}>
 
           {/* Tarjeta de Datos del Aspirante */}
-          <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-2">
-              <User className="w-4 h-4 text-blue-400" />
-              <span>Datos del Aspirante</span>
-            </h2>
+          <div className="bg-neutral-900/90 border border-neutral-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800/80 pb-4">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-2">
+                <User className="w-4 h-4 text-blue-400" />
+                <span>Datos del Aspirante</span>
+              </h2>
+
+              {targetRank && (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-xs font-semibold font-mono">
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Kyu a Evaluar: <strong className="text-white">{targetRank}</strong></span>
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -983,28 +1001,33 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                   placeholder="Ej: David Salazar Morales"
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="block text-xs uppercase font-semibold text-neutral-400">
-                  Dojo de Procedencia *
+                  Dojo al que Pertenece *
                 </label>
-                {session?.assignedDojos && session.assignedDojos.length > 1 ? (
-                  <select
-                    required
-                    value={studentDojo}
-                    onChange={(e) => setStudentDojo(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="">Selecciona tu Dojo...</option>
-                    {session.assignedDojos.map((dojo, dIdx) => (
-                      <option key={dIdx} value={dojo.name}>
-                        {dojo.name}
-                      </option>
-                    ))}
-                  </select>
+                {session?.assignedDojos && session.assignedDojos.length > 0 ? (
+                  <div className="relative">
+                    <select
+                      required
+                      value={studentDojo}
+                      onChange={(e) => setStudentDojo(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500 appearance-none cursor-pointer pr-10 transition-colors"
+                    >
+                      <option value="">Selecciona tu Dojo...</option>
+                      {session.assignedDojos.map((dojo, dIdx) => (
+                        <option key={dIdx} value={dojo.name} className="bg-neutral-800 text-white">
+                          {dojo.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-neutral-400">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </div>
                 ) : (
                   <input
                     type="text"
@@ -1012,22 +1035,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                     placeholder="Ej: Dojo Central ISKF"
                     value={studentDojo}
                     onChange={(e) => setStudentDojo(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 )}
-              </div>
-
-              <div className="sm:col-span-2 space-y-1.5">
-                <label className="block text-xs uppercase font-semibold text-neutral-400">
-                  Grado / Kyu Actual o Aspirado (Opcional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: 4° Kyu aspirando a 3er Kyu"
-                  value={studentRank}
-                  onChange={(e) => setStudentRank(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
-                />
               </div>
             </div>
           </div>

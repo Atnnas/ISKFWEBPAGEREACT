@@ -847,6 +847,7 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
         _id: session._id.toString(),
         title: session.title,
         writtenExamName: session.writtenExamName || writtenExam.name,
+        targetRanks: writtenExam.targetRanks || '',
         assignedDojos: session.assignedDojos || [],
         accessCode: session.accessCode,
         timeLimitMinutes: session.timeLimitMinutes || 0,
@@ -857,6 +858,8 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
       exam: {
         id: writtenExam._id.toString(),
         name: writtenExam.name,
+        code: writtenExam.code || '',
+        targetRanks: writtenExam.targetRanks || '',
         description: writtenExam.description || '',
         questions: sanitizedQuestions
       }
@@ -1138,7 +1141,7 @@ export async function submitStudentExam(data) {
       writtenExamId: writtenExam._id,
       studentName: studentName.trim(),
       studentDojo: studentDojo.trim(),
-      studentRank: studentRank?.trim() || '',
+      studentRank: (studentRank && studentRank.trim()) || writtenExam.targetRanks || writtenExam.name || session.writtenExamName || '',
       answers: processedAnswers,
       autoScore: Math.round(autoScore * 100) / 100,
       manualScore: 0,

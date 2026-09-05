@@ -1154,7 +1154,7 @@ export default function ExaminationsManagement({
                 >
                   {writtenExams.map((ex) => (
                     <option key={ex.id || ex._id} value={ex.id || ex._id}>
-                      {ex.name} ({ex.questions ? ex.questions.length : 0} preguntas)
+                      {ex.name}{ex.targetRanks ? ` • ${ex.targetRanks}` : ''} ({ex.questions ? ex.questions.length : 0} preguntas)
                     </option>
                   ))}
                 </select>
