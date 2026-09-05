@@ -43,6 +43,7 @@ import {
 } from '../../lib/actions/examinations';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
+import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
 
 export default function ExaminationsManagement({ 
   initialSessions = [], 
@@ -471,7 +472,7 @@ export default function ExaminationsManagement({
 
             <button
               onClick={handleOpenCreateModal}
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-sm font-semibold transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
+              className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-2xl text-sm font-bold transition-all shadow-lg shadow-[#2D2E83]/20 active:scale-95 shrink-0 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Nueva Convocatoria
@@ -634,7 +635,7 @@ export default function ExaminationsManagement({
                 </div>
                 <button
                   onClick={handleOpenCreateModal}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-all shadow"
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   + Crear Primera Convocatoria
                 </button>
@@ -1116,29 +1117,53 @@ export default function ExaminationsManagement({
       {/* MODAL: CREAR NUEVA CONVOCATORIA (EXAMINACIÓN) */}
       {/* ========================================================================= */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-neutral-900 border border-neutral-700/80 rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
-              <div className="space-y-0.5">
-                <h3 className="text-lg font-bold text-white">
-                  Nueva Convocatoria de Examinación
-                </h3>
-                <p className="text-xs text-neutral-400">
-                  Configura el examen y selecciona qué Dojos serán calificados.
-                </p>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative overflow-hidden bg-white/95 backdrop-blur-2xl border border-gray-200/90 rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-[0_25px_70px_rgba(0,0,0,0.25)] my-auto animate-in fade-in zoom-in-95 duration-200 text-gray-900">
+            {/* Marca de agua / fondo sutil ISKF con el fondo oficial */}
+            <div className="absolute inset-0 z-0 pointer-events-none select-none opacity-[0.10] overflow-hidden">
+              <img
+                src={fondoInicioNuevo?.src || fondoInicioNuevo}
+                alt="ISKF Background"
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
+
+            <div className="relative z-10 flex justify-between items-start border-b border-gray-200/80 pb-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-white border border-gray-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                  <img
+                    src="/images/dojos/escudo.jpg"
+                    alt="ISKF"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-[#be1322] font-bold">
+                      ISKF Karate Do • Gestión Oficial
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-[#2D2E83] tracking-tight">
+                    Nueva Convocatoria de Examinación
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Configura el examen teórico y selecciona los Dojos convocados a calificar.
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Cerrar ventana"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateSession} className="space-y-4">
+            <form onSubmit={handleCreateSession} className="relative z-10 space-y-5">
               {/* Título */}
               <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-semibold text-neutral-400">
+                <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
                   Nombre de la Convocatoria *
                 </label>
                 <input
@@ -1147,20 +1172,20 @@ export default function ExaminationsManagement({
                   placeholder="Ej: I Convocatoria Nacional de Pases de Grado 2026"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-all placeholder:text-gray-400 font-medium"
                 />
               </div>
 
               {/* Examen Escrito Base */}
               <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-semibold text-neutral-400">
+                <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
                   Examen Escrito Base (Cuestionario a aplicar) *
                 </label>
                 <select
                   required
                   value={newWrittenExamId}
                   onChange={(e) => setNewWrittenExamId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-all cursor-pointer font-medium"
                 >
                   {writtenExams.map((ex) => (
                     <option key={ex.id || ex._id} value={ex.id || ex._id}>
@@ -1173,19 +1198,19 @@ export default function ExaminationsManagement({
               {/* Dojos a Calificar (Desde Base de Datos) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs uppercase font-semibold text-neutral-400">
+                  <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
                     Dojos Convocados a Calificar * ({selectedDojoIds.length} seleccionados)
                   </label>
                   <button
                     type="button"
                     onClick={handleToggleSelectAllDojos}
-                    className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+                    className="text-xs text-[#2D2E83] hover:text-[#be1322] font-bold transition-colors cursor-pointer"
                   >
                     {selectedDojoIds.length === dojos.length ? 'Desmarcar todos' : 'Seleccionar todos'}
                   </button>
                 </div>
 
-                <div className="max-h-60 overflow-y-auto border border-neutral-700/80 rounded-2xl p-2.5 bg-neutral-950/60 space-y-1.5">
+                <div className="max-h-60 overflow-y-auto border border-gray-200/90 rounded-2xl p-2.5 bg-gray-50/80 space-y-1.5 shadow-inner">
                   {dojos.map((dojo) => {
                     const dojoId = dojo.id || dojo._id;
                     const isChecked = selectedDojoIds.includes(dojoId);
@@ -1195,8 +1220,8 @@ export default function ExaminationsManagement({
                         key={dojoId}
                         className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
                           isChecked
-                            ? 'bg-blue-600/15 border border-blue-500/30'
-                            : 'hover:bg-neutral-900/70 border border-transparent'
+                            ? 'bg-blue-50/90 border border-[#2D2E83]/40 shadow-sm'
+                            : 'bg-white/80 hover:bg-blue-50/40 border border-gray-200/70 hover:border-blue-200'
                         }`}
                       >
                         <input
@@ -1209,10 +1234,10 @@ export default function ExaminationsManagement({
                               setSelectedDojoIds([...selectedDojoIds, dojoId]);
                             }
                           }}
-                          className="w-4 h-4 rounded border-neutral-700 text-blue-600 focus:ring-0 bg-neutral-800 shrink-0"
+                          className="w-4 h-4 rounded border-gray-300 text-[#2D2E83] focus:ring-[#2D2E83]/20 bg-white shrink-0 cursor-pointer accent-[#2D2E83]"
                         />
                         {/* Escudo del Dojo */}
-                        <div className="w-9 h-9 rounded-xl bg-neutral-900 border border-neutral-700/80 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
+                        <div className="w-9 h-9 rounded-xl bg-white border border-gray-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
                           <img
                             src={dojo.logo || '/images/dojos/escudo.jpg'}
                             alt={`Escudo ${dojo.name}`}
@@ -1221,13 +1246,16 @@ export default function ExaminationsManagement({
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="font-semibold text-white block text-xs truncate">
+                          <span className={`font-bold block text-xs truncate ${isChecked ? 'text-[#2D2E83]' : 'text-gray-900'}`}>
                             {dojo.name}
                           </span>
-                          <span className="text-[11px] text-neutral-400 block truncate">
+                          <span className="text-[11px] text-gray-500 block truncate">
                             {dojo.province || 'Costa Rica'} • Sensei: {dojo.sensei || 'ISKF'}
                           </span>
                         </div>
+                        {isChecked && (
+                          <Check className="w-4 h-4 text-[#2D2E83] shrink-0" />
+                        )}
                       </label>
                     );
                   })}
@@ -1237,10 +1265,10 @@ export default function ExaminationsManagement({
               {/* Tiempo Límite para Resolver */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs uppercase font-semibold text-neutral-400">
+                  <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
                     Tiempo Límite para Resolver
                   </label>
-                  <span className="text-[11px] font-mono text-neutral-400">
+                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
                     {newTimeLimitMinutes > 0 ? `${newTimeLimitMinutes} min configurados` : 'Sin límite de tiempo'}
                   </span>
                 </div>
@@ -1257,10 +1285,10 @@ export default function ExaminationsManagement({
                       key={p.val}
                       type="button"
                       onClick={() => setNewTimeLimitMinutes(p.val)}
-                      className={`py-2 px-1 text-xs rounded-xl font-medium border text-center transition-all ${
+                      className={`py-2 px-1 text-xs rounded-xl font-medium border text-center transition-all cursor-pointer ${
                         newTimeLimitMinutes === p.val
-                          ? 'bg-blue-600/20 border-blue-500 text-blue-400 font-bold shadow-sm'
-                          : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-neutral-600'
+                          ? 'bg-blue-50 border-[#2D2E83] text-[#2D2E83] font-bold shadow-sm ring-1 ring-[#2D2E83]/30'
+                          : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
                       }`}
                     >
                       {p.label}
@@ -1268,8 +1296,8 @@ export default function ExaminationsManagement({
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2 pt-1 text-xs text-neutral-400">
-                  <span className="text-[11px] text-neutral-400">O personalizar minutos:</span>
+                <div className="flex items-center gap-2 pt-1 text-xs text-gray-600">
+                  <span className="text-[11px] text-gray-600 font-medium">O personalizar minutos:</span>
                   <input
                     type="number"
                     min="0"
@@ -1277,12 +1305,12 @@ export default function ExaminationsManagement({
                     placeholder="Minutos"
                     value={newTimeLimitMinutes || ''}
                     onChange={(e) => setNewTimeLimitMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                    className="w-24 px-3 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500"
+                    className="w-24 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm"
                   />
-                  <span className="text-[11px] text-neutral-500">minutos (0 = libre)</span>
+                  <span className="text-[11px] text-gray-500 font-medium">minutos (0 = libre)</span>
                 </div>
 
-                <p className="text-[11px] text-neutral-500 leading-relaxed">
+                <p className="text-[11px] text-gray-500 leading-relaxed">
                   El cronómetro iniciará de manera individual cuando cada alumno abra su enlace. Al finalizar el tiempo, las respuestas se enviarán automáticamente y el enlace quedará bloqueado.
                 </p>
               </div>
@@ -1290,10 +1318,10 @@ export default function ExaminationsManagement({
               {/* Modo de Seguridad Anti-Trampa */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs uppercase font-semibold text-neutral-400">
+                  <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
                     Protocolo de Seguridad Anti-Trampa *
                   </label>
-                  <span className="text-[11px] font-mono text-neutral-400">
+                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 border border-gray-200">
                     {newSecurityMode === 'audit' && 'Modo Auditoría'}
                     {newSecurityMode === 'warnings' && 'Modo 3 Intentos'}
                     {newSecurityMode === 'strict' && 'Modo Estricto'}
@@ -1305,23 +1333,23 @@ export default function ExaminationsManagement({
                   <button
                     type="button"
                     onClick={() => setNewSecurityMode('audit')}
-                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                       newSecurityMode === 'audit'
-                        ? 'bg-neutral-800 border-blue-500 ring-1 ring-blue-500/50 shadow-md'
-                        : 'bg-neutral-950/60 border-neutral-700/80 hover:border-neutral-600 text-neutral-400'
+                        ? 'bg-blue-50/90 border-[#2D2E83] ring-1 ring-[#2D2E83]/50 shadow-sm text-gray-900'
+                        : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <Shield className="w-3.5 h-3.5 text-neutral-400" />
+                        <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                          <Shield className="w-3.5 h-3.5 text-[#2D2E83]" />
                           Auditoría
                         </span>
                         {newSecurityMode === 'audit' && (
-                          <Check className="w-3.5 h-3.5 text-blue-400" />
+                          <Check className="w-3.5 h-3.5 text-[#2D2E83]" />
                         )}
                       </div>
-                      <p className="text-[11px] text-neutral-400 leading-tight">
+                      <p className="text-[11px] text-gray-500 leading-tight">
                         Permite salir de la ventana. Registra silenciosamente cada salida y avisa al evaluador para llamar la atención.
                       </p>
                     </div>
@@ -1331,23 +1359,23 @@ export default function ExaminationsManagement({
                   <button
                     type="button"
                     onClick={() => setNewSecurityMode('warnings')}
-                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                       newSecurityMode === 'warnings'
-                        ? 'bg-neutral-800 border-amber-500 ring-1 ring-amber-500/50 shadow-md'
-                        : 'bg-neutral-950/60 border-neutral-700/80 hover:border-neutral-600 text-neutral-400'
+                        ? 'bg-amber-50/90 border-amber-500 ring-1 ring-amber-500/50 shadow-sm text-gray-900'
+                        : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <Shield className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                          <Shield className="w-3.5 h-3.5 text-amber-600" />
                           3 Intentos
                         </span>
                         {newSecurityMode === 'warnings' && (
-                          <Check className="w-3.5 h-3.5 text-amber-400" />
+                          <Check className="w-3.5 h-3.5 text-amber-600" />
                         )}
                       </div>
-                      <p className="text-[11px] text-neutral-400 leading-tight">
+                      <p className="text-[11px] text-gray-500 leading-tight">
                         Alerta en pantalla en salidas 1 y 2. A la 3ª salida detectada, cierra y anula el examen bloqueando el link.
                       </p>
                     </div>
@@ -1357,23 +1385,23 @@ export default function ExaminationsManagement({
                   <button
                     type="button"
                     onClick={() => setNewSecurityMode('strict')}
-                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                    className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                       newSecurityMode === 'strict'
-                        ? 'bg-neutral-800 border-red-500 ring-1 ring-red-500/50 shadow-md'
-                        : 'bg-neutral-950/60 border-neutral-700/80 hover:border-neutral-600 text-neutral-400'
+                        ? 'bg-red-50/90 border-[#be1322] ring-1 ring-[#be1322]/50 shadow-sm text-gray-900'
+                        : 'bg-white border-gray-200 hover:border-gray-300 text-gray-600'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+                        <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                          <ShieldAlert className="w-3.5 h-3.5 text-[#be1322]" />
                           Estricto
                         </span>
                         {newSecurityMode === 'strict' && (
-                          <Check className="w-3.5 h-3.5 text-red-400" />
+                          <Check className="w-3.5 h-3.5 text-[#be1322]" />
                         )}
                       </div>
-                      <p className="text-[11px] text-neutral-400 leading-tight">
+                      <p className="text-[11px] text-gray-500 leading-tight">
                         Pantalla completa obligatoria y anti-copia activo. Cualquier intento de minimizar o salir cancela y bloquea la prueba.
                       </p>
                     </div>
@@ -1383,7 +1411,7 @@ export default function ExaminationsManagement({
 
               {/* Observaciones */}
               <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-semibold text-neutral-400">
+                <label className="block text-xs uppercase font-bold text-gray-700 tracking-wider">
                   Notas Internas (Opcional)
                 </label>
                 <textarea
@@ -1391,25 +1419,26 @@ export default function ExaminationsManagement({
                   placeholder="Instrucciones o recordatorios para el tribunal examinador..."
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
-                  className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm resize-none placeholder:text-gray-400"
                 />
               </div>
 
               {/* Botones */}
-              <div className="flex justify-end gap-3 pt-3 border-t border-neutral-800">
+              <div className="flex justify-end gap-3 pt-3 border-t border-gray-200/80">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition-colors"
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isCreating}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50"
+                  className="px-7 py-2.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-[#2D2E83]/20 hover:shadow-lg active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                 >
-                  {isCreating ? 'Creando Convocatoria...' : 'Crear y Generar Link'}
+                  {isCreating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isCreating ? 'Creando Convocatoria...' : 'Crear y Generar Link'}</span>
                 </button>
               </div>
             </form>
