@@ -35,7 +35,8 @@ import {
   Pause,
   Unlock,
   Download,
-  Shuffle
+  Shuffle,
+  UserX
 } from 'lucide-react';
 import { 
   getExaminationSessions,
@@ -48,7 +49,8 @@ import {
   gradeExamSubmission,
   deleteExamSubmission,
   getLiveProctoringData,
-  resetStudentDeviceLock
+  resetStudentDeviceLock,
+  removeExamDeviceSession
 } from '../../lib/actions/examinations';
 import { generateExaminationActaPDF } from '../../lib/pdf/examinationActaGenerator';
 import { generateSingleDiplomaPDF, generateBatchDiplomasPDF } from '../../lib/pdf/examinationDiplomaGenerator';
@@ -210,6 +212,30 @@ export default function ExaminationsManagement({
         } catch (err) {
           console.error(err);
           showAlert("Error al comunicar el desbloqueo.", "Error", true);
+        }
+      }
+    });
+  };
+
+  const handleRemoveCandidate = (candidate) => {
+    if (!liveSession || !candidate) return;
+    showConfirm({
+      title: "Retirar de la Sala",
+      message: `¿Deseas retirar la sesión de "${candidate.studentName}" de la sala en vivo? Esta acción purgará el registro activo de su dispositivo en la sala de espera.`,
+      confirmText: "Retirar Sesión",
+      isDanger: true,
+      onConfirm: async () => {
+        try {
+          const res = await removeExamDeviceSession(liveSession.id || liveSession._id, candidate.deviceToken);
+          if (res?.success) {
+            showAlert(`La sesión de "${candidate.studentName}" ha sido retirada de la sala.`, "Sesión Retirada", false);
+            handleManualRefreshLive();
+          } else {
+            showAlert("No se pudo retirar la sesión: " + (res?.error || ""), "Error", true);
+          }
+        } catch (err) {
+          console.error(err);
+          showAlert("Error al retirar la sesión de la sala.", "Error", true);
         }
       }
     });
@@ -1813,7 +1839,7 @@ export default function ExaminationsManagement({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
-                    Aspirantes Detectados en la Sesión ({liveData?.candidates?.length || 0})
+                    Aspirantes Activos en la Sala ({liveData?.candidates?.length || 0})
                   </h4>
                   <span className="text-[11px] text-neutral-500">
                     Límite: {liveSession.timeLimitMinutes > 0 ? `${liveSession.timeLimitMinutes} min` : 'Sin límite'} • Protocolo: {liveSession.securityMode || 'Auditoría'}
@@ -1830,9 +1856,9 @@ export default function ExaminationsManagement({
                 {liveData?.candidates && liveData.candidates.length === 0 && (
                   <div className="p-10 text-center border border-dashed border-neutral-800 rounded-2xl bg-neutral-950/30 space-y-2">
                     <Radio className="w-8 h-8 mx-auto text-neutral-600" />
-                    <p className="text-sm font-semibold text-neutral-300">Aún no hay aspirantes conectados en esta sala.</p>
+                    <p className="text-sm font-semibold text-neutral-300">No hay aspirantes rindiendo examen en este momento.</p>
                     <p className="text-xs text-neutral-500 max-w-sm mx-auto">
-                      Envíe el enlace de la convocatoria para que los alumnos ingresen y se visualicen aquí en tiempo real.
+                      Los aspirantes conectados se visualizan aquí en tiempo real. Al concluir su examen, las sesiones se retiran automáticamente de esta sala y se trasladan a la Bandeja de Entregas.
                     </p>
                   </div>
                 )}
@@ -1962,18 +1988,30 @@ export default function ExaminationsManagement({
                               )}
                             </div>
 
-                            {/* Botón de Desbloqueo / Reinicio para el Sensei */}
-                            {(isLocked || cand.securityViolationsCount > 0) && !isCandidateSubmitted && (
+                            {/* Acciones para el Sensei: Desbloqueo y Retirar de Sala */}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {(isLocked || cand.securityViolationsCount > 0) && !isCandidateSubmitted && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUnlockCandidate(cand)}
+                                  className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/30 transition-colors cursor-pointer"
+                                  title="Desbloquear o perdonar salidas para que el alumno pueda continuar"
+                                >
+                                  <Unlock className="w-3 h-3" />
+                                  <span>Desbloquear Alumno</span>
+                                </button>
+                              )}
+
                               <button
                                 type="button"
-                                onClick={() => handleUnlockCandidate(cand)}
-                                className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/30 transition-colors cursor-pointer"
-                                title="Desbloquear o perdonar salidas para que el alumno pueda continuar"
+                                onClick={() => handleRemoveCandidate(cand)}
+                                className="flex items-center gap-1 text-[11px] font-medium text-neutral-400 hover:text-red-400 bg-neutral-900/60 hover:bg-red-500/10 px-2 py-1 rounded-lg border border-neutral-700/60 hover:border-red-500/30 transition-colors cursor-pointer"
+                                title="Retirar o purgar sesión de la sala de espera"
                               >
-                                <Unlock className="w-3 h-3" />
-                                <span>Desbloquear Alumno</span>
+                                <UserX className="w-3 h-3" />
+                                <span className="hidden sm:inline">Retirar</span>
                               </button>
-                            )}
+                            </div>
                           </div>
                         </div>
                       );

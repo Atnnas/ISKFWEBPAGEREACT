@@ -1136,14 +1136,17 @@ export async function getLiveProctoringData(sessionId) {
       };
     });
 
+    // Filtrar candidatos activos en la sala: quitar automáticamente las sesiones concluidas / entregadas
+    const activeCandidates = candidates.filter(c => c.status !== 'submitted');
+
     // Resumen de métricas en vivo
     const metrics = {
-      totalConnected: candidates.length,
-      inProgress: candidates.filter(c => c.status === 'in_progress').length,
-      submitted: candidates.filter(c => c.status === 'submitted').length,
-      securityAlerts: candidates.filter(c => c.securityViolationsCount > 0 && c.status !== 'locked_by_security').length,
-      lockedBySecurity: candidates.filter(c => c.status === 'locked_by_security').length,
-      idle: candidates.filter(c => c.status === 'idle').length
+      totalConnected: activeCandidates.length,
+      inProgress: activeCandidates.filter(c => c.status === 'in_progress').length,
+      submitted: submissions.length,
+      securityAlerts: activeCandidates.filter(c => c.securityViolationsCount > 0 && c.status !== 'locked_by_security').length,
+      lockedBySecurity: activeCandidates.filter(c => c.status === 'locked_by_security').length,
+      idle: activeCandidates.filter(c => c.status === 'idle').length
     };
 
     return {
@@ -1151,11 +1154,31 @@ export async function getLiveProctoringData(sessionId) {
       sessionTitle: session.title,
       timeLimitMinutes: session.timeLimitMinutes || 0,
       securityMode: session.securityMode || 'audit',
-      candidates,
+      candidates: activeCandidates,
       metrics
     };
   } catch (err) {
     console.error("Error fetching live proctoring data:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Permite al Sensei/Tribunal retirar o purgar una sesión de la sala en vivo/espera.
+ */
+export async function removeExamDeviceSession(sessionId, deviceToken) {
+  try {
+    await dbConnect();
+    if (!sessionId || !deviceToken) {
+      return { success: false, error: "Parámetros requeridos faltantes." };
+    }
+
+    await ExamDeviceLock.deleteOne({ sessionId, deviceToken });
+    revalidatePath('/admin/examinations');
+
+    return { success: true, message: "Sesión retirada de la sala en vivo con éxito." };
+  } catch (err) {
+    console.error("Error removing exam device session:", err);
     return { success: false, error: err.message };
   }
 }

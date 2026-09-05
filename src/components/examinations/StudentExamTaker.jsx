@@ -97,6 +97,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   });
 
   // Detección de Modo Incógnito / Privado
+  const [isCheckingIncognito, setIsCheckingIncognito] = useState(true);
   const [isIncognitoDetected, setIsIncognitoDetected] = useState(false);
   const [detectedBrowser, setDetectedBrowser] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
@@ -434,76 +435,83 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const handleViolationDetectedRef = useRef(handleViolationDetected);
   handleViolationDetectedRef.current = handleViolationDetected;
 
-  // Verificación de Modo Incógnito / Navegación Privada al inicializar
+  // Inicialización de seguridad: detección estricta de incógnito y registro de dispositivo
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    let isMounted = true;
 
-    detectIncognito()
-      .then((result) => {
-        if (result && result.isPrivate) {
-          setIsIncognitoDetected(true);
-          setDetectedBrowser(result.browserName || 'tu navegador');
+    async function initializeDevice() {
+      // 1. PRIMERO: Detección estricta de Modo Incógnito / Navegación Privada
+      try {
+        const incognitoResult = await detectIncognito();
+        if (incognitoResult && incognitoResult.isPrivate) {
+          if (isMounted) {
+            setIsIncognitoDetected(true);
+            setDetectedBrowser(incognitoResult.browserName || 'tu navegador');
+            setIsCheckingIncognito(false);
+          }
+          // SI ES MODO PRIVADO/INCÓGNITO: DETENER AQUÍ.
+          // NO registrar cookies, NO obtener huella, NO registrar en la sala de espera de MongoDB.
+          return;
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.warn("Incognito check notice:", err);
-      });
-  }, []);
-
-  // Inicializar token de dispositivo, huella de hardware inmutable, temporizador y estado de seguridad
-  useEffect(() => {
-    const sessId = session.id || session._id;
-    if (typeof window === 'undefined' || isIncognitoDetected) return;
-
-    // 0. Sincronizar o generar token único persistente de dispositivo en cookies y localStorage
-    let token = deviceTokenRef.current;
-    if (!token) {
-      const match = document.cookie.match(/(?:^|;\s*)iskf_device_token=([^;]+)/);
-      if (match) {
-        token = decodeURIComponent(match[1]);
-      } else {
-        token = localStorage.getItem('iskf_device_token') || '';
-      }
-    }
-    if (!token) {
-      token = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    }
-    deviceTokenRef.current = token;
-    document.cookie = `iskf_device_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax`;
-    localStorage.setItem('iskf_device_token', token);
-
-    // 1. Verificar estado inicial devuelto por el servidor en session
-    if (session?.deviceStatus === 'locked_by_security' || localStorage.getItem(`iskf_exam_security_locked_${sessId}`)) {
-      setIsSecurityLocked(true);
-      return;
-    }
-
-    if (session?.deviceStatus === 'submitted' || localStorage.getItem(`iskf_exam_submitted_${sessId}`)) {
-      setIsAlreadySubmitted(true);
-      return;
-    }
-
-    // 2. Extraer Huella Digital de Hardware Inmutable (resiste borrado de cookies, caché y datos de app)
-    getHardwareFingerprint().then(fp => {
-      if (fp) {
-        fingerprintRef.current = fp;
-        document.cookie = `iskf_device_fp=${encodeURIComponent(fp)}; path=/; max-age=31536000; SameSite=Lax`;
-        localStorage.setItem('iskf_device_fp', fp);
       }
 
-      // Registrar sesión en MongoDB con Huella de Hardware + Token + Datos de Aspirante
-      registerExamDeviceSession({
-        sessionId: sessId,
-        deviceToken: token,
-        fingerprint: fp || fingerprintRef.current,
-        studentName,
-        studentDojo,
-        studentRank: targetRank,
-        totalQuestionsCount: (exam?.questions || []).length
-      }).then(res => {
-        if (res.success) {
+      if (!isMounted) return;
+      setIsCheckingIncognito(false);
+
+      // 2. DISPOSITIVO ESTÁNDAR VÁLIDO: Inicializar token único de dispositivo
+      const sessId = session.id || session._id;
+      let token = deviceTokenRef.current;
+      if (!token) {
+        const match = document.cookie.match(/(?:^|;\s*)iskf_device_token=([^;]+)/);
+        if (match) {
+          token = decodeURIComponent(match[1]);
+        } else {
+          token = localStorage.getItem('iskf_device_token') || '';
+        }
+      }
+      if (!token) {
+        token = (typeof crypto !== 'undefined' && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      }
+      deviceTokenRef.current = token;
+      document.cookie = `iskf_device_token=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax`;
+      localStorage.setItem('iskf_device_token', token);
+
+      // 3. Verificar estado inicial devuelto por el servidor o en localStorage
+      if (session?.deviceStatus === 'locked_by_security' || localStorage.getItem(`iskf_exam_security_locked_${sessId}`)) {
+        setIsSecurityLocked(true);
+        return;
+      }
+
+      if (session?.deviceStatus === 'submitted' || localStorage.getItem(`iskf_exam_submitted_${sessId}`)) {
+        setIsAlreadySubmitted(true);
+        return;
+      }
+
+      // 4. Extraer Huella Digital de Hardware Inmutable y registrar sesión en MongoDB
+      try {
+        const fp = await getHardwareFingerprint();
+        if (fp) {
+          fingerprintRef.current = fp;
+          document.cookie = `iskf_device_fp=${encodeURIComponent(fp)}; path=/; max-age=31536000; SameSite=Lax`;
+          localStorage.setItem('iskf_device_fp', fp);
+        }
+
+        const res = await registerExamDeviceSession({
+          sessionId: sessId,
+          deviceToken: token,
+          fingerprint: fp || fingerprintRef.current,
+          studentName,
+          studentDojo,
+          studentRank: targetRank,
+          totalQuestionsCount: (exam?.questions || []).length
+        });
+
+        if (res && res.success && isMounted) {
           if (res.status === 'locked_by_security') {
             setIsSecurityLocked(true);
             localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
@@ -516,45 +524,53 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
             setTimeLeft(prev => prev === null ? res.remainingSeconds : Math.min(prev, res.remainingSeconds));
           }
         }
-      }).catch(err => console.error("Error registering device session in MongoDB:", err));
-    });
-
-    // 3. Manejo de tiempo límite
-    const timeLimitMinutes = session?.timeLimitMinutes || 0;
-    if (timeLimitMinutes > 0) {
-      const startKey = `iskf_exam_start_${sessId}`;
-      let startMs = localStorage.getItem(startKey);
-      if (!startMs) {
-        startMs = Date.now().toString();
-        localStorage.setItem(startKey, startMs);
-      }
-      const startTime = parseInt(startMs, 10);
-      startTimeRef.current = startTime;
-
-      const totalSeconds = timeLimitMinutes * 60;
-      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-      let remaining = totalSeconds - elapsedSeconds;
-
-      if (typeof session?.serverRemainingSeconds === 'number') {
-        remaining = Math.min(remaining, session.serverRemainingSeconds);
+      } catch (err) {
+        console.error("Error registering device session in MongoDB:", err);
       }
 
-      if (remaining <= 0) {
-        setTimeLeft(0);
-        if (!isAutoSubmittingRef.current) {
-          isAutoSubmittingRef.current = true;
-          executeSubmissionRef.current?.(true, false, 'Tiempo límite agotado.');
+      // 5. Manejo de tiempo límite
+      const timeLimitMinutes = session?.timeLimitMinutes || 0;
+      if (timeLimitMinutes > 0) {
+        const startKey = `iskf_exam_start_${sessId}`;
+        let startMs = localStorage.getItem(startKey);
+        if (!startMs) {
+          startMs = Date.now().toString();
+          localStorage.setItem(startKey, startMs);
         }
-      } else {
-        setTimeLeft(remaining);
+        const startTime = parseInt(startMs, 10);
+        startTimeRef.current = startTime;
+
+        const totalSeconds = timeLimitMinutes * 60;
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        let remaining = totalSeconds - elapsedSeconds;
+
+        if (typeof session?.serverRemainingSeconds === 'number') {
+          remaining = Math.min(remaining, session.serverRemainingSeconds);
+        }
+
+        if (remaining <= 0) {
+          setTimeLeft(0);
+          if (!isAutoSubmittingRef.current) {
+            isAutoSubmittingRef.current = true;
+            executeSubmissionRef.current?.(true, false, 'Tiempo límite agotado.');
+          }
+        } else {
+          setTimeLeft(remaining);
+        }
       }
     }
-  }, [session, isIncognitoDetected]);
+
+    initializeDevice();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session]);
 
   // Intervalo regresivo para el tiempo límite
   useEffect(() => {
     const timeLimitMinutes = session?.timeLimitMinutes || 0;
-    if (timeLimitMinutes <= 0 || timeLeft === null || isSubmitted || isAlreadySubmitted || isSecurityLocked || isIncognitoDetected) return;
+    if (timeLimitMinutes <= 0 || timeLeft === null || isSubmitted || isAlreadySubmitted || isSecurityLocked || isIncognitoDetected || isCheckingIncognito) return;
 
     if (timeLeft <= 0) {
       if (!isAutoSubmittingRef.current) {
@@ -579,11 +595,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [timeLeft, session, isSubmitted, isAlreadySubmitted, isSecurityLocked, isIncognitoDetected]);
+  }, [timeLeft, session, isSubmitted, isAlreadySubmitted, isSecurityLocked, isIncognitoDetected, isCheckingIncognito]);
 
   // Heartbeat periódico hacia la mesa examinadora (Live Proctoring)
   useEffect(() => {
-    if (isSubmitted || isAlreadySubmitted || isIncognitoDetected) return;
+    if (isSubmitted || isAlreadySubmitted || isIncognitoDetected || isCheckingIncognito) return;
 
     const sendHeartbeat = () => {
       const sessId = session?.id || session?._id;
@@ -812,6 +828,38 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       onConfirm: () => executeSubmission(false)
     });
   };
+
+  // =========================================================================
+  // VISTA: PANTALLA DE CARGA Y VERIFICACIÓN DE SEGURIDAD
+  // =========================================================================
+  if (isCheckingIncognito) {
+    return (
+      <div className="relative min-h-screen bg-transparent text-gray-900 flex items-center justify-center p-4 font-sans selection:bg-[#2D2E83] selection:text-white">
+        {/* Fondo oficial de la página ISKF */}
+        <div className="fixed inset-0 z-0 bg-white pointer-events-none select-none">
+          <img
+            src={fondoInicioNuevo?.src || fondoInicioNuevo}
+            alt="ISKF Background"
+            className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.25]"
+          />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center gap-4 bg-white/95 backdrop-blur-2xl border border-gray-100 rounded-3xl p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-200 text-center max-w-sm w-full">
+          <div className="w-14 h-14 rounded-2xl bg-[#2D2E83]/10 border border-[#2D2E83]/20 flex items-center justify-center text-[#2D2E83]">
+            <Loader2 className="w-7 h-7 animate-spin" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-gray-900 tracking-tight uppercase tracking-wider font-mono">
+              Verificando Entorno
+            </h2>
+            <p className="text-xs text-gray-500">
+              Comprobando protocolos de integridad y seguridad académica...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // =========================================================================
   // VISTA: PANTALLA DE BLOQUEO POR MODO INCÓGNITO / NAVEGACIÓN PRIVADA
