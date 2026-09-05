@@ -16,7 +16,9 @@ import {
   Clock,
   Shield,
   ShieldAlert,
-  AlertTriangle
+  AlertTriangle,
+  EyeOff,
+  Copy
 } from 'lucide-react';
 import { 
   submitStudentExam,
@@ -24,6 +26,7 @@ import {
   reportSecurityViolationAction
 } from '../../lib/actions/examinations';
 import { getHardwareFingerprint } from '../../lib/deviceFingerprint';
+import { detectIncognito } from 'detectincognitojs';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 
@@ -60,6 +63,23 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     title: '',
     message: ''
   });
+
+  // Detección de Modo Incógnito / Privado
+  const [isIncognitoDetected, setIsIncognitoDetected] = useState(false);
+  const [detectedBrowser, setDetectedBrowser] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyExamLink = async () => {
+    try {
+      if (typeof window !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      }
+    } catch (err) {
+      console.warn("Could not copy link:", err);
+    }
+  };
 
   const securityViolationsRef = useRef(0);
   const securityLogsRef = useRef([]);
@@ -279,10 +299,26 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const handleViolationDetectedRef = useRef(handleViolationDetected);
   handleViolationDetectedRef.current = handleViolationDetected;
 
+  // Verificación de Modo Incógnito / Navegación Privada al inicializar
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    detectIncognito()
+      .then((result) => {
+        if (result && result.isPrivate) {
+          setIsIncognitoDetected(true);
+          setDetectedBrowser(result.browserName || 'tu navegador');
+        }
+      })
+      .catch((err) => {
+        console.warn("Incognito check notice:", err);
+      });
+  }, []);
+
   // Inicializar token de dispositivo, huella de hardware inmutable, temporizador y estado de seguridad
   useEffect(() => {
     const sessId = session.id || session._id;
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || isIncognitoDetected) return;
 
     // 0. Sincronizar o generar token único persistente de dispositivo en cookies y localStorage
     let token = deviceTokenRef.current;
@@ -374,12 +410,12 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         setTimeLeft(remaining);
       }
     }
-  }, [session]);
+  }, [session, isIncognitoDetected]);
 
   // Intervalo regresivo para el tiempo límite
   useEffect(() => {
     const timeLimitMinutes = session?.timeLimitMinutes || 0;
-    if (timeLimitMinutes <= 0 || timeLeft === null || isSubmitted || isAlreadySubmitted || isSecurityLocked) return;
+    if (timeLimitMinutes <= 0 || timeLeft === null || isSubmitted || isAlreadySubmitted || isSecurityLocked || isIncognitoDetected) return;
 
     if (timeLeft <= 0) {
       if (!isAutoSubmittingRef.current) {
@@ -404,11 +440,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [timeLeft, session, isSubmitted, isAlreadySubmitted, isSecurityLocked]);
+  }, [timeLeft, session, isSubmitted, isAlreadySubmitted, isSecurityLocked, isIncognitoDetected]);
 
   // Monitoreo de Salida y Reingreso ("Salir y Volver a Entrar" = 1 Falta)
   useEffect(() => {
-    if (isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt) return;
+    if (isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt || isIncognitoDetected) return;
 
     // Detectar salida de la ventana del examen
     const handleUserLeave = () => {
@@ -471,11 +507,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       window.removeEventListener('focus', onWindowFocus);
       if (blurDebounceRef.current) clearTimeout(blurDebounceRef.current);
     };
-  }, [securityMode, isSubmitted, isAlreadySubmitted, isSecurityLocked, requiresFullscreenPrompt]);
+  }, [securityMode, isSubmitted, isAlreadySubmitted, isSecurityLocked, requiresFullscreenPrompt, isIncognitoDetected]);
 
   // Monitoreo de Pantalla Completa en Modo Estricto
   useEffect(() => {
-    if (securityMode !== 'strict' || isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt) return;
+    if (securityMode !== 'strict' || isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt || isIncognitoDetected) return;
 
     const handleFullscreenChange = () => {
       const inFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
@@ -486,11 +522,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [securityMode, requiresFullscreenPrompt, isSubmitted, isAlreadySubmitted, isSecurityLocked]);
+  }, [securityMode, requiresFullscreenPrompt, isSubmitted, isAlreadySubmitted, isSecurityLocked, isIncognitoDetected]);
 
   // Bloqueo Anti-Copia (Clic derecho, Selección, Atajos de teclado) en Modo Estricto
   useEffect(() => {
-    if (securityMode !== 'strict' || isSubmitted || isAlreadySubmitted || isSecurityLocked) return;
+    if (securityMode !== 'strict' || isSubmitted || isAlreadySubmitted || isSecurityLocked || isIncognitoDetected) return;
 
     const preventDefaultAction = (e) => {
       e.preventDefault();
@@ -521,7 +557,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       document.removeEventListener('contextmenu', preventDefaultAction);
       document.removeEventListener('keydown', preventSpecialKeys);
     };
-  }, [securityMode, isSubmitted, isAlreadySubmitted, isSecurityLocked]);
+  }, [securityMode, isSubmitted, isAlreadySubmitted, isSecurityLocked, isIncognitoDetected]);
 
   // Manejo de ingreso a Pantalla Completa
   const handleEnterFullscreen = async () => {
@@ -595,6 +631,55 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       onConfirm: () => executeSubmission(false)
     });
   };
+
+  // =========================================================================
+  // VISTA: PANTALLA DE BLOQUEO POR MODO INCÓGNITO / NAVEGACIÓN PRIVADA
+  // =========================================================================
+  if (isIncognitoDetected) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4 py-16 font-sans">
+        <div className="max-w-md w-full bg-neutral-900 border border-amber-500/30 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="w-20 h-20 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+            <EyeOff className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-widest font-mono">
+              Navegación Privada Detectada
+            </span>
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+              Modo Incógnito No Permitido
+            </h1>
+            <p className="text-neutral-400 text-sm leading-relaxed">
+              Has abierto la evaluación en una pestaña de incógnito o privada en <strong className="text-white">{detectedBrowser || 'tu navegador'}</strong>.
+            </p>
+          </div>
+
+          <div className="p-4 bg-neutral-950/70 border border-neutral-800 rounded-2xl text-xs text-neutral-300 text-left space-y-3">
+            <div className="flex items-start gap-2 text-amber-400 font-medium">
+              <span>⚠️</span>
+              <span>Por protocolos de seguridad e integridad académica ISKF, este examen no puede realizarse en pestañas de incógnito ni navegación privada.</span>
+            </div>
+            <div className="border-t border-neutral-800/80 pt-2.5 text-neutral-400 space-y-1.5">
+              <p className="font-semibold text-neutral-300">¿Cómo ingresar correctamente?</p>
+              <p>1. Cierra esta ventana o pestaña de incógnito.</p>
+              <p>2. Abre una <strong>pestaña normal y estándar</strong> en tu navegador.</p>
+              <p>3. Pega el enlace de la examinación para comenzar.</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCopyExamLink}
+            className="w-full py-3 px-6 bg-amber-600 hover:bg-amber-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+          >
+            {copiedLink ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
+            <span>{copiedLink ? '¡Enlace Copiado al Portapapeles!' : 'Copiar Enlace del Examen'}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // =========================================================================
   // VISTA: PANTALLA DE BLOQUEO POR INFRACCIÓN DE SEGURIDAD
