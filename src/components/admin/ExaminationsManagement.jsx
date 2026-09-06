@@ -34,7 +34,6 @@ import {
   Play,
   Pause,
   Unlock,
-  Download,
   Shuffle,
   UserX,
   Save,
@@ -56,8 +55,6 @@ import {
   resetStudentDeviceLock,
   removeExamDeviceSession
 } from '../../lib/actions/examinations';
-import { generateExaminationActaPDF } from '../../lib/pdf/examinationActaGenerator';
-import { generateSingleDiplomaPDF, generateBatchDiplomasPDF } from '../../lib/pdf/examinationDiplomaGenerator';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
@@ -245,39 +242,6 @@ export default function ExaminationsManagement({
     });
   };
 
-  // --- GENERACIÓN DE PDF: ACTA Y DIPLOMAS ---
-  const handleDownloadActa = () => {
-    if (!selectedSession) return;
-    try {
-      generateExaminationActaPDF(selectedSession, submissions);
-      showAlert("El Acta Oficial en PDF ha sido generada y descargada exitosamente.", "Acta Generada", false);
-    } catch (err) {
-      console.error("Error generating acta:", err);
-      showAlert("Ocurrió un error al generar el Acta Oficial: " + err.message, "Error al Generar PDF", true);
-    }
-  };
-
-  const handleDownloadSingleDiploma = (submission) => {
-    if (!submission || !selectedSession) return;
-    try {
-      generateSingleDiplomaPDF(submission, selectedSession);
-      showAlert(`El diploma para ${submission.studentName} ha sido generado y descargado exitosamente.`, "Diploma Generado", false);
-    } catch (err) {
-      console.error("Error generating diploma:", err);
-      showAlert("Ocurrió un error al generar el Diploma: " + err.message, "Error al Generar PDF", true);
-    }
-  };
-
-  const handleDownloadBatchDiplomas = () => {
-    if (!selectedSession) return;
-    try {
-      generateBatchDiplomasPDF(submissions, selectedSession);
-      showAlert("El lote completo de diplomas para todos los aspirantes aprobados ha sido generado y descargado.", "Diplomas en Lote", false);
-    } catch (err) {
-      console.error("Error generating batch diplomas:", err);
-      showAlert("No se pudo generar el lote de diplomas: " + err.message, "Atención", true);
-    }
-  };
 
   // --- ACCIONES DE CONVOCATORIAS ---
 
@@ -1071,25 +1035,6 @@ export default function ExaminationsManagement({
                 <span>Sala en Vivo</span>
               </button>
 
-              <button
-                onClick={handleDownloadActa}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-semibold transition-all shadow cursor-pointer active:scale-95"
-                title="Descargar Acta Oficial en PDF para el Tribunal Examinador"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Acta Oficial (PDF)</span>
-              </button>
-
-              {submissions.some(s => s.passed === true) && (
-                <button
-                  onClick={handleDownloadBatchDiplomas}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-xl text-xs font-semibold transition-all shadow cursor-pointer active:scale-95"
-                  title="Descargar todos los diplomas de aspirantes aprobados en un solo PDF"
-                >
-                  <Award className="w-3.5 h-3.5" />
-                  <span>Diplomas en Lote ({submissions.filter(s => s.passed === true).length})</span>
-                </button>
-              )}
 
               <button
                 onClick={() => handleOpenInbox(selectedSession)}
