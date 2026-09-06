@@ -574,7 +574,7 @@ export async function getExaminationSessions() {
     const results = await Promise.all(sessions.map(async (sess) => {
       const sessionId = sess._id.toString();
       const totalSubmissions = await ExamSubmission.countDocuments({ sessionId });
-      const pendingSubmissions = await ExamSubmission.countDocuments({ sessionId, status: 'submitted' });
+      const pendingSubmissions = await ExamSubmission.countDocuments({ sessionId, status: { $ne: 'graded' } });
       const gradedSubmissions = await ExamSubmission.countDocuments({ sessionId, status: 'graded' });
 
       const enrichedAssignedDojos = (sess.assignedDojos || []).map(d => ({
@@ -1341,8 +1341,12 @@ export async function submitStudentExam(data) {
           questionId: ans.questionId,
           questionType: q.type,
           questionText: q.text,
+          imageUrl: q.imageUrl || '',
+          options: q.options || [],
+          correctOptionIndex: q.correctOptionIndex,
           selectedOptionIndex: ans.selectedOptionIndex,
           isCorrect,
+          isGraded: true,
           earnedPoints: isCorrect ? 1 : 0,
           maxPoints: 1
         };
@@ -1366,8 +1370,13 @@ export async function submitStudentExam(data) {
           questionId: ans.questionId,
           questionType: q.type,
           questionText: q.text,
+          imageUrl: q.imageUrl || '',
+          leftTerms: q.leftTerms || [],
+          topTerms: q.topTerms || [],
+          correctMatches: q.correctMatches || [],
           matchingMatches: studentMatches,
           isCorrect: isAllCorrect,
+          isGraded: true,
           earnedPoints: Math.round(earned * 100) / 100,
           maxPoints: 1
         };
@@ -1378,8 +1387,10 @@ export async function submitStudentExam(data) {
         questionId: ans.questionId,
         questionType: q.type,
         questionText: q.text,
+        imageUrl: q.imageUrl || '',
         writtenAnswer: ans.writtenAnswer || '',
         isCorrect: null,
+        isGraded: false,
         earnedPoints: 0,
         maxPoints: 1,
         senseiComments: ''
@@ -1448,34 +1459,66 @@ export async function getExamSubmissions(sessionId) {
   try {
     await dbConnect();
     const submissions = await ExamSubmission.find({ sessionId }).sort({ submittedAt: -1 }).lean();
+    if (!submissions || submissions.length === 0) return [];
 
-    return submissions.map(s => ({
-      id: s._id.toString(),
-      _id: s._id.toString(),
-      sessionId: s.sessionId.toString(),
-      sessionTitle: s.sessionTitle,
-      writtenExamId: s.writtenExamId.toString(),
-      studentName: s.studentName,
-      studentDojo: s.studentDojo,
-      studentRank: s.studentRank || '',
-      answers: s.answers || [],
-      autoScore: s.autoScore || 0,
-      manualScore: s.manualScore || 0,
-      totalScore: s.totalScore || 0,
-      maxPossibleScore: s.maxPossibleScore || 100,
-      percentage: s.percentage || 0,
-      timeSpentSeconds: s.timeSpentSeconds || 0,
-      isAutoSubmitted: Boolean(s.isAutoSubmitted),
-      securityViolationsCount: s.securityViolationsCount || 0,
-      closedBySecurity: Boolean(s.closedBySecurity),
-      securityReport: s.securityReport || '',
-      status: s.status,
-      passed: s.passed,
-      senseiFeedback: s.senseiFeedback || '',
-      gradedBy: s.gradedBy || '',
-      submittedAt: s.submittedAt ? s.submittedAt.toISOString() : null,
-      gradedAt: s.gradedAt ? s.gradedAt.toISOString() : null
-    }));
+    // Cargar los exámenes escritos base vinculados para enriquecer opciones e imágenes si aplica
+    const writtenExamIds = [...new Set(submissions.map(s => s.writtenExamId?.toString()).filter(Boolean))];
+    const writtenExams = await WrittenExam.find({ _id: { $in: writtenExamIds } }).lean();
+    const examsMap = {};
+    writtenExams.forEach(we => {
+      examsMap[we._id.toString()] = we;
+    });
+
+    return submissions.map(s => {
+      const baseExam = examsMap[s.writtenExamId?.toString()];
+      const baseQuestionsMap = {};
+      (baseExam?.questions || []).forEach(q => {
+        baseQuestionsMap[q.id] = q;
+      });
+
+      const enrichedAnswers = (s.answers || []).map(ans => {
+        const baseQ = baseQuestionsMap[ans.questionId];
+        return {
+          ...ans,
+          questionText: ans.questionText || baseQ?.text || '',
+          imageUrl: ans.imageUrl || baseQ?.imageUrl || '',
+          options: (ans.options && ans.options.length > 0) ? ans.options : (baseQ?.options || []),
+          correctOptionIndex: ans.correctOptionIndex ?? baseQ?.correctOptionIndex ?? null,
+          leftTerms: (ans.leftTerms && ans.leftTerms.length > 0) ? ans.leftTerms : (baseQ?.leftTerms || []),
+          topTerms: (ans.topTerms && ans.topTerms.length > 0) ? ans.topTerms : (baseQ?.topTerms || []),
+          correctMatches: (ans.correctMatches && ans.correctMatches.length > 0) ? ans.correctMatches : (baseQ?.correctMatches || []),
+          isGraded: ans.isGraded || (typeof ans.earnedPoints === 'number' && (ans.earnedPoints > 0 || ans.isCorrect !== null || !!ans.senseiComments))
+        };
+      });
+
+      return {
+        id: s._id.toString(),
+        _id: s._id.toString(),
+        sessionId: s.sessionId.toString(),
+        sessionTitle: s.sessionTitle,
+        writtenExamId: s.writtenExamId.toString(),
+        studentName: s.studentName,
+        studentDojo: s.studentDojo,
+        studentRank: s.studentRank || '',
+        answers: enrichedAnswers,
+        autoScore: s.autoScore || 0,
+        manualScore: s.manualScore || 0,
+        totalScore: s.totalScore || 0,
+        maxPossibleScore: s.maxPossibleScore || s.answers?.length || 100,
+        percentage: s.percentage || 0,
+        timeSpentSeconds: s.timeSpentSeconds || 0,
+        isAutoSubmitted: Boolean(s.isAutoSubmitted),
+        securityViolationsCount: s.securityViolationsCount || 0,
+        closedBySecurity: Boolean(s.closedBySecurity),
+        securityReport: s.securityReport || '',
+        status: s.status || 'submitted',
+        passed: s.passed,
+        senseiFeedback: s.senseiFeedback || '',
+        gradedBy: s.gradedBy || '',
+        submittedAt: s.submittedAt ? s.submittedAt.toISOString() : null,
+        gradedAt: s.gradedAt ? s.gradedAt.toISOString() : null
+      };
+    });
   } catch (err) {
     console.error("Error fetching exam submissions:", err);
     return [];
@@ -1483,7 +1526,7 @@ export async function getExamSubmissions(sessionId) {
 }
 
 /**
- * Guarda la calificación administrativa realizada por el Sensei.
+ * Guarda la calificación administrativa o el progreso parcial realizado por el Sensei.
  */
 export async function gradeExamSubmission(submissionId, gradingData) {
   try {
@@ -1494,7 +1537,7 @@ export async function gradeExamSubmission(submissionId, gradingData) {
       return { success: false, error: "Entrega no encontrada en la base de datos." };
     }
 
-    const { answersGrading, senseiFeedback, passed, gradedBy } = gradingData;
+    const { answersGrading, senseiFeedback, passed, gradedBy, isPartialProgress } = gradingData || {};
 
     if (Array.isArray(answersGrading)) {
       submission.answers = submission.answers.map(ans => {
@@ -1505,7 +1548,8 @@ export async function gradeExamSubmission(submissionId, gradingData) {
             ...ans.toObject(),
             earnedPoints: earned,
             senseiComments: update.senseiComments ?? ans.senseiComments,
-            isCorrect: earned > 0
+            isCorrect: earned > 0,
+            isGraded: update.isGraded ?? true
           };
         }
         return ans;
@@ -1522,23 +1566,35 @@ export async function gradeExamSubmission(submissionId, gradingData) {
 
     submission.totalScore = Math.round(totalScore * 100) / 100;
     submission.percentage = percentage;
-    submission.passed = passed !== undefined ? passed : percentage >= 70;
-    submission.status = 'graded';
-    submission.senseiFeedback = senseiFeedback?.trim() || '';
-    submission.gradedBy = gradedBy?.trim() || 'Tribunal Examinador';
-    submission.gradedAt = new Date();
+    if (senseiFeedback !== undefined) {
+      submission.senseiFeedback = senseiFeedback?.trim() || '';
+    }
+    submission.gradedBy = gradedBy?.trim() || submission.gradedBy || 'Tribunal Examinador';
+
+    if (isPartialProgress) {
+      // Guardado de progreso parcial: no altera resolución final (aprobado/reprobado) y marca status como partially_graded
+      submission.status = 'partially_graded';
+    } else {
+      // Calificación final asentada
+      submission.status = 'graded';
+      submission.passed = passed !== undefined ? passed : percentage >= 70;
+      submission.gradedAt = new Date();
+    }
 
     await submission.save();
     revalidatePath('/admin/examinations');
 
     return {
       success: true,
+      isPartialProgress: Boolean(isPartialProgress),
       submission: {
         id: submission._id.toString(),
+        _id: submission._id.toString(),
         totalScore: submission.totalScore,
         percentage: submission.percentage,
         status: submission.status,
-        passed: submission.passed
+        passed: submission.passed,
+        senseiFeedback: submission.senseiFeedback
       }
     };
   } catch (err) {

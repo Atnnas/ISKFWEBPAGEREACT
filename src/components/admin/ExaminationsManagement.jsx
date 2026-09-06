@@ -36,7 +36,11 @@ import {
   Unlock,
   Download,
   Shuffle,
-  UserX
+  UserX,
+  Save,
+  Maximize2,
+  HelpCircle,
+  AlertCircle
 } from 'lucide-react';
 import { 
   getExaminationSessions,
@@ -499,31 +503,58 @@ export default function ExaminationsManagement({
   // --- CALIFICADOR DE ENTREGA INDIVIDUAL ---
 
   // Estado del calificador para la entrega seleccionada
+  // Estado del calificador para la entrega seleccionada
   const [answersGrading, setAnswersGrading] = useState([]);
   const [senseiFeedback, setSenseiFeedback] = useState('');
   const [passedStatus, setPassedStatus] = useState(true);
   const [isSavingGrade, setIsSavingGrade] = useState(false);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   const handleOpenGrading = (submission) => {
     setSelectedSubmission(submission);
     setSenseiFeedback(submission.senseiFeedback || '');
     setPassedStatus(submission.passed !== null ? submission.passed : (submission.percentage >= 70));
+    setSaveSuccessMessage('');
 
-    // Inicializar estado de notas por pregunta
-    const initGrading = (submission.answers || []).map(ans => ({
-      questionId: ans.questionId,
-      earnedPoints: ans.earnedPoints ?? (ans.isCorrect ? 1 : 0),
-      senseiComments: ans.senseiComments || ''
-    }));
+    // Inicializar estado de notas por pregunta con detección de calificación previa
+    const initGrading = (submission.answers || []).map(ans => {
+      const isPreGraded = ans.isGraded || ans.questionType === 'single_choice' || ans.questionType === 'matching' || (typeof ans.earnedPoints === 'number' && ans.earnedPoints > 0) || Boolean(ans.senseiComments);
+      return {
+        questionId: ans.questionId,
+        earnedPoints: ans.earnedPoints ?? (ans.isCorrect ? 1 : 0),
+        senseiComments: ans.senseiComments || '',
+        isGraded: Boolean(isPreGraded)
+      };
+    });
     setAnswersGrading(initGrading);
 
     setActiveView('grading');
   };
 
   const handlePointsChange = (qId, points) => {
+    const numericPoints = Math.max(0, parseFloat(points) || 0);
     setAnswersGrading(prev => prev.map(item => {
       if (item.questionId === qId) {
-        return { ...item, earnedPoints: Math.max(0, parseFloat(points) || 0) };
+        return { 
+          ...item, 
+          earnedPoints: numericPoints,
+          isGraded: true
+        };
+      }
+      return item;
+    }));
+  };
+
+  const handleQuickPoints = (qId, points) => {
+    setAnswersGrading(prev => prev.map(item => {
+      if (item.questionId === qId) {
+        return {
+          ...item,
+          earnedPoints: points,
+          isGraded: true
+        };
       }
       return item;
     }));
@@ -532,64 +563,146 @@ export default function ExaminationsManagement({
   const handleCommentsChange = (qId, comments) => {
     setAnswersGrading(prev => prev.map(item => {
       if (item.questionId === qId) {
-        return { ...item, senseiComments: comments };
+        return { 
+          ...item, 
+          senseiComments: comments,
+          isGraded: true
+        };
       }
       return item;
     }));
   };
 
-  const handleSaveGrade = async (e) => {
-    e.preventDefault();
-    if (!selectedSubmission) return;
+  // Guardar Progreso Parcial (Borrador sin asentar veredicto final)
+  const handleSaveProgress = async () => {
+    if (!selectedSubmission || isSavingProgress || isSavingGrade) return;
+    setIsSavingProgress(true);
+    setSaveSuccessMessage('');
 
-    setIsSavingGrade(true);
     try {
       const res = await gradeExamSubmission(selectedSubmission.id || selectedSubmission._id, {
         answersGrading,
         senseiFeedback,
-        passed: passedStatus,
+        isPartialProgress: true,
         gradedBy: 'Sensei ISKF'
       });
 
-      if (res.success) {
-        // Actualizar en el estado local de submissions
+      if (res?.success) {
+        // Actualizar el estado local de submissions
         setSubmissions(prev => prev.map(s => {
           if (s.id === selectedSubmission.id || s._id === selectedSubmission._id) {
             return {
               ...s,
-              status: 'graded',
+              status: 'partially_graded',
               totalScore: res.submission.totalScore,
               percentage: res.submission.percentage,
-              passed: res.submission.passed,
-              senseiFeedback
+              senseiFeedback,
+              answers: s.answers.map(ans => {
+                const updated = answersGrading.find(g => g.questionId === ans.questionId);
+                return updated ? { ...ans, earnedPoints: updated.earnedPoints, senseiComments: updated.senseiComments, isGraded: true } : ans;
+              })
             };
           }
           return s;
         }));
 
-        // Actualizar conteos en la lista de sessions
-        setSessions(prev => prev.map(sess => {
-          if (sess.id === selectedSession.id || sess._id === selectedSession._id) {
-            return {
-              ...sess,
-              pendingSubmissions: Math.max(0, (sess.pendingSubmissions || 1) - 1),
-              gradedSubmissions: (sess.gradedSubmissions || 0) + 1
-            };
-          }
-          return sess;
+        setSelectedSubmission(prev => ({
+          ...prev,
+          status: 'partially_graded',
+          totalScore: res.submission.totalScore,
+          percentage: res.submission.percentage,
+          senseiFeedback
         }));
 
-        showAlert("La calificación ha sido asentada y guardada correctamente.", "Calificación Guardada", false);
-        setActiveView('inbox');
-        setSelectedSubmission(null);
+        setSaveSuccessMessage('¡Progreso de calificación guardado con éxito en la base de datos! Puedes retirarte o continuar en cualquier momento.');
+        setTimeout(() => setSaveSuccessMessage(''), 5000);
       } else {
-        showAlert("Error al guardar la calificación: " + (res.error || ""), "Error", true);
+        showAlert("Error al guardar progreso: " + (res?.error || ""), "Error", true);
       }
     } catch (err) {
       console.error(err);
-      showAlert("Error al conectar con la base de datos.", "Error", true);
+      showAlert("Error de conexión al guardar el progreso.", "Error", true);
     } finally {
-      setIsSavingGrade(false);
+      setIsSavingProgress(false);
+    }
+  };
+
+  // Finalizar y Asentar Calificación Oficial
+  const handleFinalizeGrade = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedSubmission || isSavingGrade || isSavingProgress) return;
+
+    const totalQ = selectedSubmission.answers?.length || 0;
+    const gradedCount = answersGrading.filter(g => g.isGraded).length;
+
+    const proceedWithFinalize = async () => {
+      setIsSavingGrade(true);
+      try {
+        const res = await gradeExamSubmission(selectedSubmission.id || selectedSubmission._id, {
+          answersGrading,
+          senseiFeedback,
+          passed: passedStatus,
+          isPartialProgress: false,
+          gradedBy: 'Sensei ISKF'
+        });
+
+        if (res?.success) {
+          // Actualizar en el estado local de submissions
+          setSubmissions(prev => prev.map(s => {
+            if (s.id === selectedSubmission.id || s._id === selectedSubmission._id) {
+              return {
+                ...s,
+                status: 'graded',
+                totalScore: res.submission.totalScore,
+                percentage: res.submission.percentage,
+                passed: res.submission.passed,
+                senseiFeedback,
+                answers: s.answers.map(ans => {
+                  const updated = answersGrading.find(g => g.questionId === ans.questionId);
+                  return updated ? { ...ans, earnedPoints: updated.earnedPoints, senseiComments: updated.senseiComments, isGraded: true } : ans;
+                })
+              };
+            }
+            return s;
+          }));
+
+          // Actualizar conteos en la lista de convocatorias
+          setSessions(prev => prev.map(sess => {
+            if (sess.id === selectedSession.id || sess._id === selectedSession._id) {
+              const wasGradedBefore = selectedSubmission.status === 'graded';
+              return {
+                ...sess,
+                pendingSubmissions: wasGradedBefore ? sess.pendingSubmissions : Math.max(0, (sess.pendingSubmissions || 1) - 1),
+                gradedSubmissions: wasGradedBefore ? sess.gradedSubmissions : (sess.gradedSubmissions || 0) + 1
+              };
+            }
+            return sess;
+          }));
+
+          showAlert(`Calificación oficial asentada con éxito para ${selectedSubmission.studentName}. Nota final: ${res.submission.percentage}% (${res.submission.passed ? 'Aprobado' : 'Reprobado'}).`, "Calificación Asentada", false);
+          setActiveView('inbox');
+          setSelectedSubmission(null);
+        } else {
+          showAlert("Error al asentar la calificación: " + (res?.error || ""), "Error", true);
+        }
+      } catch (err) {
+        console.error(err);
+        showAlert("Error al conectar con la base de datos.", "Error", true);
+      } finally {
+        setIsSavingGrade(false);
+      }
+    };
+
+    if (gradedCount < totalQ) {
+      showConfirm({
+        title: "Preguntas sin calificar",
+        message: `Hay ${totalQ - gradedCount} pregunta(s) que aún no han sido calificadas. ¿Deseas asentar la calificación final ahora o prefieres usar "Guardar Progreso" para continuar después?`,
+        confirmText: "Asentar Calificación Oficial",
+        isDanger: false,
+        onConfirm: proceedWithFinalize
+      });
+    } else {
+      proceedWithFinalize();
     }
   };
 
@@ -1059,6 +1172,11 @@ export default function ExaminationsManagement({
                               <Check className="w-3 h-3" />
                               Nota: {sub.percentage}% ({sub.passed ? 'Aprobado' : 'Reprobado'})
                             </span>
+                          ) : sub.status === 'partially_graded' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                              <Save className="w-3 h-3" />
+                              En Revisión ({sub.totalScore || 0} pts guardados)
+                            </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
                               <Clock className="w-3 h-3" />
@@ -1068,20 +1186,32 @@ export default function ExaminationsManagement({
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {sub.passed === true && (
-                              <button
-                                onClick={() => handleDownloadSingleDiploma(sub)}
-                                title="Descargar Diploma Oficial en PDF"
-                                className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors border border-amber-500/30 cursor-pointer"
-                              >
-                                <Award className="w-4 h-4" />
-                              </button>
-                            )}
                             <button
                               onClick={() => handleOpenGrading(sub)}
-                              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition-all shadow active:scale-95 cursor-pointer"
+                              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shadow active:scale-95 cursor-pointer ${
+                                isGraded
+                                  ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700'
+                                  : sub.status === 'partially_graded'
+                                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white'
+                                  : 'bg-blue-600 hover:bg-blue-500 text-white'
+                              }`}
                             >
-                              {isGraded ? 'Revisar / Editar' : 'Calificar'}
+                              {isGraded ? (
+                                <>
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>Ver Calificación</span>
+                                </>
+                              ) : sub.status === 'partially_graded' ? (
+                                <>
+                                  <Save className="w-3.5 h-3.5" />
+                                  <span>Continuar Calificando</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FileText className="w-3.5 h-3.5" />
+                                  <span>Revisar y Calificar</span>
+                                </>
+                              )}
                             </button>
                             <button
                               onClick={(e) => handleDeleteSubmission(sub.id || sub._id, sub.studentName, e)}
@@ -1113,269 +1243,602 @@ export default function ExaminationsManagement({
       )}
 
       {/* ========================================================================= */}
-      {/* VISTA 3: CALIFICADOR DE EXAMEN INDIVIDUAL */}
+      {/* VISTA 3: PANEL ENRIQUECIDO DE REVISIÓN Y CALIFICACIÓN DE EXAMEN */}
       {/* ========================================================================= */}
-      {activeView === 'grading' && selectedSubmission && (
-        <form onSubmit={handleSaveGrade} className="space-y-6">
-          {/* Header de Calificación */}
-          <div className="bg-neutral-800/90 border border-neutral-700/80 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => setActiveView('inbox')}
-                className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors mb-1"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Volver a Bandeja de Entregas
-              </button>
-              <h1 className="text-2xl font-bold text-white tracking-tight">
-                Calificando a: {selectedSubmission.studentName}
-              </h1>
-              <p className="text-xs text-neutral-400">
-                Dojo: <strong className="text-neutral-200">{selectedSubmission.studentDojo}</strong> • Entregado: {new Date(selectedSubmission.submittedAt).toLocaleString('es-CR')}
-              </p>
-            </div>
+      {activeView === 'grading' && selectedSubmission && (() => {
+        const totalQuestions = selectedSubmission.answers?.length || 0;
+        const gradedQuestionsCount = answersGrading.filter(g => g.isGraded).length;
+        const gradingProgressPct = totalQuestions > 0 ? Math.round((gradedQuestionsCount / totalQuestions) * 100) : 0;
+        const totalAccumulatedScore = Math.round(answersGrading.reduce((acc, curr) => acc + (curr.earnedPoints || 0), 0) * 100) / 100;
+        const calculatedPercentage = totalQuestions > 0 ? Math.round((totalAccumulatedScore / totalQuestions) * 100) : 0;
 
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-[11px] uppercase font-semibold text-neutral-400 block">Puntos Acumulados</span>
-                <span className="text-2xl font-extrabold text-blue-400">
-                  {answersGrading.reduce((acc, curr) => acc + (curr.earnedPoints || 0), 0)} / {selectedSubmission.answers?.length || 0}
-                </span>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSavingGrade}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg active:scale-95 disabled:opacity-50"
-              >
-                {isSavingGrade ? 'Guardando...' : 'Asentar Calificación'}
-              </button>
-            </div>
-          </div>
-
-          {/* Tarjeta de Auditoría de Seguridad e Integridad */}
-          {(selectedSubmission.securityViolationsCount > 0 || selectedSubmission.closedBySecurity) ? (
-            <div className={`border rounded-3xl p-5 shadow-lg space-y-2 ${
-              selectedSubmission.closedBySecurity
-                ? 'bg-red-950/40 border-red-500/40 text-red-200'
-                : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
-            }`}>
-              <div className="flex items-center gap-2.5 font-bold text-sm">
-                {selectedSubmission.closedBySecurity ? (
-                  <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
-                ) : (
-                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-                )}
-                <span>
-                  {selectedSubmission.closedBySecurity
-                    ? `Atención: Examen anulado y cerrado por infracción de seguridad (${selectedSubmission.securityViolationsCount} salidas registradas)`
-                    : `Registro de Incidencias de Navegación: ${selectedSubmission.securityViolationsCount} ${selectedSubmission.securityViolationsCount === 1 ? 'salida detectada' : 'salidas detectadas'}`}
-                </span>
-              </div>
-              {selectedSubmission.securityReport && (
-                <p className="text-xs opacity-90 pl-7 font-mono">
-                  {selectedSubmission.securityReport}
-                </p>
-              )}
-              <p className="text-[11px] text-neutral-400 pl-7">
-                {selectedSubmission.closedBySecurity
-                  ? 'El examen fue concluido de manera forzada por el protocolo anti-trampa y el enlace del dispositivo quedó inhabilitado.'
-                  : 'El estudiante alternó de ventana o pestaña durante la resolución del cuestionario oficial.'}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-neutral-900/60 border border-neutral-700/60 rounded-2xl px-5 py-3 text-xs text-neutral-400 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span><strong>Auditoría de Integridad:</strong> Sin incidencias de cambio de ventana reportadas durante la prueba.</span>
-              </div>
-              <span className="text-[11px] font-mono text-neutral-500">0 salidas de foco</span>
-            </div>
-          )}
-
-          {/* Lista de Preguntas y Respuestas del Alumno */}
-          <div className="space-y-5">
-            {(selectedSubmission.answers || []).map((ans, idx) => {
-              const currentGrade = answersGrading.find(g => g.questionId === ans.questionId) || {};
-
-              return (
-                <div
-                  key={ans.questionId || idx}
-                  className="bg-neutral-800/80 border border-neutral-700/80 rounded-3xl p-6 space-y-4 shadow-lg"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <span className="w-7 h-7 rounded-xl bg-neutral-900 border border-neutral-700 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                        {idx + 1}
+        return (
+          <form onSubmit={handleFinalizeGrade} className="space-y-6">
+            {/* Header del Panel de Calificación con Métricas en Vivo y Acciones */}
+            <div className="bg-neutral-800/90 border border-neutral-700/80 rounded-3xl p-6 shadow-xl space-y-5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('inbox')}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-400 hover:text-white transition-colors mb-1 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Volver a Bandeja de Entregas
+                  </button>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h1 className="text-2xl font-extrabold text-white tracking-tight">
+                      Revisión de Examen: {selectedSubmission.studentName}
+                    </h1>
+                    {selectedSubmission.status === 'graded' ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                        <Check className="w-3 h-3" /> Oficial Asentado
                       </span>
-                      <div>
-                        <span className="text-[11px] uppercase font-semibold text-neutral-400 font-mono tracking-wider">
-                          {ans.questionType === 'single_choice' && 'Selección Única'}
-                          {ans.questionType === 'short_answer' && 'Respuesta Breve'}
-                          {ans.questionType === 'long_answer' && 'Desarrollo Escrito'}
-                          {ans.questionType === 'matching' && 'Asociación de Términos'}
-                        </span>
-                        <p className="text-sm font-semibold text-white mt-1">
-                          {ans.questionText || `Pregunta #${idx + 1}`}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Badge de Puntuación */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-neutral-400">Puntos:</span>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="10"
-                        value={currentGrade.earnedPoints ?? 0}
-                        onChange={(e) => handlePointsChange(ans.questionId, e.target.value)}
-                        className="w-16 px-2.5 py-1.5 bg-neutral-900 border border-neutral-700 rounded-xl text-center font-bold text-white text-xs focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
+                    ) : selectedSubmission.status === 'partially_graded' ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
+                        <Save className="w-3 h-3" /> Progreso Guardado (Borrador)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
+                        <Clock className="w-3 h-3" /> Pendiente de Evaluación
+                      </span>
+                    )}
                   </div>
+                  <p className="text-xs text-neutral-400">
+                    Dojo: <strong className="text-neutral-200">{selectedSubmission.studentDojo}</strong> • Grado/Kyu: <strong className="text-neutral-200">{selectedSubmission.studentRank || 'Aspirante'}</strong> • Entregado: {selectedSubmission.submittedAt ? new Date(selectedSubmission.submittedAt).toLocaleString('es-CR') : '—'}
+                  </p>
+                </div>
 
-                  {/* Detalle de Respuesta según Tipo */}
-                  {ans.questionType === 'single_choice' && (
-                    <div className="bg-neutral-900/60 border border-neutral-700/60 rounded-2xl p-4 text-xs space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-neutral-400">Opción elegida por el alumno:</span>
-                        <span className="font-bold text-white">
-                          Opción {ans.selectedOptionIndex !== null ? String.fromCharCode(65 + ans.selectedOptionIndex) : 'Sin responder'}
+                {/* Botones Principales de Acción en la Cabecera */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleSaveProgress}
+                    disabled={isSavingProgress || isSavingGrade}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900/80 hover:bg-neutral-900 text-amber-300 hover:text-amber-200 border border-amber-500/40 rounded-xl text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50"
+                    title="Guardar las notas asignadas hasta ahora para no perder tu trabajo y continuar después"
+                  >
+                    {isSavingProgress ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                    ) : (
+                      <Save className="w-4 h-4 text-amber-400" />
+                    )}
+                    <span>{isSavingProgress ? 'Guardando...' : 'Guardar Progreso'}</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingGrade || isSavingProgress}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingGrade ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4" />
+                    )}
+                    <span>{isSavingGrade ? 'Asentando...' : 'Asentar Calificación'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Barra de Progreso y Puntaje en Vivo */}
+              <div className="bg-neutral-900/70 border border-neutral-700/60 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-center">
+                {/* Métricas de Preguntas Evaluadas */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-neutral-400 font-semibold">Progreso de Evaluación:</span>
+                    <span className="font-bold text-neutral-200">{gradedQuestionsCount} de {totalQuestions} ({gradingProgressPct}%)</span>
+                  </div>
+                  <div className="w-full bg-neutral-800 border border-neutral-700/60 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${gradingProgressPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Puntaje y Porcentaje Actual */}
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-blue-400">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] uppercase font-semibold text-neutral-400 block">Puntos Acumulados</span>
+                    <span className="text-lg font-extrabold text-white">
+                      {totalAccumulatedScore} <span className="text-xs text-neutral-400 font-normal">/ {totalQuestions} pts</span>
+                      <span className="ml-2 text-xs font-semibold text-blue-400">({calculatedPercentage}%)</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Veredicto Sugerido */}
+                <div className="flex items-center justify-between sm:justify-end gap-3">
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-semibold text-neutral-400 block">Veredicto Calculado</span>
+                    <span className={`text-xs font-bold ${calculatedPercentage >= 70 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {calculatedPercentage >= 70 ? 'Aprobado (≥ 70%)' : 'No Aprobado (< 70%)'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Banner de Confirmación al Guardar Progreso */}
+            {saveSuccessMessage && (
+              <div className="bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span>{saveSuccessMessage}</span>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setSaveSuccessMessage('')}
+                  className="text-emerald-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Tarjeta de Auditoría de Seguridad e Integridad */}
+            {(selectedSubmission.securityViolationsCount > 0 || selectedSubmission.closedBySecurity) ? (
+              <div className={`border rounded-3xl p-5 shadow-lg space-y-2 ${
+                selectedSubmission.closedBySecurity
+                  ? 'bg-red-950/40 border-red-500/40 text-red-200'
+                  : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+              }`}>
+                <div className="flex items-center gap-2.5 font-bold text-sm">
+                  {selectedSubmission.closedBySecurity ? (
+                    <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                  )}
+                  <span>
+                    {selectedSubmission.closedBySecurity
+                      ? `Atención: Examen anulado y cerrado por infracción de seguridad (${selectedSubmission.securityViolationsCount} salidas registradas)`
+                      : `Registro de Incidencias de Navegación: ${selectedSubmission.securityViolationsCount} ${selectedSubmission.securityViolationsCount === 1 ? 'salida detectada' : 'salidas detectadas'}`}
+                  </span>
+                </div>
+                {selectedSubmission.securityReport && (
+                  <p className="text-xs opacity-90 pl-7 font-mono">
+                    {selectedSubmission.securityReport}
+                  </p>
+                )}
+                <p className="text-[11px] text-neutral-400 pl-7">
+                  {selectedSubmission.closedBySecurity
+                    ? 'El examen fue concluido de manera forzada por el protocolo anti-trampa y el enlace del dispositivo quedó inhabilitado.'
+                    : 'El estudiante alternó de ventana o pestaña durante la resolución del cuestionario oficial.'}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-neutral-900/60 border border-neutral-700/60 rounded-2xl px-5 py-3 text-xs text-neutral-400 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span><strong>Auditoría de Integridad:</strong> Sin incidencias de cambio de ventana reportadas durante la prueba.</span>
+                </div>
+                <span className="text-[11px] font-mono text-neutral-500">0 salidas de foco</span>
+              </div>
+            )}
+
+            {/* Lista de Preguntas y Respuestas del Estudiante */}
+            <div className="space-y-5">
+              {(selectedSubmission.answers || []).map((ans, idx) => {
+                const currentGrade = answersGrading.find(g => g.questionId === ans.questionId) || {};
+                const isItemGraded = Boolean(currentGrade.isGraded);
+
+                return (
+                  <div
+                    key={ans.questionId || idx}
+                    className={`bg-neutral-800/90 border rounded-3xl p-6 space-y-4 shadow-xl transition-all ${
+                      isItemGraded 
+                        ? 'border-neutral-700/80' 
+                        : 'border-amber-500/40 ring-1 ring-amber-500/20'
+                    }`}
+                  >
+                    {/* Encabezado de la Pregunta y Controles de Calificación */}
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-neutral-700/60 pb-4">
+                      <div className="flex items-start gap-3">
+                        <span className="w-8 h-8 rounded-xl bg-neutral-900 border border-neutral-700 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 shadow">
+                          #{idx + 1}
                         </span>
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold text-neutral-400 font-mono tracking-wider px-2 py-0.5 rounded-md bg-neutral-900 border border-neutral-700/80">
+                              {ans.questionType === 'single_choice' && 'Selección Única'}
+                              {ans.questionType === 'short_answer' && 'Respuesta Breve'}
+                              {ans.questionType === 'long_answer' && 'Desarrollo Escrito'}
+                              {ans.questionType === 'matching' && 'Asociación de Términos'}
+                            </span>
+
+                            {isItemGraded ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                                <Check className="w-3 h-3" /> Evaluada ({currentGrade.earnedPoints ?? 0} pts)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                                <Clock className="w-3 h-3" /> Pendiente de revisión
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm sm:text-base font-semibold text-white leading-snug pt-1">
+                            {ans.questionText || `Pregunta #${idx + 1}`}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {ans.isCorrect ? (
-                          <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-                            <Check className="w-3.5 h-3.5" />
-                            Respuesta acertada (Autocalificada +1 pt)
-                          </span>
+
+                      {/* Controles de Puntuación: Botones Rápidos + Input */}
+                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 bg-neutral-900/80 border border-neutral-700/70 p-1.5 rounded-2xl shadow-inner">
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleQuickPoints(ans.questionId, 0)}
+                            className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                              currentGrade.earnedPoints === 0 && isItemGraded
+                                ? 'bg-red-600 text-white shadow'
+                                : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                            }`}
+                            title="Asignar 0 puntos (Incorrecto)"
+                          >
+                            0 pts
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickPoints(ans.questionId, 0.5)}
+                            className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                              currentGrade.earnedPoints === 0.5 && isItemGraded
+                                ? 'bg-amber-600 text-white shadow'
+                                : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                            }`}
+                            title="Asignar 0.5 puntos (Medio punto)"
+                          >
+                            0.5
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleQuickPoints(ans.questionId, 1)}
+                            className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                              currentGrade.earnedPoints === 1 && isItemGraded
+                                ? 'bg-emerald-600 text-white shadow'
+                                : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                            }`}
+                            title="Asignar 1 punto completo (Correcto)"
+                          >
+                            1 pt
+                          </button>
+                        </div>
+
+                        <div className="h-5 w-[1px] bg-neutral-700 mx-1" />
+
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="10"
+                            value={currentGrade.earnedPoints ?? 0}
+                            onChange={(e) => handlePointsChange(ans.questionId, e.target.value)}
+                            className="w-14 px-2 py-1 bg-neutral-950 border border-neutral-700 rounded-lg text-center font-extrabold text-white text-xs focus:outline-none focus:border-blue-500"
+                          />
+                          <span className="text-[10px] text-neutral-400 font-mono pr-1">pts</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Imagen de la Pregunta si está adjunta */}
+                    {ans.imageUrl && (
+                      <div className="relative inline-block group rounded-2xl overflow-hidden border border-neutral-700 bg-neutral-900 max-w-sm">
+                        <img 
+                          src={ans.imageUrl} 
+                          alt={`Referencia gráfica pregunta ${idx + 1}`} 
+                          className="max-h-52 w-auto object-cover rounded-2xl cursor-pointer transition-transform group-hover:scale-105"
+                          onClick={() => setLightboxImage(ans.imageUrl)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setLightboxImage(ans.imageUrl)}
+                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-white text-xs font-bold transition-opacity cursor-pointer backdrop-blur-[2px]"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                          <span>Ampliar Imagen</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Detalle de Respuestas del Estudiante según Tipo */}
+                    
+                    {/* TIPO 1: SELECCIÓN ÚNICA */}
+                    {ans.questionType === 'single_choice' && (
+                      <div className="space-y-3">
+                        <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
+                          Opciones de la pregunta y selección del alumno:
+                        </span>
+
+                        {ans.options && ans.options.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            {ans.options.map((optText, optIdx) => {
+                              const isStudentChoice = ans.selectedOptionIndex === optIdx;
+                              const isOfficialCorrect = ans.correctOptionIndex === optIdx;
+                              const letter = String.fromCharCode(65 + optIdx);
+
+                              let cardClass = "bg-neutral-900/60 border-neutral-700/60 text-neutral-300";
+                              let badge = null;
+
+                              if (isStudentChoice) {
+                                if (ans.isCorrect) {
+                                  cardClass = "bg-emerald-950/40 border-emerald-500/70 text-emerald-200 ring-1 ring-emerald-500/40";
+                                  badge = (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-md">
+                                      <Check className="w-3 h-3" /> Selección del Alumno (Correcta)
+                                    </span>
+                                  );
+                                } else {
+                                  cardClass = "bg-red-950/40 border-red-500/70 text-red-200 ring-1 ring-red-500/40";
+                                  badge = (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/20 px-2 py-0.5 rounded-md">
+                                      <X className="w-3 h-3" /> Selección del Alumno (Incorrecta)
+                                    </span>
+                                  );
+                                }
+                              } else if (isOfficialCorrect) {
+                                cardClass = "bg-emerald-950/20 border-emerald-500/50 text-emerald-300 border-dashed";
+                                badge = (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400/90 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                    <Check className="w-3 h-3" /> Opción Correcta Oficial
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <div key={optIdx} className={`p-3.5 rounded-2xl border flex flex-col justify-between gap-2.5 transition-all ${cardClass}`}>
+                                  <div className="flex items-start gap-2.5">
+                                    <span className="w-6 h-6 rounded-lg bg-neutral-800 text-xs font-mono font-bold flex items-center justify-center shrink-0 border border-neutral-700">
+                                      {letter}
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-medium leading-snug">
+                                      {optText}
+                                    </span>
+                                  </div>
+                                  {badge && <div className="pt-0.5">{badge}</div>}
+                                </div>
+                              );
+                            })}
+                          </div>
                         ) : (
-                          <span className="text-red-400 flex items-center gap-1 font-semibold">
-                            <X className="w-3.5 h-3.5" />
-                            Respuesta errónea (0 pts)
-                          </span>
+                          <div className="bg-neutral-900/60 border border-neutral-700/60 rounded-2xl p-4 text-xs space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-neutral-400">Opción elegida por el alumno:</span>
+                              <span className="font-bold text-white">
+                                {ans.selectedOptionIndex !== null && ans.selectedOptionIndex !== undefined ? `Opción ${String.fromCharCode(65 + ans.selectedOptionIndex)}` : 'Sin responder'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {ans.isCorrect ? (
+                                <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                                  <Check className="w-3.5 h-3.5" />
+                                  Respuesta acertada (+1 pt autocalificado)
+                                </span>
+                              ) : (
+                                <span className="text-red-400 flex items-center gap-1 font-semibold">
+                                  <X className="w-3.5 h-3.5" />
+                                  Respuesta errónea (0 pts)
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {(ans.questionType === 'short_answer' || ans.questionType === 'long_answer') && (
-                    <div className="space-y-2">
-                      <div className="bg-neutral-900/80 border border-neutral-700/80 rounded-2xl p-4 text-xs text-neutral-200">
-                        <span className="text-neutral-400 block mb-1 font-semibold uppercase text-[10px]">
-                          Respuesta escrita del alumno:
-                        </span>
-                        <p className="whitespace-pre-wrap leading-relaxed text-sm">
-                          {ans.writtenAnswer ? ans.writtenAnswer : <em className="text-neutral-500">Dejada en blanco</em>}
-                        </p>
+                    {/* TIPO 2 Y 3: RESPUESTA ESCRITA (BREVE O DESARROLLO) */}
+                    {(ans.questionType === 'short_answer' || ans.questionType === 'long_answer') && (
+                      <div className="space-y-3">
+                        <div className="bg-neutral-900/90 border border-neutral-700/80 rounded-2xl p-4 sm:p-5 shadow-inner">
+                          <div className="flex items-center justify-between pb-2 border-b border-neutral-800 mb-2.5">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                              Respuesta redactada por el alumno:
+                            </span>
+                            <span className="text-[10px] text-neutral-500 font-mono">
+                              {ans.writtenAnswer ? `${ans.writtenAnswer.length} caracteres` : 'Sin respuesta'}
+                            </span>
+                          </div>
+                          {ans.writtenAnswer ? (
+                            <p className="text-neutral-100 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-sans selection:bg-blue-600">
+                              {ans.writtenAnswer}
+                            </p>
+                          ) : (
+                            <p className="text-neutral-500 italic text-xs">
+                              (El estudiante dejó esta respuesta en blanco)
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Campo de Observaciones del Sensei para esta respuesta */}
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
+                            Observación técnica del Sensei para esta respuesta (opcional):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Comentario sobre terminología, kata, concepto filosófico..."
+                            value={currentGrade.senseiComments || ''}
+                            onChange={(e) => handleCommentsChange(ans.questionId, e.target.value)}
+                            className="w-full px-4 py-2.5 bg-neutral-900/70 border border-neutral-700 rounded-xl text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </div>
                       </div>
+                    )}
 
-                      <input
-                        type="text"
-                        placeholder="Observación o nota del Sensei para esta respuesta..."
-                        value={currentGrade.senseiComments || ''}
-                        onChange={(e) => handleCommentsChange(ans.questionId, e.target.value)}
-                        className="w-full px-3.5 py-2 bg-neutral-900/60 border border-neutral-700 rounded-xl text-xs text-neutral-300 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  )}
+                    {/* TIPO 4: ASOCIACIÓN DE TÉRMINOS */}
+                    {ans.questionType === 'matching' && (
+                      <div className="bg-neutral-900/70 border border-neutral-700/70 rounded-2xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-neutral-300">
+                            Matriz de Relación / Asociación de Términos
+                          </span>
+                          <span className={ans.earnedPoints > 0 ? "text-emerald-400 font-bold text-xs" : "text-amber-400 font-bold text-xs"}>
+                            Puntaje autocalificado: {ans.earnedPoints || 0} / 1 pt
+                          </span>
+                        </div>
+                        {ans.leftTerms && ans.leftTerms.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            {ans.leftTerms.map((lt, lIdx) => {
+                              const studentMatchIdx = ans.selectedMatches ? ans.selectedMatches[lIdx] : null;
+                              const correctMatchIdx = ans.correctMatches ? ans.correctMatches[lIdx] : null;
+                              const studentMatchText = studentMatchIdx !== null && studentMatchIdx !== undefined && ans.topTerms ? ans.topTerms[studentMatchIdx] : '—';
+                              const correctMatchText = correctMatchIdx !== null && correctMatchIdx !== undefined && ans.topTerms ? ans.topTerms[correctMatchIdx] : '—';
+                              const isMatchCorrect = studentMatchIdx === correctMatchIdx;
 
-                  {ans.questionType === 'matching' && (
-                    <div className="bg-neutral-900/60 border border-neutral-700/60 rounded-2xl p-4 text-xs space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-neutral-400">Matriz de términos asociados:</span>
-                        <span className={ans.isCorrect ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
-                          {ans.earnedPoints} / 1 pts obtenidos
-                        </span>
+                              return (
+                                <div key={lIdx} className="bg-neutral-800/80 border border-neutral-700/60 p-2.5 rounded-xl space-y-1">
+                                  <div className="font-semibold text-white">{lt}</div>
+                                  <div className="text-[11px] flex items-center justify-between">
+                                    <span className="text-neutral-400">Asignado: <strong className={isMatchCorrect ? 'text-emerald-400' : 'text-red-400'}>{studentMatchText}</strong></span>
+                                    {!isMatchCorrect && (
+                                      <span className="text-neutral-500 text-[10px]">Correcto: {correctMatchText}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-neutral-400 text-xs">
+                            Las coincidencias de columnas fueron evaluadas automáticamente contra la matriz oficial del examen.
+                          </p>
+                        )}
                       </div>
-                      <p className="text-neutral-400 text-[11px]">
-                        Las coincidencias fueron evaluadas automáticamente contra la matriz oficial del examen.
-                      </p>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Veredicto y Feedback General del Tribunal Examinador */}
+            <div className="bg-neutral-800/90 border border-neutral-700/80 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-700/60 pb-4">
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-white">
+                    Veredicto del Tribunal Examinador
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Define la resolución oficial del examen y agrega devoluciones para el expediente del alumno.
+                  </p>
                 </div>
-              );
-            })}
-          </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-neutral-400">Nota Final:</span>
+                  <span className="text-xl font-extrabold text-white">
+                    {totalAccumulatedScore} <span className="text-xs text-neutral-400 font-normal">/ {totalQuestions}</span>
+                    <span className="ml-2 text-sm font-bold text-blue-400">({calculatedPercentage}%)</span>
+                  </span>
+                </div>
+              </div>
 
-          {/* Veredicto y Feedback General */}
-          <div className="bg-neutral-800/90 border border-neutral-700/80 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
-            <h3 className="text-base font-bold text-white">
-              Veredicto del Tribunal Examinador
-            </h3>
-
-            <div className="flex flex-wrap items-center gap-4">
-              <span className="text-xs text-neutral-400">Resolución:</span>
-              <button
-                type="button"
-                onClick={() => setPassedStatus(true)}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-colors ${
-                  passedStatus
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                    : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                }`}
-              >
-                Aprobado (Pase de Grado)
-              </button>
-              <button
-                type="button"
-                onClick={() => setPassedStatus(false)}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-colors ${
-                  !passedStatus
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
-                    : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                }`}
-              >
-                No Aprobado (Reprobado)
-              </button>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs uppercase font-semibold text-neutral-400">
-                Observaciones Generales / Devolución para el Aspirante
-              </label>
-              <textarea
-                rows={3}
-                placeholder="Escribe comentarios sobre la solidez teórica, áreas de mejora en terminología, kata o filosofía..."
-                value={senseiFeedback}
-                onChange={(e) => setSenseiFeedback(e.target.value)}
-                className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-2xl text-xs sm:text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-              <button
-                type="button"
-                onClick={(e) => handleDeleteSubmission(selectedSubmission.id || selectedSubmission._id, selectedSubmission.studentName, e)}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-semibold transition-colors border border-transparent hover:border-red-500/20"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Eliminar esta Entrega</span>
-              </button>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="text-xs font-semibold text-neutral-300">Resolución Oficial:</span>
                 <button
                   type="button"
-                  onClick={() => setActiveView('inbox')}
-                  className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition-colors"
+                  onClick={() => setPassedStatus(true)}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    passedStatus
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 ring-2 ring-emerald-400'
+                      : 'bg-neutral-800 text-neutral-400 border border-neutral-700 hover:text-white'
+                  }`}
                 >
-                  Cancelar
+                  ✓ Aprobado (Pase de Grado)
                 </button>
                 <button
-                  type="submit"
-                  disabled={isSavingGrade}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50"
+                  type="button"
+                  onClick={() => setPassedStatus(false)}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    !passedStatus
+                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20 ring-2 ring-red-400'
+                      : 'bg-neutral-800 text-neutral-400 border border-neutral-700 hover:text-white'
+                  }`}
                 >
-                  {isSavingGrade ? 'Guardando en BD...' : 'Finalizar y Asentar Calificación'}
+                  ✗ No Aprobado (Reprobado)
                 </button>
               </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs uppercase font-semibold text-neutral-400">
+                  Devolución General del Tribunal para el Aspirante
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Escribe comentarios generales sobre solidez técnica, terminología, disciplina o recomendaciones para su siguiente grado..."
+                  value={senseiFeedback}
+                  onChange={(e) => setSenseiFeedback(e.target.value)}
+                  className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-2xl text-xs sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 resize-none transition-colors"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-neutral-700/60">
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteSubmission(selectedSubmission.id || selectedSubmission._id, selectedSubmission.studentName, e)}
+                  className="flex items-center gap-1.5 px-4 py-2.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-semibold transition-colors border border-transparent hover:border-red-500/20 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Eliminar esta Entrega</span>
+                </button>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActiveView('inbox')}
+                    className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveProgress}
+                    disabled={isSavingProgress || isSavingGrade}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50"
+                    title="Guarda las notas en la base de datos sin cerrar el panel"
+                  >
+                    {isSavingProgress ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    <span>{isSavingProgress ? 'Guardando...' : 'Guardar Progreso'}</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingGrade || isSavingProgress}
+                    className="flex items-center gap-1.5 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingGrade ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                    <span>{isSavingGrade ? 'Asentando...' : 'Finalizar y Asentar Calificación'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </form>
-      )}
+
+            {/* Modal Lightbox para Ampliar Imágenes de Preguntas */}
+            {lightboxImage && (
+              <div 
+                className="fixed inset-0 z-[600] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer animate-in fade-in duration-200"
+                onClick={() => setLightboxImage(null)}
+              >
+                <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => setLightboxImage(null)}
+                    className="absolute -top-12 right-0 p-2 text-white/80 hover:text-white bg-neutral-800/80 hover:bg-neutral-700 rounded-full transition-colors cursor-pointer"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                  <img 
+                    src={lightboxImage} 
+                    alt="Ampliación de imagen de examen" 
+                    className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-neutral-700" 
+                  />
+                </div>
+              </div>
+            )}
+          </form>
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* MODAL: CREAR NUEVA CONVOCATORIA (EXAMINACIÓN) */}

@@ -14,6 +14,18 @@ const StudentAnswerSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  imageUrl: {
+    type: String,
+    default: ''
+  },
+  // Opciones para selección única
+  options: [{
+    type: String
+  }],
+  correctOptionIndex: {
+    type: Number,
+    default: null
+  },
   // Para selección única
   selectedOptionIndex: {
     type: Number,
@@ -25,6 +37,12 @@ const StudentAnswerSchema = new mongoose.Schema({
     default: ''
   },
   // Para asociar términos
+  leftTerms: [{ type: String }],
+  topTerms: [{ type: String }],
+  correctMatches: [{
+    leftIndex: { type: Number },
+    rightIndex: { type: Number }
+  }],
   matchingMatches: [{
     leftIndex: { type: Number },
     rightIndex: { type: Number }
@@ -33,6 +51,10 @@ const StudentAnswerSchema = new mongoose.Schema({
   isCorrect: {
     type: Boolean,
     default: null
+  },
+  isGraded: {
+    type: Boolean,
+    default: false
   },
   earnedPoints: {
     type: Number,
@@ -101,7 +123,7 @@ const ExamSubmissionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['submitted', 'graded'],
+    enum: ['submitted', 'partially_graded', 'graded'],
     default: 'submitted'
   },
   passed: {
