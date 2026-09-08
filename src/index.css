@@ -215,3 +215,43 @@ html {
 .animate-arrows-left {
   animation: scroll-arrows-left 15s linear infinite;
 }
+
+/* ============================================================
+   ADMIN: Escalamiento del +10% en tipografía para máxima legibilidad
+   ============================================================ */
+html:has(.admin-scope),
+html.admin-scope {
+    font-size: 110%;
+}
+
+.admin-scope {
+    font-size: 110%;
+    --text-xs: calc(0.75rem * 1.1);
+    --text-sm: calc(0.875rem * 1.1);
+    --text-base: calc(1rem * 1.1);
+    --text-lg: calc(1.125rem * 1.1);
+    --text-xl: calc(1.25rem * 1.1);
+    --text-2xl: calc(1.5rem * 1.1);
+    --text-3xl: calc(1.875rem * 1.1);
+    --text-4xl: calc(2.25rem * 1.1);
+    --text-5xl: calc(3rem * 1.1);
+}
+
+.admin-scope .text-\[10px\] {
+    font-size: 11px !important;
+}
+.admin-scope .text-\[11px\] {
+    font-size: 12.1px !important;
+}
+.admin-scope .text-\[12px\] {
+    font-size: 13.2px !important;
+}
+.admin-scope .text-\[13px\] {
+    font-size: 14.3px !important;
+}
+.admin-scope .text-\[14px\] {
+    font-size: 15.4px !important;
+}
+.admin-scope .text-\[15px\] {
+    font-size: 16.5px !important;
+}

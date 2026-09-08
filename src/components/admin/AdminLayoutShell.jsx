@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -26,6 +26,14 @@ export default function AdminLayoutShell({ children, user }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isExaminationsOpen, setIsExaminationsOpen] = useState(true);
+
+  // Activar escalamiento tipográfico del +10% de forma scoped en el documento
+  useEffect(() => {
+    document.documentElement.classList.add('admin-scope');
+    return () => {
+      document.documentElement.classList.remove('admin-scope');
+    };
+  }, []);
 
   const isActive = (path, exact = false) => {
     if (exact) return pathname === path;
@@ -73,7 +81,7 @@ export default function AdminLayoutShell({ children, user }) {
   ];
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans text-gray-900 bg-white">
+    <div className="admin-scope relative min-h-screen flex flex-col font-sans text-gray-900 bg-white">
       {/* Fondo Oficial de la Web ISKF (Fijo con textura sutil) */}
       <div className="fixed inset-0 z-0 pointer-events-none select-none bg-white">
         <Image
