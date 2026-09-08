@@ -24,16 +24,17 @@ export default async function AdminEventsPage() {
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto pb-12">
-            <div className="flex justify-between items-end border-b border-gray-200 pb-6">
-                <div>
-                    <h1 className="text-4xl font-black text-iskf-dark uppercase tracking-widest flex items-center gap-4">
-                        <Calendar className="text-iskf-red w-10 h-10" />
-                        Calendario
-                    </h1>
-                    <p className="text-gray-500 mt-2 text-sm font-medium tracking-wide">
-                        Gestiona los eventos oficiales. Usa la cuadrícula para añadir pastillas multi-día.
-                    </p>
+            <div className="border-b border-gray-200/80 pb-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-200/80 text-[#BE1622] text-xs font-bold uppercase tracking-widest font-mono mb-2">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Cronograma Oficial
                 </div>
+                <h1 className="text-3xl md:text-5xl font-black text-[#2D2E83] tracking-tight uppercase">
+                    Gestión de Calendario
+                </h1>
+                <p className="mt-2 text-sm md:text-base text-gray-600 font-medium">
+                    Programa torneos, seminarios, exámenes y actividades de la federación. Usa la cuadrícula para añadir eventos multi-día.
+                </p>
             </div>
 
             <AdminCalendar initialEvents={events} organizers={organizers} />

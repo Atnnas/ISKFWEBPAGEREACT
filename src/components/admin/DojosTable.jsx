@@ -4,6 +4,7 @@ import DojoEditModal from './DojoEditModal';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import { deleteDojo } from '../../app/admin/actions';
+import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
 
 export default function DojosTable({ initialDojos }) {
   const [dojos, setDojos] = useState(initialDojos);
@@ -54,22 +55,23 @@ export default function DojosTable({ initialDojos }) {
 
   return (
     <div>
-      <div className="flex justify-between items-center p-6 border-b border-neutral-700">
-        <h2 className="text-xl font-bold text-white">Listado de Dojos</h2>
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center p-6 border-b border-gray-200/90 gap-4 bg-gray-50/50">
+        <div>
+          <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">Listado de Dojos</h2>
+          <p className="text-xs text-gray-500 font-medium">Gestiona y actualiza los dojos oficiales de ISKF Costa Rica.</p>
+        </div>
         <button
           onClick={handleCreate}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2"
+          className="px-5 py-2.5 bg-[#BE1622] hover:bg-[#9c0f1b] text-white rounded-2xl transition-all shadow-md shadow-[#BE1622]/20 font-bold text-xs sm:text-sm flex items-center gap-2 self-start sm:self-auto cursor-pointer active:scale-95"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo Dojo
+          <Plus className="w-4 h-4" />
+          <span>Nuevo Dojo</span>
         </button>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-neutral-400">
-          <thead className="bg-neutral-900/50 text-neutral-300 uppercase font-semibold text-xs">
+        <table className="w-full text-left text-sm text-gray-600">
+          <thead className="bg-gray-100/80 text-gray-700 uppercase font-bold text-xs border-b border-gray-200">
             <tr>
               <th className="px-6 py-4">Dojo</th>
               <th className="px-6 py-4">Sensei</th>
@@ -77,25 +79,30 @@ export default function DojosTable({ initialDojos }) {
               <th className="px-6 py-4 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-700">
+          <tbody className="divide-y divide-gray-100">
             {dojos.map((dojo) => (
-              <tr key={dojo._id} className="hover:bg-neutral-700/30 transition-colors">
+              <tr key={dojo._id} className="hover:bg-blue-50/30 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={dojo.logo} alt={dojo.name} className="w-10 h-10 rounded bg-white object-contain p-1" />
+                    <img 
+                      src={dojo.logo || '/images/dojos/escudo.jpg'} 
+                      alt={dojo.name} 
+                      className="w-11 h-11 rounded-xl bg-white border border-gray-200 object-contain p-1 shadow-xs" 
+                    />
                     <div>
-                      <div className="text-white font-medium">{dojo.name}</div>
-                      <div className="text-xs">{dojo.idName}</div>
+                      <div className="text-gray-900 font-bold text-sm sm:text-base leading-snug">{dojo.name}</div>
+                      <div className="text-xs text-gray-500 font-mono">ID: {dojo.idName}</div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-white">{dojo.sensei}</div>
-                  <div className="text-xs">{dojo.rank}</div>
+                  <div className="text-gray-900 font-bold">{dojo.sensei}</div>
+                  <div className="text-xs text-gray-500 font-medium">{dojo.rank || 'Sensei'}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="px-2.5 py-1 bg-neutral-700 text-neutral-300 rounded-full text-xs font-medium">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-xs font-bold">
+                    <MapPin className="w-3 h-3 text-[#BE1622]" />
                     {dojo.province}
                   </span>
                 </td>
@@ -103,14 +110,14 @@ export default function DojosTable({ initialDojos }) {
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleEdit(dojo)}
-                      className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded-lg transition-colors"
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#2D2E83] bg-blue-50 hover:bg-blue-100 border border-blue-200/70 transition-colors cursor-pointer"
                       disabled={loading}
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => handleDeleteClick(dojo._id)}
-                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors"
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#BE1622] bg-red-50 hover:bg-red-100 border border-red-200/70 transition-colors cursor-pointer"
                       disabled={loading}
                     >
                       Eliminar
@@ -121,8 +128,8 @@ export default function DojosTable({ initialDojos }) {
             ))}
             {dojos.length === 0 && (
               <tr>
-                <td colSpan="4" className="px-6 py-12 text-center text-neutral-500">
-                  No hay dojos registrados
+                <td colSpan="4" className="px-6 py-12 text-center text-gray-400 font-medium">
+                  No hay dojos registrados actualmente.
                 </td>
               </tr>
             )}

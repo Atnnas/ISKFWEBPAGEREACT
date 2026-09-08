@@ -675,8 +675,8 @@ export default function ExaminationsManagement({
 
       {/* Indicador de carga sutil */}
       {isLoading && (
-        <div className="fixed bottom-6 right-6 z-50 bg-neutral-900/90 text-white text-xs px-4 py-2.5 rounded-xl border border-neutral-700 shadow-xl flex items-center gap-2 backdrop-blur-md">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+        <div className="fixed bottom-6 right-6 z-50 bg-white/95 text-gray-900 text-xs font-semibold px-4 py-2.5 rounded-xl border border-gray-200 shadow-xl flex items-center gap-2 backdrop-blur-md">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D2E83]" />
           <span>Sincronizando con base de datos...</span>
         </div>
       )}
@@ -687,16 +687,16 @@ export default function ExaminationsManagement({
       {activeView === 'sessions' && (
         <div className="space-y-8">
           {/* Header Principal */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-800 pb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200/80 pb-6">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/10 border border-red-500/20 text-iskf-red text-xs font-semibold uppercase tracking-widest font-mono">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-[#be1322] text-xs font-bold uppercase tracking-widest font-mono">
                 <Layers className="w-3.5 h-3.5" />
                 Panel de Examinaciones ISKF
               </div>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
                 Convocatorias de Examen
               </h1>
-              <p className="text-neutral-400 text-xs md:text-sm max-w-2xl">
+              <p className="text-gray-600 text-xs md:text-sm font-medium max-w-2xl">
                 Crea sesiones oficiales vinculando los Dojos convocados. Comparte el enlace directo con los alumnos y recibe sus respuestas en la bandeja para calificarlas.
               </p>
             </div>
@@ -712,11 +712,11 @@ export default function ExaminationsManagement({
 
           {/* Listado de Convocatorias en Formato Tabla */}
           {sessions.length === 0 ? (
-            <div className="p-12 text-center border border-dashed border-neutral-800 rounded-3xl bg-neutral-900/30 space-y-4">
-              <Award className="w-12 h-12 text-neutral-600 mx-auto" />
+            <div className="p-12 text-center border border-dashed border-gray-300 rounded-3xl bg-white/80 space-y-4 shadow-sm">
+              <Award className="w-12 h-12 text-gray-400 mx-auto" />
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-white">No hay convocatorias activas</h3>
-                <p className="text-neutral-400 text-xs max-w-sm mx-auto">
+                <h3 className="text-base font-bold text-gray-900">No hay convocatorias activas</h3>
+                <p className="text-gray-500 text-xs max-w-sm mx-auto">
                   Crea una examinación seleccionando qué Dojos calificarás y qué examen escrito deberán resolver los alumnos.
                 </p>
               </div>
@@ -728,11 +728,11 @@ export default function ExaminationsManagement({
               </button>
             </div>
           ) : (
-            <div className="bg-neutral-800/80 border border-neutral-700/80 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl">
+            <div className="bg-white/95 border border-gray-200/90 rounded-3xl overflow-hidden shadow-sm backdrop-blur-md">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-neutral-700 bg-neutral-900/90 text-[11px] uppercase tracking-wider font-mono text-neutral-400">
+                    <tr className="border-b border-gray-200 bg-gray-50/90 text-[11px] uppercase tracking-wider font-mono text-gray-700">
                       <th className="py-4 px-5 font-bold">Convocatoria & Examen</th>
                       <th className="py-4 px-4 font-bold">Dojos Convocados</th>
                       <th className="py-4 px-4 font-bold">Configuración & Seguridad</th>
@@ -741,7 +741,7 @@ export default function ExaminationsManagement({
                       <th className="py-4 px-5 font-bold text-right">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-700/60 text-xs text-neutral-200">
+                  <tbody className="divide-y divide-gray-100 text-xs text-gray-800">
                     {sessions.map((sess) => {
                       const origin = typeof window !== 'undefined' ? window.location.origin : '';
                       const linkUrl = `${origin}/examinations/take/${sess.accessCode}`;
@@ -750,21 +750,21 @@ export default function ExaminationsManagement({
                       return (
                         <tr 
                           key={sess.id || sess._id}
-                          className="hover:bg-neutral-700/30 transition-colors group"
+                          className="hover:bg-blue-50/40 transition-colors group"
                         >
                           {/* Col 1: Convocatoria y Examen */}
                           <td className="py-4 px-5 align-middle">
                             <div className="space-y-1.5 max-w-xs sm:max-w-sm">
-                              <div className="font-bold text-sm sm:text-base text-white group-hover:text-blue-400 transition-colors">
+                              <div className="font-black text-sm sm:text-base text-gray-900 group-hover:text-[#2D2E83] transition-colors">
                                 {sess.title}
                               </div>
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="font-semibold text-[11px] text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 rounded-md truncate max-w-[220px]" title={sess.writtenExamName}>
+                                <span className="font-bold text-[11px] text-[#2D2E83] bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-md truncate max-w-[220px]" title={sess.writtenExamName}>
                                   {sess.writtenExamName}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1.5 text-[11px] font-mono text-neutral-400 select-all pt-0.5">
-                                <ExternalLink className="w-3 h-3 text-neutral-500 shrink-0" />
+                              <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-500 select-all pt-0.5">
+                                <ExternalLink className="w-3 h-3 text-gray-400 shrink-0" />
                                 <span className="truncate max-w-[200px]" title={linkUrl}>{linkUrl}</span>
                               </div>
                             </div>
@@ -777,20 +777,20 @@ export default function ExaminationsManagement({
                                 (sess.assignedDojos || []).map((d, dIdx) => (
                                   <span 
                                     key={dIdx} 
-                                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-neutral-900/90 text-neutral-300 rounded-lg border border-neutral-700/60 text-[11px]"
+                                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-100/90 text-gray-800 rounded-lg border border-gray-200 text-[11px]"
                                     title={d.name}
                                   >
                                     <img
                                       src={d.logo || '/images/dojos/escudo.jpg'}
                                       alt={`Escudo ${d.name}`}
-                                      className="w-3.5 h-3.5 rounded-full object-contain bg-neutral-950 shrink-0"
+                                      className="w-3.5 h-3.5 rounded-full object-contain bg-white shrink-0 shadow-xs"
                                       onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
                                     />
-                                    <span className="font-medium truncate max-w-[120px]">{d.name}</span>
+                                    <span className="font-semibold truncate max-w-[120px]">{d.name}</span>
                                   </span>
                                 ))
                               ) : (
-                                <span className="text-neutral-500 text-[11px] italic">Sin dojos asignados</span>
+                                <span className="text-gray-400 text-[11px] italic">Sin dojos asignados</span>
                               )}
                             </div>
                           </td>
@@ -800,39 +800,39 @@ export default function ExaminationsManagement({
                             <div className="flex flex-col gap-1.5 max-w-[210px]">
                               {/* Seguridad */}
                               {sess.securityMode === 'strict' && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md w-fit">
-                                  <ShieldAlert className="w-3 h-3 text-red-400 shrink-0" />
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#BE1622] bg-red-50 border border-red-200 px-2 py-0.5 rounded-md w-fit">
+                                  <ShieldAlert className="w-3 h-3 text-[#BE1622] shrink-0" />
                                   Seguridad Estricta
                                 </span>
                               )}
                               {sess.securityMode === 'warnings' && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md w-fit">
-                                  <Shield className="w-3 h-3 text-amber-400 shrink-0" />
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md w-fit">
+                                  <Shield className="w-3 h-3 text-amber-700 shrink-0" />
                                   Seguridad: 3 Intentos
                                 </span>
                               )}
                               {(!sess.securityMode || sess.securityMode === 'audit') && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 bg-neutral-900/90 border border-neutral-700/60 px-2 py-0.5 rounded-md w-fit">
-                                  <Shield className="w-3 h-3 text-neutral-500 shrink-0" />
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-700 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md w-fit">
+                                  <Shield className="w-3 h-3 text-gray-500 shrink-0" />
                                   Seguridad: Auditoría
                                 </span>
                               )}
 
                               {/* Anti-Colusión */}
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md w-fit" title="Barajado individual de preguntas y opciones activo">
-                                <Shuffle className="w-3 h-3 text-purple-400 shrink-0" />
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md w-fit" title="Barajado individual de preguntas y opciones activo">
+                                <Shuffle className="w-3 h-3 text-purple-600 shrink-0" />
                                 Anti-Colusión Activo
                               </span>
 
                               {/* Límite de Tiempo */}
                               {sess.timeLimitMinutes > 0 ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md w-fit">
-                                  <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md w-fit">
+                                  <Clock className="w-3 h-3 text-amber-600 shrink-0" />
                                   {sess.timeLimitMinutes} min límite
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400 bg-neutral-900/80 border border-neutral-700/60 px-2 py-0.5 rounded-md w-fit">
-                                  <Clock className="w-3 h-3 text-neutral-500 shrink-0" />
+                                <span className="inline-flex items-center gap-1 text-[11px] text-gray-600 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md w-fit">
+                                  <Clock className="w-3 h-3 text-gray-500 shrink-0" />
                                   Sin límite
                                 </span>
                               )}
@@ -843,14 +843,14 @@ export default function ExaminationsManagement({
                           <td className="py-4 px-4 align-middle text-center">
                             <button
                               onClick={(e) => handleToggleStatus(sess.id || sess._id, e)}
-                              className={`px-3 py-1 rounded-full text-xs font-mono font-semibold uppercase transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer ${
+                              className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer ${
                                 sess.status === 'active'
-                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
-                                  : 'bg-neutral-700/40 text-neutral-400 border border-neutral-600 hover:bg-neutral-700'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                  : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
                               }`}
                               title="Clic para alternar Activa / Cerrada"
                             >
-                              <span className={`w-1.5 h-1.5 rounded-full ${sess.status === 'active' ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-500'}`}></span>
+                              <span className={`w-1.5 h-1.5 rounded-full ${sess.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
                               <span>{sess.status === 'active' ? 'Activa' : 'Cerrada'}</span>
                             </button>
                           </td>
@@ -858,15 +858,15 @@ export default function ExaminationsManagement({
                           {/* Col 5: Entregas */}
                           <td className="py-4 px-4 align-middle text-center">
                             <div className="inline-flex flex-col items-center gap-1">
-                              <span className="px-2.5 py-1 rounded-lg bg-neutral-900/90 border border-neutral-700/60 text-white font-mono font-bold text-xs">
+                              <span className="px-2.5 py-1 rounded-lg bg-gray-100 border border-gray-200 text-gray-900 font-mono font-bold text-xs">
                                 {sess.totalSubmissions || 0}
                               </span>
                               {sess.pendingSubmissions > 0 ? (
-                                <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-semibold animate-pulse">
+                                <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold animate-pulse">
                                   {sess.pendingSubmissions} pend.
                                 </span>
                               ) : (
-                                <span className="text-[10px] text-neutral-500 font-mono">
+                                <span className="text-[10px] text-gray-400 font-mono">
                                   Al día
                                 </span>
                               )}
@@ -879,10 +879,10 @@ export default function ExaminationsManagement({
                               {/* Copiar Link */}
                               <button
                                 onClick={(e) => handleCopyLink(sess, e)}
-                                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                                   isCopied
                                     ? 'bg-emerald-600 text-white shadow-md'
-                                    : 'bg-neutral-700 hover:bg-neutral-600 text-white border border-neutral-600'
+                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
                                 }`}
                                 title="Copiar enlace para los estudiantes"
                               >
@@ -893,7 +893,7 @@ export default function ExaminationsManagement({
                                   </>
                                 ) : (
                                   <>
-                                    <Copy className="w-3.5 h-3.5 text-blue-400" />
+                                    <Copy className="w-3.5 h-3.5 text-[#2D2E83]" />
                                     <span className="hidden lg:inline text-[11px]">Link</span>
                                   </>
                                 )}
@@ -902,7 +902,7 @@ export default function ExaminationsManagement({
                               {/* Sala en Vivo */}
                               <button
                                 onClick={() => handleOpenLiveModal(sess)}
-                                className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-all shadow cursor-pointer active:scale-95 shrink-0"
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95 shrink-0"
                                 title="Monitorear aspirantes rindiendo examen en tiempo real"
                               >
                                 <span className="relative flex h-2 w-2">
@@ -916,17 +916,17 @@ export default function ExaminationsManagement({
                               {/* Bandeja */}
                               <button
                                 onClick={() => handleOpenInbox(sess)}
-                                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl text-xs font-semibold transition-colors shadow cursor-pointer shrink-0"
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#2D2E83] border border-blue-200 rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer shrink-0"
                                 title="Abrir bandeja de exámenes entregados"
                               >
-                                <FileText className="w-3.5 h-3.5 text-blue-400" />
+                                <FileText className="w-3.5 h-3.5 text-[#2D2E83]" />
                                 <span className="hidden lg:inline text-[11px]">Bandeja</span>
                               </button>
 
                               {/* Eliminar */}
                               <button
                                 onClick={(e) => handleDeleteSession(sess.id || sess._id, e)}
-                                className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20 cursor-pointer shrink-0"
+                                className="p-1.5 text-gray-400 hover:text-[#BE1622] hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-200 cursor-pointer shrink-0"
                                 title="Eliminar convocatoria"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -943,50 +943,50 @@ export default function ExaminationsManagement({
           )}
 
           {/* Accesos a Módulos Base (Constructor y Técnico) */}
-          <div className="pt-6 border-t border-neutral-800 space-y-4">
-            <h2 className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
+          <div className="pt-6 border-t border-gray-200/80 space-y-4">
+            <h2 className="text-xs uppercase font-bold text-gray-500 tracking-wider">
               Módulos y Configuración de Evaluaciones
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Link
                 href="/admin/examinations/written"
-                className="group bg-neutral-900/60 hover:bg-neutral-900 border border-neutral-800 hover:border-blue-500/50 rounded-2xl p-6 transition-all flex items-center justify-between shadow-md"
+                className="group bg-white/95 hover:bg-blue-50/40 border border-gray-200/90 hover:border-[#2D2E83]/40 rounded-2xl p-6 transition-all flex items-center justify-between shadow-sm"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 text-[#2D2E83] flex items-center justify-center group-hover:scale-105 transition-transform">
                     <FileText className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors">
+                    <h3 className="text-base font-bold text-gray-900 group-hover:text-[#2D2E83] transition-colors">
                       Banco de Exámenes Escritos
                     </h3>
-                    <p className="text-xs text-neutral-400">
+                    <p className="text-xs text-gray-500 font-medium">
                       Confeccionar y editar preguntas teóricas, matrices de asociar e imágenes.
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all shrink-0" />
+                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-[#2D2E83] group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
 
               <Link
                 href="/admin/examinations/technical"
-                className="group bg-neutral-900/60 hover:bg-neutral-900 border border-neutral-800 hover:border-amber-500/50 rounded-2xl p-6 transition-all flex items-center justify-between shadow-md"
+                className="group bg-white/95 hover:bg-amber-50/40 border border-gray-200/90 hover:border-amber-400/40 rounded-2xl p-6 transition-all flex items-center justify-between shadow-sm"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <Construction className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white group-hover:text-amber-400 transition-colors">
+                    <h3 className="text-base font-bold text-gray-900 group-hover:text-amber-600 transition-colors">
                       Exámenes Técnicos en Tatami
                     </h3>
-                    <p className="text-xs text-neutral-400">
+                    <p className="text-xs text-gray-500 font-medium">
                       Rúbricas de Kihon, Kata y Kumite ante el Tribunal Oficial (En Construcción).
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-all shrink-0" />
+                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
             </div>
           </div>
@@ -999,32 +999,32 @@ export default function ExaminationsManagement({
       {activeView === 'inbox' && selectedSession && (
         <div className="space-y-6">
           {/* Header de la Bandeja */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-800 pb-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200/80 pb-5">
             <div className="space-y-1">
               <button
                 onClick={() => setActiveView('sessions')}
-                className="inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors mb-1"
+                className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#2D2E83] font-bold transition-colors mb-1 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Volver a Convocatorias
               </button>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-white tracking-tight">
+                <h1 className="text-2xl font-black text-[#2D2E83] tracking-tight">
                   Bandeja de Entregas: {selectedSession.title}
                 </h1>
-                <span className="px-3 py-0.5 rounded-full text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <span className="px-3 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-50 text-[#2D2E83] border border-blue-200">
                   {submissions.length} recibidas
                 </span>
               </div>
-              <p className="text-xs text-neutral-400">
-                Examen base: <strong className="text-neutral-200">{selectedSession.writtenExamName}</strong>
+              <p className="text-xs text-gray-600 font-medium">
+                Examen base: <strong className="text-gray-900 font-bold">{selectedSession.writtenExamName}</strong>
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => handleOpenLiveModal(selectedSession)}
-                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
                 title="Abrir sala de monitoreo en tiempo real"
               >
                 <span className="relative flex h-2 w-2">
@@ -1035,10 +1035,9 @@ export default function ExaminationsManagement({
                 <span>Sala en Vivo</span>
               </button>
 
-
               <button
                 onClick={() => handleOpenInbox(selectedSession)}
-                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
               >
                 Refrescar
               </button>
@@ -1046,11 +1045,11 @@ export default function ExaminationsManagement({
           </div>
 
           {/* Tabla de Entregas */}
-          <div className="bg-neutral-800/80 border border-neutral-700/80 rounded-3xl overflow-hidden shadow-xl">
+          <div className="bg-white/95 border border-gray-200/90 rounded-3xl overflow-hidden shadow-sm backdrop-blur-md">
             <div className="overflow-x-auto">
               <table className="min-w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="bg-neutral-900 border-b border-neutral-700 text-neutral-400 font-semibold uppercase tracking-wider">
+                  <tr className="bg-gray-50/90 border-b border-gray-200 text-gray-700 font-bold uppercase tracking-wider text-[11px]">
                     <th className="p-4">Aspirante</th>
                     <th className="p-4">Dojo</th>
                     <th className="p-4">Kyu / Grado</th>
@@ -1060,37 +1059,37 @@ export default function ExaminationsManagement({
                     <th className="p-4 text-right">Acción</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-700/60">
+                <tbody className="divide-y divide-gray-100 text-gray-800">
                   {submissions.map((sub) => {
                     const isGraded = sub.status === 'graded';
 
                     return (
-                      <tr key={sub.id || sub._id} className="hover:bg-neutral-700/30 transition-colors">
-                        <td className="p-4 font-bold text-white">
+                      <tr key={sub.id || sub._id} className="hover:bg-blue-50/40 transition-colors">
+                        <td className="p-4 font-black text-gray-900">
                           <div className="flex items-center gap-2">
-                            <User className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            <User className="w-3.5 h-3.5 text-[#2D2E83] shrink-0" />
                             <span>{sub.studentName}</span>
                           </div>
                           {sub.isAutoSubmitted && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded mt-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded mt-1">
                               <Clock className="w-2.5 h-2.5" />
                               Límite de tiempo
                             </span>
                           )}
                         </td>
-                        <td className="p-4 text-neutral-300">
+                        <td className="p-4 text-gray-700 font-semibold">
                           {sub.studentDojo}
                         </td>
-                        <td className="p-4 text-neutral-400">
+                        <td className="p-4 text-gray-500 font-medium">
                           {sub.studentRank || '—'}
                         </td>
-                        <td className="p-4 text-neutral-400 font-mono">
+                        <td className="p-4 text-gray-500 font-mono">
                           {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('es-CR') : '—'}
                         </td>
                         <td className="p-4">
                           {sub.closedBySecurity ? (
                             <span 
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-[#BE1622] border border-red-200"
                               title={sub.securityReport || "Examen cerrado por seguridad"}
                             >
                               <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
@@ -1098,32 +1097,32 @@ export default function ExaminationsManagement({
                             </span>
                           ) : sub.securityViolationsCount > 0 ? (
                             <span 
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200"
                               title={sub.securityReport || `${sub.securityViolationsCount} salidas registradas`}
                             >
                               <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                               <span>{sub.securityViolationsCount} {sub.securityViolationsCount === 1 ? 'salida' : 'salidas'}</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-semibold">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                               <span>Sin incidencias</span>
                             </span>
                           )}
                         </td>
                         <td className="p-4">
                           {isGraded ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <Check className="w-3 h-3" />
                               Nota: {sub.percentage}% ({sub.passed ? 'Aprobado' : 'Reprobado'})
                             </span>
                           ) : sub.status === 'partially_graded' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                               <Save className="w-3 h-3" />
                               En Revisión ({sub.totalScore || 0} pts guardados)
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
                               <Clock className="w-3 h-3" />
                               Por Calificar (Auto: {sub.autoScore} pts)
                             </span>
@@ -1133,12 +1132,12 @@ export default function ExaminationsManagement({
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => handleOpenGrading(sub)}
-                              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shadow active:scale-95 cursor-pointer ${
+                              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer ${
                                 isGraded
-                                  ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700'
+                                  ? 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200'
                                   : sub.status === 'partially_graded'
-                                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white'
-                                  : 'bg-blue-600 hover:bg-blue-500 text-white'
+                                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                  : 'bg-[#2D2E83] hover:bg-[#232468] text-white'
                               }`}
                             >
                               {isGraded ? (
@@ -1161,7 +1160,7 @@ export default function ExaminationsManagement({
                             <button
                               onClick={(e) => handleDeleteSubmission(sub.id || sub._id, sub.studentName, e)}
                               title="Eliminar entrega de examen"
-                              className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20 cursor-pointer"
+                              className="p-1.5 text-gray-400 hover:text-[#BE1622] hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200 cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1175,10 +1174,10 @@ export default function ExaminationsManagement({
             </div>
 
             {submissions.length === 0 && (
-              <div className="p-12 text-center text-neutral-500 space-y-2">
-                <FileText className="w-8 h-8 mx-auto text-neutral-600" />
-                <p className="text-sm font-semibold text-neutral-400">Aún no se han recibido exámenes en esta bandeja.</p>
-                <p className="text-xs text-neutral-500">
+              <div className="p-12 text-center text-gray-500 space-y-2">
+                <FileText className="w-8 h-8 mx-auto text-gray-400" />
+                <p className="text-sm font-bold text-gray-700">Aún no se han recibido exámenes en esta bandeja.</p>
+                <p className="text-xs text-gray-500">
                   Comparte el link con los estudiantes para que puedan resolver el cuestionario.
                 </p>
               </div>
@@ -1200,37 +1199,37 @@ export default function ExaminationsManagement({
         return (
           <form onSubmit={handleFinalizeGrade} className="space-y-6">
             {/* Header del Panel de Calificación con Métricas en Vivo y Acciones */}
-            <div className="bg-neutral-800/90 border border-neutral-700/80 rounded-3xl p-6 shadow-xl space-y-5">
+            <div className="bg-white/95 border border-gray-200/90 rounded-3xl p-6 shadow-sm space-y-5 backdrop-blur-md text-gray-900">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <button
                     type="button"
                     onClick={() => setActiveView('inbox')}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-400 hover:text-white transition-colors mb-1 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[#2D2E83] transition-colors mb-1 cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
                     Volver a Bandeja de Entregas
                   </button>
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <h1 className="text-2xl font-extrabold text-white tracking-tight">
+                    <h1 className="text-2xl font-black text-[#2D2E83] tracking-tight">
                       Revisión de Examen: {selectedSubmission.studentName}
                     </h1>
                     {selectedSubmission.status === 'graded' ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 px-2.5 py-0.5 rounded-full">
                         <Check className="w-3 h-3" /> Oficial Asentado
                       </span>
                     ) : selectedSubmission.status === 'partially_graded' ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-300 px-2.5 py-0.5 rounded-full">
                         <Save className="w-3 h-3" /> Progreso Guardado (Borrador)
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 px-2.5 py-0.5 rounded-full">
                         <Clock className="w-3 h-3" /> Pendiente de Evaluación
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-neutral-400">
-                    Dojo: <strong className="text-neutral-200">{selectedSubmission.studentDojo}</strong> • Grado/Kyu: <strong className="text-neutral-200">{selectedSubmission.studentRank || 'Aspirante'}</strong> • Entregado: {selectedSubmission.submittedAt ? new Date(selectedSubmission.submittedAt).toLocaleString('es-CR') : '—'}
+                  <p className="text-xs text-gray-600 font-medium">
+                    Dojo: <strong className="text-gray-900 font-bold">{selectedSubmission.studentDojo}</strong> • Grado/Kyu: <strong className="text-gray-900 font-bold">{selectedSubmission.studentRank || 'Aspirante'}</strong> • Entregado: {selectedSubmission.submittedAt ? new Date(selectedSubmission.submittedAt).toLocaleString('es-CR') : '—'}
                   </p>
                 </div>
 
@@ -1240,13 +1239,13 @@ export default function ExaminationsManagement({
                     type="button"
                     onClick={handleSaveProgress}
                     disabled={isSavingProgress || isSavingGrade}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900/80 hover:bg-neutral-900 text-amber-300 hover:text-amber-200 border border-amber-500/40 rounded-xl text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
                     title="Guardar las notas asignadas hasta ahora para no perder tu trabajo y continuar después"
                   >
                     {isSavingProgress ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
                     ) : (
-                      <Save className="w-4 h-4 text-amber-400" />
+                      <Save className="w-4 h-4 text-amber-600" />
                     )}
                     <span>{isSavingProgress ? 'Guardando...' : 'Guardar Progreso'}</span>
                   </button>
@@ -1254,7 +1253,7 @@ export default function ExaminationsManagement({
                   <button
                     type="submit"
                     disabled={isSavingGrade || isSavingProgress}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-[#2D2E83]/20 active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     {isSavingGrade ? (
                       <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -1267,16 +1266,16 @@ export default function ExaminationsManagement({
               </div>
 
               {/* Barra de Progreso y Puntaje en Vivo */}
-              <div className="bg-neutral-900/70 border border-neutral-700/60 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-center">
+              <div className="bg-gray-50/90 border border-gray-200/80 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-center">
                 {/* Métricas de Preguntas Evaluadas */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-neutral-400 font-semibold">Progreso de Evaluación:</span>
-                    <span className="font-bold text-neutral-200">{gradedQuestionsCount} de {totalQuestions} ({gradingProgressPct}%)</span>
+                    <span className="text-gray-600 font-bold">Progreso de Evaluación:</span>
+                    <span className="font-bold text-gray-900">{gradedQuestionsCount} de {totalQuestions} ({gradingProgressPct}%)</span>
                   </div>
-                  <div className="w-full bg-neutral-800 border border-neutral-700/60 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-gray-200 border border-gray-300 rounded-full h-2.5 overflow-hidden">
                     <div 
-                      className="bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 h-full rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-[#2D2E83] via-indigo-600 to-emerald-600 h-full rounded-full transition-all duration-300"
                       style={{ width: `${gradingProgressPct}%` }}
                     />
                   </div>
@@ -1284,14 +1283,14 @@ export default function ExaminationsManagement({
 
                 {/* Puntaje y Porcentaje Actual */}
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-neutral-800 border border-neutral-700 text-blue-400">
+                  <div className="p-2.5 rounded-xl bg-white border border-gray-200 text-[#2D2E83] shadow-xs">
                     <Award className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="text-[11px] uppercase font-semibold text-neutral-400 block">Puntos Acumulados</span>
-                    <span className="text-lg font-extrabold text-white">
-                      {totalAccumulatedScore} <span className="text-xs text-neutral-400 font-normal">/ {totalQuestions} pts</span>
-                      <span className="ml-2 text-xs font-semibold text-blue-400">({calculatedPercentage}%)</span>
+                    <span className="text-[11px] uppercase font-bold text-gray-500 block">Puntos Acumulados</span>
+                    <span className="text-lg font-black text-gray-900">
+                      {totalAccumulatedScore} <span className="text-xs text-gray-500 font-normal">/ {totalQuestions} pts</span>
+                      <span className="ml-2 text-xs font-bold text-[#2D2E83]">({calculatedPercentage}%)</span>
                     </span>
                   </div>
                 </div>
@@ -1299,8 +1298,8 @@ export default function ExaminationsManagement({
                 {/* Veredicto Sugerido */}
                 <div className="flex items-center justify-between sm:justify-end gap-3">
                   <div className="text-right">
-                    <span className="text-[10px] uppercase font-semibold text-neutral-400 block">Veredicto Calculado</span>
-                    <span className={`text-xs font-bold ${calculatedPercentage >= 70 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Veredicto Calculado</span>
+                    <span className={`text-xs font-black ${calculatedPercentage >= 70 ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
                       {calculatedPercentage >= 70 ? 'Aprobado (≥ 70%)' : 'No Aprobado (< 70%)'}
                     </span>
                   </div>
@@ -1310,15 +1309,15 @@ export default function ExaminationsManagement({
 
             {/* Banner de Confirmación al Guardar Progreso */}
             {saveSuccessMessage && (
-              <div className="bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 px-5 py-3.5 rounded-2xl flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center gap-3 text-xs sm:text-sm font-bold">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                   <span>{saveSuccessMessage}</span>
                 </div>
                 <button 
                   type="button" 
                   onClick={() => setSaveSuccessMessage('')}
-                  className="text-emerald-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                  className="text-emerald-700 hover:text-emerald-900 p-1 rounded-lg transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1327,16 +1326,16 @@ export default function ExaminationsManagement({
 
             {/* Tarjeta de Auditoría de Seguridad e Integridad */}
             {(selectedSubmission.securityViolationsCount > 0 || selectedSubmission.closedBySecurity) ? (
-              <div className={`border rounded-3xl p-5 shadow-lg space-y-2 ${
+              <div className={`border rounded-3xl p-5 shadow-sm space-y-2 ${
                 selectedSubmission.closedBySecurity
-                  ? 'bg-red-950/40 border-red-500/40 text-red-200'
-                  : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+                  ? 'bg-red-50 border-red-200 text-red-900'
+                  : 'bg-amber-50 border-amber-200 text-amber-900'
               }`}>
-                <div className="flex items-center gap-2.5 font-bold text-sm">
+                <div className="flex items-center gap-2.5 font-black text-sm">
                   {selectedSubmission.closedBySecurity ? (
-                    <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
+                    <ShieldAlert className="w-5 h-5 text-[#BE1622] shrink-0" />
                   ) : (
-                    <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                   )}
                   <span>
                     {selectedSubmission.closedBySecurity
@@ -1345,23 +1344,23 @@ export default function ExaminationsManagement({
                   </span>
                 </div>
                 {selectedSubmission.securityReport && (
-                  <p className="text-xs opacity-90 pl-7 font-mono">
+                  <p className="text-xs opacity-90 pl-7 font-mono font-medium">
                     {selectedSubmission.securityReport}
                   </p>
                 )}
-                <p className="text-[11px] text-neutral-400 pl-7">
+                <p className="text-[11px] text-gray-600 pl-7 font-medium">
                   {selectedSubmission.closedBySecurity
                     ? 'El examen fue concluido de manera forzada por el protocolo anti-trampa y el enlace del dispositivo quedó inhabilitado.'
                     : 'El estudiante alternó de ventana o pestaña durante la resolución del cuestionario oficial.'}
                 </p>
               </div>
             ) : (
-              <div className="bg-neutral-900/60 border border-neutral-700/60 rounded-2xl px-5 py-3 text-xs text-neutral-400 flex items-center justify-between">
+              <div className="bg-white/95 border border-gray-200/90 rounded-2xl px-5 py-3 text-xs text-gray-700 flex items-center justify-between shadow-xs">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span><strong>Auditoría de Integridad:</strong> Sin incidencias de cambio de ventana reportadas durante la prueba.</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span><strong className="font-bold text-gray-900">Auditoría de Integridad:</strong> Sin incidencias de cambio de ventana reportadas durante la prueba.</span>
                 </div>
-                <span className="text-[11px] font-mono text-neutral-500">0 salidas de foco</span>
+                <span className="text-[11px] font-mono font-bold text-gray-500">0 salidas de foco</span>
               </div>
             )}
 
@@ -1374,21 +1373,21 @@ export default function ExaminationsManagement({
                 return (
                   <div
                     key={ans.questionId || idx}
-                    className={`bg-neutral-800/90 border rounded-3xl p-6 space-y-4 shadow-xl transition-all ${
+                    className={`bg-white/95 border rounded-3xl p-6 space-y-4 shadow-sm transition-all text-gray-900 ${
                       isItemGraded 
-                        ? 'border-neutral-700/80' 
-                        : 'border-amber-500/40 ring-1 ring-amber-500/20'
+                        ? 'border-gray-200/90' 
+                        : 'border-amber-400 ring-1 ring-amber-300'
                     }`}
                   >
                     {/* Encabezado de la Pregunta y Controles de Calificación */}
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-neutral-700/60 pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-gray-200/80 pb-4">
                       <div className="flex items-start gap-3">
-                        <span className="w-8 h-8 rounded-xl bg-neutral-900 border border-neutral-700 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 shadow">
+                        <span className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 text-[#2D2E83] text-xs font-black flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
                           #{idx + 1}
                         </span>
                         <div className="space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] uppercase font-bold text-neutral-400 font-mono tracking-wider px-2 py-0.5 rounded-md bg-neutral-900 border border-neutral-700/80">
+                            <span className="text-[10px] uppercase font-bold text-gray-700 font-mono tracking-wider px-2 py-0.5 rounded-md bg-gray-100 border border-gray-200">
                               {ans.questionType === 'single_choice' && 'Selección Única'}
                               {ans.questionType === 'short_answer' && 'Respuesta Breve'}
                               {ans.questionType === 'long_answer' && 'Desarrollo Escrito'}
@@ -1396,31 +1395,31 @@ export default function ExaminationsManagement({
                             </span>
 
                             {isItemGraded ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                                 <Check className="w-3 h-3" /> Evaluada ({currentGrade.earnedPoints ?? 0} pts)
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                                 <Clock className="w-3 h-3" /> Pendiente de revisión
                               </span>
                             )}
                           </div>
-                          <p className="text-sm sm:text-base font-semibold text-white leading-snug pt-1">
+                          <p className="text-sm sm:text-base font-bold text-gray-900 leading-snug pt-1">
                             {ans.questionText || `Pregunta #${idx + 1}`}
                           </p>
                         </div>
                       </div>
 
                       {/* Controles de Puntuación: Botones Rápidos + Input */}
-                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 bg-neutral-900/80 border border-neutral-700/70 p-1.5 rounded-2xl shadow-inner">
+                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 bg-gray-100/90 border border-gray-200 p-1.5 rounded-2xl shadow-inner">
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => handleQuickPoints(ans.questionId, 0)}
                             className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                               currentGrade.earnedPoints === 0 && isItemGraded
-                                ? 'bg-red-600 text-white shadow'
-                                : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                                ? 'bg-[#BE1622] text-white shadow'
+                                : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'
                             }`}
                             title="Asignar 0 puntos (Incorrecto)"
                           >
@@ -1432,7 +1431,7 @@ export default function ExaminationsManagement({
                             className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                               currentGrade.earnedPoints === 0.5 && isItemGraded
                                 ? 'bg-amber-600 text-white shadow'
-                                : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                                : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'
                             }`}
                             title="Asignar 0.5 puntos (Medio punto)"
                           >
@@ -1444,7 +1443,7 @@ export default function ExaminationsManagement({
                             className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                               currentGrade.earnedPoints === 1 && isItemGraded
                                 ? 'bg-emerald-600 text-white shadow'
-                                : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                                : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'
                             }`}
                             title="Asignar 1 punto completo (Correcto)"
                           >
@@ -1452,7 +1451,7 @@ export default function ExaminationsManagement({
                           </button>
                         </div>
 
-                        <div className="h-5 w-[1px] bg-neutral-700 mx-1" />
+                        <div className="h-5 w-[1px] bg-gray-300 mx-1" />
 
                         <div className="flex items-center gap-1">
                           <input
@@ -1462,16 +1461,16 @@ export default function ExaminationsManagement({
                             max="10"
                             value={currentGrade.earnedPoints ?? 0}
                             onChange={(e) => handlePointsChange(ans.questionId, e.target.value)}
-                            className="w-14 px-2 py-1 bg-neutral-950 border border-neutral-700 rounded-lg text-center font-extrabold text-white text-xs focus:outline-none focus:border-blue-500"
+                            className="w-14 px-2 py-1 bg-white border border-gray-300 rounded-lg text-center font-black text-gray-900 text-xs focus:outline-none focus:border-[#2D2E83]"
                           />
-                          <span className="text-[10px] text-neutral-400 font-mono pr-1">pts</span>
+                          <span className="text-[10px] text-gray-500 font-mono font-bold pr-1">pts</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Imagen de la Pregunta si está adjunta */}
                     {ans.imageUrl && (
-                      <div className="relative inline-block group rounded-2xl overflow-hidden border border-neutral-700 bg-neutral-900 max-w-sm">
+                      <div className="relative inline-block group rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 max-w-sm">
                         <img 
                           src={ans.imageUrl} 
                           alt={`Referencia gráfica pregunta ${idx + 1}`} 
@@ -1494,7 +1493,7 @@ export default function ExaminationsManagement({
                     {/* TIPO 1: SELECCIÓN ÚNICA */}
                     {ans.questionType === 'single_choice' && (
                       <div className="space-y-3">
-                        <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
+                        <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block">
                           Opciones de la pregunta y selección del alumno:
                         </span>
 
@@ -1505,29 +1504,29 @@ export default function ExaminationsManagement({
                               const isOfficialCorrect = ans.correctOptionIndex === optIdx;
                               const letter = String.fromCharCode(65 + optIdx);
 
-                              let cardClass = "bg-neutral-900/60 border-neutral-700/60 text-neutral-300";
+                              let cardClass = "bg-gray-50/80 border-gray-200 text-gray-800";
                               let badge = null;
 
                               if (isStudentChoice) {
                                 if (ans.isCorrect) {
-                                  cardClass = "bg-emerald-950/40 border-emerald-500/70 text-emerald-200 ring-1 ring-emerald-500/40";
+                                  cardClass = "bg-emerald-50 border-emerald-500 text-emerald-900 ring-1 ring-emerald-400";
                                   badge = (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-md">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
                                       <Check className="w-3 h-3" /> Selección del Alumno (Correcta)
                                     </span>
                                   );
                                 } else {
-                                  cardClass = "bg-red-950/40 border-red-500/70 text-red-200 ring-1 ring-red-500/40";
+                                  cardClass = "bg-red-50 border-red-500 text-red-900 ring-1 ring-red-400";
                                   badge = (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/20 px-2 py-0.5 rounded-md">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#BE1622] bg-red-100 px-2 py-0.5 rounded-md">
                                       <X className="w-3 h-3" /> Selección del Alumno (Incorrecta)
                                     </span>
                                   );
                                 }
                               } else if (isOfficialCorrect) {
-                                cardClass = "bg-emerald-950/20 border-emerald-500/50 text-emerald-300 border-dashed";
+                                cardClass = "bg-emerald-50/40 border-emerald-400 text-emerald-800 border-dashed";
                                 badge = (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400/90 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
                                     <Check className="w-3 h-3" /> Opción Correcta Oficial
                                   </span>
                                 );
@@ -1536,10 +1535,10 @@ export default function ExaminationsManagement({
                               return (
                                 <div key={optIdx} className={`p-3.5 rounded-2xl border flex flex-col justify-between gap-2.5 transition-all ${cardClass}`}>
                                   <div className="flex items-start gap-2.5">
-                                    <span className="w-6 h-6 rounded-lg bg-neutral-800 text-xs font-mono font-bold flex items-center justify-center shrink-0 border border-neutral-700">
+                                    <span className="w-6 h-6 rounded-lg bg-white text-xs font-mono font-bold flex items-center justify-center shrink-0 border border-gray-200 text-gray-700 shadow-xs">
                                       {letter}
                                     </span>
-                                    <span className="text-xs sm:text-sm font-medium leading-snug">
+                                    <span className="text-xs sm:text-sm font-semibold leading-snug">
                                       {optText}
                                     </span>
                                   </div>
@@ -1549,21 +1548,21 @@ export default function ExaminationsManagement({
                             })}
                           </div>
                         ) : (
-                          <div className="bg-neutral-900/60 border border-neutral-700/60 rounded-2xl p-4 text-xs space-y-2">
+                          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xs space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-neutral-400">Opción elegida por el alumno:</span>
-                              <span className="font-bold text-white">
+                              <span className="text-gray-600 font-medium">Opción elegida por el alumno:</span>
+                              <span className="font-bold text-gray-900">
                                 {ans.selectedOptionIndex !== null && ans.selectedOptionIndex !== undefined ? `Opción ${String.fromCharCode(65 + ans.selectedOptionIndex)}` : 'Sin responder'}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               {ans.isCorrect ? (
-                                <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                                <span className="text-emerald-700 flex items-center gap-1 font-bold">
                                   <Check className="w-3.5 h-3.5" />
                                   Respuesta acertada (+1 pt autocalificado)
                                 </span>
                               ) : (
-                                <span className="text-red-400 flex items-center gap-1 font-semibold">
+                                <span className="text-[#BE1622] flex items-center gap-1 font-bold">
                                   <X className="w-3.5 h-3.5" />
                                   Respuesta errónea (0 pts)
                                 </span>
@@ -1577,21 +1576,21 @@ export default function ExaminationsManagement({
                     {/* TIPO 2 Y 3: RESPUESTA ESCRITA (BREVE O DESARROLLO) */}
                     {(ans.questionType === 'short_answer' || ans.questionType === 'long_answer') && (
                       <div className="space-y-3">
-                        <div className="bg-neutral-900/90 border border-neutral-700/80 rounded-2xl p-4 sm:p-5 shadow-inner">
-                          <div className="flex items-center justify-between pb-2 border-b border-neutral-800 mb-2.5">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                        <div className="bg-gray-50/90 border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-inner">
+                          <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-2.5">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-700">
                               Respuesta redactada por el alumno:
                             </span>
-                            <span className="text-[10px] text-neutral-500 font-mono">
+                            <span className="text-[10px] text-gray-500 font-mono font-medium">
                               {ans.writtenAnswer ? `${ans.writtenAnswer.length} caracteres` : 'Sin respuesta'}
                             </span>
                           </div>
                           {ans.writtenAnswer ? (
-                            <p className="text-neutral-100 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-sans selection:bg-blue-600">
+                            <p className="text-gray-900 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-sans font-medium selection:bg-blue-100">
                               {ans.writtenAnswer}
                             </p>
                           ) : (
-                            <p className="text-neutral-500 italic text-xs">
+                            <p className="text-gray-400 italic text-xs">
                               (El estudiante dejó esta respuesta en blanco)
                             </p>
                           )}
@@ -1599,7 +1598,7 @@ export default function ExaminationsManagement({
 
                         {/* Campo de Observaciones del Sensei para esta respuesta */}
                         <div className="space-y-1">
-                          <label className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider block">
+                          <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider block">
                             Observación técnica del Sensei para esta respuesta (opcional):
                           </label>
                           <input
@@ -1607,7 +1606,7 @@ export default function ExaminationsManagement({
                             placeholder="Comentario sobre terminología, kata, concepto filosófico..."
                             value={currentGrade.senseiComments || ''}
                             onChange={(e) => handleCommentsChange(ans.questionId, e.target.value)}
-                            className="w-full px-4 py-2.5 bg-neutral-900/70 border border-neutral-700 rounded-xl text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 transition-colors"
                           />
                         </div>
                       </div>
@@ -1615,12 +1614,12 @@ export default function ExaminationsManagement({
 
                     {/* TIPO 4: ASOCIACIÓN DE TÉRMINOS */}
                     {ans.questionType === 'matching' && (
-                      <div className="bg-neutral-900/70 border border-neutral-700/70 rounded-2xl p-4 space-y-3">
+                      <div className="bg-gray-50/80 border border-gray-200 rounded-2xl p-4 space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-neutral-300">
+                          <span className="text-xs font-bold text-gray-800">
                             Matriz de Relación / Asociación de Términos
                           </span>
-                          <span className={ans.earnedPoints > 0 ? "text-emerald-400 font-bold text-xs" : "text-amber-400 font-bold text-xs"}>
+                          <span className={ans.earnedPoints > 0 ? "text-emerald-700 font-bold text-xs" : "text-amber-800 font-bold text-xs"}>
                             Puntaje autocalificado: {ans.earnedPoints || 0} / 1 pt
                           </span>
                         </div>
@@ -1634,12 +1633,12 @@ export default function ExaminationsManagement({
                               const isMatchCorrect = studentMatchIdx === correctMatchIdx;
 
                               return (
-                                <div key={lIdx} className="bg-neutral-800/80 border border-neutral-700/60 p-2.5 rounded-xl space-y-1">
-                                  <div className="font-semibold text-white">{lt}</div>
+                                <div key={lIdx} className="bg-white border border-gray-200 p-2.5 rounded-xl space-y-1 shadow-2xs">
+                                  <div className="font-bold text-gray-900">{lt}</div>
                                   <div className="text-[11px] flex items-center justify-between">
-                                    <span className="text-neutral-400">Asignado: <strong className={isMatchCorrect ? 'text-emerald-400' : 'text-red-400'}>{studentMatchText}</strong></span>
+                                    <span className="text-gray-600 font-medium">Asignado: <strong className={isMatchCorrect ? 'text-emerald-700 font-bold' : 'text-[#BE1622] font-bold'}>{studentMatchText}</strong></span>
                                     {!isMatchCorrect && (
-                                      <span className="text-neutral-500 text-[10px]">Correcto: {correctMatchText}</span>
+                                      <span className="text-gray-500 text-[10px]">Correcto: {correctMatchText}</span>
                                     )}
                                   </div>
                                 </div>
@@ -1647,7 +1646,7 @@ export default function ExaminationsManagement({
                             })}
                           </div>
                         ) : (
-                          <p className="text-neutral-400 text-xs">
+                          <p className="text-gray-500 text-xs">
                             Las coincidencias de columnas fueron evaluadas automáticamente contra la matriz oficial del examen.
                           </p>
                         )}
@@ -1659,34 +1658,34 @@ export default function ExaminationsManagement({
             </div>
 
             {/* Veredicto y Feedback General del Tribunal Examinador */}
-            <div className="bg-neutral-800/90 border border-neutral-700/80 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-700/60 pb-4">
+            <div className="bg-white/95 border border-gray-200/90 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm text-gray-900">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200/80 pb-4">
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-black text-gray-900">
                     Veredicto del Tribunal Examinador
                   </h3>
-                  <p className="text-xs text-neutral-400">
+                  <p className="text-xs text-gray-500 font-medium">
                     Define la resolución oficial del examen y agrega devoluciones para el expediente del alumno.
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-neutral-400">Nota Final:</span>
-                  <span className="text-xl font-extrabold text-white">
-                    {totalAccumulatedScore} <span className="text-xs text-neutral-400 font-normal">/ {totalQuestions}</span>
-                    <span className="ml-2 text-sm font-bold text-blue-400">({calculatedPercentage}%)</span>
+                  <span className="text-xs text-gray-600 font-bold">Nota Final:</span>
+                  <span className="text-xl font-black text-gray-900">
+                    {totalAccumulatedScore} <span className="text-xs text-gray-500 font-normal">/ {totalQuestions}</span>
+                    <span className="ml-2 text-sm font-bold text-[#2D2E83]">({calculatedPercentage}%)</span>
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
-                <span className="text-xs font-semibold text-neutral-300">Resolución Oficial:</span>
+                <span className="text-xs font-bold text-gray-700">Resolución Oficial:</span>
                 <button
                   type="button"
                   onClick={() => setPassedStatus(true)}
                   className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     passedStatus
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 ring-2 ring-emerald-400'
-                      : 'bg-neutral-800 text-neutral-400 border border-neutral-700 hover:text-white'
+                      : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
                   }`}
                 >
                   ✓ Aprobado (Pase de Grado)
@@ -1696,8 +1695,8 @@ export default function ExaminationsManagement({
                   onClick={() => setPassedStatus(false)}
                   className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     !passedStatus
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20 ring-2 ring-red-400'
-                      : 'bg-neutral-800 text-neutral-400 border border-neutral-700 hover:text-white'
+                      ? 'bg-[#BE1622] text-white shadow-lg shadow-red-600/20 ring-2 ring-red-400'
+                      : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
                   }`}
                 >
                   ✗ No Aprobado (Reprobado)
@@ -1705,7 +1704,7 @@ export default function ExaminationsManagement({
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-semibold text-neutral-400">
+                <label className="block text-xs uppercase font-bold text-gray-700">
                   Devolución General del Tribunal para el Aspirante
                 </label>
                 <textarea
@@ -1713,15 +1712,15 @@ export default function ExaminationsManagement({
                   placeholder="Escribe comentarios generales sobre solidez técnica, terminología, disciplina o recomendaciones para su siguiente grado..."
                   value={senseiFeedback}
                   onChange={(e) => setSenseiFeedback(e.target.value)}
-                  className="w-full px-4 py-3 bg-neutral-900 border border-neutral-700 rounded-2xl text-xs sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 resize-none transition-colors"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-2xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 resize-none transition-colors"
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-neutral-700/60">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-gray-200/80">
                 <button
                   type="button"
                   onClick={(e) => handleDeleteSubmission(selectedSubmission.id || selectedSubmission._id, selectedSubmission.studentName, e)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-semibold transition-colors border border-transparent hover:border-red-500/20 cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2.5 text-gray-500 hover:text-[#BE1622] hover:bg-red-50 rounded-xl text-xs font-bold transition-colors border border-transparent hover:border-red-200 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Eliminar esta Entrega</span>
@@ -1731,7 +1730,7 @@ export default function ExaminationsManagement({
                   <button
                     type="button"
                     onClick={() => setActiveView('inbox')}
-                    className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                    className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                   >
                     Cancelar
                   </button>
@@ -1740,7 +1739,7 @@ export default function ExaminationsManagement({
                     type="button"
                     onClick={handleSaveProgress}
                     disabled={isSavingProgress || isSavingGrade}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-all shadow active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
                     title="Guarda las notas en la base de datos sin cerrar el panel"
                   >
                     {isSavingProgress ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -1750,7 +1749,7 @@ export default function ExaminationsManagement({
                   <button
                     type="submit"
                     disabled={isSavingGrade || isSavingProgress}
-                    className="flex items-center gap-1.5 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-6 py-2.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     {isSavingGrade ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                     <span>{isSavingGrade ? 'Asentando...' : 'Finalizar y Asentar Calificación'}</span>
@@ -2126,26 +2125,26 @@ export default function ExaminationsManagement({
       {/* MODAL: SALA DE EXAMEN EN VIVO (LIVE PROCTORING) */}
       {/* ========================================================================= */}
       {isLiveModalOpen && liveSession && (
-        <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-y-auto">
-          <div className="relative overflow-hidden bg-neutral-900 border border-neutral-700/80 rounded-3xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200 text-white">
+        <div className="fixed inset-0 z-[500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-y-auto">
+          <div className="relative overflow-hidden bg-white/95 backdrop-blur-xl border border-gray-200/90 rounded-3xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200 text-gray-900">
             
             {/* Header de la Sala en Vivo */}
-            <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-4 shrink-0 bg-neutral-950/80">
+            <div className="flex items-center justify-between border-b border-gray-200/80 px-6 py-4 shrink-0 bg-white/90">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
                   <Radio className="w-5 h-5 animate-pulse" />
                 </div>
                 <div className="space-y-0.5 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase tracking-widest font-mono flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 uppercase tracking-widest font-mono flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
                       Mesa Examinadora en Vivo
                     </span>
-                    <span className="text-xs text-neutral-400 truncate font-medium">
+                    <span className="text-xs text-gray-500 truncate font-medium">
                       {liveSession.title}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-white tracking-tight truncate">
+                  <h3 className="text-lg font-black text-[#2D2E83] tracking-tight truncate">
                     Monitoreo y Control de Aspirantes
                   </h3>
                 </div>
@@ -2156,10 +2155,10 @@ export default function ExaminationsManagement({
                 <button
                   type="button"
                   onClick={() => setIsAutoRefreshLive(!isAutoRefreshLive)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                     isAutoRefreshLive
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                      : 'bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                      : 'bg-gray-100 border-gray-200 text-gray-600 hover:text-gray-900'
                   }`}
                   title={isAutoRefreshLive ? "Pausar auto-actualización" : "Activar auto-actualización cada 5s"}
                 >
@@ -2171,16 +2170,16 @@ export default function ExaminationsManagement({
                   type="button"
                   onClick={handleManualRefreshLive}
                   disabled={isLiveLoading}
-                  className="p-2 text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-neutral-700 cursor-pointer disabled:opacity-50"
+                  className="p-2 text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all border border-gray-200 cursor-pointer disabled:opacity-50"
                   title="Refrescar datos ahora"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isLiveLoading ? 'animate-spin text-blue-400' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${isLiveLoading ? 'animate-spin text-[#2D2E83]' : ''}`} />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => { setIsLiveModalOpen(false); setLiveData(null); }}
-                  className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer ml-1"
+                  className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer ml-1"
                   title="Cerrar sala en vivo"
                 >
                   <X className="w-5 h-5" />
@@ -2193,51 +2192,51 @@ export default function ExaminationsManagement({
               
               {/* Tarjetas de Métricas en Vivo */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <div className="bg-neutral-800/60 border border-neutral-700/60 rounded-2xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-neutral-400 block uppercase tracking-wider">
+                <div className="bg-white border border-gray-200/90 rounded-2xl p-3.5 space-y-1 shadow-2xs">
+                  <span className="text-[11px] font-bold text-gray-500 block uppercase tracking-wider">
                     Total Conectados
                   </span>
-                  <div className="text-2xl font-black text-white">
+                  <div className="text-2xl font-black text-gray-900">
                     {liveData?.metrics?.totalConnected ?? (isLiveLoading ? '...' : 0)}
                   </div>
                 </div>
 
-                <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-2xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-emerald-400 block uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[11px] font-bold text-emerald-700 block uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     Rindiendo Ahora
                   </span>
-                  <div className="text-2xl font-black text-emerald-400">
+                  <div className="text-2xl font-black text-emerald-700">
                     {liveData?.metrics?.inProgress ?? (isLiveLoading ? '...' : 0)}
                   </div>
                 </div>
 
-                <div className="bg-blue-950/20 border border-blue-500/30 rounded-2xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-blue-400 block uppercase tracking-wider flex items-center gap-1.5">
+                <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[11px] font-bold text-[#2D2E83] block uppercase tracking-wider flex items-center gap-1.5">
                     <Check className="w-3 h-3" />
                     Entregados
                   </span>
-                  <div className="text-2xl font-black text-blue-400">
+                  <div className="text-2xl font-black text-[#2D2E83]">
                     {liveData?.metrics?.submitted ?? (isLiveLoading ? '...' : 0)}
                   </div>
                 </div>
 
-                <div className="bg-amber-950/20 border border-amber-500/30 rounded-2xl p-3.5 space-y-1">
-                  <span className="text-[11px] font-semibold text-amber-400 block uppercase tracking-wider flex items-center gap-1.5">
+                <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[11px] font-bold text-amber-800 block uppercase tracking-wider flex items-center gap-1.5">
                     <AlertTriangle className="w-3 h-3" />
                     Alertas Pantalla
                   </span>
-                  <div className="text-2xl font-black text-amber-400">
+                  <div className="text-2xl font-black text-amber-800">
                     {liveData?.metrics?.securityAlerts ?? (isLiveLoading ? '...' : 0)}
                   </div>
                 </div>
 
-                <div className="bg-red-950/20 border border-red-500/30 rounded-2xl p-3.5 space-y-1 col-span-2 sm:col-span-1">
-                  <span className="text-[11px] font-semibold text-red-400 block uppercase tracking-wider flex items-center gap-1.5">
+                <div className="bg-red-50/70 border border-red-200 rounded-2xl p-3.5 space-y-1 col-span-2 sm:col-span-1">
+                  <span className="text-[11px] font-bold text-[#BE1622] block uppercase tracking-wider flex items-center gap-1.5">
                     <ShieldAlert className="w-3 h-3" />
                     Bloqueados
                   </span>
-                  <div className="text-2xl font-black text-red-400">
+                  <div className="text-2xl font-black text-[#BE1622]">
                     {liveData?.metrics?.lockedBySecurity ?? (isLiveLoading ? '...' : 0)}
                   </div>
                 </div>
@@ -2246,26 +2245,26 @@ export default function ExaminationsManagement({
               {/* Lista de Aspirantes en Vivo */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs uppercase font-bold text-neutral-400 tracking-wider">
+                  <h4 className="text-xs uppercase font-bold text-gray-700 tracking-wider">
                     Aspirantes Activos en la Sala ({liveData?.candidates?.length || 0})
                   </h4>
-                  <span className="text-[11px] text-neutral-500">
+                  <span className="text-[11px] text-gray-500 font-medium">
                     Límite: {liveSession.timeLimitMinutes > 0 ? `${liveSession.timeLimitMinutes} min` : 'Sin límite'} • Protocolo: {liveSession.securityMode || 'Auditoría'}
                   </span>
                 </div>
 
                 {isLiveLoading && !liveData && (
-                  <div className="p-12 text-center text-neutral-400 space-y-3">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-400" />
-                    <p className="text-xs">Sincronizando con los dispositivos de los aspirantes...</p>
+                  <div className="p-12 text-center text-gray-500 space-y-3">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#2D2E83]" />
+                    <p className="text-xs font-medium">Sincronizando con los dispositivos de los aspirantes...</p>
                   </div>
                 )}
 
                 {liveData?.candidates && liveData.candidates.length === 0 && (
-                  <div className="p-10 text-center border border-dashed border-neutral-800 rounded-2xl bg-neutral-950/30 space-y-2">
-                    <Radio className="w-8 h-8 mx-auto text-neutral-600" />
-                    <p className="text-sm font-semibold text-neutral-300">No hay aspirantes rindiendo examen en este momento.</p>
-                    <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+                  <div className="p-10 text-center border border-dashed border-gray-300 rounded-2xl bg-gray-50/60 space-y-2">
+                    <Radio className="w-8 h-8 mx-auto text-gray-400" />
+                    <p className="text-sm font-bold text-gray-800">No hay aspirantes rindiendo examen en este momento.</p>
+                    <p className="text-xs text-gray-500 max-w-sm mx-auto">
                       Los aspirantes conectados se visualizan aquí en tiempo real. Al concluir su examen, las sesiones se retiran automáticamente de esta sala y se trasladan a la Bandeja de Entregas.
                     </p>
                   </div>
@@ -2298,55 +2297,55 @@ export default function ExaminationsManagement({
                           key={cand.id || cand.deviceToken}
                           className={`p-4 rounded-2xl border transition-all space-y-3 ${
                             isLocked
-                              ? 'bg-red-950/20 border-red-500/40 shadow-sm'
+                              ? 'bg-red-50/60 border-red-300 shadow-sm'
                               : cand.securityViolationsCount > 0
-                              ? 'bg-amber-950/15 border-amber-500/40'
+                              ? 'bg-amber-50/60 border-amber-300'
                               : isCandidateSubmitted
-                              ? 'bg-blue-950/15 border-blue-500/30'
-                              : 'bg-neutral-800/80 border-neutral-700/80'
+                              ? 'bg-blue-50/60 border-blue-300'
+                              : 'bg-white border-gray-200/90 shadow-2xs'
                           }`}
                         >
                           {/* Fila Superior: Nombre y Estado */}
                           <div className="flex items-start justify-between gap-2">
                             <div className="space-y-0.5 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-sm text-white truncate">
+                                <span className="font-bold text-sm text-gray-900 truncate">
                                   {cand.studentName}
                                 </span>
                               </div>
-                              <p className="text-xs text-neutral-400 truncate">
-                                Dojo: <strong className="text-neutral-200">{cand.studentDojo}</strong> {cand.studentRank ? `• ${cand.studentRank}` : ''}
+                              <p className="text-xs text-gray-600 truncate font-medium">
+                                Dojo: <strong className="text-gray-900 font-bold">{cand.studentDojo}</strong> {cand.studentRank ? `• ${cand.studentRank}` : ''}
                               </p>
                             </div>
 
                             {/* Badge de Estatus */}
                             <div className="shrink-0">
                               {isInProgress && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
                                   En examen
                                 </span>
                               )}
                               {isCandidateSubmitted && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-[#2D2E83] border border-blue-200">
                                   <Check className="w-3 h-3" />
                                   {cand.submissionScore !== null ? `Nota: ${cand.submissionScore}%` : 'Entregado'}
                                 </span>
                               )}
                               {isLocked && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-400 border border-red-500/30">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-[#BE1622] border border-red-200">
                                   <ShieldAlert className="w-3 h-3" />
                                   Bloqueado
                                 </span>
                               )}
                               {isExpired && !isCandidateSubmitted && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                                   <Clock className="w-3 h-3" />
                                   Tiempo vencido
                                 </span>
                               )}
                               {isIdle && !isCandidateSubmitted && !isLocked && !isExpired && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-neutral-700/40 text-neutral-400 border border-neutral-600/40">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
                                   ○ Segundo plano
                                 </span>
                               )}
@@ -2357,22 +2356,22 @@ export default function ExaminationsManagement({
                           {!isCandidateSubmitted && (
                             <div className="space-y-1.5">
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-neutral-400">
-                                  Progreso: <strong className="text-white">{answeredQ}</strong> de {totalQ > 0 ? totalQ : '?'} preguntas
+                                <span className="text-gray-600 font-medium">
+                                  Progreso: <strong className="text-gray-900 font-bold">{answeredQ}</strong> de {totalQ > 0 ? totalQ : '?'} preguntas
                                 </span>
                                 {typeof cand.remainingSec === 'number' && (
                                   <span className={`font-mono font-bold flex items-center gap-1 ${
-                                    cand.remainingSec <= 300 ? 'text-red-400 animate-pulse' : 'text-amber-400'
+                                    cand.remainingSec <= 300 ? 'text-[#BE1622] animate-pulse' : 'text-amber-700'
                                   }`}>
                                     <Clock className="w-3 h-3" />
                                     {timeString}
                                   </span>
                                 )}
                               </div>
-                              <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
+                              <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                 <div 
                                   className={`h-full transition-all duration-300 ${
-                                    isLocked ? 'bg-red-500' : progressPct === 100 ? 'bg-blue-500' : 'bg-emerald-500'
+                                    isLocked ? 'bg-[#BE1622]' : progressPct === 100 ? 'bg-[#2D2E83]' : 'bg-emerald-500'
                                   }`}
                                   style={{ width: `${progressPct}%` }}
                                 />
@@ -2381,16 +2380,16 @@ export default function ExaminationsManagement({
                           )}
 
                           {/* Indicador de Seguridad e Incidencias */}
-                          <div className="flex items-center justify-between pt-1 border-t border-neutral-700/50 text-xs">
+                          <div className="flex items-center justify-between pt-1 border-t border-gray-200/80 text-xs">
                             <div className="flex items-center gap-1.5">
                               {cand.securityViolationsCount > 0 ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400">
-                                  <AlertTriangle className="w-3 h-3 text-amber-400" />
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800">
+                                  <AlertTriangle className="w-3 h-3 text-amber-600" />
                                   <span>{cand.securityViolationsCount} {cand.securityViolationsCount === 1 ? 'salida detectada' : 'salidas detectadas'}</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-semibold">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                                   <span>Sin salidas detectadas</span>
                                 </span>
                               )}
@@ -2402,7 +2401,7 @@ export default function ExaminationsManagement({
                                 <button
                                   type="button"
                                   onClick={() => handleUnlockCandidate(cand)}
-                                  className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/30 transition-colors cursor-pointer"
+                                  className="flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300 transition-colors cursor-pointer"
                                   title="Desbloquear o perdonar salidas para que el alumno pueda continuar"
                                 >
                                   <Unlock className="w-3 h-3" />
@@ -2413,7 +2412,7 @@ export default function ExaminationsManagement({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveCandidate(cand)}
-                                className="flex items-center gap-1 text-[11px] font-medium text-neutral-400 hover:text-red-400 bg-neutral-900/60 hover:bg-red-500/10 px-2 py-1 rounded-lg border border-neutral-700/60 hover:border-red-500/30 transition-colors cursor-pointer"
+                                className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-[#BE1622] bg-gray-100 hover:bg-red-50 px-2 py-1 rounded-lg border border-gray-200 hover:border-red-200 transition-colors cursor-pointer"
                                 title="Retirar o purgar sesión de la sala de espera"
                               >
                                 <UserX className="w-3 h-3" />
@@ -2430,15 +2429,15 @@ export default function ExaminationsManagement({
             </div>
 
             {/* Footer de la Sala */}
-            <div className="flex items-center justify-between border-t border-neutral-800 px-6 py-3.5 shrink-0 bg-neutral-950/80 text-xs text-neutral-400">
+            <div className="flex items-center justify-between border-t border-gray-200/80 px-6 py-3.5 shrink-0 bg-gray-50 text-xs text-gray-600 font-medium">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <span>Actualización en tiempo real activa. Los cambios en los dispositivos se sincronizan al instante.</span>
               </div>
               <button
                 type="button"
                 onClick={() => { setIsLiveModalOpen(false); setLiveData(null); }}
-                className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl font-bold transition-colors cursor-pointer"
               >
                 Cerrar Sala
               </button>

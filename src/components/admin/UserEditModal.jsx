@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { createUser } from '../../app/admin/actions';
 import AlertModal from '../ui/AlertModal';
+import { X, UserPlus, Shield, Mail, User } from 'lucide-react';
 
 export default function UserEditModal({ isOpen, onClose, onSaveSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -46,84 +47,95 @@ export default function UserEditModal({ isOpen, onClose, onSaveSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex justify-between items-center p-6 border-b border-neutral-800">
-          <h2 className="text-xl font-bold text-white">Agregar Nuevo Usuario</h2>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white transition-colors">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white border border-gray-200 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] text-gray-900">
+        <div className="flex justify-between items-center p-6 border-b border-gray-200/90 bg-gray-50/80">
+          <div>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#BE1622] block font-mono">
+              Acceso a Plataforma
+            </span>
+            <h2 className="text-xl font-black text-[#2D2E83] tracking-tight">
+              Agregar Nuevo Usuario
+            </h2>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 overflow-y-auto custom-scrollbar">
-          <form id="user-form" onSubmit={handleSubmit} className="space-y-6">
-            
-            <div className="grid grid-cols-1 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-1">Nombre (Opcional)</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Ej. Juan Pérez"
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-iskf-red focus:border-transparent transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-1">Correo Electrónico (Requerido) <span className="text-iskf-red">*</span></label>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="ejemplo@correo.com"
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-iskf-red focus:border-transparent transition-all"
-                />
-                <p className="text-xs text-neutral-500 mt-1">El usuario utilizará este correo para ingresar mediante Google.</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-1">Rol de Acceso</label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-iskf-red focus:border-transparent transition-all"
-                >
-                  <option value="user">Usuario Básico</option>
-                  <option value="editor">Editor</option>
-                  <option value="admin">Administrador</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-3 mt-2 bg-neutral-800/50 p-4 rounded-lg border border-neutral-700/50">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleChange}
-                  className="w-5 h-5 rounded border-neutral-600 text-iskf-red focus:ring-iskf-red bg-neutral-700"
-                />
-                <label htmlFor="isActive" className="text-sm font-medium text-neutral-300 cursor-pointer">
-                  Usuario Activo (Permitir acceso)
-                </label>
-              </div>
+          <form id="user-form" onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Nombre Completo (Opcional)
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Ej. Sensei Juan Pérez"
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-900 text-sm font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-1 focus:ring-[#2D2E83] transition-all"
+              />
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Correo Electrónico (Google Auth) <span className="text-[#BE1622]">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="ejemplo@iskfcostarica.com"
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-900 text-sm font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-1 focus:ring-[#2D2E83] transition-all"
+              />
+              <p className="text-[11px] text-gray-500 mt-1 font-medium">El usuario utilizará esta cuenta de correo para autenticarse en el sistema.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Rol de Acceso en el Panel
+              </label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-900 text-sm font-bold focus:outline-none focus:border-[#2D2E83] focus:ring-1 focus:ring-[#2D2E83] transition-all cursor-pointer"
+              >
+                <option value="user">Usuario Básico (Lectura)</option>
+                <option value="editor">Editor (Técnico / Calendario)</option>
+                <option value="admin">Administrador (Control Total)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-200">
+              <input
+                type="checkbox"
+                id="isActive"
+                name="isActive"
+                checked={formData.isActive}
+                onChange={handleChange}
+                className="w-5 h-5 rounded-lg border-gray-300 text-[#2D2E83] focus:ring-[#2D2E83] cursor-pointer"
+              />
+              <label htmlFor="isActive" className="text-xs font-bold text-gray-800 cursor-pointer">
+                Usuario Activo (Permitir acceso inmediato a la plataforma)
+              </label>
+            </div>
           </form>
         </div>
 
-        <div className="p-6 border-t border-neutral-800 bg-neutral-900 flex justify-end gap-3">
+        <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-lg text-sm font-medium text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors cursor-pointer"
           >
             Cancelar
           </button>
@@ -131,12 +143,12 @@ export default function UserEditModal({ isOpen, onClose, onSaveSuccess }) {
             type="submit"
             form="user-form"
             disabled={loading}
-            className="px-6 py-2.5 bg-iskf-red hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(190,19,34,0.3)]"
+            className="px-6 py-2.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md shadow-[#2D2E83]/20 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95"
           >
             {loading ? (
-              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : null}
-            Crear Usuario
+            <span>Crear Usuario</span>
           </button>
         </div>
       </div>
@@ -144,7 +156,7 @@ export default function UserEditModal({ isOpen, onClose, onSaveSuccess }) {
       <AlertModal 
         isOpen={alertModal.isOpen}
         onClose={() => setAlertModal({ isOpen: false, message: '' })}
-        title="Error"
+        title="Atención"
         message={alertModal.message}
         isError={true}
       />

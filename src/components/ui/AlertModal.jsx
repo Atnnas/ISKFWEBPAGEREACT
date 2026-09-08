@@ -5,11 +5,11 @@ export default function AlertModal({ isOpen, onClose, title, message, isError = 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white/95 backdrop-blur-xl border border-gray-200/90 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-gray-900">
         <div className="p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className={`p-3 rounded-full ${isError ? 'bg-red-500/20 text-red-500' : 'bg-blue-500/20 text-blue-500'}`}>
+          <div className="flex items-center gap-3.5 mb-4">
+            <div className={`p-3 rounded-2xl shrink-0 ${isError ? 'bg-red-50 text-[#BE1622] border border-red-200' : 'bg-blue-50 text-[#2D2E83] border border-blue-200'}`}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {isError ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -18,13 +18,17 @@ export default function AlertModal({ isOpen, onClose, title, message, isError = 
                 )}
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-white">{title}</h3>
+            <h3 className="text-lg font-black text-gray-900 tracking-tight">{title}</h3>
           </div>
-          <p className="text-sm text-neutral-400 mb-6">{message}</p>
+          <p className="text-sm text-gray-600 font-medium mb-6 leading-relaxed">{message}</p>
           <div className="flex justify-end">
             <button 
               onClick={onClose}
-              className={`px-6 py-2 rounded-lg text-white transition-colors text-sm font-medium ${isError ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+              className={`px-6 py-2 rounded-xl text-white transition-all text-xs font-bold shadow-md cursor-pointer active:scale-95 ${
+                isError 
+                  ? 'bg-[#BE1622] hover:bg-[#9c0f1b] shadow-red-600/20' 
+                  : 'bg-[#2D2E83] hover:bg-[#232468] shadow-blue-900/20'
+              }`}
             >
               Entendido
             </button>
