@@ -484,10 +484,12 @@ export default function ExaminationsManagement({
 
     // Inicializar estado de notas por pregunta con detección de calificación previa
     const initGrading = (submission.answers || []).map(ans => {
-      const isPreGraded = ans.isGraded || ans.questionType === 'single_choice' || ans.questionType === 'matching' || (typeof ans.earnedPoints === 'number' && ans.earnedPoints > 0) || Boolean(ans.senseiComments);
+      const isAutoComputed = ans.questionType === 'single_choice' || ans.questionType === 'matching';
+      const isAlreadyGraded = Boolean(ans.isGraded) || (typeof ans.earnedPoints === 'number' && ans.earnedPoints > 0) || Boolean(ans.senseiComments);
+      const isPreGraded = isAutoComputed || isAlreadyGraded;
       return {
         questionId: ans.questionId,
-        earnedPoints: ans.earnedPoints ?? (ans.isCorrect ? 1 : 0),
+        earnedPoints: typeof ans.earnedPoints === 'number' ? ans.earnedPoints : (ans.isCorrect ? (ans.maxPoints || 1) : 0),
         senseiComments: ans.senseiComments || '',
         isGraded: Boolean(isPreGraded)
       };
@@ -1119,12 +1121,12 @@ export default function ExaminationsManagement({
                           ) : sub.status === 'partially_graded' ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                               <Save className="w-3 h-3" />
-                              En Revisión ({sub.totalScore || 0} pts guardados)
+                              En Revisión ({sub.percentage}% • {sub.totalScore || 0}/{sub.maxPossibleScore || '?'} pts)
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
                               <Clock className="w-3 h-3" />
-                              Por Calificar (Auto: {sub.autoScore} pts)
+                              Por Calificar (Auto: {sub.autoScore || 0} pt{sub.autoScore === 1 ? '' : 's'} • {sub.percentage || 0}%)
                             </span>
                           )}
                         </td>
@@ -1194,7 +1196,8 @@ export default function ExaminationsManagement({
         const gradedQuestionsCount = answersGrading.filter(g => g.isGraded).length;
         const gradingProgressPct = totalQuestions > 0 ? Math.round((gradedQuestionsCount / totalQuestions) * 100) : 0;
         const totalAccumulatedScore = Math.round(answersGrading.reduce((acc, curr) => acc + (curr.earnedPoints || 0), 0) * 100) / 100;
-        const calculatedPercentage = totalQuestions > 0 ? Math.round((totalAccumulatedScore / totalQuestions) * 100) : 0;
+        const maxPossibleScore = selectedSubmission.maxPossibleScore || selectedSubmission.answers?.reduce((acc, a) => acc + (a.maxPoints || 1), 0) || totalQuestions || 1;
+        const calculatedPercentage = maxPossibleScore > 0 ? Math.min(100, Math.round((totalAccumulatedScore / maxPossibleScore) * 100)) : 0;
 
         return (
           <form onSubmit={handleFinalizeGrade} className="space-y-6">
@@ -1287,11 +1290,15 @@ export default function ExaminationsManagement({
                     <Award className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-gray-500 block">Puntos Acumulados</span>
-                    <span className="text-lg font-black text-gray-900">
-                      {totalAccumulatedScore} <span className="text-xs text-gray-500 font-normal">/ {totalQuestions} pts</span>
-                      <span className="ml-2 text-xs font-bold text-[#2D2E83]">({calculatedPercentage}%)</span>
-                    </span>
+                    <span className="text-[11px] uppercase font-bold text-gray-500 block">Calificación Actual</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-[#2D2E83]">
+                        {calculatedPercentage}%
+                      </span>
+                      <span className="text-xs font-bold text-gray-600 font-mono">
+                        ({totalAccumulatedScore} / {maxPossibleScore} pts)
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -1396,11 +1403,11 @@ export default function ExaminationsManagement({
 
                             {isItemGraded ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                                <Check className="w-3 h-3" /> Evaluada ({currentGrade.earnedPoints ?? 0} pts)
+                                <Check className="w-3 h-3" /> Evaluada ({currentGrade.earnedPoints ?? 0} / {ans.maxPoints || 1} pts)
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                                <Clock className="w-3 h-3" /> Pendiente de revisión
+                                <Clock className="w-3 h-3" /> Pendiente de revisión ({ans.maxPoints || 1} pts)
                               </span>
                             )}
                           </div>
@@ -1410,62 +1417,79 @@ export default function ExaminationsManagement({
                         </div>
                       </div>
 
-                      {/* Controles de Puntuación: Botones Rápidos + Input */}
-                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 bg-gray-100/90 border border-gray-200 p-1.5 rounded-2xl shadow-inner">
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleQuickPoints(ans.questionId, 0)}
-                            className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                              currentGrade.earnedPoints === 0 && isItemGraded
-                                ? 'bg-[#BE1622] text-white shadow'
-                                : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'
-                            }`}
-                            title="Asignar 0 puntos (Incorrecto)"
-                          >
-                            0 pts
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickPoints(ans.questionId, 0.5)}
-                            className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                              currentGrade.earnedPoints === 0.5 && isItemGraded
-                                ? 'bg-amber-600 text-white shadow'
-                                : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'
-                            }`}
-                            title="Asignar 0.5 puntos (Medio punto)"
-                          >
-                            0.5
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickPoints(ans.questionId, 1)}
-                            className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                              currentGrade.earnedPoints === 1 && isItemGraded
-                                ? 'bg-emerald-600 text-white shadow'
-                                : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'
-                            }`}
-                            title="Asignar 1 punto completo (Correcto)"
-                          >
-                            1 pt
-                          </button>
+                      {/* Controles de Puntuación: Autocalificado para selección única; cajita de puntos para las demás */}
+                      {ans.questionType === 'single_choice' ? (
+                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 bg-blue-50/80 border border-blue-200 px-3.5 py-2 rounded-2xl shadow-2xs">
+                          <span className={`text-xs font-black ${currentGrade.earnedPoints === (ans.maxPoints || 1) ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
+                            {currentGrade.earnedPoints ?? (ans.isCorrect ? (ans.maxPoints || 1) : 0)} / {ans.maxPoints || 1} pts
+                          </span>
+                          <span className="text-[10px] uppercase font-bold text-[#2D2E83] bg-white border border-blue-200 px-2 py-0.5 rounded-md">
+                            Autocalificado ({ans.maxPoints || 1} pt{(ans.maxPoints || 1) === 1 ? '' : 's'})
+                          </span>
                         </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2.5 self-end sm:self-auto shrink-0 bg-gray-50 border border-gray-200/90 p-2 rounded-2xl shadow-xs">
+                          {/* Botones de puntaje rápido que suman exactamente lo definido en la creación */}
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleQuickPoints(ans.questionId, ans.maxPoints || 1)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                currentGrade.earnedPoints === (ans.maxPoints || 1) && isItemGraded
+                                  ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400'
+                                  : 'bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-300'
+                              }`}
+                              title={`Asignar puntaje completo de ${ans.maxPoints || 1} pt(s) definido en la creación`}
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Correcto (+{ans.maxPoints || 1} pts)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickPoints(ans.questionId, Math.round(((ans.maxPoints || 1) / 2) * 10) / 10)}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                currentGrade.earnedPoints === Math.round(((ans.maxPoints || 1) / 2) * 10) / 10 && isItemGraded
+                                  ? 'bg-amber-600 text-white shadow-md'
+                                  : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-300'
+                              }`}
+                              title={`Asignar mitad de puntos (${Math.round(((ans.maxPoints || 1) / 2) * 10) / 10} pts)`}
+                            >
+                              <span>Medio (+{Math.round(((ans.maxPoints || 1) / 2) * 10) / 10})</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleQuickPoints(ans.questionId, 0)}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                currentGrade.earnedPoints === 0 && isItemGraded
+                                  ? 'bg-[#BE1622] text-white shadow-md'
+                                  : 'bg-white text-[#BE1622] hover:bg-red-50 border border-red-200'
+                              }`}
+                              title="Asignar 0 puntos (Incorrecto)"
+                            >
+                              <span>0 pts</span>
+                            </button>
+                          </div>
 
-                        <div className="h-5 w-[1px] bg-gray-300 mx-1" />
+                          <div className="hidden sm:block h-6 w-[1px] bg-gray-300" />
 
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="10"
-                            value={currentGrade.earnedPoints ?? 0}
-                            onChange={(e) => handlePointsChange(ans.questionId, e.target.value)}
-                            className="w-14 px-2 py-1 bg-white border border-gray-300 rounded-lg text-center font-black text-gray-900 text-xs focus:outline-none focus:border-[#2D2E83]"
-                          />
-                          <span className="text-[10px] text-gray-500 font-mono font-bold pr-1">pts</span>
+                          {/* Cajita con los puntos obtenidos */}
+                          <div className="flex items-center gap-1.5 bg-white border-2 border-[#2D2E83] px-2.5 py-1 rounded-xl shadow-xs ring-2 ring-[#2D2E83]/10">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                              Puntos:
+                            </span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max={ans.maxPoints || 100}
+                              value={currentGrade.earnedPoints ?? 0}
+                              onChange={(e) => handlePointsChange(ans.questionId, e.target.value)}
+                              className="w-12 text-center font-black text-gray-900 text-xs sm:text-sm focus:outline-none"
+                            />
+                            <span className="text-[11px] font-bold text-[#2D2E83] font-mono">/ {ans.maxPoints || 1}</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Imagen de la Pregunta si está adjunta */}
@@ -1614,31 +1638,41 @@ export default function ExaminationsManagement({
 
                     {/* TIPO 4: ASOCIACIÓN DE TÉRMINOS */}
                     {ans.questionType === 'matching' && (
-                      <div className="bg-gray-50/80 border border-gray-200 rounded-2xl p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-gray-800">
-                            Matriz de Relación / Asociación de Términos
-                          </span>
-                          <span className={ans.earnedPoints > 0 ? "text-emerald-700 font-bold text-xs" : "text-amber-800 font-bold text-xs"}>
-                            Puntaje autocalificado: {ans.earnedPoints || 0} / 1 pt
+                      <div className="bg-gray-50/80 border border-gray-200 rounded-2xl p-4 sm:p-5 space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-gray-200 gap-2">
+                          <div>
+                            <span className="text-xs font-bold text-gray-900 block">
+                              Matriz de Relación / Asociación de Términos
+                            </span>
+                            <span className="text-[11px] text-gray-500">
+                              Revisa las elecciones del estudiante frente a la clave oficial para asignar la nota correspondiente.
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-[#2D2E83] bg-white border border-blue-200 px-3 py-1 rounded-xl shadow-2xs self-start sm:self-auto">
+                            Valor: {ans.maxPoints || 1} pt{(ans.maxPoints || 1) === 1 ? '' : 's'}
                           </span>
                         </div>
+
                         {ans.leftTerms && ans.leftTerms.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                             {ans.leftTerms.map((lt, lIdx) => {
-                              const studentMatchIdx = ans.selectedMatches ? ans.selectedMatches[lIdx] : null;
-                              const correctMatchIdx = ans.correctMatches ? ans.correctMatches[lIdx] : null;
-                              const studentMatchText = studentMatchIdx !== null && studentMatchIdx !== undefined && ans.topTerms ? ans.topTerms[studentMatchIdx] : '—';
+                              const studentMatch = (ans.matchingMatches || []).find(m => m.leftIndex === lIdx);
+                              const studentMatchIdx = studentMatch ? studentMatch.rightIndex : (ans.selectedMatches ? ans.selectedMatches[lIdx] : null);
+                              const correctMatch = (ans.correctMatches || []).find(m => m.leftIndex === lIdx);
+                              const correctMatchIdx = correctMatch ? correctMatch.rightIndex : (ans.correctMatches && typeof ans.correctMatches[lIdx] === 'number' ? ans.correctMatches[lIdx] : null);
+                              const studentMatchText = studentMatchIdx !== null && studentMatchIdx !== undefined && ans.topTerms ? ans.topTerms[studentMatchIdx] : 'Sin asociar';
                               const correctMatchText = correctMatchIdx !== null && correctMatchIdx !== undefined && ans.topTerms ? ans.topTerms[correctMatchIdx] : '—';
-                              const isMatchCorrect = studentMatchIdx === correctMatchIdx;
+                              const isMatchCorrect = studentMatchIdx !== null && correctMatchIdx !== null && studentMatchIdx === correctMatchIdx;
 
                               return (
-                                <div key={lIdx} className="bg-white border border-gray-200 p-2.5 rounded-xl space-y-1 shadow-2xs">
-                                  <div className="font-bold text-gray-900">{lt}</div>
-                                  <div className="text-[11px] flex items-center justify-between">
-                                    <span className="text-gray-600 font-medium">Asignado: <strong className={isMatchCorrect ? 'text-emerald-700 font-bold' : 'text-[#BE1622] font-bold'}>{studentMatchText}</strong></span>
+                                <div key={lIdx} className={`border p-3 rounded-xl space-y-1.5 shadow-2xs ${isMatchCorrect ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-400/20' : 'bg-white border-gray-200'}`}>
+                                  <div className="font-bold text-gray-900 text-xs sm:text-sm">{lt}</div>
+                                  <div className="text-[11px] flex items-center justify-between gap-2">
+                                    <span className="text-gray-700 font-medium truncate">
+                                      Alumno: <strong className={isMatchCorrect ? 'text-emerald-700 font-bold' : 'text-[#BE1622] font-bold'}>{studentMatchText}</strong>
+                                    </span>
                                     {!isMatchCorrect && (
-                                      <span className="text-gray-500 text-[10px]">Correcto: {correctMatchText}</span>
+                                      <span className="text-gray-500 text-[10px] shrink-0 font-medium">Clave: {correctMatchText}</span>
                                     )}
                                   </div>
                                 </div>
@@ -1647,9 +1681,23 @@ export default function ExaminationsManagement({
                           </div>
                         ) : (
                           <p className="text-gray-500 text-xs">
-                            Las coincidencias de columnas fueron evaluadas automáticamente contra la matriz oficial del examen.
+                            Sin términos configurados en esta pregunta.
                           </p>
                         )}
+
+                        {/* Campo de Observaciones del Sensei para esta respuesta */}
+                        <div className="space-y-1 pt-2 border-t border-gray-200/80">
+                          <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider block">
+                            Observación técnica del Sensei para esta respuesta (opcional):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Comentario sobre la asociación o términos del alumno..."
+                            value={currentGrade.senseiComments || ''}
+                            onChange={(e) => handleCommentsChange(ans.questionId, e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 transition-colors"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1669,11 +1717,15 @@ export default function ExaminationsManagement({
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-600 font-bold">Nota Final:</span>
-                  <span className="text-xl font-black text-gray-900">
-                    {totalAccumulatedScore} <span className="text-xs text-gray-500 font-normal">/ {totalQuestions}</span>
-                    <span className="ml-2 text-sm font-bold text-[#2D2E83]">({calculatedPercentage}%)</span>
-                  </span>
+                  <span className="text-xs text-gray-600 font-bold">Calificación Oficial:</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-[#2D2E83]">
+                      {calculatedPercentage}%
+                    </span>
+                    <span className="text-xs font-bold text-gray-500 font-mono">
+                      ({totalAccumulatedScore} de {maxPossibleScore} pts)
+                    </span>
+                  </div>
                 </div>
               </div>
 

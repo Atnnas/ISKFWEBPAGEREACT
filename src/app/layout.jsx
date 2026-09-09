@@ -37,7 +37,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es">
+    <html lang="es" data-scroll-behavior="smooth">
       <body className="antialiased text-gray-900 bg-gray-50 font-sans flex flex-col min-h-screen">
         <Providers>
           <Navbar />

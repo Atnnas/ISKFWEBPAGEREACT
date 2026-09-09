@@ -282,44 +282,325 @@ const DEFAULT_EXAMS_SEED = [
     name: "Examen de 3 a 2 Kyu",
     code: "KYU-3-2",
     targetRanks: "3 a 2 Kyu",
-    description: "Evaluación sobre el kata Tekki Shodan, dinámica de cadera en Kiba Dachi y Jiyu Ippon Kumite.",
+    description: "I Examen Oficial de 3° Kyu a 2° Kyu: Terminología, Complete, Posiciones y Desarrollo.",
     order: 2,
     questions: [
+      // --- SECCION 1: ASOCIE TERMINOLOGIA (4 preguntas de matriz, 5 puntos c/u) ---
       {
-        id: "q-32-1",
-        type: "single_choice",
-        text: "¿Cuál es el kata Shitei fundamental evaluado para el pase de 3er a 2° Kyu?",
-        options: [
-          "Tekki Shodan",
-          "Heian Godan",
-          "Bassai Dai",
-          "Kanku Dai"
+        id: "q-32-match-1",
+        type: "matching",
+        text: "Asocie la terminología",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: ["BUNKAI", "BUDOKA", "ENBUSEN", "DAI", "SEIKEN"],
+        topTerms: ["DESGLOSE DE KATA", "PUÑO", "GRANDE", "REPRESENTACION LINEAL DEL KATA", "PRACTICANTE DE ARTES MARCIALES"],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 0 },
+          { leftIndex: 1, rightIndex: 4 },
+          { leftIndex: 2, rightIndex: 3 },
+          { leftIndex: 3, rightIndex: 2 },
+          { leftIndex: 4, rightIndex: 1 }
         ],
-        correctOptionIndex: 0
+        expectedNotes: "",
+        points: 5
       },
       {
-        id: "q-32-2",
+        id: "q-32-match-2",
+        type: "matching",
+        text: "Asocie la terminología",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: ["SHOMEN NI REI", "KIAI", "HONBU DOJO", "SHOTO", "OTAGAI NI REI"],
+        topTerms: ["DOJO CENTRAL", "PINOS ONDULANTES", "SALUDO AL FRENTE", "ESPIRITU Y ARMONIA", "SALUDO ENTRE NOSOTROS"],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 2 },
+          { leftIndex: 1, rightIndex: 3 },
+          { leftIndex: 2, rightIndex: 0 },
+          { leftIndex: 3, rightIndex: 1 },
+          { leftIndex: 4, rightIndex: 4 }
+        ],
+        expectedNotes: "",
+        points: 5
+      },
+      {
+        id: "q-32-match-3",
+        type: "matching",
+        text: "Asocie la terminología",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: ["WAZA", "KUN", "HIDARI", "BO", "NAORE"],
+        topTerms: ["IZQUIERDA", "RECUPERESE", "TECNICA", "PALO", "LEMA"],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 2 },
+          { leftIndex: 1, rightIndex: 4 },
+          { leftIndex: 2, rightIndex: 0 },
+          { leftIndex: 3, rightIndex: 3 },
+          { leftIndex: 4, rightIndex: 1 }
+        ],
+        expectedNotes: "",
+        points: 5
+      },
+      {
+        id: "q-32-match-4",
+        type: "matching",
+        text: "Asocie la terminología",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: ["KAMAE", "HAJIME", "SEIRETSU", "KUMITE", "KYU"],
+        topTerms: ["PONERSE EN FILA", "RANGO DE CINTURON", "EMPEZAR", "ENCUENTRO DE MANOS", "POSICION DE COMBATE"],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 4 },
+          { leftIndex: 1, rightIndex: 2 },
+          { leftIndex: 2, rightIndex: 0 },
+          { leftIndex: 3, rightIndex: 3 },
+          { leftIndex: 4, rightIndex: 1 }
+        ],
+        expectedNotes: "",
+        points: 5
+      },
+
+      // --- SECCION 2: COMPLETE (10 preguntas, 1 punto c/u) ---
+      {
+        id: "q-32-complete-1",
         type: "short_answer",
-        text: "¿Qué significa el nombre del kata 'Tekki' y cuál es la única postura básica en la que se ejecuta?",
-        expectedNotes: "Significa 'Jinete de Hierro' y se ejecuta íntegramente en postura Kiba Dachi."
+        text: "SIGNIFICADO DE SHOTOKAN:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "La casa o escuela de Shoto (Shoto: pinos ondulantes; Kan: casa o escuela).",
+        points: 1
       },
       {
-        id: "q-32-3",
-        type: "long_answer",
-        text: "Describa el principio de rotación interna de cadera (Koshi) y cómo se genera la potencia en golpes de puño directo (Choku Zuki / Kagi Zuki) en Kiba Dachi sin desplazar los pies.",
-        expectedNotes: "Acción de anclaje de piernas al suelo, retroversión pélvica y torsión de cadera con contracción súbita en el instante de impacto (Kime)."
+        id: "q-32-complete-2",
+        type: "short_answer",
+        text: "SIGNIFICADO DE ENPI:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Vuelo de la golondrina (o codo / técnica de golpe de codo).",
+        points: 1
       },
       {
-        id: "q-32-4",
+        id: "q-32-complete-3",
+        type: "short_answer",
+        text: "SIGNIFICADO DE TEKKI NIDAN:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Jinete de hierro nivel 2 (segundo nivel del kata Tekki).",
+        points: 1
+      },
+      {
+        id: "q-32-complete-4",
+        type: "short_answer",
+        text: "SIMILITUD DE LAS KATAS HEIAN:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Inician todas con una técnica de defensa (bloqueo), buscan cultivar la mente en paz / calma, y contienen los fundamentos básicos de Shotokan.",
+        points: 1
+      },
+      {
+        id: "q-32-complete-5",
+        type: "short_answer",
+        text: "SIGLAS DEL REGLAMENTO UTILIZADO INTERNACIONALMENTE PARA CAMPEONATOS DE KARATE DO:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "WKF (World Karate Federation) o ISKF (International Shotokan Karate Federation).",
+        points: 1
+      },
+      {
+        id: "q-32-complete-6",
+        type: "short_answer",
+        text: "NOMBRE DEL JEFE INSTRUCTOR DE ISKF:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Sensei Hiroyoshi Okazaki (Jefe Instructor y Presidente Internacional de ISKF) o Teruyuki Okazaki (fundador).",
+        points: 1
+      },
+      {
+        id: "q-32-complete-7",
+        type: "short_answer",
+        text: "ORIGEN DE LAS ARTES MARCIALES:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "India y China (Templo Shaolin y Bodhidharma / Daruma Taishi), con posterior evolución en Okinawa y Japón.",
+        points: 1
+      },
+      {
+        id: "q-32-complete-8",
+        type: "short_answer",
+        text: "SIGNIFICADO DE JIYU IPPON KUMITE:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Combate semi-libre a una técnica / un paso determinado.",
+        points: 1
+      },
+      {
+        id: "q-32-complete-9",
+        type: "short_answer",
+        text: "SIGNIFICADO DE YAKUSOKU:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Promesa, compromiso o acuerdo (entrenamiento o combate predeterminado / acordado).",
+        points: 1
+      },
+      {
+        id: "q-32-complete-10",
+        type: "short_answer",
+        text: "UN ESTILO PRINCIPAL DEL KARATE DO:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Shotokan (también Goju-Ryu, Shito-Ryu, Wado-Ryu).",
+        points: 1
+      },
+
+      // --- SECCION 3: SELECCIONE POSICIONES CORRECTAMENTE (6 preguntas, 1 punto c/u) ---
+      {
+        id: "q-32-pos-1",
         type: "single_choice",
-        text: "En Jiyu Ippon Kumite, ¿cuál es la distancia de combate (Maai) reglamentaria para iniciar el ataque de Jodan Oi Zuki?",
-        options: [
-          "Maai estándar (un paso largo de distancia)",
-          "Cuerpo a cuerpo cerrado",
-          "Dos pasos largos",
-          "Distancia variable sin control"
-        ],
-        correctOptionIndex: 0
+        text: "Cuál es la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/3-2/question_obj19.png",
+        options: ["MANJI UKE", "MOROTE UKE", "GYAKU ZUKI", "OI ZUKI", "YAMA ZUKI", "MAWASHI GERI"],
+        correctOptionIndex: 3, // OI ZUKI
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-32-pos-2",
+        type: "single_choice",
+        text: "Cuál es la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/3-2/question_obj24.png",
+        options: ["MANJI UKE", "MOROTE UKE", "GYAKU ZUKI", "OI ZUKI", "YAMA ZUKI", "MAWASHI GERI"],
+        correctOptionIndex: 0, // MANJI UKE
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-32-pos-3",
+        type: "single_choice",
+        text: "Cuál es la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/3-2/question_obj26.jpg",
+        options: ["MANJI UKE", "MOROTE UKE", "GYAKU ZUKI", "OI ZUKI", "YAMA ZUKI", "MAWASHI GERI"],
+        correctOptionIndex: 4, // YAMA ZUKI
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-32-pos-4",
+        type: "single_choice",
+        text: "Cuál es la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/3-2/question_obj29.png",
+        options: ["MANJI UKE", "MOROTE UKE", "GYAKU ZUKI", "OI ZUKI", "YAMA ZUKI", "MAWASHI GERI"],
+        correctOptionIndex: 5, // MAWASHI GERI
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-32-pos-5",
+        type: "single_choice",
+        text: "Cuál es la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/3-2/question_obj30.jpg",
+        options: ["MANJI UKE", "MOROTE UKE", "GYAKU ZUKI", "OI ZUKI", "YAMA ZUKI", "MAWASHI GERI"],
+        correctOptionIndex: 2, // GYAKU ZUKI
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-32-pos-6",
+        type: "single_choice",
+        text: "Cuál es la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/3-2/question_obj33.png",
+        options: ["MANJI UKE", "MOROTE UKE", "GYAKU ZUKI", "OI ZUKI", "YAMA ZUKI", "MAWASHI GERI"],
+        correctOptionIndex: 1, // MOROTE UKE
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+
+      // --- SECCION 4: DESARROLLO (2 preguntas, 2 puntos c/u) ---
+      {
+        id: "q-32-des-1",
+        type: "long_answer",
+        text: "KIME WAZA, EXPLIQUE EN QUE CONSISTE Y ENUMERE DOS CRITERIOS QUE SE UTILIZAN PARA CALIFICARLO.",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Kime waza es la técnica decisiva o de remate (concentración de energía y foco absoluto en el punto de impacto). Criterios de calificación: 1) Foco y penetración controlada en la zona objetivo, 2) Tensión y relajación muscular instantánea (explosión y descontracción rápida), 3) Estabilidad de postura y Zanshin (alerta mental posterior), 4) Distancia (Maai) y sincronización con la respiración.",
+        points: 2
+      },
+      {
+        id: "q-32-des-2",
+        type: "long_answer",
+        text: "DICEN LOS GRANDES MAESTROS QUE EL KARATE DO ES UN ESTILO DE VIDA, ¿CIERTO O FALSO? Y ¿PORQUE?",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Cierto. Porque el Karate Do trasciende las técnicas físicas en el dojo; es una disciplina formativa permanente que forja el carácter, el respeto, la humildad, la constancia y el autocontrol para aplicarlos diariamente en la familia, los estudios, el trabajo y la sociedad.",
+        points: 2
       }
     ]
   },
@@ -327,44 +608,395 @@ const DEFAULT_EXAMS_SEED = [
     name: "Examen de 2 a 1 Kyu",
     code: "KYU-2-1",
     targetRanks: "2 a 1 Kyu",
-    description: "Evaluación avanzada previa a cinta negra: kata superior Bassai Dai, principios del Dojo Kun y Zanshin.",
+    description: "I Examen Oficial de 2° Kyu a 1er Kyu: Terminología, Complete, Asocie Katas, Asocie WKF y Desarrollo.",
     order: 3,
     questions: [
+      // --- SECCION 1: ASOCIE TERMINOLOGIA (Matching - 4 preguntas, 5 puntos cada una) ---
       {
-        id: "q-21-1",
-        type: "single_choice",
-        text: "¿Cuál es el primer kata superior (Sentei / Tokui) que se evalúa formalmente en la preparación hacia 1er Kyu y Shodan?",
-        options: [
-          "Bassai Dai",
-          "Meikyo",
-          "Sochin",
-          "Nijushiho"
+        id: "q-21-match-1",
+        type: "matching",
+        text: "Asocie la terminología",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [
+          "BUSHIDO",
+          "SHITEI KATA",
+          "KARATE DO",
+          "TOKUI KATA",
+          "MAKIWARA"
         ],
-        correctOptionIndex: 0
+        topTerms: [
+          "CAMINO DE LA MANO VACIA",
+          "KATA OBLIGATORIA",
+          "KATA FAVORITA",
+          "EL CAMINO DEL GUERRERO",
+          "TABLA PARA DAR PUÑETASOS"
+        ],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 3 },
+          { leftIndex: 1, rightIndex: 1 },
+          { leftIndex: 2, rightIndex: 0 },
+          { leftIndex: 3, rightIndex: 2 },
+          { leftIndex: 4, rightIndex: 4 }
+        ],
+        expectedNotes: "",
+        points: 5
       },
       {
-        id: "q-21-2",
-        type: "single_choice",
-        text: "¿Cuál es la traducción tradicional del nombre del kata 'Bassai Dai'?",
-        options: [
-          "Atravesar la fortaleza (o romper la fortaleza)",
-          "La mirada al cielo",
-          "Manos de calma",
-          "Camino del espejo"
+        id: "q-21-match-2",
+        type: "matching",
+        text: "Asocie la terminología",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [
+          "ZAZEN",
+          "IPPON KEN",
+          "IKKEN HISSATSU",
+          "SEPPUKU",
+          "ZEN"
         ],
-        correctOptionIndex: 0
+        topTerms: [
+          "ESTADO DE CONCENTRACION",
+          "MATAR EN UN SOLO GOLPE",
+          "ZEN SENTADO",
+          "PUÑO DE UN NUDILLO",
+          "CORTAR EL HARA"
+        ],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 2 },
+          { leftIndex: 1, rightIndex: 3 },
+          { leftIndex: 2, rightIndex: 1 },
+          { leftIndex: 3, rightIndex: 4 },
+          { leftIndex: 4, rightIndex: 0 }
+        ],
+        expectedNotes: "",
+        points: 5
       },
       {
-        id: "q-21-3",
+        id: "q-21-match-3",
+        type: "matching",
+        text: "Asocie la terminología",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [
+          "MAWATTE",
+          "KURO OBI",
+          "NEKO",
+          "HITOSU",
+          "DAN"
+        ],
+        topTerms: [
+          "RANGO DE CINTURON NEGRO",
+          "PRIMERO",
+          "VUELTA",
+          "GATO",
+          "CINTA NEGRA"
+        ],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 2 },
+          { leftIndex: 1, rightIndex: 4 },
+          { leftIndex: 2, rightIndex: 3 },
+          { leftIndex: 3, rightIndex: 1 },
+          { leftIndex: 4, rightIndex: 0 }
+        ],
+        expectedNotes: "",
+        points: 5
+      },
+      {
+        id: "q-21-match-4",
+        type: "matching",
+        text: "Asocie la terminología",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [
+          "GASSHUKO",
+          "SAMURAI",
+          "TETTSUI",
+          "KIME WAZA",
+          "ZANSHIN"
+        ],
+        topTerms: [
+          "CLASE MILITAR DEL JAPON FEUDAL",
+          "ALOJARSE JUNTOS",
+          "MARTILLO DE HIERRO",
+          "TECNICA DECISIVA",
+          "EL ESPIRITU QUE PERDURA"
+        ],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 1 },
+          { leftIndex: 1, rightIndex: 0 },
+          { leftIndex: 2, rightIndex: 2 },
+          { leftIndex: 3, rightIndex: 3 },
+          { leftIndex: 4, rightIndex: 4 }
+        ],
+        expectedNotes: "",
+        points: 5
+      },
+
+      // --- SECCION 2: COMPLETE (7 preguntas) ---
+      {
+        id: "q-21-complete-1",
         type: "short_answer",
-        text: "Mencione al menos 3 de los 5 preceptos del Dojo Kun que todo aspirante debe dominar.",
-        expectedNotes: "Perfeccionar el carácter, ser leal y fiel, esforzarse y superarse, respetar a los demás, refrenar el comportamiento violento."
+        text: "SIGNIFICADO DE KARATE DO SHOTOKAN:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Camino de la mano vacía de la escuela de Shoto (Shoto: pinos ondulantes, seudónimo de Gichin Funakoshi; Kan: casa o escuela).",
+        points: 1
       },
       {
-        id: "q-21-4",
+        id: "q-21-complete-2",
+        type: "short_answer",
+        text: "SIGNIFICADO DE HANGETSU:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Media luna (nombre del kata y de la postura Hangetsu Dachi).",
+        points: 1
+      },
+      {
+        id: "q-21-complete-3",
+        type: "short_answer",
+        text: "SIGNIFICADO DE JION:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Amor y bondad / Piedad del templo Jion (kata originario de los templos budistas).",
+        points: 1
+      },
+      {
+        id: "q-21-complete-4",
+        type: "short_answer",
+        text: "NOMBRE DEL JEFE INSTRUCTOR DE ISKF:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Sensei Hiroyoshi Okazaki (Jefe Instructor y Presidente Internacional de ISKF) o Teruyuki Okazaki (fundador).",
+        points: 1
+      },
+      {
+        id: "q-21-complete-5",
+        type: "short_answer",
+        text: "SIGNIFICADO DE JIYU KUMITE:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Combate libre.",
+        points: 1
+      },
+      {
+        id: "q-21-complete-6",
+        type: "short_answer",
+        text: "SIGNIFICADO DE CHAKUGAN:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Punto de vista, contacto visual o dirección de la mirada hacia el adversario.",
+        points: 1
+      },
+      {
+        id: "q-21-complete-7",
+        type: "short_answer",
+        text: "4 ESTILOS OFICIALES DE KARATE DO:",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "1) Shotokan, 2) Goju-Ryu, 3) Shito-Ryu, 4) Wado-Ryu.",
+        points: 4
+      },
+
+      // --- SECCION 3: ASOCIE KATAS (6 preguntas con imágenes) ---
+      {
+        id: "q-21-kata-1",
+        type: "single_choice",
+        text: "En cuál Kata se encuentra la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/2-1/q13_obj19.png",
+        options: ["HANGETSU", "JION", "KANKU DAI", "TEKKI NIDAN", "ENPI", "BASSAI DAI"],
+        correctOptionIndex: 0, // HANGETSU
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-21-kata-2",
+        type: "single_choice",
+        text: "En cuál Kata se encuentra la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/2-1/q14_obj24.png",
+        options: ["ENPI", "HANGETSU", "BASSAI DAI", "JION", "KANKU DAI", "TEKKI NIDAN"],
+        correctOptionIndex: 3, // JION
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-21-kata-3",
+        type: "single_choice",
+        text: "En cuál Kata se encuentra la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/2-1/q15_obj25.jpg",
+        options: ["JION", "ENPI", "HANGETSU", "BASSAI DAI", "KANKU DAI", "TEKKI NIDAN"],
+        correctOptionIndex: 3, // BASSAI DAI
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-21-kata-4",
+        type: "single_choice",
+        text: "En cuál Kata se encuentra la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/2-1/q16_obj28.png",
+        options: ["JION", "KANKU DAI", "ENPI", "BASSAI DAI", "TEKKI NIDAN", "HANGETSU"],
+        correctOptionIndex: 4, // TEKKI NIDAN
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-21-kata-5",
+        type: "single_choice",
+        text: "En cuál Kata se encuentra la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/2-1/q17_obj30.png",
+        options: ["BASSAI DAI", "JION", "TEKKI NIDAN", "HANGETSU", "ENPI", "KANKU DAI"],
+        correctOptionIndex: 5, // KANKU DAI
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+      {
+        id: "q-21-kata-6",
+        type: "single_choice",
+        text: "En cuál Kata se encuentra la posición que se muestra en la imagen?",
+        imageUrl: "/images/exams/2-1/q18_obj34.png",
+        options: ["KANKU DAI", "TEKKI NIDAN", "JION", "HANGETSU", "BASSAI DAI", "ENPI"],
+        correctOptionIndex: 5, // ENPI
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "",
+        points: 1
+      },
+
+      // --- SECCION 4: ASOCIE WKF (2 preguntas de matriz) ---
+      {
+        id: "q-21-wkf-1",
+        type: "matching",
+        text: "Asocie WKF",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [
+          "IPPON",
+          "WAZA-RI",
+          "YUKO",
+          "TATAMI"
+        ],
+        topTerms: [
+          "1 PUNTO",
+          "2 PUNTOS",
+          "PISO",
+          "3 PUNTOS"
+        ],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 3 }, // IPPON -> 3 PUNTOS
+          { leftIndex: 1, rightIndex: 1 }, // WAZA-RI -> 2 PUNTOS
+          { leftIndex: 2, rightIndex: 0 }, // YUKO -> 1 PUNTO
+          { leftIndex: 3, rightIndex: 2 }  // TATAMI -> PISO
+        ],
+        expectedNotes: "",
+        points: 4
+      },
+      {
+        id: "q-21-wkf-2",
+        type: "matching",
+        text: "Asocie WKF",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [
+          "AKA",
+          "AO",
+          "TSUZUKETE HAJIME",
+          "HANTEI",
+          "NO KACHI"
+        ],
+        topTerms: [
+          "EMPEZAR COMBATE",
+          "GANADOR",
+          "ROJO",
+          "DECISION ARBITRAL",
+          "AZUL"
+        ],
+        correctMatches: [
+          { leftIndex: 0, rightIndex: 2 }, // AKA -> ROJO
+          { leftIndex: 1, rightIndex: 4 }, // AO -> AZUL
+          { leftIndex: 2, rightIndex: 0 }, // TSUZUKETE HAJIME -> EMPEZAR COMBATE
+          { leftIndex: 3, rightIndex: 3 }, // HANTEI -> DECISION ARBITRAL
+          { leftIndex: 4, rightIndex: 1 }  // NO KACHI -> GANADOR
+        ],
+        expectedNotes: "",
+        points: 5
+      },
+
+      // --- SECCION 5: DESARROLLO (2 preguntas) ---
+      {
+        id: "q-21-des-1",
         type: "long_answer",
-        text: "Explique el concepto marcial de 'Zanshin' (alerta permanente) y su aplicación práctica antes, durante y después de la ejecución de una técnica o combate.",
-        expectedNotes: "Estado mental de serenidad y vigilancia total; no relajar la postura ni perder el contacto visual tras finalizar el golpe o kata."
+        text: "EXPLIQUE DOS CRITERIOS RESPECTIVAMENTE PARA CALIFICAR KUMITE Y KATA RESPECTIVAMENTE",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Kumite: 1) Buena forma y técnica limpia con Kime, 2) Distancia adecuada (Maai), actitud deportiva y control (sin contacto excesivo). Kata: 1) Conformidad técnica (precisión en posturas, trayectorias y Enbusen), 2) Rendimiento atlético (potencia, velocidad, ritmo, equilibrio y Kiai).",
+        points: 4
+      },
+      {
+        id: "q-21-des-2",
+        type: "long_answer",
+        text: "¿QUE SIGNIFICA PARA USTED HABER ALCANZADO EL GRADO DE CAFÉ 1 KYU Y ESTAR PRONTO A SU CINTA NEGRA?",
+        imageUrl: "",
+        options: [],
+        correctOptionIndex: 0,
+        leftTerms: [],
+        topTerms: [],
+        correctMatches: [],
+        expectedNotes: "Respuesta reflexiva personal sobre la responsabilidad de ser el grado más alto antes de cinta negra (Shodan), servir de ejemplo y guía (Sempai) para los grados menores, demostrar madurez, humildad, constancia y compromiso con los valores del Dojo Kun.",
+        points: 1
       }
     ]
   }
@@ -406,7 +1038,8 @@ export async function getWrittenExams() {
           leftIndex: m.leftIndex ?? 0,
           rightIndex: m.rightIndex ?? 0
         })),
-        expectedNotes: q.expectedNotes || ''
+        expectedNotes: q.expectedNotes || '',
+        points: Number(q.points) > 0 ? Number(q.points) : (q.type === 'matching' ? ((q.leftTerms && q.leftTerms.length) || 1) : 1)
       }))
     }));
   } catch (error) {
@@ -853,7 +1486,8 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
       imageUrl: q.imageUrl || '',
       options: q.options || [],
       leftTerms: q.leftTerms || [],
-      topTerms: q.topTerms || []
+      topTerms: q.topTerms || [],
+      points: Number(q.points) > 0 ? Number(q.points) : (q.type === 'matching' ? ((q.leftTerms && q.leftTerms.length) || 1) : 1)
     }));
 
     // Enriquecer o respaldar logos de los Dojos asignados
@@ -1324,8 +1958,17 @@ export async function submitStudentExam(data) {
     }
 
     const questionsMap = {};
+    let totalMaxPossibleScore = 0;
     (writtenExam.questions || []).forEach(q => {
       questionsMap[q.id] = q;
+      // Cada término en Asocie vale 1 punto por cada acierto. Demás preguntas: valor configurado por el Sensei.
+      let qPoints = 1;
+      if (q.type === 'matching') {
+        qPoints = (q.leftTerms && q.leftTerms.length > 0) ? q.leftTerms.length : (Number(q.points) > 0 ? Number(q.points) : 1);
+      } else {
+        qPoints = Number(q.points) > 0 ? Number(q.points) : 1;
+      }
+      totalMaxPossibleScore += qPoints;
     });
 
     let autoScore = 0;
@@ -1334,9 +1977,12 @@ export async function submitStudentExam(data) {
       const q = questionsMap[ans.questionId];
       if (!q) return ans;
 
+      // 1. Selección Única: Autocalificado según los puntos configurados
       if (q.type === 'single_choice') {
+        const qPoints = Number(q.points) > 0 ? Number(q.points) : 1;
         const isCorrect = ans.selectedOptionIndex === q.correctOptionIndex;
-        if (isCorrect) autoScore += 1;
+        const earned = isCorrect ? qPoints : 0;
+        autoScore += earned;
         return {
           questionId: ans.questionId,
           questionType: q.type,
@@ -1347,24 +1993,24 @@ export async function submitStudentExam(data) {
           selectedOptionIndex: ans.selectedOptionIndex,
           isCorrect,
           isGraded: true,
-          earnedPoints: isCorrect ? 1 : 0,
-          maxPoints: 1
+          earnedPoints: earned,
+          maxPoints: qPoints
         };
       }
 
+      // 2. Asociar Términos: Vale 1 punto cada término que se asocie
       if (q.type === 'matching') {
-        const totalRows = (q.leftTerms || []).length;
-        let correctMatchesCount = 0;
         const studentMatches = ans.matchingMatches || [];
+        const totalTerms = (q.leftTerms && q.leftTerms.length > 0) ? q.leftTerms.length : 1;
+        let correctMatchesCount = 0;
 
         (q.correctMatches || []).forEach(officialMatch => {
           const found = studentMatches.find(sm => sm.leftIndex === officialMatch.leftIndex && sm.rightIndex === officialMatch.rightIndex);
           if (found) correctMatchesCount++;
         });
 
-        const earned = totalRows > 0 ? (correctMatchesCount / totalRows) : 0;
-        const isAllCorrect = totalRows > 0 && correctMatchesCount === totalRows;
-        autoScore += earned;
+        // 1 punto por cada término correcto
+        autoScore += correctMatchesCount;
 
         return {
           questionId: ans.questionId,
@@ -1375,14 +2021,16 @@ export async function submitStudentExam(data) {
           topTerms: q.topTerms || [],
           correctMatches: q.correctMatches || [],
           matchingMatches: studentMatches,
-          isCorrect: isAllCorrect,
+          isCorrect: correctMatchesCount === totalTerms,
           isGraded: true,
-          earnedPoints: Math.round(earned * 100) / 100,
-          maxPoints: 1
+          earnedPoints: correctMatchesCount,
+          maxPoints: totalTerms,
+          senseiComments: ''
         };
       }
 
-      // Respuesta corta o larga: evaluadas manualmente por el Sensei
+      // 3. Respuesta corta o larga: Se calificará en una cajita con la cantidad de puntos obtenidos
+      const qPoints = Number(q.points) > 0 ? Number(q.points) : 1;
       return {
         questionId: ans.questionId,
         questionType: q.type,
@@ -1392,12 +2040,14 @@ export async function submitStudentExam(data) {
         isCorrect: null,
         isGraded: false,
         earnedPoints: 0,
-        maxPoints: 1,
+        maxPoints: qPoints,
         senseiComments: ''
       };
     });
 
-    const totalQuestions = (writtenExam.questions || []).length;
+    const calculatedPercentage = totalMaxPossibleScore > 0 
+      ? Math.min(100, Math.max(0, Math.round((autoScore / totalMaxPossibleScore) * 100))) 
+      : 0;
 
     const submission = new ExamSubmission({
       sessionId: session._id,
@@ -1410,8 +2060,8 @@ export async function submitStudentExam(data) {
       autoScore: Math.round(autoScore * 100) / 100,
       manualScore: 0,
       totalScore: Math.round(autoScore * 100) / 100,
-      maxPossibleScore: totalQuestions,
-      percentage: totalQuestions > 0 ? Math.round((autoScore / totalQuestions) * 100) : 0,
+      maxPossibleScore: totalMaxPossibleScore || 1,
+      percentage: calculatedPercentage,
       timeSpentSeconds: Math.max(0, parseInt(timeSpentSeconds, 10) || 0),
       isAutoSubmitted: Boolean(isAutoSubmitted),
       securityViolationsCount: Math.max(0, parseInt(securityViolationsCount, 10) || 0),
@@ -1476,10 +2126,19 @@ export async function getExamSubmissions(sessionId) {
         baseQuestionsMap[q.id] = q;
       });
 
+      let calculatedMaxPossible = 0;
       const enrichedAnswers = (s.answers || []).map(ans => {
         const baseQ = baseQuestionsMap[ans.questionId];
+        const qPoints = baseQ
+          ? (baseQ.type === 'matching'
+              ? ((baseQ.leftTerms && baseQ.leftTerms.length > 0) ? baseQ.leftTerms.length : 1)
+              : (Number(baseQ.points) > 0 ? Number(baseQ.points) : 1))
+          : (ans.maxPoints || 1);
+        calculatedMaxPossible += qPoints;
+
         return {
           ...ans,
+          maxPoints: qPoints,
           questionText: ans.questionText || baseQ?.text || '',
           imageUrl: ans.imageUrl || baseQ?.imageUrl || '',
           options: (ans.options && ans.options.length > 0) ? ans.options : (baseQ?.options || []),
@@ -1490,6 +2149,8 @@ export async function getExamSubmissions(sessionId) {
           isGraded: ans.isGraded || (typeof ans.earnedPoints === 'number' && (ans.earnedPoints > 0 || ans.isCorrect !== null || !!ans.senseiComments))
         };
       });
+
+      const effectiveMaxPossible = calculatedMaxPossible > 0 ? calculatedMaxPossible : (s.maxPossibleScore || s.answers?.length || 100);
 
       return {
         id: s._id.toString(),
@@ -1504,7 +2165,7 @@ export async function getExamSubmissions(sessionId) {
         autoScore: s.autoScore || 0,
         manualScore: s.manualScore || 0,
         totalScore: s.totalScore || 0,
-        maxPossibleScore: s.maxPossibleScore || s.answers?.length || 100,
+        maxPossibleScore: effectiveMaxPossible,
         percentage: s.percentage || 0,
         timeSpentSeconds: s.timeSpentSeconds || 0,
         isAutoSubmitted: Boolean(s.isAutoSubmitted),
@@ -1556,15 +2217,38 @@ export async function gradeExamSubmission(submissionId, gradingData) {
       });
     }
 
-    let totalScore = 0;
-    submission.answers.forEach(a => {
-      totalScore += (a.earnedPoints || 0);
+    // Sincronizar maxPoints exactos configurados en el examen
+    const writtenExam = await WrittenExam.findById(submission.writtenExamId).lean();
+    const examQuestionsMap = {};
+    (writtenExam?.questions || []).forEach(q => {
+      examQuestionsMap[q.id] = q;
     });
 
-    const max = submission.maxPossibleScore || submission.answers.length || 1;
-    const percentage = Math.min(100, Math.round((totalScore / max) * 100));
+    let totalScore = 0;
+    let totalMaxPossible = 0;
+    submission.answers = submission.answers.map(a => {
+      const q = examQuestionsMap[a.questionId];
+      const qPoints = q 
+        ? (q.type === 'matching' 
+            ? ((q.leftTerms && q.leftTerms.length > 0) ? q.leftTerms.length : 1)
+            : (Number(q.points) > 0 ? Number(q.points) : 1))
+        : (a.maxPoints || 1);
+      
+      const earned = a.earnedPoints || 0;
+      totalScore += earned;
+      totalMaxPossible += qPoints;
+
+      return {
+        ...a.toObject(),
+        maxPoints: qPoints
+      };
+    });
+
+    const max = totalMaxPossible > 0 ? totalMaxPossible : (submission.maxPossibleScore || submission.answers.length || 1);
+    const percentage = Math.min(100, Math.max(0, Math.round((totalScore / max) * 100)));
 
     submission.totalScore = Math.round(totalScore * 100) / 100;
+    submission.maxPossibleScore = max;
     submission.percentage = percentage;
     if (senseiFeedback !== undefined) {
       submission.senseiFeedback = senseiFeedback?.trim() || '';

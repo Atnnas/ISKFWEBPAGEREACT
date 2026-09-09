@@ -611,7 +611,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         if (!a) return false;
         if (typeof a.selectedOptionIndex === 'number') return true;
         if (a.writtenAnswer && a.writtenAnswer.trim()) return true;
-        if (a.matchingMatches && a.matchingMatches.length > 0) return true;
+        const targetQ = (exam?.questions || []).find(q => q.id === qId);
+        const requiredCount = targetQ?.leftTerms?.length || 1;
+        if (a.matchingMatches && a.matchingMatches.length >= requiredCount) return true;
         return false;
       }).length;
 
@@ -818,6 +820,26 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
     if (!studentDojo.trim()) {
       showAlert("Por favor selecciona tu Dojo de procedencia.", "Dojo requerido", false);
+      return;
+    }
+
+    // Verificar si hay preguntas de asociar con términos sin responder
+    const incompleteMatching = activeQuestions.find(q => {
+      if (q.type !== 'matching') return false;
+      const ans = answers[q.id];
+      const matchCount = ans?.matchingMatches?.length || 0;
+      const requiredCount = q.leftTerms?.length || 0;
+      return matchCount < requiredCount;
+    });
+
+    if (incompleteMatching) {
+      showConfirm({
+        title: "Términos sin asociar",
+        message: "Tienes preguntas de asociación donde no has completado todos los términos (recuerda que cada término bien respondido vale 1 punto y deben responderse todos). ¿Deseas enviar el examen de todos modos?",
+        confirmText: "Enviar de todos modos",
+        cancelText: "Volver a revisar",
+        onConfirm: () => executeSubmission(false)
+      });
       return;
     }
 
@@ -1153,7 +1175,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     if (!ans) return false;
     if (q.type === 'single_choice') return ans.selectedOptionIndex !== null && ans.selectedOptionIndex !== undefined;
     if (q.type === 'short_answer' || q.type === 'long_answer') return Boolean(ans.writtenAnswer?.trim());
-    if (q.type === 'matching') return Boolean(ans.matchingMatches?.length > 0);
+    if (q.type === 'matching') return (ans.matchingMatches?.length || 0) >= (q.leftTerms?.length || 1);
     return false;
   }).length;
 
@@ -1469,10 +1491,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                     </span>
                     <div className="flex-1 space-y-1">
                       <span className="text-[11px] uppercase font-bold text-gray-500 font-mono tracking-wider">
-                        {q.type === 'single_choice' && 'Selección Única'}
-                        {q.type === 'short_answer' && 'Respuesta Breve'}
-                        {q.type === 'long_answer' && 'Desarrollo Escrito'}
-                        {q.type === 'matching' && 'Asociación de Términos'}
+                        {q.type === 'single_choice' && `Selección Única (${Number(q.points) > 0 ? Number(q.points) : 1} pt${(Number(q.points) || 1) === 1 ? '' : 's'})`}
+                        {q.type === 'short_answer' && `Respuesta Breve (${Number(q.points) > 0 ? Number(q.points) : 1} pt${(Number(q.points) || 1) === 1 ? '' : 's'})`}
+                        {q.type === 'long_answer' && `Desarrollo Escrito (${Number(q.points) > 0 ? Number(q.points) : 1} pt${(Number(q.points) || 1) === 1 ? '' : 's'})`}
+                        {q.type === 'matching' && `Asociación de Términos (${(q.leftTerms && q.leftTerms.length > 0) ? q.leftTerms.length : (Number(q.points) > 0 ? Number(q.points) : 1)} pts • 1 pt c/u)`}
                       </span>
                       <p className="text-sm md:text-base font-bold text-gray-900 leading-relaxed">
                         {q.text}
@@ -1521,7 +1543,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                             <span
                               className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 text-xs font-bold transition-colors ${
                                 isSelected
-                                  ? 'border-[#2D2E83] bg-[#2D2E83] text-white'
+                                    ? 'border-[#2D2E83] bg-[#2D2E83] text-white'
                                   : 'border-gray-300 text-gray-500 bg-white'
                               }`}
                             >
@@ -1562,7 +1584,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
                   {/* 4. ASOCIAR TÉRMINOS (MATRIZ INTERACTIVA) */}
                   {q.type === 'matching' && q.leftTerms && q.topTerms && (
-                    <div className="pt-1 pl-1">
+                    <div className="pt-1 pl-1 space-y-2">
+                      <p className="text-[11px] text-gray-600 font-medium">
+                        Debes asociar todos los términos marcando la casilla correspondiente. Cada término bien respondido vale 1 punto.
+                      </p>
                       <div className="overflow-x-auto border border-gray-200 rounded-2xl bg-white shadow-sm">
                         <table className="min-w-full text-xs border-collapse">
                           <thead>
