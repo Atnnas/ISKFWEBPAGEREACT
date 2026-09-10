@@ -255,3 +255,55 @@ html.admin-scope {
 .admin-scope .text-\[15px\] {
     font-size: 16.5px !important;
 }
+
+/* ============================================================
+   MASCOTA ESTILO DUOLINGO: ÁRBITRO WKF (SHIHAN SPOCK)
+   ============================================================ */
+@keyframes duolingo-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-8px) scale(0.98, 1.02);
+  }
+}
+
+@keyframes duolingo-shadow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(0.85);
+    opacity: 0.2;
+  }
+}
+
+@keyframes duolingo-wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-6deg) scale(1.06); }
+  75% { transform: rotate(6deg) scale(1.06); }
+}
+
+@keyframes duolingo-pop {
+  0% { transform: scale(0.8) translateY(10px); opacity: 0; }
+  70% { transform: scale(1.05) translateY(-2px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.animate-duolingo-bounce {
+  animation: duolingo-bounce 2.6s ease-in-out infinite;
+}
+
+.animate-duolingo-shadow {
+  animation: duolingo-shadow 2.6s ease-in-out infinite;
+}
+
+.animate-duolingo-wiggle {
+  animation: duolingo-wiggle 0.45s ease-in-out;
+}
+
+.animate-duolingo-pop {
+  animation: duolingo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+

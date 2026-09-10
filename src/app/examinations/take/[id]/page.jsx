@@ -36,8 +36,12 @@ export default async function TakeExamPage({ params }) {
           </div>
 
           <div className="relative z-10 max-w-md w-full bg-white/95 backdrop-blur-2xl border border-red-300 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="w-20 h-20 bg-red-50 border border-red-200 text-red-600 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
-              <ShieldAlert className="w-10 h-10" />
+            <div className="relative mx-auto flex flex-col items-center justify-center">
+              <img 
+                src="/images/exams/referee-spock-chui.png" 
+                alt="Árbitro WKF Spock - ¡¡CHUI!!" 
+                className="w-36 h-36 sm:w-40 sm:h-40 object-contain drop-shadow-2xl animate-in zoom-in-90 duration-300"
+              />
             </div>
 
             <div className="space-y-2">

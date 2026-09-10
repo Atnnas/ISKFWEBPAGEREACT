@@ -28,6 +28,7 @@ import { getHardwareFingerprint } from '../../lib/deviceFingerprint';
 import { detectIncognito } from 'detectincognitojs';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
+import RefereeSpockMascot from './RefereeSpockMascot';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
 
 // Función utilitaria para barajado aleatorio Fisher-Yates (Anti-Colusión)
@@ -957,8 +958,8 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         </div>
 
         <div className="relative z-10 max-w-md w-full bg-white/95 backdrop-blur-2xl border border-red-300 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
-          <div className="w-20 h-20 bg-red-500/10 border border-red-500/20 text-red-600 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
-            <ShieldAlert className="w-10 h-10" />
+          <div className="relative mx-auto flex flex-col items-center justify-center">
+            <RefereeSpockMascot mode="modal" />
           </div>
 
           <div className="space-y-2">
@@ -1296,51 +1297,64 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       <main className="relative z-10 flex-1 py-8 px-4 sm:px-6 md:px-8">
         <div className="max-w-3xl mx-auto space-y-8">
 
-        {/* Cabecera Oficial */}
-        <div className="bg-white/90 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-8 space-y-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 pb-4">
-            <div className="flex items-center gap-2 text-xs text-[#2D2E83] uppercase tracking-widest font-mono font-bold">
-              <Award className="w-4 h-4 text-[#be1322]" />
-              <span>ISKF Karate Do • Evaluación Oficial</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {session?.timeLimitMinutes > 0 && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-600" />
-                  {session.timeLimitMinutes} min límite
-                </span>
-              )}
-              {targetRank && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 font-mono">
-                  <Award className="w-3.5 h-3.5 text-emerald-600" />
-                  {targetRank}
-                </span>
-              )}
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#2D2E83] border border-blue-200">
-                {totalQuestions} Preguntas
-              </span>
-            </div>
-          </div>
+        {/* Cabecera Oficial / Rótulo Principal con Árbitro WKF Spock (¡¡CHUI!!) */}
+        <div className="relative bg-white/95 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] overflow-hidden">
+          {/* Fondo decorativo sutil */}
+          <div className="absolute -top-16 -right-16 w-56 h-56 bg-gradient-to-br from-[#2D2E83]/5 to-[#be1322]/5 rounded-full blur-2xl pointer-events-none" />
 
-          <div className="space-y-1.5">
-            <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
-              {session.title}
-            </h1>
-            <p className="text-sm font-bold text-[#be1322]">
-              {session.writtenExamName}
-            </p>
-            {exam.description && (
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed pt-1">
-                {exam.description}
-              </p>
-            )}
-            <div className="flex flex-wrap items-center gap-2 pt-2.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs">
-                Ponderación Oficial: {session?.weightPercentage || exam?.weightPercentage || 15}% de la nota global
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
-                Mínimo de Aprobación: {session?.passingPercentage || exam?.passingPercentage || 70}% de aciertos
-              </span>
+          <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 relative z-10">
+            {/* Lado Izquierdo: Información Oficial del Rótulo */}
+            <div className="flex-1 space-y-4 min-w-0 w-full">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 pb-4">
+                <div className="flex items-center gap-2 text-xs text-[#2D2E83] uppercase tracking-widest font-mono font-bold">
+                  <Award className="w-4 h-4 text-[#be1322]" />
+                  <span>ISKF Karate Do • Evaluación Oficial</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {session?.timeLimitMinutes > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      {session.timeLimitMinutes} min límite
+                    </span>
+                  )}
+                  {targetRank && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 font-mono">
+                      <Award className="w-3.5 h-3.5 text-emerald-600" />
+                      {targetRank}
+                    </span>
+                  )}
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#2D2E83] border border-blue-200">
+                    {totalQuestions} Preguntas
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
+                  {session.title}
+                </h1>
+                <p className="text-sm font-bold text-[#be1322]">
+                  {session.writtenExamName}
+                </p>
+                {exam.description && (
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed pt-1">
+                    {exam.description}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2 pt-2.5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs">
+                    Ponderación Oficial: {session?.weightPercentage || exam?.weightPercentage || 15}% de la nota global
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
+                    Mínimo de Aprobación: {session?.passingPercentage || exam?.passingPercentage || 70}% de aciertos
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Lado Derecho: Mascota Estilo Duolingo Árbitro WKF Spock adjunto al rótulo */}
+            <div className="shrink-0 flex items-center justify-center pt-2 md:pt-0">
+              <RefereeSpockMascot mode="rotulo" />
             </div>
           </div>
         </div>
@@ -1741,6 +1755,8 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         title={securityWarningModal.title}
         message={securityWarningModal.message}
         isError={true}
+        image="/images/exams/referee-spock-chui.png"
+        imageAlt="Árbitro WKF Spock - ¡¡CHUI!!"
       />
     </div>
   );
