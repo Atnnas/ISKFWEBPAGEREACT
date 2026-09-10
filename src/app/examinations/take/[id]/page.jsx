@@ -36,12 +36,15 @@ export default async function TakeExamPage({ params }) {
           </div>
 
           <div className="relative z-10 max-w-md w-full bg-white/95 backdrop-blur-2xl border border-red-300 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="relative mx-auto flex flex-col items-center justify-center">
-              <img 
-                src="/images/exams/referee-spock-chui.png" 
-                alt="Árbitro WKF Spock - ¡¡CHUI!!" 
-                className="w-36 h-36 sm:w-40 sm:h-40 object-contain drop-shadow-2xl animate-in zoom-in-90 duration-300"
-              />
+            <div className="relative mx-auto flex flex-col items-center justify-center mb-2">
+              <div className="animate-duolingo-bounce">
+                <img 
+                  src="/images/exams/mascot-spock-chui.png" 
+                  alt="Árbitro WKF - ¡¡CHUI!!" 
+                  className="w-32 h-32 object-contain drop-shadow-2xl"
+                />
+              </div>
+              <div className="w-24 h-2.5 bg-black/15 rounded-full -mt-1.5 blur-[1px] animate-duolingo-shadow" />
             </div>
 
             <div className="space-y-2">

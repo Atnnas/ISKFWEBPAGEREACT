@@ -90,11 +90,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const [_securityViolationsCount, setSecurityViolationsCount] = useState(0);
   const [isSecurityLocked, setIsSecurityLocked] = useState(false);
   const [requiresFullscreenPrompt, setRequiresFullscreenPrompt] = useState(securityMode === 'strict');
-  const [securityWarningModal, setSecurityWarningModal] = useState({
+  const [chuiWarningModal, setChuiWarningModal] = useState({
     isOpen: false,
-    attempt: 0,
-    title: '',
-    message: ''
+    attempt: 1,
+    securityMode: securityMode
   });
 
   // Detección de Modo Incógnito / Privado
@@ -375,48 +374,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       }).catch(err => console.error("Error reporting security violation to server:", err));
     }
 
-    // MODO 1: AUDITORÍA (FLEXIBLE) - Registra silenciosamente sin interrumpir
-    if (securityMode === 'audit') {
-      return;
-    }
-
-    // MODO 2: CONTROLADO (3 INTENTOS CON ADVERTENCIA)
-    if (securityMode === 'warnings') {
-      if (currentCount === 1) {
-        setSecurityWarningModal({
-          isOpen: true,
-          attempt: 1,
-          title: "Advertencia de Seguridad (1/3)",
-          message: "Has salido de la pantalla del examen y has vuelto a ingresar. Recuerda que no está permitido salir de la prueba ni cambiar de aplicación. Esta es tu primera falta (1 de 3). Al acumular 3 faltas por salir y volver a entrar, tu examen se cerrará de forma automática y definitiva."
-        });
-      } else if (currentCount === 2) {
-        setSecurityWarningModal({
-          isOpen: true,
-          attempt: 2,
-          title: "Última Advertencia de Seguridad (2/3)",
-          message: "Has vuelto a salir y reingresar a la pantalla de evaluación. Esta es tu ÚLTIMA advertencia (2 de 3 faltas). Si sales y vuelves a entrar una vez más por cualquier motivo, el examen será cerrado y enviado inmediatamente con lo que tengas contestado."
-        });
-      } else if (currentCount >= 3) {
-        // Tercera salida y reingreso: Cierre forzado inmediato
-        setSecurityWarningModal({ isOpen: false, attempt: 3, title: '', message: '' });
-        setIsSecurityLocked(true);
-        if (typeof window !== 'undefined') {
-          const sessId = session.id || session._id;
-          localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
-        }
-        if (!isAutoSubmittingRef.current) {
-          isAutoSubmittingRef.current = true;
-          executeSubmissionRef.current?.(
-            true, 
-            true, 
-            `Examen cancelado automáticamente por seguridad: El aspirante acumuló 3 faltas por salida y reingreso a la ventana.`
-          );
-        }
-      }
-    }
-
     // MODO 3: ESTRICTO (PANTALLA COMPLETA & TOLERANCIA CERO)
     if (securityMode === 'strict') {
+      setChuiWarningModal({ isOpen: false, attempt: currentCount, securityMode });
       setIsSecurityLocked(true);
       if (typeof window !== 'undefined') {
         const sessId = session.id || session._id;
@@ -430,7 +390,35 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
           `Examen anulado por seguridad en Modo Estricto: Se detectó salida de ventana o abandono de pantalla completa.`
         );
       }
+      return;
     }
+
+    // MODO 2: CONTROLADO (Al llegar a 3 faltas se bloquea)
+    if (securityMode === 'warnings' && currentCount >= 3) {
+      setChuiWarningModal({ isOpen: false, attempt: 3, securityMode });
+      setIsSecurityLocked(true);
+      if (typeof window !== 'undefined') {
+        const sessId = session.id || session._id;
+        localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
+      }
+      if (!isAutoSubmittingRef.current) {
+        isAutoSubmittingRef.current = true;
+        executeSubmissionRef.current?.(
+          true, 
+          true, 
+          `Examen cancelado automáticamente por seguridad: El aspirante acumuló 3 faltas por cambio de pantalla.`
+        );
+      }
+      return;
+    }
+
+    // DISPARADOR DEL ÁRBITRO WKF (¡¡CHUI!!):
+    // Aparece inmediatamente al detectar cambio de pantalla con animación independiente estilo Duolingo
+    setChuiWarningModal({
+      isOpen: true,
+      attempt: currentCount,
+      securityMode
+    });
   };
 
   const handleViolationDetectedRef = useRef(handleViolationDetected);
@@ -958,8 +946,16 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         </div>
 
         <div className="relative z-10 max-w-md w-full bg-white/95 backdrop-blur-2xl border border-red-300 rounded-3xl p-8 md:p-10 text-center space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
-          <div className="relative mx-auto flex flex-col items-center justify-center">
-            <RefereeSpockMascot mode="modal" />
+          <div className="relative mx-auto flex flex-col items-center justify-center mb-2">
+            <div className="animate-duolingo-bounce">
+              <img 
+                src="/images/exams/mascot-spock-chui.png" 
+                alt="Árbitro WKF - ¡¡CHUI!!" 
+                className="w-32 h-32 object-contain drop-shadow-2xl"
+                onError={(e) => { e.currentTarget.src = '/images/exams/mascot-spock-chui.jpg'; }}
+              />
+            </div>
+            <div className="w-24 h-2.5 bg-black/15 rounded-full -mt-1.5 blur-[1px] animate-duolingo-shadow" />
           </div>
 
           <div className="space-y-2">
@@ -1297,64 +1293,51 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       <main className="relative z-10 flex-1 py-8 px-4 sm:px-6 md:px-8">
         <div className="max-w-3xl mx-auto space-y-8">
 
-        {/* Cabecera Oficial / Rótulo Principal con Árbitro WKF Spock (¡¡CHUI!!) */}
-        <div className="relative bg-white/95 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.06)] overflow-hidden">
-          {/* Fondo decorativo sutil */}
-          <div className="absolute -top-16 -right-16 w-56 h-56 bg-gradient-to-br from-[#2D2E83]/5 to-[#be1322]/5 rounded-full blur-2xl pointer-events-none" />
-
-          <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 relative z-10">
-            {/* Lado Izquierdo: Información Oficial del Rótulo */}
-            <div className="flex-1 space-y-4 min-w-0 w-full">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 pb-4">
-                <div className="flex items-center gap-2 text-xs text-[#2D2E83] uppercase tracking-widest font-mono font-bold">
-                  <Award className="w-4 h-4 text-[#be1322]" />
-                  <span>ISKF Karate Do • Evaluación Oficial</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {session?.timeLimitMinutes > 0 && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-amber-600" />
-                      {session.timeLimitMinutes} min límite
-                    </span>
-                  )}
-                  {targetRank && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 font-mono">
-                      <Award className="w-3.5 h-3.5 text-emerald-600" />
-                      {targetRank}
-                    </span>
-                  )}
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#2D2E83] border border-blue-200">
-                    {totalQuestions} Preguntas
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
-                  {session.title}
-                </h1>
-                <p className="text-sm font-bold text-[#be1322]">
-                  {session.writtenExamName}
-                </p>
-                {exam.description && (
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed pt-1">
-                    {exam.description}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-center gap-2 pt-2.5">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs">
-                    Ponderación Oficial: {session?.weightPercentage || exam?.weightPercentage || 15}% de la nota global
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
-                    Mínimo de Aprobación: {session?.passingPercentage || exam?.passingPercentage || 70}% de aciertos
-                  </span>
-                </div>
-              </div>
+        {/* Cabecera Oficial del Examen (Limpia durante la resolución) */}
+        <div className="bg-white/90 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-8 space-y-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 pb-4">
+            <div className="flex items-center gap-2 text-xs text-[#2D2E83] uppercase tracking-widest font-mono font-bold">
+              <Award className="w-4 h-4 text-[#be1322]" />
+              <span>ISKF Karate Do • Evaluación Oficial</span>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {session?.timeLimitMinutes > 0 && (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  {session.timeLimitMinutes} min límite
+                </span>
+              )}
+              {targetRank && (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 font-mono">
+                  <Award className="w-3.5 h-3.5 text-emerald-600" />
+                  {targetRank}
+                </span>
+              )}
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#2D2E83] border border-blue-200">
+                {totalQuestions} Preguntas
+              </span>
+            </div>
+          </div>
 
-            {/* Lado Derecho: Mascota Estilo Duolingo Árbitro WKF Spock adjunto al rótulo */}
-            <div className="shrink-0 flex items-center justify-center pt-2 md:pt-0">
-              <RefereeSpockMascot mode="rotulo" />
+          <div className="space-y-1.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
+              {session.title}
+            </h1>
+            <p className="text-sm font-bold text-[#be1322]">
+              {session.writtenExamName}
+            </p>
+            {exam.description && (
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed pt-1">
+                {exam.description}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2 pt-2.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs">
+                Ponderación Oficial: {session?.weightPercentage || exam?.weightPercentage || 15}% de la nota global
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
+                Mínimo de Aprobación: {session?.passingPercentage || exam?.passingPercentage || 70}% de aciertos
+              </span>
             </div>
           </div>
         </div>
@@ -1749,14 +1732,12 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         isError={alertModal.isError}
       />
 
-      <AlertModal
-        isOpen={securityWarningModal.isOpen}
-        onClose={() => setSecurityWarningModal(prev => ({ ...prev, isOpen: false }))}
-        title={securityWarningModal.title}
-        message={securityWarningModal.message}
-        isError={true}
-        image="/images/exams/referee-spock-chui.png"
-        imageAlt="Árbitro WKF Spock - ¡¡CHUI!!"
+      {/* Modal del Árbitro WKF con Animación Duolingo (Solo aparece al cambiar de pantalla: "¡¡CHUI!!") */}
+      <RefereeSpockMascot
+        isOpen={chuiWarningModal.isOpen}
+        onClose={() => setChuiWarningModal(prev => ({ ...prev, isOpen: false }))}
+        attempt={chuiWarningModal.attempt}
+        securityMode={chuiWarningModal.securityMode}
       />
     </div>
   );
