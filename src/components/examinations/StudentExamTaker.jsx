@@ -1151,9 +1151,17 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
               <span className="text-gray-500">Evaluación:</span>
               <span className="font-semibold text-[#2D2E83]">{session.writtenExamName}</span>
             </div>
+            <div className="flex justify-between border-b border-gray-200 pb-2">
+              <span className="text-gray-500">Ponderación Oficial:</span>
+              <span className="font-semibold text-purple-900">{session?.weightPercentage || exam?.weightPercentage || 15}% de la nota total</span>
+            </div>
+            <div className="flex justify-between border-b border-gray-200 pb-2">
+              <span className="text-gray-500">Mínimo para Aprobar:</span>
+              <span className="font-semibold text-emerald-800">{session?.passingPercentage || exam?.passingPercentage || 70}% de aciertos</span>
+            </div>
             <div className="flex justify-between pt-1">
               <span className="text-gray-500">Estado:</span>
-              <span className="font-semibold text-amber-600">En revisión por Sensei</span>
+              <span className="font-semibold text-amber-600">En revisión por el Tribunal Examinador</span>
             </div>
           </div>
 
@@ -1326,6 +1334,14 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                 {exam.description}
               </p>
             )}
+            <div className="flex flex-wrap items-center gap-2 pt-2.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs">
+                Ponderación Oficial: {session?.weightPercentage || exam?.weightPercentage || 15}% de la nota global
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
+                Mínimo de Aprobación: {session?.passingPercentage || exam?.passingPercentage || 70}% de aciertos
+              </span>
+            </div>
           </div>
         </div>
 

@@ -479,7 +479,8 @@ export default function ExaminationsManagement({
   const handleOpenGrading = (submission) => {
     setSelectedSubmission(submission);
     setSenseiFeedback(submission.senseiFeedback || '');
-    setPassedStatus(submission.passed !== null ? submission.passed : (submission.percentage >= 70));
+    const minPass = Number(submission.passingPercentage) > 0 ? Number(submission.passingPercentage) : 70;
+    setPassedStatus(submission.passed !== null ? submission.passed : (submission.percentage >= minPass));
     setSaveSuccessMessage('');
 
     // Inicializar estado de notas por pregunta con detección de calificación previa
@@ -621,6 +622,9 @@ export default function ExaminationsManagement({
                 status: 'graded',
                 totalScore: res.submission.totalScore,
                 percentage: res.submission.percentage,
+                passingPercentage: res.submission.passingPercentage,
+                weightPercentage: res.submission.weightPercentage,
+                weightedScore: res.submission.weightedScore,
                 passed: res.submission.passed,
                 senseiFeedback,
                 answers: s.answers.map(ans => {
@@ -645,7 +649,7 @@ export default function ExaminationsManagement({
             return sess;
           }));
 
-          showAlert(`Calificación oficial asentada con éxito para ${selectedSubmission.studentName}. Nota final: ${res.submission.percentage}% (${res.submission.passed ? 'Aprobado' : 'Reprobado'}).`, "Calificación Asentada", false);
+          showAlert(`Calificación oficial asentada con éxito para ${selectedSubmission.studentName}. Nota: ${res.submission.percentage}% • Aporte a nota final: +${res.submission.weightedScore}% de ${res.submission.weightPercentage}% (${res.submission.passed ? 'Aprobado' : 'Reprobado'}).`, "Calificación Asentada", false);
           setActiveView('inbox');
           setSelectedSubmission(null);
         } else {
@@ -1199,6 +1203,11 @@ export default function ExaminationsManagement({
         const maxPossibleScore = selectedSubmission.maxPossibleScore || selectedSubmission.answers?.reduce((acc, a) => acc + (a.maxPoints || 1), 0) || totalQuestions || 1;
         const calculatedPercentage = maxPossibleScore > 0 ? Math.min(100, Math.round((totalAccumulatedScore / maxPossibleScore) * 100)) : 0;
 
+        const minPassingPercentage = Number(selectedSubmission.passingPercentage) > 0 ? Number(selectedSubmission.passingPercentage) : 70;
+        const examWeightPercentage = Number(selectedSubmission.weightPercentage) > 0 ? Number(selectedSubmission.weightPercentage) : 15;
+        const weightedScoreCalculated = Math.round((calculatedPercentage / 100) * examWeightPercentage * 100) / 100;
+        const isExamApproved = calculatedPercentage >= minPassingPercentage;
+
         return (
           <form onSubmit={handleFinalizeGrade} className="space-y-6">
             {/* Header del Panel de Calificación con Métricas en Vivo y Acciones */}
@@ -1268,13 +1277,13 @@ export default function ExaminationsManagement({
                 </div>
               </div>
 
-              {/* Barra de Progreso y Puntaje en Vivo */}
-              <div className="bg-gray-50/90 border border-gray-200/80 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-center">
-                {/* Métricas de Preguntas Evaluadas */}
+              {/* Barra de Progreso y Puntaje en Vivo con Ponderación */}
+              <div className="bg-gray-50/90 border border-gray-200/80 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+                {/* 1. Métricas de Preguntas Evaluadas */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 font-bold">Progreso de Evaluación:</span>
-                    <span className="font-bold text-gray-900">{gradedQuestionsCount} de {totalQuestions} ({gradingProgressPct}%)</span>
+                    <span className="text-gray-600 font-bold">Progreso:</span>
+                    <span className="font-bold text-gray-900">{gradedQuestionsCount}/{totalQuestions} ({gradingProgressPct}%)</span>
                   </div>
                   <div className="w-full bg-gray-200 border border-gray-300 rounded-full h-2.5 overflow-hidden">
                     <div 
@@ -1284,30 +1293,48 @@ export default function ExaminationsManagement({
                   </div>
                 </div>
 
-                {/* Puntaje y Porcentaje Actual */}
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-white border border-gray-200 text-[#2D2E83] shadow-xs">
-                    <Award className="w-5 h-5" />
+                {/* 2. Puntaje Bruto del Examen */}
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-white border border-gray-200 text-[#2D2E83] shadow-2xs shrink-0">
+                    <Award className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-gray-500 block">Calificación Actual</span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-[#2D2E83]">
+                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Examen (100%)</span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-black text-[#2D2E83]">
                         {calculatedPercentage}%
                       </span>
-                      <span className="text-xs font-bold text-gray-600 font-mono">
-                        ({totalAccumulatedScore} / {maxPossibleScore} pts)
+                      <span className="text-[11px] font-bold text-gray-600 font-mono">
+                        ({totalAccumulatedScore}/{maxPossibleScore} pts)
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Veredicto Sugerido */}
-                <div className="flex items-center justify-between sm:justify-end gap-3">
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Veredicto Calculado</span>
-                    <span className={`text-xs font-black ${calculatedPercentage >= 70 ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
-                      {calculatedPercentage >= 70 ? 'Aprobado (≥ 70%)' : 'No Aprobado (< 70%)'}
+                {/* 3. Aporte Ponderado a la Nota Final */}
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 shadow-2xs shrink-0">
+                    <span className="text-xs font-black font-mono">%</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-purple-900 block">Aporte a Nota Final</span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-black text-purple-900">
+                        +{weightedScoreCalculated}%
+                      </span>
+                      <span className="text-[11px] font-bold text-purple-700 font-mono">
+                        de {examWeightPercentage}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Veredicto Calculado */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-2 sm:pt-0">
+                  <div className="text-left sm:text-right">
+                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Veredicto (Mín: {minPassingPercentage}%)</span>
+                    <span className={`text-xs font-black ${isExamApproved ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
+                      {isExamApproved ? `Aprobado (≥ ${minPassingPercentage}%)` : `No Aprobado (< ${minPassingPercentage}%)`}
                     </span>
                   </div>
                 </div>
@@ -1725,6 +1752,119 @@ export default function ExaminationsManagement({
                     <span className="text-xs font-bold text-gray-500 font-mono">
                       ({totalAccumulatedScore} de {maxPossibleScore} pts)
                     </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* DESGLOSE OFICIAL DE RENDIMIENTO Y APORTE A LA NOTA FINAL (15%) */}
+              <div className="bg-gradient-to-br from-gray-50 via-white to-blue-50/30 border-2 border-[#2D2E83]/30 rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#2D2E83] text-white flex items-center justify-center font-black shadow-xs text-xs">
+                      %
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-gray-900 uppercase tracking-wide">
+                        Desglose Oficial de Calificación y Aporte a la Nota Final
+                      </h4>
+                      <p className="text-[11px] text-gray-500 font-medium">
+                        Cálculo del rendimiento teórico y aporte neto al 100% de la nota de graduación del aspirante.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-600">Ponderación Examen:</span>
+                    <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-purple-100 text-purple-900 font-mono border border-purple-200">
+                      {examWeightPercentage}% de la Nota Total
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Tarjeta 1: Puntos Brutos */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-3.5 space-y-1 shadow-2xs">
+                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                      1. Puntos Brutos Obtenidos
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-gray-900">
+                        {totalAccumulatedScore}
+                      </span>
+                      <span className="text-xs font-bold text-gray-500 font-mono">
+                        de {maxPossibleScore} pts posibles
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      Suma de respuestas de selección, asocies y desarrollo.
+                    </p>
+                  </div>
+
+                  {/* Tarjeta 2: Porcentaje de Aciertos vs Mínimo de Aprobación */}
+                  <div className={`border rounded-xl p-3.5 space-y-1 shadow-2xs ${isExamApproved ? 'bg-emerald-50/50 border-emerald-200' : 'bg-red-50/50 border-red-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block">
+                        2. Nota de la Prueba Teórica
+                      </span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${isExamApproved ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300'}`}>
+                        {isExamApproved ? 'Aprobado' : 'Reprobado'}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-2xl font-black ${isExamApproved ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
+                        {calculatedPercentage}%
+                      </span>
+                      <span className="text-xs font-bold text-gray-600 font-mono">
+                        (Mínimo: {minPassingPercentage}%)
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-600 font-medium">
+                      {isExamApproved 
+                        ? `Supera el mínimo requerido del ${minPassingPercentage}% para aprobar.` 
+                        : `Por debajo del porcentaje mínimo del ${minPassingPercentage}%.`}
+                    </p>
+                  </div>
+
+                  {/* Tarjeta 3: Aporte Ponderado a la Nota Final */}
+                  <div className="bg-purple-50/50 border border-purple-200 rounded-xl p-3.5 space-y-1 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wider block">
+                        3. Aporte a la Nota del Alumno
+                      </span>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300">
+                        {examWeightPercentage}% Máx
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-purple-900">
+                        +{weightedScoreCalculated}%
+                      </span>
+                      <span className="text-xs font-bold text-purple-700 font-mono">
+                        de {examWeightPercentage}%
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-purple-800 font-medium">
+                      {calculatedPercentage === 100 
+                        ? `Al tener el 100% de la prueba, obtiene los ${examWeightPercentage}% completos.`
+                        : `Equivale a ${calculatedPercentage}% de los ${examWeightPercentage}% asignados a este examen.`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Barra visual de aporte ponderado */}
+                <div className="bg-white p-3 rounded-xl border border-gray-200/90 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-gray-700">
+                    <span className="flex items-center gap-1.5">
+                      <span>Progreso de puntos ganados para la nota global de pase de grado:</span>
+                    </span>
+                    <span className="text-purple-900 font-black font-mono">
+                      +{weightedScoreCalculated}% de {examWeightPercentage}.00% ({Math.round((weightedScoreCalculated / (examWeightPercentage || 15)) * 100)}% de efectividad)
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-3 border border-gray-200 overflow-hidden flex">
+                    <div 
+                      className="bg-gradient-to-r from-[#2D2E83] to-purple-600 h-full rounded-full transition-all duration-300 shadow-sm"
+                      style={{ width: `${Math.min(100, Math.max(0, (weightedScoreCalculated / (examWeightPercentage || 15)) * 100))}%` }}
+                    />
                   </div>
                 </div>
               </div>

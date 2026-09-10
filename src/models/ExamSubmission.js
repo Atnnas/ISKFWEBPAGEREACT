@@ -121,6 +121,18 @@ const ExamSubmissionSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  passingPercentage: {
+    type: Number,
+    default: 70
+  },
+  weightPercentage: {
+    type: Number,
+    default: 15
+  },
+  weightedScore: {
+    type: Number,
+    default: 0
+  },
   status: {
     type: String,
     enum: ['submitted', 'partially_graded', 'graded'],

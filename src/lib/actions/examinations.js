@@ -1025,6 +1025,8 @@ export async function getWrittenExams() {
       targetRanks: exam.targetRanks || '',
       description: exam.description || '',
       order: exam.order || 0,
+      passingPercentage: Number(exam.passingPercentage) > 0 ? Number(exam.passingPercentage) : 70,
+      weightPercentage: Number(exam.weightPercentage) > 0 ? Number(exam.weightPercentage) : 15,
       questions: (exam.questions || []).map((q) => ({
         id: q.id,
         type: q.type,
@@ -1062,6 +1064,8 @@ export async function createWrittenExam(data) {
       targetRanks: data.targetRanks || '',
       code: data.code || `KYU-CUSTOM-${Date.now().toString().slice(-4)}`,
       order: count + 1,
+      passingPercentage: Number(data.passingPercentage) > 0 ? Number(data.passingPercentage) : 70,
+      weightPercentage: Number(data.weightPercentage) > 0 ? Number(data.weightPercentage) : 15,
       questions: data.questions || []
     });
 
@@ -1079,6 +1083,8 @@ export async function createWrittenExam(data) {
         targetRanks: plain.targetRanks,
         description: plain.description,
         order: plain.order,
+        passingPercentage: plain.passingPercentage || 70,
+        weightPercentage: plain.weightPercentage || 15,
         questions: plain.questions
       }
     };
@@ -1089,19 +1095,27 @@ export async function createWrittenExam(data) {
 }
 
 /**
- * Actualiza nombre y descripción de un examen.
+ * Actualiza nombre, descripción, passingPercentage y weightPercentage de un examen.
  */
 export async function updateWrittenExam(id, data) {
   try {
     await dbConnect();
 
+    const updateFields = {
+      name: data.name,
+      description: data.description || '',
+      targetRanks: data.targetRanks || ''
+    };
+    if (data.passingPercentage !== undefined) {
+      updateFields.passingPercentage = Number(data.passingPercentage) > 0 ? Number(data.passingPercentage) : 70;
+    }
+    if (data.weightPercentage !== undefined) {
+      updateFields.weightPercentage = Number(data.weightPercentage) > 0 ? Number(data.weightPercentage) : 15;
+    }
+
     const updated = await WrittenExam.findByIdAndUpdate(
       id,
-      {
-        name: data.name,
-        description: data.description || '',
-        targetRanks: data.targetRanks || ''
-      },
+      updateFields,
       { new: true }
     ).lean();
 
@@ -1112,7 +1126,9 @@ export async function updateWrittenExam(id, data) {
       exam: {
         ...updated,
         id: updated._id.toString(),
-        _id: updated._id.toString()
+        _id: updated._id.toString(),
+        passingPercentage: updated.passingPercentage || 70,
+        weightPercentage: updated.weightPercentage || 15
       }
     };
   } catch (error) {
@@ -1272,6 +1288,8 @@ export async function createExaminationSession(data) {
       status: 'active',
       timeLimitMinutes: Math.max(0, parseInt(data.timeLimitMinutes, 10) || 0),
       securityMode: data.securityMode || 'audit',
+      passingPercentage: Number(writtenExam.passingPercentage) > 0 ? Number(writtenExam.passingPercentage) : 70,
+      weightPercentage: Number(writtenExam.weightPercentage) > 0 ? Number(writtenExam.weightPercentage) : 15,
       notes: data.notes?.trim() || ''
     });
 
@@ -1292,6 +1310,8 @@ export async function createExaminationSession(data) {
         status: plain.status,
         timeLimitMinutes: plain.timeLimitMinutes || 0,
         securityMode: plain.securityMode || 'audit',
+        passingPercentage: plain.passingPercentage || 70,
+        weightPercentage: plain.weightPercentage || 15,
         notes: plain.notes,
         totalSubmissions: 0,
         pendingSubmissions: 0,
@@ -1523,6 +1543,8 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
         accessCode: session.accessCode,
         timeLimitMinutes: session.timeLimitMinutes || 0,
         securityMode: session.securityMode || 'audit',
+        passingPercentage: Number(session.passingPercentage || writtenExam.passingPercentage || 70),
+        weightPercentage: Number(session.weightPercentage || writtenExam.weightPercentage || 15),
         serverRemainingSeconds,
         deviceStatus: lockRecord?.status || 'active'
       },
@@ -1532,6 +1554,9 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
         code: writtenExam.code || '',
         targetRanks: writtenExam.targetRanks || '',
         description: writtenExam.description || '',
+        passingPercentage: Number(writtenExam.passingPercentage || 70),
+        weightPercentage: Number(writtenExam.weightPercentage || 15),
+        totalPoints: sanitizedQuestions.reduce((acc, q) => acc + (q.points || 1), 0),
         questions: sanitizedQuestions
       }
     };
@@ -2049,6 +2074,10 @@ export async function submitStudentExam(data) {
       ? Math.min(100, Math.max(0, Math.round((autoScore / totalMaxPossibleScore) * 100))) 
       : 0;
 
+    const minPassing = Number(writtenExam.passingPercentage) > 0 ? Number(writtenExam.passingPercentage) : (Number(session.passingPercentage) > 0 ? Number(session.passingPercentage) : 70);
+    const weight = Number(writtenExam.weightPercentage) > 0 ? Number(writtenExam.weightPercentage) : (Number(session.weightPercentage) > 0 ? Number(session.weightPercentage) : 15);
+    const weightedScore = Math.round((calculatedPercentage / 100) * weight * 100) / 100;
+
     const submission = new ExamSubmission({
       sessionId: session._id,
       sessionTitle: session.title,
@@ -2062,6 +2091,9 @@ export async function submitStudentExam(data) {
       totalScore: Math.round(autoScore * 100) / 100,
       maxPossibleScore: totalMaxPossibleScore || 1,
       percentage: calculatedPercentage,
+      passingPercentage: minPassing,
+      weightPercentage: weight,
+      weightedScore: weightedScore,
       timeSpentSeconds: Math.max(0, parseInt(timeSpentSeconds, 10) || 0),
       isAutoSubmitted: Boolean(isAutoSubmitted),
       securityViolationsCount: Math.max(0, parseInt(securityViolationsCount, 10) || 0),
@@ -2151,6 +2183,16 @@ export async function getExamSubmissions(sessionId) {
       });
 
       const effectiveMaxPossible = calculatedMaxPossible > 0 ? calculatedMaxPossible : (s.maxPossibleScore || s.answers?.length || 100);
+      const minPassing = Number(writtenExam?.passingPercentage) > 0 
+        ? Number(writtenExam.passingPercentage) 
+        : (s.passingPercentage || 70);
+      const weight = Number(writtenExam?.weightPercentage) > 0 
+        ? Number(writtenExam.weightPercentage) 
+        : (s.weightPercentage || 15);
+      const effectivePercentage = effectiveMaxPossible > 0 
+        ? Math.min(100, Math.max(0, Math.round(((s.totalScore || 0) / effectiveMaxPossible) * 100))) 
+        : (s.percentage || 0);
+      const weightedScore = Math.round((effectivePercentage / 100) * weight * 100) / 100;
 
       return {
         id: s._id.toString(),
@@ -2166,7 +2208,10 @@ export async function getExamSubmissions(sessionId) {
         manualScore: s.manualScore || 0,
         totalScore: s.totalScore || 0,
         maxPossibleScore: effectiveMaxPossible,
-        percentage: s.percentage || 0,
+        percentage: effectivePercentage,
+        passingPercentage: minPassing,
+        weightPercentage: weight,
+        weightedScore: weightedScore,
         timeSpentSeconds: s.timeSpentSeconds || 0,
         isAutoSubmitted: Boolean(s.isAutoSubmitted),
         securityViolationsCount: s.securityViolationsCount || 0,
@@ -2247,9 +2292,21 @@ export async function gradeExamSubmission(submissionId, gradingData) {
     const max = totalMaxPossible > 0 ? totalMaxPossible : (submission.maxPossibleScore || submission.answers.length || 1);
     const percentage = Math.min(100, Math.max(0, Math.round((totalScore / max) * 100)));
 
+    const minPassing = Number(writtenExam?.passingPercentage) > 0 
+      ? Number(writtenExam.passingPercentage) 
+      : (submission.passingPercentage || 70);
+    const weight = Number(writtenExam?.weightPercentage) > 0 
+      ? Number(writtenExam.weightPercentage) 
+      : (submission.weightPercentage || 15);
+    const weightedScore = Math.round((percentage / 100) * weight * 100) / 100;
+
     submission.totalScore = Math.round(totalScore * 100) / 100;
     submission.maxPossibleScore = max;
     submission.percentage = percentage;
+    submission.passingPercentage = minPassing;
+    submission.weightPercentage = weight;
+    submission.weightedScore = weightedScore;
+
     if (senseiFeedback !== undefined) {
       submission.senseiFeedback = senseiFeedback?.trim() || '';
     }
@@ -2261,7 +2318,7 @@ export async function gradeExamSubmission(submissionId, gradingData) {
     } else {
       // Calificación final asentada
       submission.status = 'graded';
-      submission.passed = passed !== undefined ? passed : percentage >= 70;
+      submission.passed = passed !== undefined ? passed : percentage >= minPassing;
       submission.gradedAt = new Date();
     }
 
@@ -2275,7 +2332,11 @@ export async function gradeExamSubmission(submissionId, gradingData) {
         id: submission._id.toString(),
         _id: submission._id.toString(),
         totalScore: submission.totalScore,
+        maxPossibleScore: submission.maxPossibleScore,
         percentage: submission.percentage,
+        passingPercentage: submission.passingPercentage,
+        weightPercentage: submission.weightPercentage,
+        weightedScore: submission.weightedScore,
         status: submission.status,
         passed: submission.passed,
         senseiFeedback: submission.senseiFeedback

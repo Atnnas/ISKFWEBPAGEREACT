@@ -41,6 +41,14 @@ const ExaminationSessionSchema = new mongoose.Schema({
     enum: ['audit', 'warnings', 'strict'],
     default: 'audit'
   },
+  passingPercentage: {
+    type: Number,
+    default: 70
+  },
+  weightPercentage: {
+    type: Number,
+    default: 15
+  },
   notes: {
     type: String,
     trim: true,

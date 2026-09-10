@@ -72,6 +72,18 @@ const WrittenExamSchema = new mongoose.Schema({
     default: '' 
   },
   questions: [QuestionSchema],
+  passingPercentage: {
+    type: Number,
+    default: 70,
+    min: 1,
+    max: 100
+  },
+  weightPercentage: {
+    type: Number,
+    default: 15,
+    min: 1,
+    max: 100
+  },
   order: { 
     type: Number, 
     default: 0 

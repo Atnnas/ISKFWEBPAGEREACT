@@ -64,6 +64,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
   const [examModalMode, setExamModalMode] = useState('create'); // 'create' | 'edit_name'
   const [examNameInput, setExamNameInput] = useState('');
   const [examDescInput, setExamDescInput] = useState('');
+  const [examPassingPercentageInput, setExamPassingPercentageInput] = useState(70);
+  const [examWeightPercentageInput, setExamWeightPercentageInput] = useState(15);
 
   // Modals en página para Alertas y Confirmaciones (reemplaza alert y confirm nativos del navegador)
   const [confirmModal, setConfirmModal] = useState({
@@ -146,6 +148,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
     setExamModalMode('create');
     setExamNameInput('');
     setExamDescInput('');
+    setExamPassingPercentageInput(70);
+    setExamWeightPercentageInput(15);
     setIsExamModalOpen(true);
   };
 
@@ -155,6 +159,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
     setSelectedExamId(exam.id || exam._id);
     setExamNameInput(exam.name);
     setExamDescInput(exam.description || '');
+    setExamPassingPercentageInput(exam.passingPercentage ?? 70);
+    setExamWeightPercentageInput(exam.weightPercentage ?? 15);
     setIsExamModalOpen(true);
   };
 
@@ -168,6 +174,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
         const res = await createWrittenExam({
           name: examNameInput.trim(),
           description: examDescInput.trim(),
+          passingPercentage: Number(examPassingPercentageInput) || 70,
+          weightPercentage: Number(examWeightPercentageInput) || 15,
           questions: []
         });
 
@@ -182,13 +190,21 @@ export default function WrittenExamsView({ initialExams = [] }) {
       } else {
         const res = await updateWrittenExam(selectedExamId, {
           name: examNameInput.trim(),
-          description: examDescInput.trim()
+          description: examDescInput.trim(),
+          passingPercentage: Number(examPassingPercentageInput) || 70,
+          weightPercentage: Number(examWeightPercentageInput) || 15
         });
 
         if (res.success) {
           setExams(exams.map(ex => 
             (ex.id === selectedExamId || ex._id === selectedExamId)
-              ? { ...ex, name: examNameInput.trim(), description: examDescInput.trim() }
+              ? { 
+                  ...ex, 
+                  name: examNameInput.trim(), 
+                  description: examDescInput.trim(),
+                  passingPercentage: Number(examPassingPercentageInput) || 70,
+                  weightPercentage: Number(examWeightPercentageInput) || 15
+                }
               : ex
           ));
           setIsExamModalOpen(false);
@@ -531,6 +547,12 @@ export default function WrittenExamsView({ initialExams = [] }) {
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-gray-100 text-gray-700 border border-gray-200">
                       {exam.questions ? exam.questions.length : 0} {(exam.questions?.length === 1) ? 'pregunta' : 'preguntas'}
                     </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                      Pesa {exam.weightPercentage || 15}% de nota final
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      Aprueba con {exam.passingPercentage || 70}%
+                    </span>
                   </div>
                   {exam.description && (
                     <p className="text-xs text-gray-600 font-medium line-clamp-1">
@@ -864,6 +886,63 @@ export default function WrittenExamsView({ initialExams = [] }) {
                   onChange={(e) => setExamDescInput(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2D2E83]/20 focus:border-[#2D2E83]"
                 />
+              </div>
+
+              {/* Configuración de Ponderación y Mínimo de Aprobación */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Mínimo para Aprobar */}
+                <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-2xl space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs uppercase font-bold text-emerald-900">
+                      Mínimo para Aprobar *
+                    </label>
+                    <span className="text-[11px] font-black text-emerald-900 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                      {examPassingPercentageInput}%
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="100"
+                      value={examPassingPercentageInput}
+                      onChange={(e) => setExamPassingPercentageInput(Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                      className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-sm font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                    />
+                    <span className="absolute right-3 top-2.5 text-xs font-bold text-emerald-800">%</span>
+                  </div>
+                  <p className="text-[10px] text-emerald-800/80 leading-tight">
+                    Porcentaje mínimo de aciertos para aprobar la prueba (ej: 70%).
+                  </p>
+                </div>
+
+                {/* Ponderación sobre la Nota Final (15%) */}
+                <div className="p-3 bg-purple-50/60 border border-purple-200 rounded-2xl space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs uppercase font-bold text-purple-900">
+                      Ponderación Global *
+                    </label>
+                    <span className="text-[11px] font-black text-purple-900 bg-white px-2 py-0.5 rounded border border-purple-200">
+                      {examWeightPercentageInput}%
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="100"
+                      value={examWeightPercentageInput}
+                      onChange={(e) => setExamWeightPercentageInput(Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                      className="w-full px-3 py-2 bg-white border border-purple-300 rounded-xl text-sm font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600"
+                    />
+                    <span className="absolute right-3 top-2.5 text-xs font-bold text-purple-800">%</span>
+                  </div>
+                  <p className="text-[10px] text-purple-800/80 leading-tight">
+                    Valor de este examen en la nota final de promoción (ej: 15%).
+                  </p>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
