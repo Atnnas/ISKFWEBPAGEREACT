@@ -1222,9 +1222,10 @@ export async function getExaminationSessions() {
 
     const results = await Promise.all(sessions.map(async (sess) => {
       const sessionId = sess._id.toString();
-      const totalSubmissions = await ExamSubmission.countDocuments({ sessionId });
-      const pendingSubmissions = await ExamSubmission.countDocuments({ sessionId, status: { $ne: 'graded' } });
-      const gradedSubmissions = await ExamSubmission.countDocuments({ sessionId, status: 'graded' });
+      const sessionQuery = { $or: [{ sessionId: sess._id }, { sessionId }] };
+      const totalSubmissions = await ExamSubmission.countDocuments(sessionQuery);
+      const pendingSubmissions = await ExamSubmission.countDocuments({ ...sessionQuery, status: { $ne: 'graded' } });
+      const gradedSubmissions = await ExamSubmission.countDocuments({ ...sessionQuery, status: 'graded' });
 
       const enrichedAssignedDojos = (sess.assignedDojos || []).map(d => ({
         id: d.id,
@@ -2140,7 +2141,19 @@ export async function submitStudentExam(data) {
 export async function getExamSubmissions(sessionId) {
   try {
     await dbConnect();
-    const submissions = await ExamSubmission.find({ sessionId }).sort({ submittedAt: -1 }).lean();
+    let filterSessionId = sessionId;
+    try {
+      if (sessionId && typeof sessionId === 'string' && /^[0-9a-fA-F]{24}$/.test(sessionId)) {
+        filterSessionId = new mongoose.Types.ObjectId(sessionId);
+      }
+    } catch (e) {}
+
+    const submissions = await ExamSubmission.find({
+      $or: [
+        { sessionId: filterSessionId },
+        { sessionId: sessionId?.toString() }
+      ]
+    }).sort({ submittedAt: -1 }).lean();
     if (!submissions || submissions.length === 0) return [];
 
     // Cargar los exámenes escritos base vinculados para enriquecer opciones e imágenes si aplica
@@ -2183,11 +2196,11 @@ export async function getExamSubmissions(sessionId) {
       });
 
       const effectiveMaxPossible = calculatedMaxPossible > 0 ? calculatedMaxPossible : (s.maxPossibleScore || s.answers?.length || 100);
-      const minPassing = Number(writtenExam?.passingPercentage) > 0 
-        ? Number(writtenExam.passingPercentage) 
+      const minPassing = Number(baseExam?.passingPercentage) > 0 
+        ? Number(baseExam.passingPercentage) 
         : (s.passingPercentage || 70);
-      const weight = Number(writtenExam?.weightPercentage) > 0 
-        ? Number(writtenExam.weightPercentage) 
+      const weight = Number(baseExam?.weightPercentage) > 0 
+        ? Number(baseExam.weightPercentage) 
         : (s.weightPercentage || 15);
       const effectivePercentage = effectiveMaxPossible > 0 
         ? Math.min(100, Math.max(0, Math.round(((s.totalScore || 0) / effectiveMaxPossible) * 100))) 
