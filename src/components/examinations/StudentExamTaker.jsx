@@ -16,7 +16,8 @@ import {
   EyeOff, 
   Copy, 
   ChevronDown,
-  Shuffle
+  Shuffle,
+  Sun
 } from 'lucide-react';
 import { 
   submitStudentExam,
@@ -145,6 +146,99 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const [timeLeft, setTimeLeft] = useState(null); // en segundos
   const startTimeRef = useRef(null);
   const isAutoSubmittingRef = useRef(false);
+
+  // =========================================================================
+  // SISTEMA DE PANTALLA SIEMPRE ACTIVA (WAKE LOCK PARA CELULARES Y COMPUTADORAS)
+  // Evita que la pantalla del celular, tablet o computadora se apague o entre en reposo/bloqueo
+  // =========================================================================
+  const [_isWakeLockActive, setIsWakeLockActive] = useState(false);
+  const wakeLockSentinelRef = useRef(null);
+  const videoFallbackRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isSubmitted || isAlreadySubmitted || isSecurityLocked) return;
+
+    let isMounted = true;
+
+    // 1. Método Estándar W3C Screen Wake Lock API (Chrome, Edge, Safari iOS 16.4+, Android)
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator) {
+        try {
+          if (!wakeLockSentinelRef.current || wakeLockSentinelRef.current.released) {
+            const sentinel = await navigator.wakeLock.request('screen');
+            wakeLockSentinelRef.current = sentinel;
+            if (isMounted) setIsWakeLockActive(true);
+
+            sentinel.addEventListener('release', () => {
+              if (isMounted) setIsWakeLockActive(false);
+            });
+          }
+        } catch (err) {
+          // El navegador puede rechazar Wake Lock por batería ultra baja o ventana en segundo plano
+          console.warn('Screen Wake Lock no concedido por el navegador:', err);
+          triggerVideoFallback();
+        }
+      } else {
+        // En navegadores antiguos o sin soporte nativo de WakeLock
+        triggerVideoFallback();
+      }
+    };
+
+    // 2. Método de respaldo (Fallback NoSleep) con micro-video silenciado en bucle
+    const triggerVideoFallback = () => {
+      try {
+        if (videoFallbackRef.current) {
+          videoFallbackRef.current.play().then(() => {
+            if (isMounted) setIsWakeLockActive(true);
+          }).catch((_e) => {
+            // Requiere gesto del usuario en algunos navegadores móviles
+          });
+        }
+      } catch (err) {
+        console.warn('Video fallback keep-awake error:', err);
+      }
+    };
+
+    // Solicitar Wake Lock al montar
+    requestWakeLock();
+
+    // Re-solicitar Wake Lock si la pestaña vuelve a ser visible (requerimiento W3C)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !isSubmitted && !isSecurityLocked) {
+        requestWakeLock();
+      }
+    };
+
+    // En móviles, algunos navegadores requieren interacción física previa para activar Wake Lock
+    const handleFirstGesture = () => {
+      requestWakeLock();
+      triggerVideoFallback();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('touchstart', handleFirstGesture, { passive: true, once: true });
+    window.addEventListener('click', handleFirstGesture, { passive: true, once: true });
+    window.addEventListener('keydown', handleFirstGesture, { passive: true, once: true });
+
+    return () => {
+      isMounted = false;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('click', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+
+      if (wakeLockSentinelRef.current) {
+        wakeLockSentinelRef.current.release().catch(() => {});
+        wakeLockSentinelRef.current = null;
+      }
+      if (videoFallbackRef.current) {
+        try {
+          videoFallbackRef.current.pause();
+        } catch (_) {}
+      }
+    };
+  }, [isSubmitted, isAlreadySubmitted, isSecurityLocked]);
 
   // Modales en página
   const [confirmModal, setConfirmModal] = useState({
@@ -1288,12 +1382,33 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
               </button>
             </div>
 
+            {/* Indicador de Pantalla Siempre Activa (Wake Lock Celulares & PC) */}
+            <div
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 border border-emerald-200 text-emerald-800 shadow-2xs select-none"
+              title="Pantalla siempre activa: tu teléfono celular o computadora no apagará la pantalla ni se suspenderá por inactividad durante la prueba."
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <Sun className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Pantalla Activa</span>
+            </div>
+
             {/* Preguntas Respondidas */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-mono font-bold bg-gray-50 border border-gray-200 text-gray-800 shadow-sm">
               <span className="text-gray-500">Progreso:</span>
               <span className="text-[#2D2E83] font-black">{answeredCount}</span>
               <span className="text-gray-400">/</span>
               <span>{totalQuestions}</span>
+            </div>
+
+            {/* Indicador móvil de pantalla despierta */}
+            <div 
+              className="flex sm:hidden items-center justify-center w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-2xs shrink-0"
+              title="Pantalla protegida: tu celular no se apagará ni se bloqueará por inactividad"
+            >
+              <Sun className="w-4 h-4 text-emerald-600" />
             </div>
 
             {/* Temporizador Destacado en Superior Derecha */}
@@ -1360,6 +1475,13 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
               <span>ISKF Karate Do • Evaluación Oficial</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <span 
+                className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 flex items-center gap-1.5 shadow-2xs"
+                title="Tu teléfono celular o computadora no apagará la pantalla por inactividad mientras resuelves la prueba."
+              >
+                <Sun className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Pantalla siempre activa</span>
+              </span>
               {session?.timeLimitMinutes > 0 && (
                 <span className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-amber-600" />
@@ -1792,6 +1914,17 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         onClose={() => setChuiWarningModal(prev => ({ ...prev, isOpen: false }))}
         attempt={chuiWarningModal.attempt}
         securityMode={chuiWarningModal.securityMode}
+      />
+
+      {/* Elemento de respaldo invisible para evitar suspensión de pantalla en dispositivos sin Wake Lock API */}
+      <video
+        ref={videoFallbackRef}
+        playsInline
+        muted
+        loop
+        className="fixed -top-96 -left-96 w-1 h-1 opacity-0 pointer-events-none"
+        aria-hidden="true"
+        src="data:video/mp4;base64,AAAAHGZ0eXBtcDQyAAAAAG1wNDJpc29tAAACAG1vb3YAAABsbXZoZAAAAAB92Ju1fdrK+wAAAPoAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAABidHJhawAAAFx0a2hkAAAAH33Ym7V92sr7AAAAAQAAAAEAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAA="
       />
     </div>
   );
