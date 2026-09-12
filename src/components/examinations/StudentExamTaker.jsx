@@ -96,6 +96,25 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     securityMode: securityMode
   });
 
+  // Escalamiento accesible de tamaño de letra: 'normal' (100%) | 'large' (112%) | 'xlarge' (124%)
+  const [fontScale, setFontScale] = useState('normal');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('iskf_exam_font_scale');
+      if (saved && ['normal', 'large', 'xlarge'].includes(saved)) {
+        setFontScale(saved);
+      }
+    }
+  }, []);
+
+  const handleFontScaleChange = (scale) => {
+    setFontScale(scale);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('iskf_exam_font_scale', scale);
+    }
+  };
+
   // Detección de Modo Incógnito / Privado
   const [isCheckingIncognito, setIsCheckingIncognito] = useState(true);
   const [isIncognitoDetected, setIsIncognitoDetected] = useState(false);
@@ -1188,7 +1207,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   // VISTA: CUESTIONARIO ACTIVO DEL ESTUDIANTE
   // =========================================================================
   return (
-    <div className="relative min-h-screen bg-transparent text-gray-900 font-sans flex flex-col selection:bg-[#2D2E83] selection:text-white">
+    <div className={`relative min-h-screen bg-transparent text-gray-900 font-sans flex flex-col selection:bg-[#2D2E83] selection:text-white exam-text-scale-${fontScale}`}>
       {/* ========================================================================= */}
       {/* FONDO OFICIAL ISKF FIJO IDÉNTICO A TODA LA PÁGINA */}
       {/* ========================================================================= */}
@@ -1203,12 +1222,12 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       {/* ========================================================================= */}
       {/* 1. BARRA SUPERIOR FIJA / STICKY PREMIUM (NO SE CORTA AL SCROLLEAR) */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-2xl border-b border-gray-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all">
+      <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-2xl border-b border-gray-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3">
           
           {/* Lado Izquierdo: Escudo Oficial y Datos de Convocatoria */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-white border border-gray-200 p-0.5 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white border border-gray-200 p-0.5 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
               <img
                 src="/images/dojos/escudo.jpg"
                 alt="ISKF"
@@ -1217,22 +1236,62 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
             </div>
             <div className="min-w-0 space-y-0.5">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-[#2D2E83] font-bold truncate">
+                <span className="text-xs uppercase font-mono tracking-widest text-[#2D2E83] font-extrabold truncate">
                   ISKF Karate Do • {targetRank || 'Evaluación Oficial'}
                 </span>
               </div>
-              <h2 className="text-xs sm:text-sm font-bold text-gray-900 truncate max-w-[170px] sm:max-w-sm">
+              <h2 className="text-sm sm:text-base font-extrabold text-gray-900 truncate max-w-[170px] sm:max-w-sm">
                 {session.title}
               </h2>
             </div>
           </div>
 
-          {/* Lado Derecho: Progreso y Temporizador en Parte Superior Derecha */}
+          {/* Lado Derecho: Controles de accesibilidad, Progreso y Temporizador */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Control de Accesibilidad: Ajuste de Tamaño de Letra (A / A+ / A++) */}
+            <div className="flex items-center bg-gray-100/90 border border-gray-300/80 rounded-xl p-0.5 text-xs font-bold shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleFontScaleChange('normal')}
+                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                  fontScale === 'normal'
+                    ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+                title="Tamaño de letra Estándar (100%)"
+              >
+                A
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFontScaleChange('large')}
+                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                  fontScale === 'large'
+                    ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+                title="Tamaño de letra Grande (+12%)"
+              >
+                A+
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFontScaleChange('xlarge')}
+                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                  fontScale === 'xlarge'
+                    ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+                title="Tamaño de letra Extra Grande (+24%)"
+              >
+                A++
+              </button>
+            </div>
+
             {/* Preguntas Respondidas */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-gray-50 border border-gray-200 text-gray-700 shadow-sm">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-mono font-bold bg-gray-50 border border-gray-200 text-gray-800 shadow-sm">
               <span className="text-gray-500">Progreso:</span>
-              <span className="text-[#2D2E83] font-bold">{answeredCount}</span>
+              <span className="text-[#2D2E83] font-black">{answeredCount}</span>
               <span className="text-gray-400">/</span>
               <span>{totalQuestions}</span>
             </div>
@@ -1253,21 +1312,21 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                   timeLeft <= 60 ? 'text-red-600' : timeLeft <= 300 ? 'text-amber-600' : 'text-[#2D2E83]'
                 }`} />
                 <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-1.5 leading-none">
-                  <span className="hidden md:inline text-[9px] uppercase font-sans text-gray-500 font-bold tracking-wider">
+                  <span className="hidden md:inline text-[10px] uppercase font-sans text-gray-500 font-bold tracking-wider">
                     Tiempo:
                   </span>
-                  <span className="text-xs sm:text-sm font-black font-mono tracking-wider">
+                  <span className="text-sm sm:text-base font-black font-mono tracking-wider">
                     {formatTime(timeLeft)}
                   </span>
                 </div>
                 {timeLeft <= 180 && (
-                  <span className="hidden sm:inline text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 tracking-wider">
+                  <span className="hidden sm:inline text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 tracking-wider">
                     ¡Fin!
                   </span>
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-gray-50 border border-gray-200 text-gray-500">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-mono font-semibold bg-gray-50 border border-gray-200 text-gray-600">
                 <Clock className="w-3.5 h-3.5 text-gray-400" />
                 <span className="hidden sm:inline">Sin límite</span>
               </div>
@@ -1278,7 +1337,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
         {/* Línea de Progreso Sutil al fondo del header */}
         {totalQuestions > 0 && (
-          <div className="w-full h-[2.5px] bg-gray-200 overflow-hidden">
+          <div className="w-full h-[3px] bg-gray-200 overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-[#2D2E83] via-blue-600 to-[#be1322] transition-all duration-300 shadow-[0_0_8px_rgba(45,46,131,0.4)]"
               style={{ width: `${Math.round((answeredCount / totalQuestions) * 100)}%` }}
@@ -1296,46 +1355,46 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         {/* Cabecera Oficial del Examen (Limpia durante la resolución) */}
         <div className="bg-white/90 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-8 space-y-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 pb-4">
-            <div className="flex items-center gap-2 text-xs text-[#2D2E83] uppercase tracking-widest font-mono font-bold">
-              <Award className="w-4 h-4 text-[#be1322]" />
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-[#2D2E83] uppercase tracking-widest font-mono font-extrabold">
+              <Award className="w-4 h-4 sm:w-5 sm:h-5 text-[#be1322]" />
               <span>ISKF Karate Do • Evaluación Oficial</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {session?.timeLimitMinutes > 0 && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-600" />
+                <span className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-amber-600" />
                   {session.timeLimitMinutes} min límite
                 </span>
               )}
               {targetRank && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 font-mono">
-                  <Award className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 flex items-center gap-1.5 font-mono">
+                  <Award className="w-4 h-4 text-emerald-600" />
                   {targetRank}
                 </span>
               )}
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#2D2E83] border border-blue-200">
+              <span className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold bg-blue-50 text-[#2D2E83] border border-blue-200">
                 {totalQuestions} Preguntas
               </span>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#2D2E83] tracking-tight leading-tight">
               {session.title}
             </h1>
-            <p className="text-sm font-bold text-[#be1322]">
+            <p className="text-base sm:text-lg font-extrabold text-[#be1322]">
               {session.writtenExamName}
             </p>
             {exam.description && (
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed pt-1">
+              <p className="text-sm sm:text-base text-gray-700 font-medium leading-relaxed pt-1">
                 {exam.description}
               </p>
             )}
-            <div className="flex flex-wrap items-center gap-2 pt-2.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-purple-50 text-purple-900 border border-purple-200 shadow-2xs">
+            <div className="flex flex-wrap items-center gap-2.5 pt-2">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-purple-50 text-purple-950 border border-purple-200 shadow-2xs">
                 Ponderación Oficial: {session?.weightPercentage || exam?.weightPercentage || 15}% de la nota global
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-950 border border-emerald-200 shadow-2xs">
                 Mínimo de Aprobación: {session?.passingPercentage || exam?.passingPercentage || 70}% de aciertos
               </span>
             </div>
@@ -1348,22 +1407,22 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
           {/* Tarjeta de Datos del Aspirante */}
           <div className="bg-white/90 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-8 space-y-5 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 pb-4">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#2D2E83] flex items-center gap-2">
-                <User className="w-4 h-4 text-[#be1322]" />
+              <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-[#2D2E83] flex items-center gap-2">
+                <User className="w-5 h-5 text-[#be1322]" />
                 <span>Datos del Aspirante</span>
               </h2>
 
               {targetRank && (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-full text-xs font-semibold font-mono">
-                  <Award className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Kyu a Evaluar: <strong className="text-emerald-950 font-bold">{targetRank}</strong></span>
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-full text-xs sm:text-sm font-bold font-mono">
+                  <Award className="w-4 h-4 text-emerald-600" />
+                  <span>Kyu a Evaluar: <strong className="text-emerald-950 font-black">{targetRank}</strong></span>
                 </div>
               )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-bold text-gray-600">
+                <label className="block text-xs sm:text-sm uppercase font-extrabold text-gray-700">
                   Nombre y Apellidos Completos *
                 </label>
                 <input
@@ -1372,12 +1431,12 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                   placeholder="Ej: David Salazar Morales"
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
                 />
               </div>
 
               <div className="space-y-1.5" ref={dojoDropdownRef}>
-                <label className="block text-xs uppercase font-bold text-gray-600">
+                <label className="block text-xs sm:text-sm uppercase font-extrabold text-gray-700">
                   Dojo al que Pertenece *
                 </label>
                 {session?.assignedDojos && session.assignedDojos.length > 0 ? (
@@ -1386,11 +1445,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                     <button
                       type="button"
                       onClick={() => setIsDojoDropdownOpen(prev => !prev)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-gray-300 hover:border-gray-400 rounded-xl text-left flex items-center justify-between gap-2.5 transition-all focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm"
+                      className="w-full px-4 py-3 bg-white border border-gray-300 hover:border-gray-400 rounded-xl text-left flex items-center justify-between gap-2.5 transition-all focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm"
                     >
                       {selectedDojoObj ? (
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-6 h-6 rounded-full bg-gray-50 border border-gray-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-gray-50 border border-gray-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
                             <img
                               src={selectedDojoObj.logo || '/images/dojos/escudo.jpg'}
                               alt={`Escudo ${selectedDojoObj.name}`}
@@ -1398,16 +1457,16 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                               onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
                             />
                           </div>
-                          <span className="text-sm font-semibold text-gray-900 truncate">
+                          <span className="text-base font-bold text-gray-900 truncate">
                             {selectedDojoObj.name}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400">
+                        <span className="text-base text-gray-400 font-medium">
                           Selecciona tu Dojo...
                         </span>
                       )}
-                      <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${isDojoDropdownOpen ? 'rotate-180 text-[#2D2E83]' : ''}`} />
+                      <ChevronDown className={`w-5 h-5 text-gray-400 shrink-0 transition-transform duration-200 ${isDojoDropdownOpen ? 'rotate-180 text-[#2D2E83]' : ''}`} />
                     </button>
 
                     {/* Menú Desplegable con Escudos y Nombres */}
@@ -1423,13 +1482,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                                 setStudentDojo(dojo.name);
                                 setIsDojoDropdownOpen(false);
                               }}
-                              className={`w-full px-3.5 py-2.5 flex items-center gap-3 text-left transition-colors ${
-                                isSelected
-                                  ? 'bg-blue-50 text-[#2D2E83] font-semibold'
-                                  : 'hover:bg-blue-50/60 text-gray-700'
+                              className={`w-full px-4 py-3 flex items-center gap-3 text-left transition-colors cursor-pointer ${
+                                isSelected ? 'bg-blue-50/90 text-[#2D2E83]' : 'hover:bg-gray-50 text-gray-800'
                               }`}
                             >
-                              <div className="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-sm">
+                              <div className="w-8 h-8 rounded-full bg-white border border-gray-200 p-0.5 shrink-0 flex items-center justify-center overflow-hidden shadow-xs">
                                 <img
                                   src={dojo.logo || '/images/dojos/escudo.jpg'}
                                   alt={`Escudo ${dojo.name}`}
@@ -1437,12 +1494,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                                   onError={(e) => { e.currentTarget.src = '/images/dojos/escudo.jpg'; }}
                                 />
                               </div>
-                              <span className="text-sm font-medium flex-1 truncate">
+                              <span className={`text-sm sm:text-base ${isSelected ? 'font-black text-[#2D2E83]' : 'font-semibold'}`}>
                                 {dojo.name}
                               </span>
-                              {isSelected && (
-                                <Check className="w-4 h-4 text-[#2D2E83] shrink-0" />
-                              )}
                             </button>
                           );
                         })}
@@ -1456,7 +1510,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                     placeholder="Ej: Dojo Central ISKF"
                     value={studentDojo}
                     onChange={(e) => setStudentDojo(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
                   />
                 )}
               </div>
@@ -1465,8 +1519,8 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
             {/* Vista Previa Destacada: Escudo Oficial y Nombre del Dojo Seleccionado */}
             {selectedDojoObj && (
               <div className="pt-2 border-t border-gray-200/80">
-                <div className="p-3.5 bg-gray-50/90 border border-gray-200/90 rounded-2xl flex items-center gap-3.5 shadow-sm animate-in fade-in duration-200">
-                  <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                <div className="p-4 bg-gray-50/90 border border-gray-200/90 rounded-2xl flex items-center gap-4 shadow-sm animate-in fade-in duration-200">
+                  <div className="w-14 h-14 rounded-xl bg-white border border-gray-200 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                     <img
                       src={selectedDojoObj.logo || '/images/dojos/escudo.jpg'}
                       alt={`Escudo ${selectedDojoObj.name}`}
@@ -1475,11 +1529,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                     />
                   </div>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-[#2D2E83] flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs uppercase font-mono tracking-wider font-extrabold text-[#2D2E83] flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       Dojo Seleccionado
                     </span>
-                    <p className="text-sm font-bold text-gray-900 truncate">
+                    <p className="text-base sm:text-lg font-extrabold text-gray-900 truncate">
                       {selectedDojoObj.name}
                     </p>
                   </div>
@@ -1489,27 +1543,27 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
           </div>
 
           {/* Preguntas */}
-          <div className="space-y-5">
+          <div className="space-y-6">
             {activeQuestions.map((q, idx) => {
               const currentAns = answers[q.id] || {};
 
               return (
                 <div
                   key={q.id || idx}
-                  className="bg-white/90 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-7 space-y-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
+                  className="bg-white/90 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-8 space-y-5 shadow-[0_8px_30px_rgba(0,0,0,0.06)]"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="w-8 h-8 rounded-xl bg-[#2D2E83]/10 border border-[#2D2E83]/20 text-[#2D2E83] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                  <div className="flex items-start gap-3.5">
+                    <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#2D2E83]/10 border border-[#2D2E83]/25 text-[#2D2E83] text-sm sm:text-base font-black flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                       {idx + 1}
                     </span>
-                    <div className="flex-1 space-y-1">
-                      <span className="text-[11px] uppercase font-bold text-gray-500 font-mono tracking-wider">
+                    <div className="flex-1 space-y-1.5">
+                      <span className="text-xs sm:text-sm uppercase font-extrabold text-gray-600 font-mono tracking-wider block">
                         {q.type === 'single_choice' && `Selección Única (${Number(q.points) > 0 ? Number(q.points) : 1} pt${(Number(q.points) || 1) === 1 ? '' : 's'})`}
                         {q.type === 'short_answer' && `Respuesta Breve (${Number(q.points) > 0 ? Number(q.points) : 1} pt${(Number(q.points) || 1) === 1 ? '' : 's'})`}
                         {q.type === 'long_answer' && `Desarrollo Escrito (${Number(q.points) > 0 ? Number(q.points) : 1} pt${(Number(q.points) || 1) === 1 ? '' : 's'})`}
                         {q.type === 'matching' && `Asociación de Términos (${(q.leftTerms && q.leftTerms.length > 0) ? q.leftTerms.length : (Number(q.points) > 0 ? Number(q.points) : 1)} pts • 1 pt c/u)`}
                       </span>
-                      <p className="text-sm md:text-base font-bold text-gray-900 leading-relaxed">
+                      <p className="text-base sm:text-lg md:text-xl font-black text-gray-900 leading-relaxed">
                         {q.text}
                       </p>
                     </div>
@@ -1526,10 +1580,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                         <img
                           src={q.imageUrl}
                           alt="Ilustración de la pregunta"
-                          className="max-h-56 rounded-xl object-contain group-hover/img:scale-[1.01] transition-transform duration-200"
+                          className="max-h-64 rounded-xl object-contain group-hover/img:scale-[1.01] transition-transform duration-200"
                         />
-                        <div className="absolute inset-0 bg-[#2D2E83]/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-medium rounded-2xl backdrop-blur-[2px]">
-                          <Maximize2 className="w-4 h-4" />
+                        <div className="absolute inset-0 bg-[#2D2E83]/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-sm font-semibold rounded-2xl backdrop-blur-[2px]">
+                          <Maximize2 className="w-5 h-5" />
                           <span>Ampliar imagen</span>
                         </div>
                       </div>
@@ -1538,7 +1592,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
                   {/* 1. SELECCIÓN ÚNICA (OPCIONES BARAJADAS) */}
                   {q.type === 'single_choice' && (q.shuffledOptions || q.options) && (
-                    <div className="space-y-2 pt-1 pl-1">
+                    <div className="space-y-3 pt-1 pl-1">
                       {(q.shuffledOptions || (q.options || []).map((opt, i) => ({ text: opt, originalIndex: i }))).map((optObj, optDisplayIdx) => {
                         const optText = typeof optObj === 'string' ? optObj : optObj.text;
                         const origIndex = typeof optObj === 'string' ? optDisplayIdx : optObj.originalIndex;
@@ -1547,22 +1601,22 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                           <label
                             key={optDisplayIdx}
                             onClick={() => handleSelectOption(q.id, origIndex)}
-                            className={`flex items-center gap-3 p-3.5 rounded-xl border text-xs sm:text-sm cursor-pointer transition-all ${
+                            className={`flex items-center gap-3.5 p-4 sm:p-4.5 rounded-2xl border text-sm sm:text-base cursor-pointer transition-all ${
                               isSelected
-                                ? 'bg-blue-50/90 border-[#2D2E83] text-[#2D2E83] font-semibold ring-2 ring-[#2D2E83]/20 shadow-sm'
-                                : 'bg-gray-50/70 border-gray-200/80 text-gray-800 hover:bg-blue-50/50 hover:border-blue-300'
+                                ? 'bg-blue-50 border-[#2D2E83] text-[#2D2E83] font-bold ring-2 ring-[#2D2E83]/25 shadow-sm'
+                                : 'bg-gray-50/80 border-gray-200 text-gray-900 font-medium hover:bg-blue-50/50 hover:border-blue-300'
                             }`}
                           >
                             <span
-                              className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 text-xs font-bold transition-colors ${
+                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center shrink-0 text-xs sm:text-sm font-black transition-colors ${
                                 isSelected
-                                    ? 'border-[#2D2E83] bg-[#2D2E83] text-white'
-                                  : 'border-gray-300 text-gray-500 bg-white'
+                                    ? 'border-[#2D2E83] bg-[#2D2E83] text-white shadow-xs'
+                                  : 'border-gray-300 text-gray-600 bg-white'
                               }`}
                             >
                               {String.fromCharCode(65 + optDisplayIdx)}
                             </span>
-                            <span className="flex-1">{optText}</span>
+                            <span className="flex-1 leading-relaxed">{optText}</span>
                           </label>
                         );
                       })}
@@ -1577,7 +1631,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                         placeholder="Escribe aquí tu respuesta breve..."
                         value={currentAns.writtenAnswer || ''}
                         onChange={(e) => handleTextAnswer(q.id, e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
+                        className="w-full px-5 py-3.5 bg-white border border-gray-300 rounded-xl text-sm sm:text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
                       />
                     </div>
                   )}
@@ -1590,26 +1644,26 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                         placeholder="Redacta aquí tu desarrollo teórico y reflexión..."
                         value={currentAns.writtenAnswer || ''}
                         onChange={(e) => handleTextAnswer(q.id, e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors resize-none placeholder:text-gray-400"
+                        className="w-full px-5 py-3.5 bg-white border border-gray-300 rounded-xl text-sm sm:text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors resize-none placeholder:text-gray-400 leading-relaxed"
                       />
                     </div>
                   )}
 
                   {/* 4. ASOCIAR TÉRMINOS (MATRIZ INTERACTIVA) */}
                   {q.type === 'matching' && q.leftTerms && q.topTerms && (
-                    <div className="pt-1 pl-1 space-y-2">
-                      <p className="text-[11px] text-gray-600 font-medium">
+                    <div className="pt-1 pl-1 space-y-2.5">
+                      <p className="text-xs sm:text-sm text-gray-700 font-semibold">
                         Debes asociar todos los términos marcando la casilla correspondiente. Cada término bien respondido vale 1 punto.
                       </p>
                       <div className="overflow-x-auto border border-gray-200 rounded-2xl bg-white shadow-sm">
-                        <table className="min-w-full text-xs border-collapse">
+                        <table className="min-w-full text-sm sm:text-base border-collapse">
                           <thead>
                             <tr className="bg-gray-100/90">
-                              <th className="p-3 text-left text-gray-700 font-semibold border-b border-r border-gray-200">
+                              <th className="p-3.5 text-left text-gray-800 font-bold border-b border-r border-gray-200">
                                 Términos (Izquierda \ Arriba)
                               </th>
                               {q.topTerms.map((col, cIdx) => (
-                                <th key={cIdx} className="p-3 text-center text-[#2D2E83] font-bold border-b border-r border-gray-200 whitespace-nowrap">
+                                <th key={cIdx} className="p-3.5 text-center text-[#2D2E83] font-extrabold border-b border-r border-gray-200 whitespace-nowrap">
                                   {col}
                                 </th>
                               ))}
@@ -1622,7 +1676,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
                               return (
                                 <tr key={rIdx} className="border-b border-gray-100 hover:bg-blue-50/30">
-                                  <td className="p-3 border-r border-gray-200 font-medium text-gray-800 bg-gray-50/60">
+                                  <td className="p-3.5 border-r border-gray-200 font-bold text-gray-900 bg-gray-50/60">
                                     {row}
                                   </td>
                                   {q.topTerms.map((_, cIdx) => {
@@ -1631,17 +1685,17 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                                       <td
                                         key={cIdx}
                                         onClick={() => handleMatchCell(q.id, rIdx, cIdx)}
-                                        className="p-3 text-center cursor-pointer hover:bg-blue-100/40 transition-colors"
+                                        className="p-3.5 text-center cursor-pointer hover:bg-blue-100/40 transition-colors"
                                       >
                                         <button
                                           type="button"
-                                          className={`w-6 h-6 rounded-full mx-auto flex items-center justify-center border transition-all ${
+                                          className={`w-7 h-7 rounded-full mx-auto flex items-center justify-center border transition-all ${
                                             isChecked
                                               ? 'bg-[#2D2E83] border-[#2D2E83] text-white shadow-sm'
                                               : 'border-gray-300 hover:border-gray-400 text-transparent'
                                           }`}
                                         >
-                                          <Check className="w-3.5 h-3.5" />
+                                          <Check className="w-4 h-4" />
                                         </button>
                                       </td>
                                     );
@@ -1662,24 +1716,24 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
           {/* Botón de Envío */}
           <div className="bg-white/90 backdrop-blur-xl border border-gray-200/90 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-            <div className="text-center sm:text-left space-y-0.5">
-              <p className="text-sm font-bold text-gray-900">¿Has revisado todas tus respuestas?</p>
-              <p className="text-xs text-gray-500">Al enviar, tu examen será registrado en la mesa examinadora.</p>
+            <div className="text-center sm:text-left space-y-1">
+              <p className="text-base sm:text-lg font-black text-gray-900">¿Has revisado todas tus respuestas?</p>
+              <p className="text-xs sm:text-sm text-gray-600 font-medium">Al enviar, tu examen será registrado en la mesa examinadora.</p>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#2D2E83]/20 hover:shadow-xl hover:shadow-[#2D2E83]/30 transition-all active:scale-95 disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-4 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-2xl text-base sm:text-lg font-black shadow-lg shadow-[#2D2E83]/20 hover:shadow-xl hover:shadow-[#2D2E83]/30 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                   <span>Enviando Examen...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4" />
+                  <Send className="w-5 h-5" />
                   <span>Finalizar y Enviar Examen</span>
                 </>
               )}

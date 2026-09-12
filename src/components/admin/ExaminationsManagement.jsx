@@ -110,6 +110,25 @@ export default function ExaminationsManagement({
   // Copiado de link
   const [copiedSessionId, setCopiedSessionId] = useState(null);
 
+  // Escalamiento accesible de tamaño de letra en Admin: 'normal' (100%) | 'large' (112%) | 'xlarge' (124%)
+  const [adminFontScale, setAdminFontScale] = useState('normal');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('iskf_admin_exam_font_scale');
+      if (saved && ['normal', 'large', 'xlarge'].includes(saved)) {
+        setAdminFontScale(saved);
+      }
+    }
+  }, []);
+
+  const handleAdminFontScaleChange = (scale) => {
+    setAdminFontScale(scale);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('iskf_admin_exam_font_scale', scale);
+    }
+  };
+
   // Modales en página
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
@@ -677,7 +696,7 @@ export default function ExaminationsManagement({
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pt-2 pb-16">
+    <div className={`max-w-6xl mx-auto space-y-10 pt-2 pb-16 exam-text-scale-${adminFontScale}`}>
 
       {/* Indicador de carga sutil */}
       {isLoading && (
@@ -699,21 +718,63 @@ export default function ExaminationsManagement({
                 <Layers className="w-3.5 h-3.5" />
                 Panel de Examinaciones ISKF
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#2D2E83] tracking-tight">
                 Convocatorias de Examen
               </h1>
-              <p className="text-gray-600 text-xs md:text-sm font-medium max-w-2xl">
+              <p className="text-gray-700 text-sm sm:text-base font-medium max-w-2xl leading-relaxed">
                 Crea sesiones oficiales vinculando los Dojos convocados. Comparte el enlace directo con los alumnos y recibe sus respuestas en la bandeja para calificarlas.
               </p>
             </div>
 
-            <button
-              onClick={handleOpenCreateModal}
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-2xl text-sm font-bold transition-all shadow-lg shadow-[#2D2E83]/20 active:scale-95 shrink-0 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Nueva Convocatoria
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Control de Accesibilidad: Tamaño de Letra (A / A+ / A++) */}
+              <div className="flex items-center bg-gray-100/90 border border-gray-300/80 rounded-xl p-0.5 text-xs font-bold shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleAdminFontScaleChange('normal')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    adminFontScale === 'normal'
+                      ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Tamaño de letra Estándar (100%)"
+                >
+                  A
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAdminFontScaleChange('large')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    adminFontScale === 'large'
+                      ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Tamaño de letra Grande (+12%)"
+                >
+                  A+
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAdminFontScaleChange('xlarge')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    adminFontScale === 'xlarge'
+                      ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Tamaño de letra Extra Grande (+24%)"
+                >
+                  A++
+                </button>
+              </div>
+
+              <button
+                onClick={handleOpenCreateModal}
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-2xl text-sm sm:text-base font-bold transition-all shadow-lg shadow-[#2D2E83]/20 active:scale-95 shrink-0 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                Nueva Convocatoria
+              </button>
+            </div>
           </div>
 
           {/* Listado de Convocatorias en Formato Tabla */}
@@ -1027,10 +1088,50 @@ export default function ExaminationsManagement({
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Control de Accesibilidad: Tamaño de Letra (A / A+ / A++) */}
+              <div className="flex items-center bg-gray-100/90 border border-gray-300/80 rounded-xl p-0.5 text-xs font-bold shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleAdminFontScaleChange('normal')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    adminFontScale === 'normal'
+                      ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Tamaño de letra Estándar (100%)"
+                >
+                  A
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAdminFontScaleChange('large')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    adminFontScale === 'large'
+                      ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Tamaño de letra Grande (+12%)"
+                >
+                  A+
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAdminFontScaleChange('xlarge')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    adminFontScale === 'xlarge'
+                      ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                      : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Tamaño de letra Extra Grande (+24%)"
+                >
+                  A++
+                </button>
+              </div>
+
               <button
                 onClick={() => handleOpenLiveModal(selectedSession)}
-                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer shadow-sm"
                 title="Abrir sala de monitoreo en tiempo real"
               >
                 <span className="relative flex h-2 w-2">
@@ -1043,7 +1144,7 @@ export default function ExaminationsManagement({
 
               <button
                 onClick={() => handleOpenInbox(selectedSession)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer shadow-sm"
               >
                 Refrescar
               </button>
@@ -1053,9 +1154,9 @@ export default function ExaminationsManagement({
           {/* Tabla de Entregas */}
           <div className="bg-white/95 border border-gray-200/90 rounded-3xl overflow-hidden shadow-sm backdrop-blur-md">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-xs text-left border-collapse">
+              <table className="min-w-full text-sm text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50/90 border-b border-gray-200 text-gray-700 font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="bg-gray-50/90 border-b border-gray-200 text-gray-800 font-extrabold uppercase tracking-wider text-xs sm:text-sm">
                     <th className="p-4">Aspirante</th>
                     <th className="p-4">Dojo</th>
                     <th className="p-4">Kyu / Grado</th>
@@ -1211,47 +1312,87 @@ export default function ExaminationsManagement({
         return (
           <form onSubmit={handleFinalizeGrade} className="space-y-6">
             {/* Header del Panel de Calificación con Métricas en Vivo y Acciones */}
-            <div className="bg-white/95 border border-gray-200/90 rounded-3xl p-6 shadow-sm space-y-5 backdrop-blur-md text-gray-900">
+            <div className="bg-white/95 border border-gray-200/90 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5 backdrop-blur-md text-gray-900">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <button
                     type="button"
                     onClick={() => setActiveView('inbox')}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[#2D2E83] transition-colors mb-1 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-gray-500 hover:text-[#2D2E83] transition-colors mb-1 cursor-pointer"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <ArrowLeft className="w-4 h-4" />
                     Volver a Bandeja de Entregas
                   </button>
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <h1 className="text-2xl font-black text-[#2D2E83] tracking-tight">
+                    <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
                       Revisión de Examen: {selectedSubmission.studentName}
                     </h1>
                     {selectedSubmission.status === 'graded' ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 px-2.5 py-0.5 rounded-full">
-                        <Check className="w-3 h-3" /> Oficial Asentado
+                      <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 px-3 py-1 rounded-full">
+                        <Check className="w-3.5 h-3.5" /> Oficial Asentado
                       </span>
                     ) : selectedSubmission.status === 'partially_graded' ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-300 px-2.5 py-0.5 rounded-full">
-                        <Save className="w-3 h-3" /> Progreso Guardado (Borrador)
+                      <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold bg-indigo-50 text-indigo-700 border border-indigo-300 px-3 py-1 rounded-full">
+                        <Save className="w-3.5 h-3.5" /> Progreso Guardado (Borrador)
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 px-2.5 py-0.5 rounded-full">
-                        <Clock className="w-3 h-3" /> Pendiente de Evaluación
+                      <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold bg-amber-50 text-amber-800 border border-amber-300 px-3 py-1 rounded-full">
+                        <Clock className="w-3.5 h-3.5" /> Pendiente de Evaluación
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-600 font-medium">
+                  <p className="text-xs sm:text-sm text-gray-700 font-medium">
                     Dojo: <strong className="text-gray-900 font-bold">{selectedSubmission.studentDojo}</strong> • Grado/Kyu: <strong className="text-gray-900 font-bold">{selectedSubmission.studentRank || 'Aspirante'}</strong> • Entregado: {selectedSubmission.submittedAt ? new Date(selectedSubmission.submittedAt).toLocaleString('es-CR') : '—'}
                   </p>
                 </div>
 
                 {/* Botones Principales de Acción en la Cabecera */}
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                  {/* Control de Accesibilidad: Tamaño de Letra (A / A+ / A++) */}
+                  <div className="flex items-center bg-gray-100/90 border border-gray-300/80 rounded-xl p-0.5 text-xs font-bold shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAdminFontScaleChange('normal')}
+                      className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                        adminFontScale === 'normal'
+                          ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                          : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                      title="Tamaño de letra Estándar (100%)"
+                    >
+                      A
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdminFontScaleChange('large')}
+                      className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                        adminFontScale === 'large'
+                          ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                          : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                      title="Tamaño de letra Grande (+12%)"
+                    >
+                      A+
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdminFontScaleChange('xlarge')}
+                      className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                        adminFontScale === 'xlarge'
+                          ? 'bg-white text-[#2D2E83] shadow-xs font-black'
+                          : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                      title="Tamaño de letra Extra Grande (+24%)"
+                    >
+                      A++
+                    </button>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleSaveProgress}
                     disabled={isSavingProgress || isSavingGrade}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
                     title="Guardar las notas asignadas hasta ahora para no perder tu trabajo y continuar después"
                   >
                     {isSavingProgress ? (
@@ -1265,7 +1406,7 @@ export default function ExaminationsManagement({
                   <button
                     type="submit"
                     disabled={isSavingGrade || isSavingProgress}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-[#2D2E83]/20 active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md shadow-[#2D2E83]/20 active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     {isSavingGrade ? (
                       <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -1278,14 +1419,14 @@ export default function ExaminationsManagement({
               </div>
 
               {/* Barra de Progreso y Puntaje en Vivo con Ponderación */}
-              <div className="bg-gray-50/90 border border-gray-200/80 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+              <div className="bg-gray-50/90 border border-gray-200/80 rounded-2xl p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
                 {/* 1. Métricas de Preguntas Evaluadas */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 font-bold">Progreso:</span>
-                    <span className="font-bold text-gray-900">{gradedQuestionsCount}/{totalQuestions} ({gradingProgressPct}%)</span>
+                  <div className="flex items-center justify-between text-xs sm:text-sm font-bold">
+                    <span className="text-gray-700">Progreso:</span>
+                    <span className="font-black text-gray-900">{gradedQuestionsCount}/{totalQuestions} ({gradingProgressPct}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 border border-gray-300 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-gray-200 border border-gray-300 rounded-full h-3 overflow-hidden">
                     <div 
                       className="bg-gradient-to-r from-[#2D2E83] via-indigo-600 to-emerald-600 h-full rounded-full transition-all duration-300"
                       style={{ width: `${gradingProgressPct}%` }}
@@ -1294,17 +1435,17 @@ export default function ExaminationsManagement({
                 </div>
 
                 {/* 2. Puntaje Bruto del Examen */}
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-white border border-gray-200 text-[#2D2E83] shadow-2xs shrink-0">
-                    <Award className="w-4 h-4" />
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-white border border-gray-200 text-[#2D2E83] shadow-2xs shrink-0">
+                    <Award className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Examen (100%)</span>
+                    <span className="text-xs uppercase font-extrabold text-gray-600 block">Examen (100%)</span>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-black text-[#2D2E83]">
+                      <span className="text-2xl font-black text-[#2D2E83]">
                         {calculatedPercentage}%
                       </span>
-                      <span className="text-[11px] font-bold text-gray-600 font-mono">
+                      <span className="text-xs sm:text-sm font-bold text-gray-700 font-mono">
                         ({totalAccumulatedScore}/{maxPossibleScore} pts)
                       </span>
                     </div>
@@ -1312,17 +1453,17 @@ export default function ExaminationsManagement({
                 </div>
 
                 {/* 3. Aporte Ponderado a la Nota Final */}
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 shadow-2xs shrink-0">
-                    <span className="text-xs font-black font-mono">%</span>
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 shadow-2xs shrink-0">
+                    <span className="text-sm font-black font-mono">%</span>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-purple-900 block">Aporte a Nota Final</span>
+                    <span className="text-xs uppercase font-extrabold text-purple-900 block">Aporte a Nota Final</span>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-black text-purple-900">
+                      <span className="text-2xl font-black text-purple-900">
                         +{weightedScoreCalculated}%
                       </span>
-                      <span className="text-[11px] font-bold text-purple-700 font-mono">
+                      <span className="text-xs sm:text-sm font-bold text-purple-700 font-mono">
                         de {examWeightPercentage}%
                       </span>
                     </div>
@@ -1332,8 +1473,8 @@ export default function ExaminationsManagement({
                 {/* 4. Veredicto Calculado */}
                 <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-2 sm:pt-0">
                   <div className="text-left sm:text-right">
-                    <span className="text-[10px] uppercase font-bold text-gray-500 block">Veredicto (Mín: {minPassingPercentage}%)</span>
-                    <span className={`text-xs font-black ${isExamApproved ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
+                    <span className="text-xs uppercase font-extrabold text-gray-600 block">Veredicto (Mín: {minPassingPercentage}%)</span>
+                    <span className={`text-sm sm:text-base font-black ${isExamApproved ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
                       {isExamApproved ? `Aprobado (≥ ${minPassingPercentage}%)` : `No Aprobado (< ${minPassingPercentage}%)`}
                     </span>
                   </div>
@@ -1416,12 +1557,12 @@ export default function ExaminationsManagement({
                     {/* Encabezado de la Pregunta y Controles de Calificación */}
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-gray-200/80 pb-4">
                       <div className="flex items-start gap-3">
-                        <span className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200 text-[#2D2E83] text-xs font-black flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                        <span className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-[#2D2E83] text-sm sm:text-base font-black flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
                           #{idx + 1}
                         </span>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] uppercase font-bold text-gray-700 font-mono tracking-wider px-2 py-0.5 rounded-md bg-gray-100 border border-gray-200">
+                            <span className="text-xs sm:text-sm uppercase font-bold text-gray-800 font-mono tracking-wider px-2.5 py-1 rounded-md bg-gray-100 border border-gray-200">
                               {ans.questionType === 'single_choice' && 'Selección Única'}
                               {ans.questionType === 'short_answer' && 'Respuesta Breve'}
                               {ans.questionType === 'long_answer' && 'Desarrollo Escrito'}
@@ -1429,16 +1570,16 @@ export default function ExaminationsManagement({
                             </span>
 
                             {isItemGraded ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                                <Check className="w-3 h-3" /> Evaluada ({currentGrade.earnedPoints ?? 0} / {ans.maxPoints || 1} pts)
+                              <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+                                <Check className="w-3.5 h-3.5" /> Evaluada ({currentGrade.earnedPoints ?? 0} / {ans.maxPoints || 1} pts)
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                                <Clock className="w-3 h-3" /> Pendiente de revisión ({ans.maxPoints || 1} pts)
+                              <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+                                <Clock className="w-3.5 h-3.5" /> Pendiente de revisión ({ans.maxPoints || 1} pts)
                               </span>
                             )}
                           </div>
-                          <p className="text-sm sm:text-base font-bold text-gray-900 leading-snug pt-1">
+                          <p className="text-base sm:text-lg md:text-xl font-black text-gray-900 leading-snug pt-1">
                             {ans.questionText || `Pregunta #${idx + 1}`}
                           </p>
                         </div>
@@ -1446,22 +1587,22 @@ export default function ExaminationsManagement({
 
                       {/* Controles de Puntuación: Autocalificado para selección única; cajita de puntos para las demás */}
                       {ans.questionType === 'single_choice' ? (
-                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 bg-blue-50/80 border border-blue-200 px-3.5 py-2 rounded-2xl shadow-2xs">
-                          <span className={`text-xs font-black ${currentGrade.earnedPoints === (ans.maxPoints || 1) ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
+                        <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0 bg-blue-50/90 border border-blue-200 px-4 py-2.5 rounded-2xl shadow-2xs">
+                          <span className={`text-sm sm:text-base font-black ${currentGrade.earnedPoints === (ans.maxPoints || 1) ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
                             {currentGrade.earnedPoints ?? (ans.isCorrect ? (ans.maxPoints || 1) : 0)} / {ans.maxPoints || 1} pts
                           </span>
-                          <span className="text-[10px] uppercase font-bold text-[#2D2E83] bg-white border border-blue-200 px-2 py-0.5 rounded-md">
+                          <span className="text-xs uppercase font-bold text-[#2D2E83] bg-white border border-blue-200 px-2.5 py-1 rounded-md">
                             Autocalificado ({ans.maxPoints || 1} pt{(ans.maxPoints || 1) === 1 ? '' : 's'})
                           </span>
                         </div>
                       ) : (
-                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2.5 self-end sm:self-auto shrink-0 bg-gray-50 border border-gray-200/90 p-2 rounded-2xl shadow-xs">
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2.5 self-end sm:self-auto shrink-0 bg-gray-50 border border-gray-200/90 p-2.5 rounded-2xl shadow-xs">
                           {/* Botones de puntaje rápido que suman exactamente lo definido en la creación */}
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => handleQuickPoints(ans.questionId, ans.maxPoints || 1)}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1 ${
+                              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-1 ${
                                 currentGrade.earnedPoints === (ans.maxPoints || 1) && isItemGraded
                                   ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400'
                                   : 'bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-300'
@@ -1474,7 +1615,7 @@ export default function ExaminationsManagement({
                             <button
                               type="button"
                               onClick={() => handleQuickPoints(ans.questionId, Math.round(((ans.maxPoints || 1) / 2) * 10) / 10)}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                                 currentGrade.earnedPoints === Math.round(((ans.maxPoints || 1) / 2) * 10) / 10 && isItemGraded
                                   ? 'bg-amber-600 text-white shadow-md'
                                   : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-300'
@@ -1486,7 +1627,7 @@ export default function ExaminationsManagement({
                             <button
                               type="button"
                               onClick={() => handleQuickPoints(ans.questionId, 0)}
-                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                                 currentGrade.earnedPoints === 0 && isItemGraded
                                   ? 'bg-[#BE1622] text-white shadow-md'
                                   : 'bg-white text-[#BE1622] hover:bg-red-50 border border-red-200'
@@ -1500,8 +1641,8 @@ export default function ExaminationsManagement({
                           <div className="hidden sm:block h-6 w-[1px] bg-gray-300" />
 
                           {/* Cajita con los puntos obtenidos */}
-                          <div className="flex items-center gap-1.5 bg-white border-2 border-[#2D2E83] px-2.5 py-1 rounded-xl shadow-xs ring-2 ring-[#2D2E83]/10">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                          <div className="flex items-center gap-1.5 bg-white border-2 border-[#2D2E83] px-3 py-1.5 rounded-xl shadow-xs ring-2 ring-[#2D2E83]/10">
+                            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                               Puntos:
                             </span>
                             <input
@@ -1511,9 +1652,9 @@ export default function ExaminationsManagement({
                               max={ans.maxPoints || 100}
                               value={currentGrade.earnedPoints ?? 0}
                               onChange={(e) => handlePointsChange(ans.questionId, e.target.value)}
-                              className="w-12 text-center font-black text-gray-900 text-xs sm:text-sm focus:outline-none"
+                              className="w-14 text-center font-black text-gray-900 text-sm sm:text-base focus:outline-none"
                             />
-                            <span className="text-[11px] font-bold text-[#2D2E83] font-mono">/ {ans.maxPoints || 1}</span>
+                            <span className="text-xs sm:text-sm font-bold text-[#2D2E83] font-mono">/ {ans.maxPoints || 1}</span>
                           </div>
                         </div>
                       )}
@@ -1525,13 +1666,13 @@ export default function ExaminationsManagement({
                         <img 
                           src={ans.imageUrl} 
                           alt={`Referencia gráfica pregunta ${idx + 1}`} 
-                          className="max-h-52 w-auto object-cover rounded-2xl cursor-pointer transition-transform group-hover:scale-105"
+                          className="max-h-56 w-auto object-cover rounded-2xl cursor-pointer transition-transform group-hover:scale-105"
                           onClick={() => setLightboxImage(ans.imageUrl)}
                         />
                         <button
                           type="button"
                           onClick={() => setLightboxImage(ans.imageUrl)}
-                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-white text-xs font-bold transition-opacity cursor-pointer backdrop-blur-[2px]"
+                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1.5 text-white text-xs sm:text-sm font-bold transition-opacity cursor-pointer backdrop-blur-[2px]"
                         >
                           <Maximize2 className="w-4 h-4" />
                           <span>Ampliar Imagen</span>
@@ -1544,52 +1685,52 @@ export default function ExaminationsManagement({
                     {/* TIPO 1: SELECCIÓN ÚNICA */}
                     {ans.questionType === 'single_choice' && (
                       <div className="space-y-3">
-                        <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block">
+                        <span className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider block">
                           Opciones de la pregunta y selección del alumno:
                         </span>
 
                         {ans.options && ans.options.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {ans.options.map((optText, optIdx) => {
                               const isStudentChoice = ans.selectedOptionIndex === optIdx;
                               const isOfficialCorrect = ans.correctOptionIndex === optIdx;
                               const letter = String.fromCharCode(65 + optIdx);
 
-                              let cardClass = "bg-gray-50/80 border-gray-200 text-gray-800";
+                              let cardClass = "bg-gray-50/80 border-gray-200 text-gray-900 font-medium";
                               let badge = null;
 
                               if (isStudentChoice) {
                                 if (ans.isCorrect) {
-                                  cardClass = "bg-emerald-50 border-emerald-500 text-emerald-900 ring-1 ring-emerald-400";
+                                  cardClass = "bg-emerald-50 border-emerald-500 text-emerald-950 font-bold ring-1 ring-emerald-400";
                                   badge = (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                                      <Check className="w-3 h-3" /> Selección del Alumno (Correcta)
+                                    <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-md">
+                                      <Check className="w-3.5 h-3.5" /> Selección del Alumno (Correcta)
                                     </span>
                                   );
                                 } else {
-                                  cardClass = "bg-red-50 border-red-500 text-red-900 ring-1 ring-red-400";
+                                  cardClass = "bg-red-50 border-red-500 text-red-950 font-bold ring-1 ring-red-400";
                                   badge = (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#BE1622] bg-red-100 px-2 py-0.5 rounded-md">
-                                      <X className="w-3 h-3" /> Selección del Alumno (Incorrecta)
+                                    <span className="inline-flex items-center gap-1 text-xs font-black text-[#BE1622] bg-red-100 px-2.5 py-1 rounded-md">
+                                      <X className="w-3.5 h-3.5" /> Selección del Alumno (Incorrecta)
                                     </span>
                                   );
                                 }
                               } else if (isOfficialCorrect) {
-                                cardClass = "bg-emerald-50/40 border-emerald-400 text-emerald-800 border-dashed";
+                                cardClass = "bg-emerald-50/50 border-emerald-400 text-emerald-900 border-dashed font-semibold";
                                 badge = (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                                    <Check className="w-3 h-3" /> Opción Correcta Oficial
+                                  <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-md">
+                                    <Check className="w-3.5 h-3.5" /> Opción Correcta Oficial
                                   </span>
                                 );
                               }
 
                               return (
-                                <div key={optIdx} className={`p-3.5 rounded-2xl border flex flex-col justify-between gap-2.5 transition-all ${cardClass}`}>
-                                  <div className="flex items-start gap-2.5">
-                                    <span className="w-6 h-6 rounded-lg bg-white text-xs font-mono font-bold flex items-center justify-center shrink-0 border border-gray-200 text-gray-700 shadow-xs">
+                                <div key={optIdx} className={`p-4 rounded-2xl border flex flex-col justify-between gap-3 transition-all ${cardClass}`}>
+                                  <div className="flex items-start gap-3">
+                                    <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-xs sm:text-sm font-mono font-bold flex items-center justify-center shrink-0 border border-gray-200 text-gray-800 shadow-xs">
                                       {letter}
                                     </span>
-                                    <span className="text-xs sm:text-sm font-semibold leading-snug">
+                                    <span className="text-sm sm:text-base font-bold leading-relaxed">
                                       {optText}
                                     </span>
                                   </div>
@@ -1599,9 +1740,9 @@ export default function ExaminationsManagement({
                             })}
                           </div>
                         ) : (
-                          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-xs space-y-2">
+                          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-gray-600 font-medium">Opción elegida por el alumno:</span>
+                              <span className="text-gray-700 font-medium">Opción elegida por el alumno:</span>
                               <span className="font-bold text-gray-900">
                                 {ans.selectedOptionIndex !== null && ans.selectedOptionIndex !== undefined ? `Opción ${String.fromCharCode(65 + ans.selectedOptionIndex)}` : 'Sin responder'}
                               </span>
@@ -1609,12 +1750,12 @@ export default function ExaminationsManagement({
                             <div className="flex items-center gap-2">
                               {ans.isCorrect ? (
                                 <span className="text-emerald-700 flex items-center gap-1 font-bold">
-                                  <Check className="w-3.5 h-3.5" />
+                                  <Check className="w-4 h-4" />
                                   Respuesta acertada (+1 pt autocalificado)
                                 </span>
                               ) : (
                                 <span className="text-[#BE1622] flex items-center gap-1 font-bold">
-                                  <X className="w-3.5 h-3.5" />
+                                  <X className="w-4 h-4" />
                                   Respuesta errónea (0 pts)
                                 </span>
                               )}
@@ -1626,30 +1767,30 @@ export default function ExaminationsManagement({
 
                     {/* TIPO 2 Y 3: RESPUESTA ESCRITA (BREVE O DESARROLLO) */}
                     {(ans.questionType === 'short_answer' || ans.questionType === 'long_answer') && (
-                      <div className="space-y-3">
+                      <div className="space-y-3.5">
                         <div className="bg-gray-50/90 border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-inner">
                           <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-2.5">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-700">
+                            <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-gray-800">
                               Respuesta redactada por el alumno:
                             </span>
-                            <span className="text-[10px] text-gray-500 font-mono font-medium">
+                            <span className="text-xs text-gray-600 font-mono font-medium">
                               {ans.writtenAnswer ? `${ans.writtenAnswer.length} caracteres` : 'Sin respuesta'}
                             </span>
                           </div>
                           {ans.writtenAnswer ? (
-                            <p className="text-gray-900 text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-sans font-medium selection:bg-blue-100">
+                            <p className="text-gray-900 text-base sm:text-lg whitespace-pre-wrap leading-relaxed font-sans font-semibold selection:bg-blue-100">
                               {ans.writtenAnswer}
                             </p>
                           ) : (
-                            <p className="text-gray-400 italic text-xs">
+                            <p className="text-gray-500 italic text-sm">
                               (El estudiante dejó esta respuesta en blanco)
                             </p>
                           )}
                         </div>
 
                         {/* Campo de Observaciones del Sensei para esta respuesta */}
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider block">
+                        <div className="space-y-1.5">
+                          <label className="text-xs sm:text-sm font-extrabold text-gray-800 uppercase tracking-wider block">
                             Observación técnica del Sensei para esta respuesta (opcional):
                           </label>
                           <input
@@ -1657,7 +1798,7 @@ export default function ExaminationsManagement({
                             placeholder="Comentario sobre terminología, kata, concepto filosófico..."
                             value={currentGrade.senseiComments || ''}
                             onChange={(e) => handleCommentsChange(ans.questionId, e.target.value)}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 transition-colors"
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 transition-colors"
                           />
                         </div>
                       </div>
@@ -1668,20 +1809,20 @@ export default function ExaminationsManagement({
                       <div className="bg-gray-50/80 border border-gray-200 rounded-2xl p-4 sm:p-5 space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-gray-200 gap-2">
                           <div>
-                            <span className="text-xs font-bold text-gray-900 block">
+                            <span className="text-sm sm:text-base font-black text-gray-900 block">
                               Matriz de Relación / Asociación de Términos
                             </span>
-                            <span className="text-[11px] text-gray-500">
+                            <span className="text-xs sm:text-sm text-gray-600 font-medium">
                               Revisa las elecciones del estudiante frente a la clave oficial para asignar la nota correspondiente.
                             </span>
                           </div>
-                          <span className="text-xs font-bold text-[#2D2E83] bg-white border border-blue-200 px-3 py-1 rounded-xl shadow-2xs self-start sm:self-auto">
+                          <span className="text-xs sm:text-sm font-bold text-[#2D2E83] bg-white border border-blue-200 px-3.5 py-1.5 rounded-xl shadow-2xs self-start sm:self-auto">
                             Valor: {ans.maxPoints || 1} pt{(ans.maxPoints || 1) === 1 ? '' : 's'}
                           </span>
                         </div>
 
                         {ans.leftTerms && ans.leftTerms.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                             {ans.leftTerms.map((lt, lIdx) => {
                               const studentMatch = (ans.matchingMatches || []).find(m => m.leftIndex === lIdx);
                               const studentMatchIdx = studentMatch ? studentMatch.rightIndex : (ans.selectedMatches ? ans.selectedMatches[lIdx] : null);
@@ -1692,14 +1833,14 @@ export default function ExaminationsManagement({
                               const isMatchCorrect = studentMatchIdx !== null && correctMatchIdx !== null && studentMatchIdx === correctMatchIdx;
 
                               return (
-                                <div key={lIdx} className={`border p-3 rounded-xl space-y-1.5 shadow-2xs ${isMatchCorrect ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-400/20' : 'bg-white border-gray-200'}`}>
-                                  <div className="font-bold text-gray-900 text-xs sm:text-sm">{lt}</div>
-                                  <div className="text-[11px] flex items-center justify-between gap-2">
-                                    <span className="text-gray-700 font-medium truncate">
+                                <div key={lIdx} className={`border p-3.5 rounded-xl space-y-2 shadow-2xs ${isMatchCorrect ? 'bg-emerald-50/70 border-emerald-300 ring-1 ring-emerald-400/20' : 'bg-white border-gray-200'}`}>
+                                  <div className="font-bold text-gray-900 text-sm sm:text-base">{lt}</div>
+                                  <div className="text-xs sm:text-sm flex items-center justify-between gap-2">
+                                    <span className="text-gray-800 font-medium truncate">
                                       Alumno: <strong className={isMatchCorrect ? 'text-emerald-700 font-bold' : 'text-[#BE1622] font-bold'}>{studentMatchText}</strong>
                                     </span>
                                     {!isMatchCorrect && (
-                                      <span className="text-gray-500 text-[10px] shrink-0 font-medium">Clave: {correctMatchText}</span>
+                                      <span className="text-gray-600 text-xs shrink-0 font-medium">Clave: {correctMatchText}</span>
                                     )}
                                   </div>
                                 </div>
@@ -1707,14 +1848,14 @@ export default function ExaminationsManagement({
                             })}
                           </div>
                         ) : (
-                          <p className="text-gray-500 text-xs">
+                          <p className="text-gray-500 text-xs sm:text-sm">
                             Sin términos configurados en esta pregunta.
                           </p>
                         )}
 
                         {/* Campo de Observaciones del Sensei para esta respuesta */}
-                        <div className="space-y-1 pt-2 border-t border-gray-200/80">
-                          <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider block">
+                        <div className="space-y-1.5 pt-2 border-t border-gray-200/80">
+                          <label className="text-xs sm:text-sm font-extrabold text-gray-800 uppercase tracking-wider block">
                             Observación técnica del Sensei para esta respuesta (opcional):
                           </label>
                           <input
@@ -1722,7 +1863,7 @@ export default function ExaminationsManagement({
                             placeholder="Comentario sobre la asociación o términos del alumno..."
                             value={currentGrade.senseiComments || ''}
                             onChange={(e) => handleCommentsChange(ans.questionId, e.target.value)}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 transition-colors"
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 transition-colors"
                           />
                         </div>
                       </div>
@@ -1733,23 +1874,23 @@ export default function ExaminationsManagement({
             </div>
 
             {/* Veredicto y Feedback General del Tribunal Examinador */}
-            <div className="bg-white/95 border border-gray-200/90 rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm text-gray-900">
+            <div className="bg-white/95 border border-gray-200/90 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm text-gray-900">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200/80 pb-4">
                 <div className="space-y-1">
-                  <h3 className="text-base font-black text-gray-900">
+                  <h3 className="text-lg sm:text-xl font-black text-gray-900">
                     Veredicto del Tribunal Examinador
                   </h3>
-                  <p className="text-xs text-gray-500 font-medium">
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium">
                     Define la resolución oficial del examen y agrega devoluciones para el expediente del alumno.
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-600 font-bold">Calificación Oficial:</span>
+                  <span className="text-xs sm:text-sm text-gray-700 font-black">Calificación Oficial:</span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-[#2D2E83]">
+                    <span className="text-2xl sm:text-3xl font-black text-[#2D2E83]">
                       {calculatedPercentage}%
                     </span>
-                    <span className="text-xs font-bold text-gray-500 font-mono">
+                    <span className="text-xs sm:text-sm font-bold text-gray-600 font-mono">
                       ({totalAccumulatedScore} de {maxPossibleScore} pts)
                     </span>
                   </div>
@@ -1757,24 +1898,24 @@ export default function ExaminationsManagement({
               </div>
 
               {/* DESGLOSE OFICIAL DE RENDIMIENTO Y APORTE A LA NOTA FINAL (15%) */}
-              <div className="bg-gradient-to-br from-gray-50 via-white to-blue-50/30 border-2 border-[#2D2E83]/30 rounded-2xl p-5 space-y-4 shadow-sm">
+              <div className="bg-gradient-to-br from-gray-50 via-white to-blue-50/30 border-2 border-[#2D2E83]/30 rounded-2xl p-5 sm:p-6 space-y-5 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#2D2E83] text-white flex items-center justify-center font-black shadow-xs text-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#2D2E83] text-white flex items-center justify-center font-black shadow-xs text-sm">
                       %
                     </div>
                     <div>
-                      <h4 className="text-sm font-black text-gray-900 uppercase tracking-wide">
+                      <h4 className="text-sm sm:text-base font-black text-gray-900 uppercase tracking-wide">
                         Desglose Oficial de Calificación y Aporte a la Nota Final
                       </h4>
-                      <p className="text-[11px] text-gray-500 font-medium">
+                      <p className="text-xs sm:text-sm text-gray-600 font-medium">
                         Cálculo del rendimiento teórico y aporte neto al 100% de la nota de graduación del aspirante.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-600">Ponderación Examen:</span>
-                    <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-purple-100 text-purple-900 font-mono border border-purple-200">
+                    <span className="text-xs sm:text-sm font-bold text-gray-700">Ponderación Examen:</span>
+                    <span className="text-xs sm:text-sm font-black px-3 py-1.5 rounded-xl bg-purple-100 text-purple-900 font-mono border border-purple-200">
                       {examWeightPercentage}% de la Nota Total
                     </span>
                   </div>
@@ -1782,42 +1923,42 @@ export default function ExaminationsManagement({
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Tarjeta 1: Puntos Brutos */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-3.5 space-y-1 shadow-2xs">
-                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                  <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-1.5 shadow-2xs">
+                    <span className="text-xs sm:text-sm font-black text-gray-700 uppercase tracking-wider block">
                       1. Puntos Brutos Obtenidos
                     </span>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-gray-900">
+                      <span className="text-2xl sm:text-3xl font-black text-gray-900">
                         {totalAccumulatedScore}
                       </span>
-                      <span className="text-xs font-bold text-gray-500 font-mono">
+                      <span className="text-xs sm:text-sm font-bold text-gray-600 font-mono">
                         de {maxPossibleScore} pts posibles
                       </span>
                     </div>
-                    <p className="text-[10px] text-gray-500 font-medium">
+                    <p className="text-xs text-gray-600 font-medium leading-relaxed">
                       Suma de respuestas de selección, asocies y desarrollo.
                     </p>
                   </div>
 
                   {/* Tarjeta 2: Porcentaje de Aciertos vs Mínimo de Aprobación */}
-                  <div className={`border rounded-xl p-3.5 space-y-1 shadow-2xs ${isExamApproved ? 'bg-emerald-50/50 border-emerald-200' : 'bg-red-50/50 border-red-200'}`}>
+                  <div className={`border rounded-2xl p-4 space-y-1.5 shadow-2xs ${isExamApproved ? 'bg-emerald-50/50 border-emerald-200' : 'bg-red-50/50 border-red-200'}`}>
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block">
+                      <span className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-wider block">
                         2. Nota de la Prueba Teórica
                       </span>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${isExamApproved ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300'}`}>
+                      <span className={`text-xs font-black px-2.5 py-1 rounded-full border ${isExamApproved ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300'}`}>
                         {isExamApproved ? 'Aprobado' : 'Reprobado'}
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className={`text-2xl font-black ${isExamApproved ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
+                      <span className={`text-2xl sm:text-3xl font-black ${isExamApproved ? 'text-emerald-700' : 'text-[#BE1622]'}`}>
                         {calculatedPercentage}%
                       </span>
-                      <span className="text-xs font-bold text-gray-600 font-mono">
+                      <span className="text-xs sm:text-sm font-bold text-gray-700 font-mono">
                         (Mínimo: {minPassingPercentage}%)
                       </span>
                     </div>
-                    <p className="text-[10px] text-gray-600 font-medium">
+                    <p className="text-xs text-gray-700 font-medium leading-relaxed">
                       {isExamApproved 
                         ? `Supera el mínimo requerido del ${minPassingPercentage}% para aprobar.` 
                         : `Por debajo del porcentaje mínimo del ${minPassingPercentage}%.`}
@@ -1825,24 +1966,24 @@ export default function ExaminationsManagement({
                   </div>
 
                   {/* Tarjeta 3: Aporte Ponderado a la Nota Final */}
-                  <div className="bg-purple-50/50 border border-purple-200 rounded-xl p-3.5 space-y-1 shadow-2xs">
+                  <div className="bg-purple-50/50 border border-purple-200 rounded-2xl p-4 space-y-1.5 shadow-2xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-purple-900 uppercase tracking-wider block">
+                      <span className="text-xs sm:text-sm font-black text-purple-950 uppercase tracking-wider block">
                         3. Aporte a la Nota del Alumno
                       </span>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300">
+                      <span className="text-xs font-black px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-300">
                         {examWeightPercentage}% Máx
                       </span>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-black text-purple-900">
+                      <span className="text-2xl sm:text-3xl font-black text-purple-900">
                         +{weightedScoreCalculated}%
                       </span>
-                      <span className="text-xs font-bold text-purple-700 font-mono">
+                      <span className="text-xs sm:text-sm font-bold text-purple-800 font-mono">
                         de {examWeightPercentage}%
                       </span>
                     </div>
-                    <p className="text-[10px] text-purple-800 font-medium">
+                    <p className="text-xs text-purple-900 font-medium leading-relaxed">
                       {calculatedPercentage === 100 
                         ? `Al tener el 100% de la prueba, obtiene los ${examWeightPercentage}% completos.`
                         : `Equivale a ${calculatedPercentage}% de los ${examWeightPercentage}% asignados a este examen.`}
@@ -1851,8 +1992,8 @@ export default function ExaminationsManagement({
                 </div>
 
                 {/* Barra visual de aporte ponderado */}
-                <div className="bg-white p-3 rounded-xl border border-gray-200/90 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-gray-700">
+                <div className="bg-white p-4 rounded-2xl border border-gray-200/90 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs sm:text-sm font-black text-gray-800">
                     <span className="flex items-center gap-1.5">
                       <span>Progreso de puntos ganados para la nota global de pase de grado:</span>
                     </span>
@@ -1860,7 +2001,7 @@ export default function ExaminationsManagement({
                       +{weightedScoreCalculated}% de {examWeightPercentage}.00% ({Math.round((weightedScoreCalculated / (examWeightPercentage || 15)) * 100)}% de efectividad)
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-3 border border-gray-200 overflow-hidden flex">
+                  <div className="w-full bg-gray-100 rounded-full h-3.5 border border-gray-200 overflow-hidden flex">
                     <div 
                       className="bg-gradient-to-r from-[#2D2E83] to-purple-600 h-full rounded-full transition-all duration-300 shadow-sm"
                       style={{ width: `${Math.min(100, Math.max(0, (weightedScoreCalculated / (examWeightPercentage || 15)) * 100))}%` }}
@@ -1870,14 +2011,14 @@ export default function ExaminationsManagement({
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
-                <span className="text-xs font-bold text-gray-700">Resolución Oficial:</span>
+                <span className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-wider">Resolución Oficial:</span>
                 <button
                   type="button"
                   onClick={() => setPassedStatus(true)}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-6 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                     passedStatus
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 ring-2 ring-emerald-400'
-                      : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
                   }`}
                 >
                   ✓ Aprobado (Pase de Grado)
@@ -1885,34 +2026,34 @@ export default function ExaminationsManagement({
                 <button
                   type="button"
                   onClick={() => setPassedStatus(false)}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-6 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
                     !passedStatus
                       ? 'bg-[#BE1622] text-white shadow-lg shadow-red-600/20 ring-2 ring-red-400'
-                      : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
                   }`}
                 >
                   ✗ No Aprobado (Reprobado)
                 </button>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs uppercase font-bold text-gray-700">
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm uppercase font-extrabold text-gray-800 tracking-wider">
                   Devolución General del Tribunal para el Aspirante
                 </label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   placeholder="Escribe comentarios generales sobre solidez técnica, terminología, disciplina o recomendaciones para su siguiente grado..."
                   value={senseiFeedback}
                   onChange={(e) => setSenseiFeedback(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-2xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 resize-none transition-colors"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-2xl text-sm sm:text-base text-gray-900 placeholder:text-gray-400 font-medium leading-relaxed focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 resize-none transition-colors"
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-gray-200/80">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-200/80">
                 <button
                   type="button"
                   onClick={(e) => handleDeleteSubmission(selectedSubmission.id || selectedSubmission._id, selectedSubmission.studentName, e)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 text-gray-500 hover:text-[#BE1622] hover:bg-red-50 rounded-xl text-xs font-bold transition-colors border border-transparent hover:border-red-200 cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-3 text-gray-600 hover:text-[#BE1622] hover:bg-red-50 rounded-2xl text-xs sm:text-sm font-bold transition-colors border border-transparent hover:border-red-200 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Eliminar esta Entrega</span>
@@ -1922,7 +2063,7 @@ export default function ExaminationsManagement({
                   <button
                     type="button"
                     onClick={() => setActiveView('inbox')}
-                    className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    className="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-2xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
                   >
                     Cancelar
                   </button>
@@ -1931,19 +2072,19 @@ export default function ExaminationsManagement({
                     type="button"
                     onClick={handleSaveProgress}
                     disabled={isSavingProgress || isSavingGrade}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-2 px-5 py-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-2xl text-xs sm:text-sm font-black transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
                     title="Guarda las notas en la base de datos sin cerrar el panel"
                   >
-                    {isSavingProgress ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    {isSavingProgress ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     <span>{isSavingProgress ? 'Guardando...' : 'Guardar Progreso'}</span>
                   </button>
 
                   <button
                     type="submit"
                     disabled={isSavingGrade || isSavingProgress}
-                    className="flex items-center gap-1.5 px-6 py-2.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-2 px-7 py-3 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-2xl text-sm sm:text-base font-black transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
                   >
-                    {isSavingGrade ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                    {isSavingGrade ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                     <span>{isSavingGrade ? 'Asentando...' : 'Finalizar y Asentar Calificación'}</span>
                   </button>
                 </div>

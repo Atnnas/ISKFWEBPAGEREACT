@@ -307,3 +307,29 @@ html.admin-scope {
   animation: duolingo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+/* ============================================================
+   ACCESIBILIDAD Y ESCALAMIENTO TIPOGRÁFICO EN EXÁMENES
+   ============================================================ */
+.exam-text-scale-normal {
+  font-size: 100%;
+}
+
+.exam-text-scale-large {
+  font-size: 112%;
+}
+.exam-text-scale-large .text-xs { font-size: 0.875rem !important; }
+.exam-text-scale-large .text-sm { font-size: 1.025rem !important; }
+.exam-text-scale-large .text-base { font-size: 1.175rem !important; }
+.exam-text-scale-large .text-lg { font-size: 1.325rem !important; }
+.exam-text-scale-large .text-xl { font-size: 1.5rem !important; }
+
+.exam-text-scale-xlarge {
+  font-size: 124%;
+}
+.exam-text-scale-xlarge .text-xs { font-size: 0.95rem !important; }
+.exam-text-scale-xlarge .text-sm { font-size: 1.15rem !important; }
+.exam-text-scale-xlarge .text-base { font-size: 1.3rem !important; }
+.exam-text-scale-xlarge .text-lg { font-size: 1.48rem !important; }
+.exam-text-scale-xlarge .text-xl { font-size: 1.68rem !important; }
+
+
