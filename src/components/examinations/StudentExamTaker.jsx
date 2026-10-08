@@ -17,9 +17,7 @@ import {
   Copy, 
   ChevronDown,
   Shuffle,
-  Sun,
-  Smartphone,
-  RotateCcw
+  Sun
 } from 'lucide-react';
 import { 
   submitStudentExam,
@@ -151,52 +149,18 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const isAutoSubmittingRef = useRef(false);
 
   // =========================================================================
-  // SISTEMA DE DETECCIÓN Y BLOQUEO DE ORIENTACIÓN HORIZONTAL (MÓVILES / IPHONE)
-  // Evita distorsiones visuales y protege al alumno de falsos positivos por cambios de foco
+  // SISTEMA DE PROTECCIÓN CONTRA FALSOS POSITIVOS AL MOVER O GIRAR EL TELÉFONO
+  // Otorga inmunidad de 3.5s tras cualquier giro o movimiento para que no se activen alertas
   // =========================================================================
-  const [isMobileLandscape, setIsMobileLandscape] = useState(false);
-  const isMobileLandscapeRef = useRef(false);
   const lastOrientationChangeTimeRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const checkOrientation = () => {
-      // 1. Detectar si es un dispositivo táctil / móvil
-      const isTouch = 
-        ('ontouchstart' in window) || 
-        (navigator.maxTouchPoints > 0) || 
-        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-
-      if (!isTouch) {
-        setIsMobileLandscape(false);
-        isMobileLandscapeRef.current = false;
-        return;
-      }
-
-      // 2. Comprobar si la pantalla está en posición horizontal
-      const isWidthGreater = window.innerWidth > window.innerHeight;
-      const mediaLandscape = window.matchMedia ? window.matchMedia('(orientation: landscape)').matches : false;
-      const screenLandscape = Boolean(
-        window.screen?.orientation?.type?.includes('landscape') || 
-        (typeof window.orientation === 'number' && Math.abs(window.orientation) === 90)
-      );
-
-      // Los teléfonos móviles en posición horizontal tienen un lado menor típico <= 650px
-      const isPhoneSized = Math.min(window.innerWidth, window.innerHeight) <= 650;
-      const shouldBlock = isTouch && isWidthGreater && (mediaLandscape || screenLandscape || isPhoneSized);
-
-      setIsMobileLandscape(shouldBlock);
-      isMobileLandscapeRef.current = shouldBlock;
-    };
-
     const handleOrientationOrResize = () => {
-      // Registrar timestamp de giro de pantalla para proteger al estudiante de falsos positivos anti-trampas
+      // Registrar timestamp de giro para proteger al estudiante de falsos positivos anti-trampas
       lastOrientationChangeTimeRef.current = Date.now();
-      checkOrientation();
     };
-
-    checkOrientation();
 
     window.addEventListener('resize', handleOrientationOrResize);
     window.addEventListener('orientationchange', handleOrientationOrResize);
@@ -546,9 +510,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const handleViolationDetected = (reason = "Salida de ventana") => {
     if (isSubmitting || isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt) return;
 
-    // Inmunidad anti-trampas durante giro de pantalla o bloqueo horizontal en móviles / iPhone
+    // Inmunidad anti-trampas durante giro o movimiento del teléfono (3.5s de gracia)
     const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
-    if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+    if (timeSinceRotation < 3500) return;
 
     securityViolationsRef.current += 1;
     const currentCount = securityViolationsRef.current;
@@ -889,9 +853,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     const handleUserLeave = () => {
       if (isAwayRef.current) return;
 
-      // Inmunidad durante giro de pantalla o bloqueo horizontal en móviles / iPhone
+      // Inmunidad durante giro o movimiento del teléfono (3.5s de gracia)
       const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
-      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+      if (timeSinceRotation < 3500) return;
 
       if (document.visibilityState === 'hidden' || !document.hasFocus()) {
         isAwayRef.current = true;
@@ -906,9 +870,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
     // Manejador de blur con debounce para filtrar micro-focos
     const onWindowBlur = () => {
-      // Inmunidad durante giro de pantalla o bloqueo horizontal en móviles / iPhone
+      // Inmunidad durante giro o movimiento del teléfono (3.5s de gracia)
       const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
-      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+      if (timeSinceRotation < 3500) return;
 
       if (blurDebounceRef.current) clearTimeout(blurDebounceRef.current);
       blurDebounceRef.current = setTimeout(() => {
@@ -921,7 +885,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       if (blurDebounceRef.current) clearTimeout(blurDebounceRef.current);
 
       const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
-      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) {
+      if (timeSinceRotation < 3500) {
         isAwayRef.current = false;
         awayTimestampRef.current = null;
         return;
@@ -941,7 +905,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
     const onVisibilityChange = () => {
       const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
-      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+      if (timeSinceRotation < 3500) return;
 
       if (document.visibilityState === 'hidden') {
         handleUserLeave();
@@ -972,7 +936,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
     const handleFullscreenChange = () => {
       const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
-      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+      if (timeSinceRotation < 3500) return;
 
       const inFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
       if (!inFullscreen) {
@@ -1460,7 +1424,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   // VISTA: CUESTIONARIO ACTIVO DEL ESTUDIANTE
   // =========================================================================
   return (
-    <div className={`relative min-h-screen bg-transparent text-gray-900 font-sans flex flex-col selection:bg-[#2D2E83] selection:text-white exam-text-scale-${fontScale}`}>
+    <div 
+      className={`relative min-h-screen w-full overflow-x-hidden bg-transparent text-gray-900 font-sans flex flex-col selection:bg-[#2D2E83] selection:text-white exam-text-scale-${fontScale}`}
+      style={{ WebkitTextSizeAdjust: '100%', textSizeAdjust: '100%' }}
+    >
       {/* ========================================================================= */}
       {/* FONDO OFICIAL ISKF FIJO IDÉNTICO A TODA LA PÁGINA */}
       {/* ========================================================================= */}
@@ -2127,48 +2094,6 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         securityMode={chuiWarningModal.securityMode}
       />
 
-      {/* =========================================================================
-          BLOQUEO OBLIGATORIO DE MODO HORIZONTAL (SMARTPHONES / APPLE IPHONE)
-          Protege contra colapso de pantalla, salidas involuntarias y problemas visuales
-         ========================================================================= */}
-      {isMobileLandscape && (
-        <div 
-          className="fixed inset-0 z-[999999] bg-slate-950/96 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in zoom-in-95 duration-200"
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="orientation-title"
-        >
-          <div className="max-w-md w-full bg-white/10 border border-white/20 rounded-3xl p-6 sm:p-8 flex flex-col items-center space-y-5 shadow-2xl backdrop-blur-2xl">
-            {/* Icono animado de rotación de teléfono */}
-            <div className="relative w-24 h-24 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping opacity-30" />
-              <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#2D2E83] to-[#BE1622] flex items-center justify-center shadow-lg border border-white/20">
-                <Smartphone className="w-10 h-10 text-white animate-pulse" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 bg-amber-400 text-gray-900 rounded-full p-2 shadow-md animate-spin" style={{ animationDuration: '4s' }}>
-                <RotateCcw className="w-4 h-4" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                Orientación Vertical Requerida
-              </span>
-              <h2 id="orientation-title" className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Gira tu teléfono a vertical
-              </h2>
-              <p className="text-sm text-gray-200 leading-relaxed">
-                Para evitar fallos visuales y proteger tu examen de falsas detecciones de salida en dispositivos iPhone y teléfonos móviles, no se permite el modo horizontal.
-              </p>
-            </div>
-
-            <div className="w-full bg-black/40 border border-white/10 rounded-2xl p-3.5 text-xs text-gray-300 flex items-center gap-3 text-left">
-              <span className="text-xl shrink-0">📱</span>
-              <span>Coloca tu dispositivo en <strong>posición vertical (Portrait)</strong> para continuar respondiendo de inmediato.</span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Elemento de respaldo invisible para evitar suspensión de pantalla en dispositivos sin Wake Lock API */}
       <video
