@@ -1436,11 +1436,19 @@ export async function getPublicExaminationSession(accessCodeOrId, clientDeviceIn
     }
 
     // 6. Verificación de Seguridad y Bloqueo de Dispositivo desde el Servidor (MongoDB)
-    // Se aísla por client deviceToken para garantizar que 1 solo enlace funcione para N estudiantes de forma independiente
-    const { deviceToken } = clientDeviceInfo || {};
+    // Se verifica por client deviceToken o por Huella Digital de Hardware inmutable
+    const { deviceToken, fingerprint } = clientDeviceInfo || {};
     let lockRecord = null;
-    if (deviceToken) {
-      lockRecord = await ExamDeviceLock.findOne({ sessionId: session._id, deviceToken }).lean();
+    if (deviceToken || fingerprint) {
+      const orClauses = [];
+      if (deviceToken) orClauses.push({ deviceToken });
+      if (fingerprint) orClauses.push({ fingerprint });
+      if (orClauses.length > 0) {
+        lockRecord = await ExamDeviceLock.findOne({
+          sessionId: session._id,
+          $or: orClauses
+        }).sort({ updatedAt: -1 }).lean();
+      }
     }
 
     if (lockRecord) {
@@ -1621,8 +1629,51 @@ export async function registerExamDeviceSession(data) {
       return { success: false, error: "Convocatoria no encontrada." };
     }
 
-    // Cada dispositivo y cliente se aísla de forma individual por su deviceToken único
+    // 1. Cada dispositivo y cliente se aísla de forma individual por su deviceToken único
     let record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
+
+    // Fallback 1 (Anti-Limpieza de Cookies/Navegador): Si no existe por deviceToken pero hay huella física de hardware
+    if (!record && fingerprint) {
+      record = await ExamDeviceLock.findOne({ sessionId, fingerprint }).sort({ updatedAt: -1 });
+      if (record) {
+        // El aspirante borró cookies/navegador en el mismo teléfono/computadora: re-asociar el nuevo deviceToken
+        record.deviceToken = deviceToken;
+        await record.save();
+      }
+    }
+
+    // Fallback 2 (Anti-Suplantación): Si se suministró Nombre y Dojo, buscar si ya tenía registro en esta convocatoria
+    if (!record && studentName && studentName.trim().length >= 3 && studentDojo) {
+      const escapedName = studentName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      record = await ExamDeviceLock.findOne({
+        sessionId,
+        studentName: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+        studentDojo: studentDojo.trim()
+      }).sort({ updatedAt: -1 });
+      if (record) {
+        record.deviceToken = deviceToken;
+        if (fingerprint) record.fingerprint = fingerprint;
+        await record.save();
+      }
+    }
+
+    // Verificar si el aspirante ya realizó una entrega oficial en ExamSubmission
+    if (studentName && studentName.trim().length >= 3 && studentDojo) {
+      const escapedName = studentName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const existingSub = await ExamSubmission.findOne({
+        sessionId,
+        studentName: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+        studentDojo: studentDojo.trim()
+      }).lean();
+      if (existingSub) {
+        return {
+          success: true,
+          status: 'submitted',
+          isAlreadySubmitted: true,
+          error: "Este aspirante ya cuenta con un examen oficial entregado en esta convocatoria."
+        };
+      }
+    }
 
     if (!record) {
       record = new ExamDeviceLock({
@@ -1710,7 +1761,8 @@ export async function pingExamDeviceHeartbeat(data) {
       studentDojo, 
       studentRank, 
       answeredQuestionsCount, 
-      totalQuestionsCount 
+      totalQuestionsCount,
+      fingerprint
     } = data || {};
 
     if (!sessionId || !deviceToken) {
@@ -1723,6 +1775,7 @@ export async function pingExamDeviceHeartbeat(data) {
     if (studentName) updateFields.studentName = studentName.trim();
     if (studentDojo) updateFields.studentDojo = studentDojo.trim();
     if (studentRank) updateFields.studentRank = studentRank.trim();
+    if (fingerprint) updateFields.fingerprint = fingerprint.trim();
     if (typeof answeredQuestionsCount === 'number') updateFields.answeredQuestionsCount = answeredQuestionsCount;
     if (typeof totalQuestionsCount === 'number') updateFields.totalQuestionsCount = totalQuestionsCount;
 
@@ -1739,6 +1792,135 @@ export async function pingExamDeviceHeartbeat(data) {
     };
   } catch (err) {
     console.error("Error updating exam device heartbeat:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Valida y sincroniza en tiempo real la identidad del aspirante (Nombre y Dojo)
+ * para evitar fraude si el usuario borró cookies, cambió de navegador o intenta reintentar.
+ */
+export async function verifyAndSyncStudentIdentity(data) {
+  try {
+    await dbConnect();
+    const { sessionId, studentName, studentDojo, deviceToken, fingerprint } = data || {};
+    if (!sessionId || !studentName?.trim() || !studentDojo?.trim()) {
+      return { success: false, error: "Datos incompletos para verificación." };
+    }
+
+    const trimmedName = studentName.trim();
+    const trimmedDojo = studentDojo.trim();
+    const escapedName = trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // 1. Verificar si ya existe una entrega oficial completada por este estudiante
+    const existingSub = await ExamSubmission.findOne({
+      sessionId,
+      studentName: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+      studentDojo: trimmedDojo
+    }).lean();
+
+    if (existingSub) {
+      return {
+        success: true,
+        allowed: false,
+        status: 'submitted',
+        isAlreadySubmitted: true,
+        message: "Ya se ha registrado una entrega oficial para este aspirante en esta convocatoria."
+      };
+    }
+
+    // 2. Buscar si ya existe un registro de dispositivo o bloqueo de este estudiante en la sesión
+    const orClauses = [
+      {
+        studentName: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+        studentDojo: trimmedDojo
+      }
+    ];
+    if (deviceToken) orClauses.push({ deviceToken });
+    if (fingerprint) orClauses.push({ fingerprint });
+
+    const records = await ExamDeviceLock.find({
+      sessionId,
+      $or: orClauses
+    }).sort({ updatedAt: -1 });
+
+    // Verificar si está bloqueado por seguridad
+    const lockedRecord = records.find(r => r.status === 'locked_by_security');
+    if (lockedRecord) {
+      if (deviceToken) {
+        await ExamDeviceLock.updateOne(
+          { sessionId, deviceToken },
+          { 
+            status: 'locked_by_security', 
+            reason: lockedRecord.reason || 'Bloqueo registrado por reiteradas salidas de ventana',
+            studentName: trimmedName,
+            studentDojo: trimmedDojo,
+            fingerprint: fingerprint || ''
+          },
+          { upsert: true }
+        );
+      }
+      return {
+        success: true,
+        allowed: false,
+        status: 'locked_by_security',
+        isSecurityLocked: true,
+        message: "Este aspirante ha sido bloqueado de forma permanente por el servidor debido a reiteradas salidas de la evaluación.",
+        violationsCount: lockedRecord.securityViolationsCount || 3
+      };
+    }
+
+    // Verificar si el tiempo límite expiró
+    const expiredRecord = records.find(r => r.status === 'time_expired');
+    if (expiredRecord) {
+      return {
+        success: true,
+        allowed: false,
+        status: 'time_expired',
+        isTimeExpired: true,
+        message: "El tiempo límite asignado para resolver esta prueba ha concluido para este aspirante."
+      };
+    }
+
+    // Recuperar faltas acumuladas y tiempo transcurrido
+    const existingActive = records.find(r => r.status === 'active' || !r.status);
+    let violationsCount = 0;
+    let startedAt = null;
+
+    if (existingActive) {
+      violationsCount = existingActive.securityViolationsCount || 0;
+      startedAt = existingActive.startedAt || null;
+
+      if (deviceToken) {
+        existingActive.deviceToken = deviceToken;
+        if (fingerprint) existingActive.fingerprint = fingerprint;
+        existingActive.studentName = trimmedName;
+        existingActive.studentDojo = trimmedDojo;
+        await existingActive.save();
+      }
+    } else if (deviceToken) {
+      await ExamDeviceLock.updateOne(
+        { sessionId, deviceToken },
+        { studentName: trimmedName, studentDojo: trimmedDojo, fingerprint: fingerprint || '' }
+      );
+    }
+
+    const session = await ExaminationSession.findById(sessionId).lean();
+    let remainingSeconds = null;
+    if (session?.timeLimitMinutes > 0 && startedAt) {
+      const elapsedSec = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
+      remainingSeconds = Math.max(0, (session.timeLimitMinutes * 60) - elapsedSec);
+    }
+
+    return {
+      success: true,
+      allowed: true,
+      status: 'active',
+      violationsCount,
+      remainingSeconds
+    };
+  } catch (err) {
+    console.error("Error verifying student identity:", err);
     return { success: false, error: err.message };
   }
 }
@@ -1881,12 +2063,22 @@ export async function resetStudentDeviceLock(sessionId, deviceToken, unlockReaso
       return { success: false, error: "Registro de dispositivo no encontrado." };
     }
 
-    record.status = 'active';
-    record.lockedAt = null;
-    record.securityViolationsCount = 0;
-    record.reason = unlockReason ? `Desbloqueado por Sensei: ${unlockReason}` : 'Desbloqueado administrativamente';
-    record.lastPingAt = new Date();
-    await record.save();
+    const updateQuery = { sessionId, $or: [{ deviceToken }] };
+    if (record.fingerprint) updateQuery.$or.push({ fingerprint: record.fingerprint });
+    if (record.studentName && record.studentDojo) {
+      updateQuery.$or.push({ studentName: record.studentName, studentDojo: record.studentDojo });
+    }
+
+    await ExamDeviceLock.updateMany(
+      updateQuery,
+      {
+        status: 'active',
+        lockedAt: null,
+        securityViolationsCount: 0,
+        reason: unlockReason ? `Desbloqueado por Sensei: ${unlockReason}` : 'Desbloqueado administrativamente',
+        lastPingAt: new Date()
+      }
+    );
 
     return { success: true, message: "Aspirante desbloqueado con éxito." };
   } catch (err) {
@@ -1902,7 +2094,7 @@ export async function resetStudentDeviceLock(sessionId, deviceToken, unlockReaso
 export async function reportSecurityViolationAction(data) {
   try {
     await dbConnect();
-    let { sessionId, deviceToken, fingerprint, ip, userAgent, reason, isLockout, violationsCount } = data || {};
+    let { sessionId, deviceToken, fingerprint, ip, userAgent, reason, isLockout, violationsCount, studentName, studentDojo } = data || {};
 
     // Extracción forzada de headers reales en el servidor si no fueron provistos
     if (!ip || !userAgent) {
@@ -1919,11 +2111,27 @@ export async function reportSecurityViolationAction(data) {
       }
     }
 
-    if (!sessionId || !deviceToken) {
+    if (!sessionId || (!deviceToken && !fingerprint && !studentName)) {
       return { success: false, error: "Faltan parámetros requeridos." };
     }
 
-    let record = await ExamDeviceLock.findOne({ sessionId, deviceToken });
+    // 1. Buscar primero por deviceToken
+    let record = deviceToken ? await ExamDeviceLock.findOne({ sessionId, deviceToken }) : null;
+
+    // 2. Fallback a huella digital física si borró cookies
+    if (!record && fingerprint) {
+      record = await ExamDeviceLock.findOne({ sessionId, fingerprint });
+    }
+
+    // 3. Fallback a identidad del estudiante si ya ingresó nombre y dojo
+    if (!record && studentName && studentDojo) {
+      const escapedName = studentName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      record = await ExamDeviceLock.findOne({
+        sessionId,
+        studentName: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+        studentDojo: studentDojo.trim()
+      });
+    }
 
     if (!record) {
       record = new ExamDeviceLock({
@@ -1936,7 +2144,9 @@ export async function reportSecurityViolationAction(data) {
         securityViolationsCount: violationsCount || 1,
         startedAt: new Date(),
         lockedAt: isLockout ? new Date() : null,
-        reason: reason || ''
+        reason: reason || '',
+        studentName: studentName?.trim() || '',
+        studentDojo: studentDojo?.trim() || ''
       });
     } else {
       record.securityViolationsCount = violationsCount || (record.securityViolationsCount + 1);
@@ -1949,6 +2159,8 @@ export async function reportSecurityViolationAction(data) {
       if (deviceToken) record.deviceToken = deviceToken;
       if (ip) record.ip = ip;
       if (userAgent) record.userAgent = userAgent;
+      if (studentName) record.studentName = studentName.trim();
+      if (studentDojo) record.studentDojo = studentDojo.trim();
     }
 
     await record.save();
@@ -2132,19 +2344,32 @@ export async function submitStudentExam(data) {
 
     await submission.save();
 
-    // Actualizar el estado del dispositivo en el servidor para bloquear reintentos
-    const { deviceToken } = data || {};
-    if (deviceToken) {
-      await ExamDeviceLock.findOneAndUpdate(
-        { sessionId: session._id, deviceToken },
+    // Actualizar el estado del dispositivo y huella de hardware en el servidor para bloquear reintentos
+    const { deviceToken, fingerprint } = data || {};
+    const lockFilter = { sessionId: session._id, $or: [] };
+    if (deviceToken) lockFilter.$or.push({ deviceToken });
+    if (fingerprint) lockFilter.$or.push({ fingerprint });
+    if (studentName && studentDojo) {
+      const escapedName = studentName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      lockFilter.$or.push({
+        studentName: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+        studentDojo: studentDojo.trim()
+      });
+    }
+
+    if (lockFilter.$or.length > 0) {
+      await ExamDeviceLock.updateMany(
+        lockFilter,
         {
           status: closedBySecurity ? 'locked_by_security' : 'submitted',
           submittedAt: new Date(),
           lockedAt: closedBySecurity ? new Date() : null,
           reason: securityReport || (closedBySecurity ? 'Cerrado por protocolo de seguridad' : 'Entregado con éxito'),
-          securityViolationsCount: Math.max(0, parseInt(securityViolationsCount, 10) || 0)
-        },
-        { upsert: true }
+          securityViolationsCount: Math.max(0, parseInt(securityViolationsCount, 10) || 0),
+          studentName: studentName.trim(),
+          studentDojo: studentDojo.trim(),
+          fingerprint: fingerprint || ''
+        }
       );
     }
 

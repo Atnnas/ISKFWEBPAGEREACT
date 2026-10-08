@@ -86,9 +86,10 @@ const ExamDeviceLockSchema = new mongoose.Schema({
   collection: 'ExamDeviceLocks'
 });
 
-ExamDeviceLockSchema.index({ sessionId: 1, deviceToken: 1 }, { unique: true });
+ExamDeviceLockSchema.index({ sessionId: 1, deviceToken: 1 });
 ExamDeviceLockSchema.index({ sessionId: 1, fingerprint: 1 });
 ExamDeviceLockSchema.index({ sessionId: 1, ip: 1, userAgent: 1 });
+ExamDeviceLockSchema.index({ sessionId: 1, studentName: 1, studentDojo: 1 });
 
 const ExamDeviceLock = mongoose.models.ExamDeviceLock || mongoose.model('ExamDeviceLock', ExamDeviceLockSchema);
 

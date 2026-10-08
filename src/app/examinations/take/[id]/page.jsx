@@ -19,8 +19,9 @@ export default async function TakeExamPage({ params }) {
   const cookieStore = await cookies();
 
   const deviceToken = cookieStore.get('iskf_device_token')?.value || '';
+  const deviceFp = cookieStore.get('iskf_device_fp')?.value || '';
 
-  const res = await getPublicExaminationSession(id, { deviceToken });
+  const res = await getPublicExaminationSession(id, { deviceToken, fingerprint: deviceFp });
 
   if (!res.success) {
     // 1. Bloqueo por Infracción de Seguridad detectado en el Servidor Backend
@@ -194,6 +195,7 @@ export default async function TakeExamPage({ params }) {
       session={res.session} 
       exam={res.exam} 
       initialDeviceToken={deviceToken} 
+      initialFingerprint={deviceFp}
     />
   );
 }

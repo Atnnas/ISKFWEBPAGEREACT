@@ -25,7 +25,8 @@ import {
   submitStudentExam,
   registerExamDeviceSession,
   reportSecurityViolationAction,
-  pingExamDeviceHeartbeat
+  pingExamDeviceHeartbeat,
+  verifyAndSyncStudentIdentity
 } from '../../lib/actions/examinations';
 import { getHardwareFingerprint } from '../../lib/deviceFingerprint';
 import { detectIncognito } from 'detectincognitojs';
@@ -567,7 +568,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         fingerprint: fingerprintRef.current,
         reason: `${reason} (Falta #${currentCount})`,
         isLockout,
-        violationsCount: currentCount
+        violationsCount: currentCount,
+        studentName,
+        studentDojo
       }).catch(err => console.error("Error reporting security violation to server:", err));
     }
 
@@ -806,6 +809,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       pingExamDeviceHeartbeat({
         sessionId: sessId,
         deviceToken: token,
+        fingerprint: fingerprintRef.current,
         studentName,
         studentDojo,
         studentRank: targetRank,
@@ -820,6 +824,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
             setIsSecurityLocked(false);
             localStorage.removeItem(`iskf_exam_security_locked_${sessId}`);
           }
+          if (typeof res.securityViolationsCount === 'number' && res.securityViolationsCount > securityViolationsRef.current) {
+            securityViolationsRef.current = res.securityViolationsCount;
+            setSecurityViolationsCount(res.securityViolationsCount);
+          }
         }
       }).catch(err => void err);
     };
@@ -827,6 +835,51 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     const interval = setInterval(sendHeartbeat, 15000);
     return () => clearInterval(interval);
   }, [studentName, studentDojo, answers, isSubmitted, isAlreadySubmitted, isSecurityLocked, isIncognitoDetected, targetRank, exam?.questions, session]);
+
+  // Sincronización e Inmunidad Anti-Fraude: verificación en tiempo real del aspirante en MongoDB al escribir Nombre y Dojo
+  useEffect(() => {
+    if (!studentName || studentName.trim().length < 3 || !studentDojo || isSubmitted || isAlreadySubmitted || isSecurityLocked) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const sessId = session?.id || session?._id;
+        const res = await verifyAndSyncStudentIdentity({
+          sessionId: sessId,
+          studentName,
+          studentDojo,
+          deviceToken: deviceTokenRef.current,
+          fingerprint: fingerprintRef.current
+        });
+
+        if (res && res.success) {
+          if (res.status === 'locked_by_security' || res.isSecurityLocked) {
+            setIsSecurityLocked(true);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(`iskf_exam_security_locked_${sessId}`, 'true');
+            }
+          } else if (res.status === 'submitted' || res.isAlreadySubmitted) {
+            setIsAlreadySubmitted(true);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(`iskf_exam_submitted_${sessId}`, 'true');
+            }
+          } else if (res.status === 'time_expired') {
+            setTimeLeft(0);
+          } else if (typeof res.remainingSeconds === 'number') {
+            setTimeLeft(prev => prev === null ? res.remainingSeconds : Math.min(prev, res.remainingSeconds));
+          }
+
+          if (typeof res.violationsCount === 'number' && res.violationsCount > securityViolationsRef.current) {
+            securityViolationsRef.current = res.violationsCount;
+            setSecurityViolationsCount(res.violationsCount);
+          }
+        }
+      } catch (err) {
+        console.warn("Error verifying student identity in MongoDB:", err);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [studentName, studentDojo, session, isSubmitted, isAlreadySubmitted, isSecurityLocked]);
 
   // Monitoreo de Salida y Reingreso ("Salir y Volver a Entrar" = 1 Falta)
   useEffect(() => {
