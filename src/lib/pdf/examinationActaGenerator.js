@@ -1,12 +1,12 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
 /**
  * Genera y descarga el Acta Oficial de Examinación de una convocatoria en formato PDF.
  * @param {Object} session - Datos de la convocatoria de examinación
  * @param {Array} submissions - Lista de entregas de aspirantes en la convocatoria
  */
-export function generateExaminationActaPDF(session, submissions = []) {
+export async function generateExaminationActaPDF(session, submissions = []) {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
+
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',

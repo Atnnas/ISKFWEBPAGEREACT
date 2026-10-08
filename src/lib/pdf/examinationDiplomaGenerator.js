@@ -1,5 +1,3 @@
-import jsPDF from 'jspdf';
-
 /**
  * Dibuja un diploma individual en la página activa de jsPDF.
  */
@@ -186,7 +184,8 @@ function drawDiplomaPage(doc, submission, session) {
 /**
  * Genera y descarga el diploma de acreditación teórica de un alumno aprobado individual.
  */
-export function generateSingleDiplomaPDF(submission, session) {
+export async function generateSingleDiplomaPDF(submission, session) {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -204,12 +203,13 @@ export function generateSingleDiplomaPDF(submission, session) {
 /**
  * Genera un PDF de múltiples páginas con los diplomas de TODOS los alumnos aprobados en lote.
  */
-export function generateBatchDiplomasPDF(submissions = [], session) {
+export async function generateBatchDiplomasPDF(submissions = [], session) {
   const aprobados = submissions.filter(s => s.passed === true);
   if (aprobados.length === 0) {
     throw new Error("No hay aspirantes aprobados en esta convocatoria para generar diplomas.");
   }
 
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',

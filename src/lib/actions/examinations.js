@@ -1221,12 +1221,31 @@ export async function getExaminationSessions() {
       if (d.idName) dojoMap[d.idName.toLowerCase().trim()] = d.logo || '/images/dojos/escudo.jpg';
     });
 
-    const results = await Promise.all(sessions.map(async (sess) => {
+    const countsMap = {};
+    try {
+      const submissionCounts = await ExamSubmission.aggregate([
+        {
+          $group: {
+            _id: "$sessionId",
+            total: { $sum: 1 },
+            pending: { $sum: { $cond: [{ $ne: ["$status", "graded"] }, 1, 0] } },
+            graded: { $sum: { $cond: [{ $eq: ["$status", "graded"] }, 1, 0] } }
+          }
+        }
+      ]);
+      submissionCounts.forEach(c => {
+        if (c._id) countsMap[c._id.toString()] = c;
+      });
+    } catch (aggErr) {
+      console.warn("Aggregation fallback in getExaminationSessions:", aggErr);
+    }
+
+    const results = sessions.map((sess) => {
       const sessionId = sess._id.toString();
-      const sessionQuery = { $or: [{ sessionId: sess._id }, { sessionId }] };
-      const totalSubmissions = await ExamSubmission.countDocuments(sessionQuery);
-      const pendingSubmissions = await ExamSubmission.countDocuments({ ...sessionQuery, status: { $ne: 'graded' } });
-      const gradedSubmissions = await ExamSubmission.countDocuments({ ...sessionQuery, status: 'graded' });
+      const countData = countsMap[sessionId] || { total: 0, pending: 0, graded: 0 };
+      const totalSubmissions = countData.total;
+      const pendingSubmissions = countData.pending;
+      const gradedSubmissions = countData.graded;
 
       const enrichedAssignedDojos = (sess.assignedDojos || []).map(d => ({
         id: d.id,
@@ -1251,7 +1270,7 @@ export async function getExaminationSessions() {
         pendingSubmissions,
         gradedSubmissions
       };
-    }));
+    });
 
     return results;
   } catch (err) {
@@ -1738,8 +1757,14 @@ export async function getLiveProctoringData(sessionId) {
     }
 
     const [deviceLocks, submissions] = await Promise.all([
-      ExamDeviceLock.find({ sessionId }).sort({ startedAt: -1 }).lean(),
-      ExamSubmission.find({ sessionId }).sort({ submittedAt: -1 }).lean()
+      ExamDeviceLock.find({ sessionId })
+        .select('deviceToken studentName studentDojo studentRank startedAt lastPingAt status securityViolationsCount answeredQuestionsCount totalQuestionsCount ip reason')
+        .sort({ startedAt: -1 })
+        .lean(),
+      ExamSubmission.find({ sessionId })
+        .select('studentName studentDojo studentRank percentage passed isAutoSubmitted securityViolationsCount deviceToken answers')
+        .sort({ submittedAt: -1 })
+        .lean()
     ]);
 
     const now = Date.now();

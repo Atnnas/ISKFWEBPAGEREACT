@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession, signIn, signOut } from 'next-auth/react';
@@ -49,7 +50,14 @@ const Navbar = () => {
                     className="flex items-center gap-4 relative z-50 cursor-pointer"
                     onClick={() => router.push('/')}
                 >
-                    <img src={iskfFondoBlanco?.src || iskfFondoBlanco} alt="ISKF Logo" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
+                    <Image 
+                      src={iskfFondoBlanco} 
+                      alt="ISKF Logo" 
+                      width={56} 
+                      height={56} 
+                      className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" 
+                      priority 
+                    />
                     <span className="font-bold text-2xl tracking-[0.2em] text-white">ISKF</span>
                 </div>
 

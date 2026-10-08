@@ -33,6 +33,15 @@ export const metadata = {
     description: 'Únete a la familia ISKF en Costa Rica y aprende Karate Do tradicional.',
     images: ['/images/dojos/Fondo-inicio.jpg'],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'ISKF Costa Rica',
+  },
+  icons: {
+    icon: '/images/dojos/escudo.jpg',
+    apple: '/images/dojos/escudo.jpg',
+  },
 };
 
 export const viewport = {
