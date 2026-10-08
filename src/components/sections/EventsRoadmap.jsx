@@ -1,7 +1,6 @@
 "use client";
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useMotionValue, animate } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import useWindowSize from '../../hooks/useWindowSize';
 
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
@@ -48,7 +47,6 @@ const EventsRoadmap = ({ events = [] }) => {
     const wrapperRef = useRef(null);
     const desktopContentRef = useRef(null); // Added ref for desktop content
     const nodeRefs = useRef({});
-    const router = useRouter(); // Changed from navigate to router for consistency
     const { width: windowWidth } = useWindowSize();
     const [width, setWidth] = useState(0);
     const xPos = useMotionValue(0); // Motion value for desktop drag X position

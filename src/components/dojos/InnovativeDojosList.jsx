@@ -1,15 +1,14 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const emptySubscribe = () => () => {};
+const useMounted = () => useSyncExternalStore(emptySubscribe, () => true, () => false);
+
 const InnovativeDojosList = ({ dojos = [] }) => {
     const [selectedDojo, setSelectedDojo] = useState(null);
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const mounted = useMounted();
 
     // Helper function to format Costa Rican phone numbers to ####-####
     const formatPhone = (phoneStr) => {

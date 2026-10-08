@@ -182,11 +182,15 @@ function ThreeDPhotoCarousel({ items, onModalChange, forceCloseToggle }) {
         if (onModalChange) onModalChange(false)
     }
 
-    useEffect(() => {
+    const [prevForceClose, setPrevForceClose] = useState(forceCloseToggle);
+    if (forceCloseToggle !== prevForceClose) {
+        setPrevForceClose(forceCloseToggle);
         if (forceCloseToggle > 0 && activeCard) {
-            handleClose();
+            setActiveCard(null);
+            setIsCarouselActive(true);
+            if (onModalChange) onModalChange(false);
         }
-    }, [forceCloseToggle]);
+    }
 
     const handleClick = (card) => {
         setActiveCard(card)

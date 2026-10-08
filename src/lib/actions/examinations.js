@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
+import mongoose from 'mongoose';
 import dbConnect from '../mongodb';
 import WrittenExam from '../../models/WrittenExam';
 import Dojo from '../../models/Dojo';
@@ -2146,7 +2147,9 @@ export async function getExamSubmissions(sessionId) {
       if (sessionId && typeof sessionId === 'string' && /^[0-9a-fA-F]{24}$/.test(sessionId)) {
         filterSessionId = new mongoose.Types.ObjectId(sessionId);
       }
-    } catch (e) {}
+    } catch {
+      // ignore conversion error
+    }
 
     const submissions = await ExamSubmission.find({
       $or: [

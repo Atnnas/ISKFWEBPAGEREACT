@@ -2,11 +2,7 @@
 // Force reload
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
-
-
-import elementoGrafico4 from '../../assets/images/elemento_grafico_4.png';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
 
 const Hero = () => {

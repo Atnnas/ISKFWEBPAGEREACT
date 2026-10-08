@@ -82,7 +82,6 @@ export default function EntitiesTable({ initialEntities }) {
               <tr key={entity._id} className="hover:bg-blue-50/30 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src={entity.logoUrl || '/images/dojos/default_logo.jpg'} 
                       alt={entity.name} 

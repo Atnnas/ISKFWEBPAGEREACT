@@ -4,7 +4,6 @@ import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import SocialSidebar from '../layout/SocialSidebar';
 import { aboutData } from '../../data/aboutData';
-import fondoSonreNosotrosTarjetas from '../../assets/images/fondoSonreNosotrosTarjetas.jpg';
 import fondoEstructura from '../../assets/images/fondo-estructura.png';
 import { ThreeDPhotoCarousel } from '../ui/3d-carousel';
 
@@ -177,8 +176,6 @@ const AboutDetailPage = () => {
         }
     };
 
-    const [forceCloseToggle, setForceCloseToggle] = useState(0);
-
     const renderIdentidad = () => (
         <div className="w-full max-w-[1900px] mx-auto pb-4 [@media(max-height:800px)]:pb-2 xl:pb-10 px-2 sm:px-4 md:px-8">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 [@media(max-height:800px)]:gap-2 xl:gap-6 2xl:gap-8">
@@ -271,7 +268,7 @@ const AboutDetailPage = () => {
             </div>
 
             <div className="text-center opacity-100 mt-20 max-w-3xl mx-auto px-6 relative">
-                <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-8xl text-iskf-red/20 font-serif leading-none select-none">"</div>
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-8xl text-iskf-red/20 font-serif leading-none select-none">&ldquo;</div>
                 <p className="font-serif italic text-xl md:text-2xl lg:text-3xl text-iskf-dark leading-relaxed drop-shadow-sm">{content.quote.text}</p>
                 <p className="text-sm md:text-base mt-6 font-bold uppercase tracking-[0.2em] text-iskf-red drop-shadow-sm">— {content.quote.author}</p>
                 <div className="w-16 h-1 bg-iskf-red mx-auto mt-8 shadow-sm"></div>

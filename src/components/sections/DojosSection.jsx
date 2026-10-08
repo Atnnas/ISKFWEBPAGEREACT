@@ -13,11 +13,10 @@ const DojosSection = ({ dojos = [] }) => {
     // Filter Dojos
     const filteredDojos = React.useMemo(() => {
         if (!activeProvince) {
-            // Randomize if no active province
-            return [...dojos].sort(() => Math.random() - 0.5);
+            return dojos;
         }
         const provName = crMapFeatures.find(f => f.id === activeProvince)?.name;
-        return dojos.filter(d => d.province.toLowerCase() === provName?.toLowerCase());
+        return dojos.filter(d => d.province?.toLowerCase() === provName?.toLowerCase());
     }, [activeProvince, dojos]);
 
     return (

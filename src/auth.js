@@ -11,7 +11,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (account.provider === "google") {
         try {
           await dbConnect();
@@ -35,7 +35,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token }) {
       // Siempre obtener el rol actualizado de la base de datos para la sesión en vivo
       if (token.email) {
         try {

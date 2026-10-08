@@ -6,7 +6,7 @@ import SocialSidebar from '../layout/SocialSidebar';
 import libroTecnica from '../../assets/images/libroTecnica.jpg';
 
 const ExamsPage = () => {
-    const navigate = useRouter();
+    const router = useRouter();
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -19,7 +19,7 @@ const ExamsPage = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
-                onClick={() => router.push('/', { state: { targetId: 'recursos' } })}
+                onClick={() => router.push('/#recursos')}
                 className="fixed top-24 left-6 md:left-16 z-50 w-12 h-12 bg-black/50 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-iskf-red hover:border-iskf-red transition-all duration-300 shadow-lg group"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">

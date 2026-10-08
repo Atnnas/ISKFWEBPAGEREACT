@@ -120,7 +120,6 @@ export default function EntityEditModal({ isOpen, onClose, entity, onSaveSuccess
                 <span className="text-[11px] text-gray-500 mb-2 font-bold uppercase tracking-wider">
                   Vista Previa del Logotipo
                 </span>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={formData.logoUrl} 
                   alt="Vista previa" 

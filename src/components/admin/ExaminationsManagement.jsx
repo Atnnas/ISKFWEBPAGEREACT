@@ -39,7 +39,8 @@ import {
   Save,
   Maximize2,
   HelpCircle,
-  AlertCircle
+  AlertCircle,
+  Share2
 } from 'lucide-react';
 import { 
   getExaminationSessions,
@@ -463,6 +464,29 @@ export default function ExaminationsManagement({
       } catch (e2) {
         console.error("Copy failed:", e2);
       }
+    }
+  };
+
+  const handleShareWhatsApp = (session, e) => {
+    e?.stopPropagation();
+    if (!session?.accessCode) return;
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const link = `${origin}/examinations/take/${session.accessCode}`;
+    const text = 
+      `🥋 *CONVOCATORIA OFICIAL DE EVALUACIÓN ISKF*\n\n` +
+      `Estimado(a) aspirante, aquí tienes el enlace directo para rendir tu examen de pase de grado:\n\n` +
+      `📋 *Convocatoria:* ${session.title}\n` +
+      `📝 *Evaluación:* ${session.writtenExamName || 'Examen Teórico'}\n` +
+      `🔗 *Enlace:* ${link}\n\n` +
+      `📱 *Indicaciones Importantes para Celulares (iPhone / Android):*\n` +
+      `• Mantén tu teléfono en *posición vertical (Portrait)* durante todo el examen.\n` +
+      `• Abre el enlace en una pestaña estándar (Safari / Chrome, no modo incógnito).\n` +
+      `• No salgas de la pantalla ni cambies de app durante la prueba.\n\n` +
+      `¡Mucho éxito en tu examen! OSS!`;
+
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    if (typeof window !== 'undefined') {
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -964,6 +988,16 @@ export default function ExaminationsManagement({
                                     <span className="hidden lg:inline text-[11px]">Link</span>
                                   </>
                                 )}
+                              </button>
+
+                              {/* Compartir WhatsApp */}
+                              <button
+                                onClick={(e) => handleShareWhatsApp(sess, e)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 active:scale-95 shadow-2xs"
+                                title="Compartir enlace oficial e instrucciones por WhatsApp"
+                              >
+                                <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span className="hidden lg:inline text-[11px]">WhatsApp</span>
                               </button>
 
                               {/* Sala en Vivo */}
@@ -2483,8 +2517,38 @@ export default function ExaminationsManagement({
                 </div>
               </div>
 
-              {/* Controles de Refresco */}
+              {/* Controles de Refresco y Enlaces */}
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => handleCopyLink(liveSession, e)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    copiedSessionId === (liveSession.id || liveSession._id)
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'
+                  }`}
+                  title="Copiar enlace oficial de esta convocatoria"
+                >
+                  {copiedSessionId === (liveSession.id || liveSession._id) ? (
+                    <Check className="w-3.5 h-3.5 text-white" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-[#2D2E83]" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {copiedSessionId === (liveSession.id || liveSession._id) ? 'Copiado' : 'Copiar Link'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => handleShareWhatsApp(liveSession, e)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 cursor-pointer shadow-2xs active:scale-95"
+                  title="Compartir por WhatsApp con indicaciones de vertical para móviles"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsAutoRefreshLive(!isAutoRefreshLive)}

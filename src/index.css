@@ -332,4 +332,33 @@ html.admin-scope {
 .exam-text-scale-xlarge .text-lg { font-size: 1.48rem !important; }
 .exam-text-scale-xlarge .text-xl { font-size: 1.68rem !important; }
 
+/* ============================================================
+   OPTIMIZACIONES MÓVILES NATIVAS & APPLE IPHONE (Safari WebKit)
+   ============================================================ */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Prevenir zoom automático forzado en iOS Safari cuando el usuario enfoca un input */
+@media (pointer: coarse) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Eliminar el retardo de toque de 300ms y prevenir selección accidental en controles de examen */
+button, [role="button"], [role="radio"], .touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* En dispositivos táctiles, evitar que los estados :hover se queden pegados (sticky hover bug de iOS) */
+@media (hover: none) and (pointer: coarse) {
+  .exam-option-card:hover {
+    background-color: inherit;
+    border-color: inherit;
+  }
+}
+
 

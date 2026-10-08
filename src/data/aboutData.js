@@ -1,7 +1,6 @@
 import corbata from '../assets/images/corbata-nuevo.jpg';
 import dojoKun from '../assets/images/dojoKun.jpg';
 import escudo from '../assets/images/escudo.jpg';
-import iskfLogo from '../assets/images/iskf.jpg';
 import iskfLogoPng from '../assets/images/iskf-logo.png';
 import jacket from '../assets/images/jacket-nueva.jpg';
 import libroTecnica from '../assets/images/libroTecnica.jpg';

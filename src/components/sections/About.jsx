@@ -3,7 +3,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
-import elementoGrafico4 from '../../assets/images/elemento_grafico_4.png';
 
 const AboutSection = () => {
     const router = useRouter();

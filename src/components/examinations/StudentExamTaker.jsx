@@ -17,7 +17,9 @@ import {
   Copy, 
   ChevronDown,
   Shuffle,
-  Sun
+  Sun,
+  Smartphone,
+  RotateCcw
 } from 'lucide-react';
 import { 
   submitStudentExam,
@@ -148,6 +150,69 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   const isAutoSubmittingRef = useRef(false);
 
   // =========================================================================
+  // SISTEMA DE DETECCIÓN Y BLOQUEO DE ORIENTACIÓN HORIZONTAL (MÓVILES / IPHONE)
+  // Evita distorsiones visuales y protege al alumno de falsos positivos por cambios de foco
+  // =========================================================================
+  const [isMobileLandscape, setIsMobileLandscape] = useState(false);
+  const isMobileLandscapeRef = useRef(false);
+  const lastOrientationChangeTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const checkOrientation = () => {
+      // 1. Detectar si es un dispositivo táctil / móvil
+      const isTouch = 
+        ('ontouchstart' in window) || 
+        (navigator.maxTouchPoints > 0) || 
+        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+      if (!isTouch) {
+        setIsMobileLandscape(false);
+        isMobileLandscapeRef.current = false;
+        return;
+      }
+
+      // 2. Comprobar si la pantalla está en posición horizontal
+      const isWidthGreater = window.innerWidth > window.innerHeight;
+      const mediaLandscape = window.matchMedia ? window.matchMedia('(orientation: landscape)').matches : false;
+      const screenLandscape = Boolean(
+        window.screen?.orientation?.type?.includes('landscape') || 
+        (typeof window.orientation === 'number' && Math.abs(window.orientation) === 90)
+      );
+
+      // Los teléfonos móviles en posición horizontal tienen un lado menor típico <= 650px
+      const isPhoneSized = Math.min(window.innerWidth, window.innerHeight) <= 650;
+      const shouldBlock = isTouch && isWidthGreater && (mediaLandscape || screenLandscape || isPhoneSized);
+
+      setIsMobileLandscape(shouldBlock);
+      isMobileLandscapeRef.current = shouldBlock;
+    };
+
+    const handleOrientationOrResize = () => {
+      // Registrar timestamp de giro de pantalla para proteger al estudiante de falsos positivos anti-trampas
+      lastOrientationChangeTimeRef.current = Date.now();
+      checkOrientation();
+    };
+
+    checkOrientation();
+
+    window.addEventListener('resize', handleOrientationOrResize);
+    window.addEventListener('orientationchange', handleOrientationOrResize);
+    if (window.screen?.orientation?.addEventListener) {
+      window.screen.orientation.addEventListener('change', handleOrientationOrResize);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleOrientationOrResize);
+      window.removeEventListener('orientationchange', handleOrientationOrResize);
+      if (window.screen?.orientation?.removeEventListener) {
+        window.screen.orientation.removeEventListener('change', handleOrientationOrResize);
+      }
+    };
+  }, []);
+
+  // =========================================================================
   // SISTEMA DE PANTALLA SIEMPRE ACTIVA (WAKE LOCK PARA CELULARES Y COMPUTADORAS)
   // Evita que la pantalla del celular, tablet o computadora se apague o entre en reposo/bloqueo
   // =========================================================================
@@ -160,6 +225,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     if (isSubmitted || isAlreadySubmitted || isSecurityLocked) return;
 
     let isMounted = true;
+    const videoElement = videoFallbackRef.current;
 
     // 1. Método Estándar W3C Screen Wake Lock API (Chrome, Edge, Safari iOS 16.4+, Android)
     const requestWakeLock = async () => {
@@ -232,10 +298,12 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         wakeLockSentinelRef.current.release().catch(() => {});
         wakeLockSentinelRef.current = null;
       }
-      if (videoFallbackRef.current) {
+      if (videoElement) {
         try {
-          videoFallbackRef.current.pause();
-        } catch (_) {}
+          videoElement.pause();
+        } catch {
+          // ignore error
+        }
       }
     };
   }, [isSubmitted, isAlreadySubmitted, isSecurityLocked]);
@@ -285,8 +353,8 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     const preparedQuestions = exam.questions.map(q => {
       if (q.type === 'single_choice' && Array.isArray(q.options)) {
         const mappedOptions = q.options.map((optText, origIdx) => ({
-          text: optText,
-          originalIndex: origIdx
+          text: typeof optText === 'string' ? optText : (optText?.text || ''),
+          originalIndex: Number(origIdx)
         }));
         return {
           ...q,
@@ -319,7 +387,19 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
       if (savedAnswers) {
         const parsed = JSON.parse(savedAnswers);
         if (parsed && typeof parsed === 'object') {
-          setAnswers(prev => ({ ...parsed, ...prev }));
+          const cleaned = {};
+          Object.keys(parsed).forEach(qId => {
+            const a = parsed[qId];
+            if (a && typeof a === 'object') {
+              cleaned[qId] = {
+                ...a,
+                selectedOptionIndex: (typeof a.selectedOptionIndex === 'number' || (typeof a.selectedOptionIndex === 'string' && a.selectedOptionIndex.trim() !== ''))
+                  ? Number(a.selectedOptionIndex)
+                  : undefined
+              };
+            }
+          });
+          setAnswers(prev => ({ ...cleaned, ...prev }));
         }
       }
 
@@ -464,6 +544,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   // Detección de salida de ventana o cambio de pestaña
   const handleViolationDetected = (reason = "Salida de ventana") => {
     if (isSubmitting || isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt) return;
+
+    // Inmunidad anti-trampas durante giro de pantalla o bloqueo horizontal en móviles / iPhone
+    const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
+    if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
 
     securityViolationsRef.current += 1;
     const currentCount = securityViolationsRef.current;
@@ -752,6 +836,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     const handleUserLeave = () => {
       if (isAwayRef.current) return;
 
+      // Inmunidad durante giro de pantalla o bloqueo horizontal en móviles / iPhone
+      const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
+      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+
       if (document.visibilityState === 'hidden' || !document.hasFocus()) {
         isAwayRef.current = true;
         awayTimestampRef.current = Date.now();
@@ -765,6 +853,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
     // Manejador de blur con debounce para filtrar micro-focos
     const onWindowBlur = () => {
+      // Inmunidad durante giro de pantalla o bloqueo horizontal en móviles / iPhone
+      const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
+      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+
       if (blurDebounceRef.current) clearTimeout(blurDebounceRef.current);
       blurDebounceRef.current = setTimeout(() => {
         handleUserLeave();
@@ -774,6 +866,13 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     // Manejador de retorno a la ventana del examen ("Volver a Entrar")
     const handleUserReturn = () => {
       if (blurDebounceRef.current) clearTimeout(blurDebounceRef.current);
+
+      const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
+      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) {
+        isAwayRef.current = false;
+        awayTimestampRef.current = null;
+        return;
+      }
 
       if (isAwayRef.current) {
         const timeAway = Date.now() - (awayTimestampRef.current || 0);
@@ -788,6 +887,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     };
 
     const onVisibilityChange = () => {
+      const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
+      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+
       if (document.visibilityState === 'hidden') {
         handleUserLeave();
       } else if (document.visibilityState === 'visible') {
@@ -816,6 +918,9 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
     if (securityMode !== 'strict' || isSubmitted || isAlreadySubmitted || isSecurityLocked || requiresFullscreenPrompt || isIncognitoDetected) return;
 
     const handleFullscreenChange = () => {
+      const timeSinceRotation = Date.now() - (lastOrientationChangeTimeRef.current || 0);
+      if (isMobileLandscapeRef.current || timeSinceRotation < 3000) return;
+
       const inFullscreen = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
       if (!inFullscreen) {
         handleViolationDetectedRef.current("Salida no autorizada del modo pantalla completa obligatorio");
@@ -876,11 +981,12 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
   // Manejo de respuestas de selección única
   const handleSelectOption = (questionId, optionIndex) => {
+    const numIndex = Number(optionIndex);
     setAnswers(prev => ({
       ...prev,
       [questionId]: {
         ...prev[questionId],
-        selectedOptionIndex: optionIndex
+        selectedOptionIndex: numIndex
       }
     }));
   };
@@ -1554,6 +1660,10 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
                   className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
+                  style={{ fontSize: '16px' }}
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  enterKeyHint="next"
                 />
               </div>
 
@@ -1714,32 +1824,67 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
                   {/* 1. SELECCIÓN ÚNICA (OPCIONES BARAJADAS) */}
                   {q.type === 'single_choice' && (q.shuffledOptions || q.options) && (
-                    <div className="space-y-3 pt-1 pl-1">
+                    <div 
+                      className="space-y-3 pt-1 pl-1"
+                      role="radiogroup"
+                      aria-label={q.text}
+                    >
                       {(q.shuffledOptions || (q.options || []).map((opt, i) => ({ text: opt, originalIndex: i }))).map((optObj, optDisplayIdx) => {
-                        const optText = typeof optObj === 'string' ? optObj : optObj.text;
-                        const origIndex = typeof optObj === 'string' ? optDisplayIdx : optObj.originalIndex;
-                        const isSelected = currentAns.selectedOptionIndex === origIndex;
+                        const optText = typeof optObj === 'string' ? optObj : (optObj?.text || '');
+                        const origIndex = typeof optObj === 'object' && optObj !== null && typeof optObj.originalIndex === 'number'
+                          ? optObj.originalIndex
+                          : optDisplayIdx;
+                        
+                        const isSelected = typeof currentAns?.selectedOptionIndex === 'number' && currentAns.selectedOptionIndex === origIndex;
+                        const inputId = `q_${q.id}_opt_${origIndex}_${optDisplayIdx}`;
+
                         return (
-                          <label
-                            key={optDisplayIdx}
+                          <button
+                            key={origIndex ?? optDisplayIdx}
+                            type="button"
+                            id={inputId}
+                            role="radio"
+                            aria-checked={isSelected}
                             onClick={() => handleSelectOption(q.id, origIndex)}
-                            className={`flex items-center gap-3.5 p-4 sm:p-4.5 rounded-2xl border text-sm sm:text-base cursor-pointer transition-all ${
+                            className={`w-full text-left flex items-center gap-3.5 p-4 sm:p-4.5 rounded-2xl border text-sm sm:text-base cursor-pointer transition-all select-none touch-manipulation active:scale-[0.99] ${
                               isSelected
-                                ? 'bg-blue-50 border-[#2D2E83] text-[#2D2E83] font-bold ring-2 ring-[#2D2E83]/25 shadow-sm'
-                                : 'bg-gray-50/80 border-gray-200 text-gray-900 font-medium hover:bg-blue-50/50 hover:border-blue-300'
+                                ? 'bg-blue-50 border-[#2D2E83] text-[#2D2E83] font-bold ring-2 ring-[#2D2E83]/30 shadow-sm'
+                                : 'bg-gray-50/80 border-gray-200 text-gray-900 font-medium md:hover:bg-blue-50/40 md:hover:border-blue-200'
                             }`}
+                            style={{ WebkitTapHighlightColor: 'transparent' }}
                           >
+                            {/* Letra o Checkmark de selección exclusiva */}
                             <span
-                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center shrink-0 text-xs sm:text-sm font-black transition-colors ${
+                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border flex items-center justify-center shrink-0 text-xs sm:text-sm font-black transition-all ${
                                 isSelected
-                                    ? 'border-[#2D2E83] bg-[#2D2E83] text-white shadow-xs'
+                                  ? 'border-[#2D2E83] bg-[#2D2E83] text-white shadow-xs'
                                   : 'border-gray-300 text-gray-600 bg-white'
                               }`}
                             >
-                              {String.fromCharCode(65 + optDisplayIdx)}
+                              {isSelected ? (
+                                <Check className="w-4 h-4 text-white stroke-[3]" />
+                              ) : (
+                                String.fromCharCode(65 + optDisplayIdx)
+                              )}
                             </span>
-                            <span className="flex-1 leading-relaxed">{optText}</span>
-                          </label>
+
+                            <span className="flex-1 leading-relaxed select-none">
+                              {optText}
+                            </span>
+
+                            {/* Indicador de radio visual a la derecha */}
+                            <span 
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isSelected
+                                  ? 'border-[#2D2E83] bg-white'
+                                  : 'border-gray-300 bg-transparent'
+                              }`}
+                            >
+                              {isSelected && (
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#2D2E83]" />
+                              )}
+                            </span>
+                          </button>
                         );
                       })}
                     </div>
@@ -1753,7 +1898,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                         placeholder="Escribe aquí tu respuesta breve..."
                         value={currentAns.writtenAnswer || ''}
                         onChange={(e) => handleTextAnswer(q.id, e.target.value)}
-                        className="w-full px-5 py-3.5 bg-white border border-gray-300 rounded-xl text-sm sm:text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
+                        className="w-full px-5 py-3.5 bg-white border border-gray-300 rounded-xl text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors placeholder:text-gray-400"
+                        style={{ fontSize: '16px' }}
+                        autoCapitalize="sentences"
+                        autoCorrect="off"
+                        enterKeyHint="next"
                       />
                     </div>
                   )}
@@ -1766,7 +1915,11 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                         placeholder="Redacta aquí tu desarrollo teórico y reflexión..."
                         value={currentAns.writtenAnswer || ''}
                         onChange={(e) => handleTextAnswer(q.id, e.target.value)}
-                        className="w-full px-5 py-3.5 bg-white border border-gray-300 rounded-xl text-sm sm:text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors resize-none placeholder:text-gray-400 leading-relaxed"
+                        className="w-full px-5 py-3.5 bg-white border border-gray-300 rounded-xl text-base text-gray-900 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm transition-colors resize-none placeholder:text-gray-400 leading-relaxed"
+                        style={{ fontSize: '16px' }}
+                        autoCapitalize="sentences"
+                        autoCorrect="off"
+                        enterKeyHint="done"
                       />
                     </div>
                   )}
@@ -1801,23 +1954,28 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                                   <td className="p-3.5 border-r border-gray-200 font-bold text-gray-900 bg-gray-50/60">
                                     {row}
                                   </td>
-                                  {q.topTerms.map((_, cIdx) => {
+                                  {q.topTerms.map((colName, cIdx) => {
                                     const isChecked = selectedCol === cIdx;
                                     return (
                                       <td
                                         key={cIdx}
-                                        onClick={() => handleMatchCell(q.id, rIdx, cIdx)}
-                                        className="p-3.5 text-center cursor-pointer hover:bg-blue-100/40 transition-colors"
+                                        className="p-2 sm:p-3.5 text-center"
                                       >
                                         <button
                                           type="button"
-                                          className={`w-7 h-7 rounded-full mx-auto flex items-center justify-center border transition-all ${
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleMatchCell(q.id, rIdx, cIdx);
+                                          }}
+                                          className={`w-8 h-8 rounded-full mx-auto flex items-center justify-center border transition-all cursor-pointer touch-manipulation active:scale-95 ${
                                             isChecked
                                               ? 'bg-[#2D2E83] border-[#2D2E83] text-white shadow-sm'
-                                              : 'border-gray-300 hover:border-gray-400 text-transparent'
+                                              : 'border-gray-300 md:hover:border-gray-400 text-transparent bg-white'
                                           }`}
+                                          style={{ WebkitTapHighlightColor: 'transparent' }}
+                                          title={`Asociar ${row} con ${colName}`}
                                         >
-                                          <Check className="w-4 h-4" />
+                                          <Check className={`w-4 h-4 ${isChecked ? 'text-white' : 'text-transparent'}`} />
                                         </button>
                                       </td>
                                     );
@@ -1915,6 +2073,49 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
         attempt={chuiWarningModal.attempt}
         securityMode={chuiWarningModal.securityMode}
       />
+
+      {/* =========================================================================
+          BLOQUEO OBLIGATORIO DE MODO HORIZONTAL (SMARTPHONES / APPLE IPHONE)
+          Protege contra colapso de pantalla, salidas involuntarias y problemas visuales
+         ========================================================================= */}
+      {isMobileLandscape && (
+        <div 
+          className="fixed inset-0 z-[999999] bg-slate-950/96 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in zoom-in-95 duration-200"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="orientation-title"
+        >
+          <div className="max-w-md w-full bg-white/10 border border-white/20 rounded-3xl p-6 sm:p-8 flex flex-col items-center space-y-5 shadow-2xl backdrop-blur-2xl">
+            {/* Icono animado de rotación de teléfono */}
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping opacity-30" />
+              <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#2D2E83] to-[#BE1622] flex items-center justify-center shadow-lg border border-white/20">
+                <Smartphone className="w-10 h-10 text-white animate-pulse" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-amber-400 text-gray-900 rounded-full p-2 shadow-md animate-spin" style={{ animationDuration: '4s' }}>
+                <RotateCcw className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                Orientación Vertical Requerida
+              </span>
+              <h2 id="orientation-title" className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Gira tu teléfono a vertical
+              </h2>
+              <p className="text-sm text-gray-200 leading-relaxed">
+                Para evitar fallos visuales y proteger tu examen de falsas detecciones de salida en dispositivos iPhone y teléfonos móviles, no se permite el modo horizontal.
+              </p>
+            </div>
+
+            <div className="w-full bg-black/40 border border-white/10 rounded-2xl p-3.5 text-xs text-gray-300 flex items-center gap-3 text-left">
+              <span className="text-xl shrink-0">📱</span>
+              <span>Coloca tu dispositivo en <strong>posición vertical (Portrait)</strong> para continuar respondiendo de inmediato.</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Elemento de respaldo invisible para evitar suspensión de pantalla en dispositivos sin Wake Lock API */}
       <video

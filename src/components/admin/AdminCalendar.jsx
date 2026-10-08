@@ -19,7 +19,7 @@ const countries = [
 ];
 
 export default function AdminCalendar({ initialEvents, organizers = [], isAdmin = true }) {
-    const [events, setEvents] = useState(initialEvents);
+    const events = initialEvents || [];
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
@@ -118,7 +118,7 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                     
                     {events.length === 0 ? (
                         <div className="text-center py-12 text-gray-500 font-medium">
-                            No hay eventos registrados aún. Usa el botón "Nuevo Evento" para comenzar.
+                            No hay eventos registrados aún. Usa el botón &quot;Nuevo Evento&quot; para comenzar.
                         </div>
                     ) : (
                         <div className="overflow-x-auto">

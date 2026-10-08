@@ -6,7 +6,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', '.next', 'node_modules', 'scratch', '.agents']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -32,7 +32,7 @@ export default defineConfig([
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react/no-unknown-property': 'off',
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true, allowExportNames: ['metadata', 'dynamic', 'revalidate'] }],
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true, allowExportNames: ['metadata', 'dynamic', 'revalidate', 'generateMetadata', 'generateStaticParams', 'viewport'] }],
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
     },
     settings: {

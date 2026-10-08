@@ -100,7 +100,6 @@ export default function AdminLayoutShell({ children, user }) {
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-200/90 px-4 py-3.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-[#2D2E83]/10 border border-[#2D2E83]/20 flex items-center justify-center shrink-0 p-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="/images/dojos/escudo.jpg" 
               alt="Escudo ISKF" 
@@ -220,7 +219,6 @@ export default function AdminLayoutShell({ children, user }) {
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#2D2E83]/10 border border-[#2D2E83]/20 flex items-center justify-center shrink-0 p-1 shadow-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src="/images/dojos/escudo.jpg" 
                 alt="Escudo ISKF" 
@@ -319,6 +317,12 @@ export default function AdminLayoutShell({ children, user }) {
           <div className="px-2 text-[11px] text-gray-400 font-medium">
             ISKF Costa Rica • Administración
           </div>
+          {user && (
+            <div className="px-2 pt-2 border-t border-gray-200/50 flex flex-col">
+              <span className="text-xs font-bold text-gray-800 truncate">{user.name || user.email}</span>
+              <span className="text-[10px] text-[#BE1622] font-semibold uppercase">{user.role || 'Administrador'}</span>
+            </div>
+          )}
         </div>
       </aside>
 

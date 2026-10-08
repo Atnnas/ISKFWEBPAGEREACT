@@ -289,7 +289,6 @@ export default function DojoEditModal({ isOpen, onClose, dojo, onSaveSuccess }) 
                     </label>
                     <div className="flex items-start gap-4">
                       <div className="relative group shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                           src={formData.logo} 
                           alt="Logo" 
@@ -328,7 +327,6 @@ export default function DojoEditModal({ isOpen, onClose, dojo, onSaveSuccess }) 
                     </label>
                     <div className="flex items-start gap-4">
                       <div className="relative group shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                           src={formData.senseiImage} 
                           alt="Sensei" 

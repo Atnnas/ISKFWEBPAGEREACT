@@ -5,12 +5,13 @@ import { ChevronDown, Check } from 'lucide-react';
 export default function CustomSelect({ options, defaultValue, name, placeholder = "Seleccionar..." }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(defaultValue || (options.length > 0 ? options[0].value : ''));
+  const [prevDefault, setPrevDefault] = useState(defaultValue);
   const containerRef = useRef(null);
 
-  // Sync state if defaultValue changes (e.g. editing a different event)
-  useEffect(() => {
+  if (defaultValue !== prevDefault) {
+    setPrevDefault(defaultValue);
     setSelectedValue(defaultValue || (options.length > 0 ? options[0].value : ''));
-  }, [defaultValue, options]);
+  }
 
   const selectedOption = options.find(opt => opt.value === selectedValue) || options[0];
 
@@ -36,7 +37,6 @@ export default function CustomSelect({ options, defaultValue, name, placeholder 
       >
         <div className="flex items-center gap-3">
           {selectedOption?.logoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
             <img src={selectedOption.logoUrl} alt="" className="w-6 h-6 rounded-full object-contain bg-white shadow-sm border border-gray-100" />
           )}
           <span>{selectedOption ? selectedOption.label : placeholder}</span>
@@ -57,7 +57,6 @@ export default function CustomSelect({ options, defaultValue, name, placeholder 
             >
               <div className="flex items-center gap-3">
                 {option.logoUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={option.logoUrl} alt="" className="w-6 h-6 rounded-full object-contain bg-white shadow-sm border border-gray-100" />
                 )}
                 <span className={`text-sm ${selectedValue === option.value ? 'font-bold text-iskf-red' : 'font-medium text-gray-700'}`}>

@@ -17,7 +17,7 @@ export default function UsersTable({ initialUsers }) {
       setLoadingId(userId);
       await updateUserRole(userId, newRole);
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-    } catch (error) {
+    } catch {
       setAlertModal({ isOpen: true, message: "Error al cambiar el rol. Por favor intenta de nuevo." });
     } finally {
       setLoadingId(null);
@@ -30,7 +30,7 @@ export default function UsersTable({ initialUsers }) {
       const newStatus = !currentStatus;
       await updateUserStatus(userId, newStatus);
       setUsers(users.map(u => u.id === userId ? { ...u, isActive: newStatus } : u));
-    } catch (error) {
+    } catch {
       setAlertModal({ isOpen: true, message: "Error al cambiar el estado. Por favor intenta de nuevo." });
     } finally {
       setLoadingId(null);
@@ -77,7 +77,6 @@ export default function UsersTable({ initialUsers }) {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         className="h-10 w-10 rounded-full border border-gray-200 object-cover shadow-xs" 
                         src={user.image || '/images/dojos/default_sensei.jpg'} 
