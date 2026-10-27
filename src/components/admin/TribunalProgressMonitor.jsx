@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
+import { getKataForRank, getKumiteForRank } from '../../lib/utils/shotokanCriteriaFeedback';
 
 // Helper para formatear tiempo relativo transcurrido
 function formatTimeAgo(dateStr) {
@@ -716,32 +717,8 @@ export default function TribunalProgressMonitor({
       const kuScore = kumiteVals.length ? Math.round(kumiteVals.reduce((a, b) => a + b, 0) / kumiteVals.length) : (cons?.finalGrade || 90);
       const finalScore = cons?.finalGrade || (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : 90);
 
-      const cleanRankLower = String(targetRank || '').toLowerCase();
-      const kataName = cleanRankLower.includes('8°') || cleanRankLower.includes('naranja') || cleanRankLower.includes('azul')
-        ? 'Heian Nidan'
-        : cleanRankLower.includes('7°') || cleanRankLower.includes('morada')
-        ? 'Heian Sandan'
-        : cleanRankLower.includes('6°') || cleanRankLower.includes('verde')
-        ? 'Heian Yondan'
-        : cleanRankLower.includes('5°')
-        ? 'Heian Godan'
-        : cleanRankLower.includes('4°')
-        ? 'Tekki Shodan'
-        : cleanRankLower.includes('3°') || cleanRankLower.includes('2°') || cleanRankLower.includes('1°')
-        ? 'Bassai Dai'
-        : cleanRankLower.includes('dan')
-        ? 'Kata Superior'
-        : 'Heian Shodan';
-
-      const kumiteName = cleanRankLower.includes('8°') || cleanRankLower.includes('7°')
-        ? 'Sanbon Kumite'
-        : cleanRankLower.includes('6°') || cleanRankLower.includes('5°') || cleanRankLower.includes('4°')
-        ? 'Kihon Ippon Kumite'
-        : cleanRankLower.includes('3°') || cleanRankLower.includes('2°') || cleanRankLower.includes('1°')
-        ? 'Jiyu Ippon Kumite'
-        : cleanRankLower.includes('dan')
-        ? 'Jiyu Kumite'
-        : 'Gohon Kumite';
+      const kataName = getKataForRank(targetRank);
+      const kumiteName = getKumiteForRank(targetRank);
 
       let resolvedKihonNotes = evalItems.map(e => e.evalRecord?.phaseNotes?.kihon).filter(Boolean).join('\n');
       if (!resolvedKihonNotes) {
@@ -827,6 +804,10 @@ export default function TribunalProgressMonitor({
   useEffect(() => {
     fetchProgress(false);
     const interval = setInterval(() => {
+      // Optimización de rendimiento y batería: pausar si la pestaña está en segundo plano
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return;
+      }
       fetchProgress(true);
     }, 4000);
     return () => clearInterval(interval);

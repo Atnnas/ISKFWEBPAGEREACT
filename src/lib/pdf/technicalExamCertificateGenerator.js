@@ -11,6 +11,7 @@ import {
   ISKF_CERT_EMBLEM_BASE64,
   ISKF_ROY_SIGNATURE_BASE64
 } from './certificateAssets.js';
+import { getKataForRank, getKumiteForRank } from '../utils/shotokanCriteriaFeedback.js';
 
 export async function generateTechnicalExamCertificatePDF({
   studentName = 'Estudiante',
@@ -288,32 +289,8 @@ export async function generateTechnicalExamCertificatePDF({
   }
 
   // Resolver Kata y Kumite oficiales según cinturón / grado
-  const rankLower = String(targetRank || '').toLowerCase();
-  const beltKata = rankLower.includes('8°') || rankLower.includes('naranja') || rankLower.includes('azul')
-    ? 'Heian Nidan'
-    : rankLower.includes('7°') || rankLower.includes('morada')
-    ? 'Heian Sandan'
-    : rankLower.includes('6°') || rankLower.includes('verde')
-    ? 'Heian Yondan'
-    : rankLower.includes('5°')
-    ? 'Heian Godan'
-    : rankLower.includes('4°')
-    ? 'Tekki Shodan'
-    : rankLower.includes('3°') || rankLower.includes('2°') || rankLower.includes('1°')
-    ? 'Bassai Dai'
-    : rankLower.includes('dan')
-    ? 'Kata Superior'
-    : 'Heian Shodan';
-
-  const beltKumite = rankLower.includes('8°') || rankLower.includes('7°')
-    ? 'Sanbon Kumite'
-    : rankLower.includes('6°') || rankLower.includes('5°') || rankLower.includes('4°')
-    ? 'Kihon Ippon Kumite'
-    : rankLower.includes('3°') || rankLower.includes('2°') || rankLower.includes('1°')
-    ? 'Jiyu Ippon Kumite'
-    : rankLower.includes('dan')
-    ? 'Jiyu Kumite'
-    : 'Gohon Kumite';
+  const beltKata = getKataForRank(targetRank);
+  const beltKumite = getKumiteForRank(targetRank);
 
   // Tarjeta 1: Kihon (Técnicas Básicas)
   const defaultKihon = 'En la posición adelantada (Zenkutsu Dachi), estirar bien la pierna de atrás con el talón apoyado en el suelo.\nLlevar la mano que no golpea bien pegada a la cintura (Hikite).\nNo subir el cuerpo al avanzar y recoger rápido la pierna al patear.';

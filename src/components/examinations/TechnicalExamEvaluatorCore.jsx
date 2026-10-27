@@ -570,6 +570,19 @@ export default function TechnicalExamEvaluatorCore({
     };
   }, []);
 
+  // Advertencia de salida si hay calificaciones en proceso de guardado
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (saveStatus === 'saving') {
+        e.preventDefault();
+        e.returnValue = 'Tienes notas pendientes de sincronizar con el servidor.';
+        return e.returnValue;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [saveStatus]);
+
   // Estudiantes de la tanda activa respetando fielmente el orden específico fijado por el admin
   const activeTanda = tandas[selectedTandaIndex] || tandas[0] || null;
   const tandaStudents = useMemo(() => {

@@ -11,6 +11,12 @@ import ExamSyllabus from '../../models/ExamSyllabus';
 import Student from '../../models/Student';
 import Dojo from '../../models/Dojo';
 import { auth } from '../../auth';
+import {
+  getKataForRank,
+  getKumiteForRank,
+  getPrimaryStance,
+  generateShotokanFeedbackBullets
+} from '../utils/shotokanCriteriaFeedback';
 
 /**
  * Obtener evaluaciones técnicas de un dojo específico (para Padrón y Tatami)
@@ -255,37 +261,10 @@ export async function synthesizeSenseiObservationsWithAI({
     const validNotes = senseiObservations.filter(o => o.observation && String(o.observation).trim().length > 0);
     const pct = Number(averagedPercentage) || 0;
 
-    // 1. Resolver nombres específicos de Kata, Kumite y técnicas del cinturón evaluado
-    const kataTech = (techniques || []).find(t => (t.group || t.phase || '').toLowerCase() === 'kata');
-    let kataName = kataTech?.name;
-    if (!kataName) {
-      const r = String(targetRank || '').toLowerCase();
-      if (r.includes('10°') || r.includes('9°') || r.includes('amarill') || r.includes('blanca')) kataName = 'Heian Shodan';
-      else if (r.includes('8°') || r.includes('naranja') || r.includes('azul')) kataName = 'Heian Nidan';
-      else if (r.includes('7°') || r.includes('morada')) kataName = 'Heian Sandan';
-      else if (r.includes('6°') || r.includes('verde')) kataName = 'Heian Yondan';
-      else if (r.includes('5°') || r.includes('morada i')) kataName = 'Heian Godan';
-      else if (r.includes('4°')) kataName = 'Tekki Shodan';
-      else if (r.includes('3°') || r.includes('2°') || r.includes('1°')) kataName = 'Bassai Dai';
-      else if (r.includes('dan') || r.includes('negra')) kataName = 'Kata Superior Oficial';
-      else kataName = 'Heian Shodan';
-    }
-
-    const kumiteTech = (techniques || []).find(t => (t.group || t.phase || '').toLowerCase() === 'kumite');
-    let kumiteName = kumiteTech?.name;
-    if (!kumiteName) {
-      const r = String(targetRank || '').toLowerCase();
-      if (r.includes('10°') || r.includes('9°') || r.includes('amarill') || r.includes('blanca')) kumiteName = 'Gohon Kumite';
-      else if (r.includes('8°') || r.includes('7°') || r.includes('naranja') || r.includes('azul')) kumiteName = 'Sanbon Kumite';
-      else if (r.includes('6°') || r.includes('5°') || r.includes('4°')) kumiteName = 'Kihon Ippon Kumite';
-      else if (r.includes('3°') || r.includes('2°') || r.includes('1°')) kumiteName = 'Jiyu Ippon Kumite';
-      else if (r.includes('dan') || r.includes('negra')) kumiteName = 'Jiyu Kumite';
-      else kumiteName = 'Gohon Kumite';
-    }
-
-    // Identificar posturas y técnicas de Kihon del grado
-    const kihonTechs = (techniques || []).filter(t => (t.group || t.phase || 'kihon').toLowerCase() === 'kihon');
-    const primaryStance = kihonTechs.find(t => t.stance)?.stance || 'Zenkutsu Dachi';
+    // 1. Resolver nombres específicos de Kata, Kumite y postura del cinturón evaluado
+    const kataName = getKataForRank(targetRank, techniques);
+    const kumiteName = getKumiteForRank(targetRank, techniques);
+    const primaryStance = getPrimaryStance(targetRank, techniques);
 
     // 2. Analizar promedios y falencias por técnica y criterio según estrellas
     const lowTechs = [];
@@ -423,108 +402,12 @@ TU TAREA OBLIGATORIA:
     }
 
     // 6. Motor Heurístico Experto: Basado estrictamente en los aspectos del temario y estrellas
-    const allNotesText = validNotes.map(n => n.observation).join(' ');
-    const lower = allNotesText.toLowerCase();
-
-    const hasKarategui = lower.includes('karategui') || lower.includes('dogi') || lower.includes('uniforme') || lower.includes('acomoda') || lower.includes('arregla') || lower.includes('olvida') || pct < 70;
-    const hasKime = lower.includes('kime') || lower.includes('fuerza') || lower.includes('potencia') || lower.includes('impacto') || pct < 70;
-    const hasHikite = lower.includes('hikite') || lower.includes('puño') || lower.includes('cadera') || pct < 70;
-    const hasStance = lower.includes('zenkutsu') || lower.includes('dachi') || lower.includes('postura') || lower.includes('pierna') || lower.includes('base') || lower.includes('talón') || pct < 70;
-    const hasGuard = lower.includes('guardia') || lower.includes('hombro') || lower.includes('espalda') || lower.includes('tronco') || lower.includes('vista') || lower.includes('distancia') || pct < 70;
-
-    const listItems = [];
-
-    if (pct < 70) {
-      // CASO BAJO / REPROBATORIO (< 70% o 1-2 estrellas): SEVERO Y ESPECÍFICO EN LAS FALENCIAS
-      listItems.push(
-        `* Falla grave en Kata (${kataName}): Pérdida del embusen y secuencia oficial con pausas indebidas por duda. Es inaceptable en examen de grado realizar reajustes a la vestimenta (karategui) o romper la inmovilidad en tatami.`
-      );
-
-      listItems.push(
-        `* Deficiencia crítica en postura (${primaryStance}): No estira la pierna posterior y despega el talón del suelo al avanzar. Desplazamientos con paso en falso que dejan la base inestable y sin la profundidad reglamentaria.`
-      );
-
-      listItems.push(
-        `* Falta grave en golpes y defensas de Kihon: La mano de Hikite queda suelta y descolgada sin anclarse con fuerza en la cintura sobre el cinturón, anulando por completo el Kime y el punto focal de impacto.`
-      );
-
-      listItems.push(
-        `* Falla defensiva en combate (${kumiteName}): Pérdida de la distancia reglamentaria de seguridad (Ma-ai), retroceder con anticipación antes del ataque y desarmar o bajar la guardia (Kamae) tras bloquear.`
-      );
-
-      listItems.push(
-        `* Motivo de no aprobación (Calificación obtenida: ${pct}%): El desempeño técnico demostrado no cumple el estándar mínimo para ${targetRank}. Para optar por una nueva examinación debe corregir de inmediato la fijación biomecánica de las posturas, memorizar con total solidez el kata ${kataName} y mantener disciplina corporal absoluta en tatami.`
-      );
-    } else if (pct >= 85) {
-      // CASO ALTO / EXCELENCIA (>= 85% o 4-5 estrellas): ENFOCADO EN EL DETALLE FINO PARA 100%
-      listItems.push(
-        `* Detalle en Kata (${kataName}) para ganar 100%: Mantener inmovilidad y concentración absoluta tras el kiai final sin realizar el más mínimo reajuste a la vestimenta hasta la orden oficial de descanso.`
-      );
-
-      listItems.push(
-        `* Corrección postural para ganar 100%: En ${primaryStance}, descender medio puño más el centro de gravedad sin subir la altura del cuerpo durante los avances en media luna.`
-      );
-
-      listItems.push(
-        `* Detalle de impacto para ganar 100%: Máxima aceleración y sincronía en el tirón del Hikite hacia la cintura en el instante exacto del impacto final.`
-      );
-
-      listItems.push(
-        `* Detalle en Combate (${kumiteName}) para ganar 100%: Mayor velocidad explosiva y rotación de cadera en la respuesta de contraataque inmediatamente tras el bloqueo.`
-      );
-
-      const missingFor100 = [];
-      if (hasKarategui) missingFor100.push('cero ajustes al karategui hasta la voz de descanso');
-      if (hasStance) missingFor100.push(`mayor descenso milimétrico en ${primaryStance}`);
-      if (hasHikite) missingFor100.push('fijación instantánea del Hikite en el Kime');
-      if (hasGuard) missingFor100.push('mayor velocidad de cadera en la respuesta tras el bloqueo');
-      if (missingFor100.length === 0) missingFor100.push('máxima sincronía de cadera en el impacto final');
-
-      listItems.push(
-        `* Detalle para alcanzar la nota máxima (100%): Con una nota destacada de ${pct}%, para la calificación perfecta faltó: ${missingFor100.join(', ')}.`
-      );
-    } else {
-      // CASO MEDIO (70% a 84% o 3 estrellas): CORRECCIONES CONSTRUCTIVAS CLARAS
-      listItems.push(
-        `* Corrección en Kata (${kataName}): Mantener la mirada fija al frente tras cada giro, bajar bien las posiciones y evitar tocarse o acomodarse el uniforme durante la ejecución.`
-      );
-
-      listItems.push(
-        `* Corrección de postura básica (${primaryStance}): Estirar por completo la pierna trasera apoyando todo el talón en el suelo y flexionar bien la rodilla del frente.`
-      );
-
-      listItems.push(
-        `* Mano a la cintura (Hikite): Jalar con fuerza y rapidez la mano que no golpea hasta pegarla firmemente a la cintura sobre el cinturón.`
-      );
-
-      listItems.push(
-        `* Corrección en Combate (${kumiteName}): Mantener la distancia de seguridad con el compañero y no bajar las manos de defensa tras bloquear.`
-      );
-
-      const missingPoints = [];
-      if (hasKarategui) missingPoints.push('no tocarse ni acomodarse el uniforme en tatami');
-      if (hasStance) missingPoints.push('bajar más el centro del cuerpo y asentar los pies');
-      if (hasKime) missingPoints.push('poner más fuerza y concentración en el golpe final (Kime)');
-      if (hasHikite) missingPoints.push('fijar firmemente la mano a la cintura');
-      if (missingPoints.length === 0) missingPoints.push('hacer los bloqueos con movimientos más limpios');
-
-      listItems.push(
-        `* ¿Qué faltó para alcanzar la nota máxima (10 de 10)?: Con una nota de ${pct}%, para sacar un 10 perfecto faltó: ${missingPoints.join(', ')}.`
-      );
-    }
-
-    // Aspectos positivos (solo si hubo menciones literales de elogio o nota >= 85%)
-    const positiveMentions = [];
-    if (lower.includes('buen impacto') || lower.includes('fuerte')) positiveMentions.push('buena fuerza al golpear');
-    if (lower.includes('trayectoria limpia') || lower.includes('limpio')) positiveMentions.push('movimientos limpios en los bloqueos');
-    if (lower.includes('control adecuado') || lower.includes('distancia (ma-ai) adecuada') || lower.includes('buen control')) positiveMentions.push('buen control de la distancia con su compañero');
-    if (lower.includes('buen saludo') || lower.includes('respeto') || lower.includes('actitud respetuosa') || pct >= 80) positiveMentions.push('muy buen saludo, respeto y disciplina dentro del tatami');
-
-    if (positiveMentions.length > 0) {
-      listItems.push(
-        `* Aspectos aprobados demostrados: ${positiveMentions.join(', ')}.`
-      );
-    }
+    const listItems = generateShotokanFeedbackBullets({
+      percentage: pct,
+      targetRank,
+      techniques,
+      validNotes
+    });
 
     const synthesizedVerdict = listItems.join('\n');
 
@@ -1980,17 +1863,6 @@ export async function saveEvaluatorAtomicGrade({
   try {
     await dbConnect();
 
-    // 0. Si se proporciona callId, verificar que la convocatoria no esté cerrada
-    if (callId && mongoose.Types.ObjectId.isValid(callId)) {
-      const callRecord = await TechnicalExamCall.findById(callId).select('status').lean();
-      if (callRecord && callRecord.status === 'cerrado') {
-        return {
-          success: false,
-          error: 'La convocatoria ha sido cerrada oficialmente. No se admiten más votaciones o cambios de calificación.'
-        };
-      }
-    }
-
     // 1. Validación estricta de ID y Email
     if (!studentId || typeof studentId !== 'string' || !mongoose.Types.ObjectId.isValid(studentId)) {
       return { success: false, error: 'ID de estudiante inválido.' };
@@ -2003,6 +1875,30 @@ export async function saveEvaluatorAtomicGrade({
     const student = await Student.findById(studentId).lean();
     if (!student) {
       return { success: false, error: 'Estudiante no encontrado.' };
+    }
+
+    // 2. Si se proporciona callId, verificar que la convocatoria no esté cerrada ni sea modificada indebidamente
+    if (callId && mongoose.Types.ObjectId.isValid(callId)) {
+      const callRecord = await TechnicalExamCall.findById(callId).select('status evaluators').lean();
+      if (callRecord && callRecord.status === 'cerrado') {
+        return {
+          success: false,
+          error: 'La convocatoria ha sido cerrada oficialmente. No se admiten más votaciones o cambios de calificación.'
+        };
+      }
+      if (callRecord && Array.isArray(callRecord.evaluators) && callRecord.evaluators.length > 0) {
+        const isAuthorized = callRecord.evaluators.some(e => (e.email || '').toLowerCase().trim() === safeEmail);
+        if (!isAuthorized) {
+          const session = await auth();
+          const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'editor';
+          if (!isAdmin) {
+            return {
+              success: false,
+              error: 'El evaluador no está registrado ni autorizado en esta convocatoria técnica.'
+            };
+          }
+        }
+      }
     }
 
     // 2. Sanitización defensiva contra Prototype Pollution y DoS de scores
