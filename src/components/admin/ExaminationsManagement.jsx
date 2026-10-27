@@ -59,6 +59,7 @@ import {
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
+import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 
 export default function ExaminationsManagement({ 
   initialSessions = [], 
@@ -734,7 +735,19 @@ export default function ExaminationsManagement({
       {/* VISTA 1: LISTADO DE CONVOCATORIAS / SESIONES DE EXAMINACIÓN */}
       {/* ========================================================================= */}
       {activeView === 'sessions' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
+          {/* Breadcrumb Principal Estándar */}
+          <div className="flex items-center justify-between gap-4 border-b border-gray-200/80 pb-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
+              <Link href="/admin" className="text-[#2D2E83] hover:underline flex items-center gap-1.5 transition-colors">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Dashboard
+              </Link>
+              <span className="text-gray-400">/</span>
+              <span className="text-[#BE1622] font-mono uppercase tracking-wider">Examinaciones</span>
+            </div>
+          </div>
+
           {/* Header Principal */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200/80 pb-6">
             <div className="space-y-1">
@@ -1829,9 +1842,13 @@ export default function ExaminationsManagement({
                           </label>
                           <input
                             type="text"
-                            placeholder="Comentario sobre terminología, kata, concepto filosófico..."
+                            placeholder="• Comentario sobre terminología, kata, concepto filosófico..."
                             value={currentGrade.senseiComments || ''}
-                            onChange={(e) => handleCommentsChange(ans.questionId, e.target.value)}
+                            onChange={(e) => {
+                              handleBulletInputChange(e, currentGrade.senseiComments || '', (val) => {
+                                handleCommentsChange(ans.questionId, val);
+                              });
+                            }}
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 transition-colors"
                           />
                         </div>
@@ -1894,9 +1911,13 @@ export default function ExaminationsManagement({
                           </label>
                           <input
                             type="text"
-                            placeholder="Comentario sobre la asociación o términos del alumno..."
+                            placeholder="• Comentario sobre la asociación o términos del alumno..."
                             value={currentGrade.senseiComments || ''}
-                            onChange={(e) => handleCommentsChange(ans.questionId, e.target.value)}
+                            onChange={(e) => {
+                              handleBulletInputChange(e, currentGrade.senseiComments || '', (val) => {
+                                handleCommentsChange(ans.questionId, val);
+                              });
+                            }}
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm sm:text-base text-gray-900 placeholder-gray-400 font-medium focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 transition-colors"
                           />
                         </div>
@@ -2076,9 +2097,10 @@ export default function ExaminationsManagement({
                 </label>
                 <textarea
                   rows={4}
-                  placeholder="Escribe comentarios generales sobre solidez técnica, terminología, disciplina o recomendaciones para su siguiente grado..."
-                  value={senseiFeedback}
-                  onChange={(e) => setSenseiFeedback(e.target.value)}
+                  placeholder="• Escribe comentarios generales sobre solidez técnica, terminología, disciplina o recomendaciones para su siguiente grado..."
+                  value={senseiFeedback || ''}
+                  onChange={(e) => handleBulletInputChange(e, senseiFeedback || '', setSenseiFeedback)}
+                  onKeyDown={(e) => handleBulletKeyDown(e, senseiFeedback || '', setSenseiFeedback)}
                   className="w-full px-4 py-3 bg-white border border-gray-300 rounded-2xl text-sm sm:text-base text-gray-900 placeholder:text-gray-400 font-medium leading-relaxed focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 resize-none transition-colors"
                 />
               </div>
@@ -2457,9 +2479,10 @@ export default function ExaminationsManagement({
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Instrucciones o recordatorios para el tribunal examinador..."
-                    value={newNotes}
-                    onChange={(e) => setNewNotes(e.target.value)}
+                    placeholder="• Instrucciones o recordatorios para el tribunal examinador..."
+                    value={newNotes || ''}
+                    onChange={(e) => handleBulletInputChange(e, newNotes || '', setNewNotes)}
+                    onKeyDown={(e) => handleBulletKeyDown(e, newNotes || '', setNewNotes)}
                     className="w-full px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#2D2E83] focus:ring-2 focus:ring-[#2D2E83]/20 shadow-sm resize-none placeholder:text-gray-400"
                   />
                 </div>

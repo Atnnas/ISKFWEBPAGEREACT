@@ -98,6 +98,7 @@ export default function UsersTable({ initialUsers }) {
                   >
                     <option value="visor">Visor (Lectura)</option>
                     <option value="editor">Editor (Técnico)</option>
+                    <option value="sensei">Sensei (Admin Dojo)</option>
                     <option value="admin">Administrador (Total)</option>
                   </select>
                 </td>

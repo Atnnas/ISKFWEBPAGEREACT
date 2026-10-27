@@ -14,8 +14,8 @@ export default function ConfirmModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-white/95 backdrop-blur-xl border border-gray-200/90 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-gray-900">
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
+      <div className="bg-white/95 backdrop-blur-xl border border-gray-200/90 rounded-2xl shadow-2xl w-full max-w-sm my-auto max-h-[calc(100dvh-1.5rem)] overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200 text-gray-900">
         <div className="p-6">
           <div className="flex items-center gap-3.5 mb-4">
             <div className={`p-3 rounded-2xl shrink-0 ${isDanger ? 'bg-red-50 text-[#BE1622] border border-red-200' : 'bg-blue-50 text-[#2D2E83] border border-blue-200'}`}>

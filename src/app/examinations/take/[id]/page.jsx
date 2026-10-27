@@ -179,10 +179,10 @@ export default async function TakeExamPage({ params }) {
 
           <div className="pt-2">
             <Link
-              href="/"
+              href="/admin/examinations/written"
               className="inline-flex items-center justify-center px-6 py-2.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
             >
-              Ir a la Página Principal
+              Volver a Convocatorias
             </Link>
           </div>
         </div>

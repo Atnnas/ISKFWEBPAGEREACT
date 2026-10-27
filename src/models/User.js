@@ -15,8 +15,18 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['visor', 'editor', 'admin'],
+    enum: ['visor', 'editor', 'sensei', 'admin'],
     default: 'visor',
+  },
+  dojoId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Dojo',
+    default: null,
+  },
+  dojoName: {
+    type: String,
+    default: '',
+    trim: true,
   },
   isActive: {
     type: Boolean,

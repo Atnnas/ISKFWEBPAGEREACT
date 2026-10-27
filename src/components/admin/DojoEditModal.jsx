@@ -88,10 +88,10 @@ export default function DojoEditModal({ isOpen, onClose, dojo, onSaveSuccess }) 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-10 md:pt-20 bg-black/60 backdrop-blur-sm overflow-y-auto custom-scrollbar animate-in fade-in duration-200">
-      <div className="bg-white border border-gray-200 rounded-3xl shadow-2xl w-full max-w-3xl mb-12 relative overflow-hidden flex flex-col text-gray-900">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto custom-scrollbar animate-in fade-in duration-200">
+      <div className="bg-white border border-gray-200 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-3xl my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)] relative overflow-hidden flex flex-col text-gray-900">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200/90 flex justify-between items-center bg-gray-50/80">
+        <div className="p-4 sm:p-6 border-b border-gray-200/90 flex justify-between items-center bg-gray-50/80 shrink-0">
           <div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-[#BE1622] block font-mono">
               Gestión de Afiliación
@@ -110,7 +110,7 @@ export default function DojoEditModal({ isOpen, onClose, dojo, onSaveSuccess }) 
         </div>
 
         {/* Body */}
-        <div className="p-6 max-h-[72vh] overflow-y-auto custom-scrollbar">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 custom-scrollbar">
           <form id="dojo-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
@@ -364,7 +364,7 @@ export default function DojoEditModal({ isOpen, onClose, dojo, onSaveSuccess }) 
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+        <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 shrink-0">
           <button 
             type="button"
             onClick={onClose} 

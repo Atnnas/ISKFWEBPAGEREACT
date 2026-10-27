@@ -5,7 +5,7 @@ import AdminLayoutShell from "../../components/admin/AdminLayoutShell";
 export default async function AdminLayout({ children }) {
   const session = await auth();
 
-  if (!session?.user || session.user.role !== 'admin') {
+  if (!session?.user || !['admin', 'editor', 'sensei'].includes(session.user.role)) {
     redirect('/');
   }
 

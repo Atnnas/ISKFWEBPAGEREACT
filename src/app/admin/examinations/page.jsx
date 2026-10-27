@@ -29,7 +29,7 @@ export default async function AdminExaminationsPage() {
   ]);
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
+    <div className="w-full pb-12">
       <ExaminationsManagement 
         initialSessions={sessions || []}
         initialWrittenExams={writtenExams || []}

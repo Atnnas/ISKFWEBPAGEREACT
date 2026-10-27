@@ -11,10 +11,11 @@ import iskfFondoBlanco from '../../assets/images/iskfFondoBlanco.jpg';
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const router = useRouter();
-    const location = { pathname: usePathname() };
+    const pathname = usePathname();
     const { data: session } = useSession();
 
-    if (location.pathname?.startsWith('/examinations/take')) {
+    // En todo /admin, en la toma de exámenes y en el enlace de evaluación de senseis no se necesita el topbar para nada
+    if (pathname?.startsWith('/admin') || pathname?.startsWith('/examinations/take') || pathname?.startsWith('/evaluar')) {
         return null;
     }
 
@@ -27,7 +28,7 @@ const Navbar = () => {
 
         if (href.startsWith('#')) {
             const targetId = href.replace('#', '');
-            if (location.pathname === '/') {
+            if (pathname === '/') {
                 // If already on Home, just scroll
                 const element = document.getElementById(targetId);
                 if (element) {
@@ -45,7 +46,10 @@ const Navbar = () => {
 
     return (
         <>
-        <nav id="navbar" className="fixed top-0 left-0 w-full px-6 md:px-12 py-3 md:py-4 flex justify-between items-center bg-gradient-to-b from-[#ff4d5a]/90 via-[#be1322]/95 to-[#7a000d]/95 backdrop-blur-2xl border-t-[1px] border-white/60 border-b-[3px] border-[#4a0005]/80 shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.6),inset_0_-4px_10px_rgba(0,0,0,0.2)] transition-all duration-300 z-[120]">
+        <nav 
+            id="navbar" 
+            className="fixed top-0 left-0 w-full px-6 md:px-12 py-3 md:py-4 flex justify-between items-center bg-gradient-to-b from-[#ff4d5a]/90 via-[#be1322]/95 to-[#7a000d]/95 backdrop-blur-2xl border-t-[1px] border-white/60 border-b-[3px] border-[#4a0005]/80 shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_0_2px_4px_rgba(255,255,255,0.6),inset_0_-4px_10px_rgba(0,0,0,0.2)] transition-all duration-300 z-[120] translate-y-0 pointer-events-auto"
+        >
                 <div
                     className="flex items-center gap-4 relative z-50 cursor-pointer"
                     onClick={() => router.push('/')}
@@ -64,7 +68,7 @@ const Navbar = () => {
                 {/* Desktop Menu */}
                 <ul className="hidden md:flex items-center gap-10">
                     {navLinks.map((link) => {
-                        const isActive = link.href === '/' ? location.pathname === '/' : location.pathname.startsWith(link.href);
+                        const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
                         return (
                         <li key={link.name} className="relative group">
                             <KanjiHoverLink

@@ -1,14 +1,18 @@
 import { auth } from "../../../../auth";
 import { redirect } from "next/navigation";
-import { getWrittenExams } from "../../../../lib/actions/examinations";
-import WrittenExamsView from "../../../../components/admin/WrittenExamsView";
+import ExaminationsManagement from "../../../../components/admin/ExaminationsManagement";
+import { 
+  getExaminationSessions, 
+  getWrittenExams, 
+  getDojosForExaminations 
+} from "../../../../lib/actions/examinations";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export const metadata = {
-  title: 'Exámenes Escritos - ISKF Admin',
-  description: 'Confección y administración de evaluaciones teóricas de karate.',
+  title: 'Exámenes Escritos: Sesiones y Respuestas - ISKF Admin',
+  description: 'Panel de sesiones, convocatorias y revisión de respuestas teóricas de los karatecas.',
 };
 
 export default async function AdminWrittenExamsPage() {
@@ -18,11 +22,19 @@ export default async function AdminWrittenExamsPage() {
     redirect('/');
   }
 
-  const initialExams = await getWrittenExams();
+  const [sessions, writtenExams, dojos] = await Promise.all([
+    getExaminationSessions(),
+    getWrittenExams(),
+    getDojosForExaminations()
+  ]);
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
-      <WrittenExamsView initialExams={initialExams} />
+    <div className="w-full pb-12">
+      <ExaminationsManagement 
+        initialSessions={sessions || []}
+        initialWrittenExams={writtenExams || []}
+        initialDojos={dojos || []}
+      />
     </div>
   );
 }

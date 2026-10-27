@@ -27,7 +27,15 @@ export const metadata = {
 export default async function AdminDashboard() {
   const session = await auth();
 
-  if (!session?.user || session.user.role !== 'admin') {
+  if (!session?.user) {
+    redirect('/');
+  }
+
+  if (session.user.role === 'editor') {
+    redirect('/admin/examinations/technical');
+  }
+
+  if (session.user.role !== 'admin') {
     redirect('/');
   }
 

@@ -40,7 +40,7 @@ export async function updateUserRole(userId, newRole) {
   await requireAdmin();
   await dbConnect();
   
-  if (!['visor', 'editor', 'admin'].includes(newRole)) {
+  if (!['visor', 'editor', 'sensei', 'admin'].includes(newRole)) {
     throw new Error("Rol inválido");
   }
 

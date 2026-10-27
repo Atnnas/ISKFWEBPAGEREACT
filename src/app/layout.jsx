@@ -1,9 +1,16 @@
 import React from 'react';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import '../index.css'; // Make sure global css is imported
 import Navbar from '../components/layout/Navbar';
 import SocialSidebar from '../components/layout/SocialSidebar';
 import Footer from '../components/layout/Footer';
 import { Providers } from '../components/Providers';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+});
 
 export const metadata = {
   metadataBase: new URL('https://www.iskfcostarica.com'),
@@ -57,7 +64,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" data-scroll-behavior="smooth">
+    <html lang="es" data-scroll-behavior="smooth" className={plusJakartaSans.variable}>
       <body className="antialiased text-gray-900 bg-gray-50 font-sans flex flex-col min-h-screen">
         <Providers>
           <Navbar />

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const SocialSidebar = () => {
     const pathname = usePathname();
-    if (pathname?.startsWith('/examinations/take')) {
+    if (pathname?.startsWith('/examinations/take') || pathname?.startsWith('/admin') || pathname?.startsWith('/evaluar')) {
         return null;
     }
     // Container: Staggers entrance of children

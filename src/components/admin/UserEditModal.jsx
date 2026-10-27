@@ -109,8 +109,9 @@ export default function UserEditModal({ isOpen, onClose, onSaveSuccess }) {
                 onChange={handleChange}
                 className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-900 text-sm font-bold focus:outline-none focus:border-[#2D2E83] focus:ring-1 focus:ring-[#2D2E83] transition-all cursor-pointer"
               >
-                <option value="user">Usuario Básico (Lectura)</option>
+                <option value="visor">Usuario Básico (Lectura)</option>
                 <option value="editor">Editor (Técnico / Calendario)</option>
+                <option value="sensei">Sensei (Admin Dojo)</option>
                 <option value="admin">Administrador (Control Total)</option>
               </select>
             </div>

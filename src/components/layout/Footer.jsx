@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const Footer = () => {
     const pathname = usePathname();
-    if (pathname?.startsWith('/examinations/take') || pathname?.startsWith('/admin')) {
+    if (pathname?.startsWith('/examinations/take') || pathname?.startsWith('/admin') || pathname?.startsWith('/evaluar')) {
         return null;
     }
     const currentYear = new Date().getFullYear();

@@ -19,8 +19,8 @@ export default function RefereeSpockMascot({
   };
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white/95 backdrop-blur-2xl border-2 border-red-300 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-[0_20px_60px_rgba(190,22,34,0.3)] animate-duolingo-pop relative overflow-hidden select-none">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="bg-white/95 backdrop-blur-2xl border-2 border-red-300 rounded-3xl p-5 sm:p-7 max-w-sm w-full text-center shadow-[0_20px_60px_rgba(190,22,34,0.3)] animate-duolingo-pop my-auto max-h-[calc(100dvh-1.5rem)] overflow-y-auto custom-scrollbar relative select-none">
         
         {/* Resplandor decorativo */}
         <div className="absolute -top-20 -left-20 w-40 h-40 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -29,7 +29,7 @@ export default function RefereeSpockMascot({
         {/* Mascota Estilo Duolingo con Animación Independiente */}
         <div 
           onClick={handleMascotClick}
-          className="relative cursor-pointer flex flex-col items-center justify-center pt-2 mb-2 group"
+          className="relative cursor-pointer flex flex-col items-center justify-center pt-1 mb-1 group"
           title="¡Toca al árbitro!"
         >
           {/* Cuerpo del Árbitro WKF */}
@@ -37,7 +37,7 @@ export default function RefereeSpockMascot({
             <img
               src="/images/exams/mascot-spock-chui.png"
               alt="Árbitro WKF - ¡¡CHUI!!"
-              className="w-36 h-36 sm:w-44 sm:h-44 object-contain drop-shadow-2xl transition-transform duration-200 group-hover:scale-105"
+              className="w-28 h-28 sm:w-36 sm:h-36 object-contain drop-shadow-2xl transition-transform duration-200 group-hover:scale-105"
               onError={(e) => {
                 e.currentTarget.src = '/images/exams/mascot-spock-chui.jpg';
               }}

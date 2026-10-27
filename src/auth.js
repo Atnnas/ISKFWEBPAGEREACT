@@ -45,6 +45,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.id = dbUser._id.toString();
             token.role = dbUser.role;
             token.isActive = dbUser.isActive;
+            token.dojoId = dbUser.dojoId ? dbUser.dojoId.toString() : null;
+            token.dojoName = dbUser.dojoName || null;
+
+            // Asociar dojo por email o por dojoId
+            const DojoModel = (await import("./models/Dojo")).default;
+            let dojoDoc = null;
+            if (token.dojoId) {
+              dojoDoc = await DojoModel.findById(token.dojoId).lean();
+            }
+            if (!dojoDoc && token.email) {
+              dojoDoc = await DojoModel.findOne({ 
+                email: { $regex: new RegExp(`^${token.email.trim()}$`, 'i') } 
+              }).lean();
+            }
+
+            if (dojoDoc) {
+              token.dojoId = dojoDoc._id.toString();
+              token.dojoName = dojoDoc.name;
+              token.dojoLogo = dojoDoc.logo || '/images/dojos/default_logo.jpg';
+            } else {
+              token.dojoLogo = null;
+            }
           }
         } catch (error) {
           console.error("Error fetching user for JWT:", error);
@@ -57,6 +79,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.isActive = token.isActive;
+        session.user.dojoId = token.dojoId || null;
+        session.user.dojoName = token.dojoName || null;
+        session.user.dojoLogo = token.dojoLogo || null;
       }
       return session;
     }

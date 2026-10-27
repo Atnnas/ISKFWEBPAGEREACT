@@ -525,19 +525,19 @@ export default function WrittenExamsView({ initialExams = [] }) {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200/80 pb-5">
             <div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 font-semibold mb-1.5">
-                <Link href="/admin/examinations" className="hover:text-[#2D2E83] flex items-center gap-1 transition-colors">
+              <div className="flex items-center gap-2 text-xs font-bold text-gray-500 mb-2">
+                <Link href="/admin/examinations" className="text-[#2D2E83] hover:underline flex items-center gap-1.5 transition-colors">
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Examinaciones
                 </Link>
-                <span>/</span>
-                <span className="text-[#2D2E83] font-bold">Exámenes Escritos</span>
+                <span className="text-gray-400">/</span>
+                <span className="text-[#BE1622] font-mono uppercase tracking-wider">Módulo Escrito</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-[#2D2E83] tracking-tight">
-                Exámenes Escritos
+                Temario de Exámenes Escritos
               </h1>
               <p className="text-gray-700 text-xs sm:text-sm md:text-base font-medium mt-0.5">
-                Confección y administración de evaluaciones teóricas en base de datos.
+                Confección, banco de preguntas y administración de temarios teóricos por rango/kyu.
               </p>
             </div>
 
@@ -951,8 +951,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
       {/* MODAL: CREAR O EDITAR EXAMEN (NOMBRE Y DESCRIPCIÓN) */}
       {/* ========================================================================= */}
       {isExamModalOpen && (
-        <div className="fixed inset-0 z-[500] bg-black/65 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl animate-in zoom-in-95 duration-200 text-gray-900">
+        <div className="fixed inset-0 z-[500] bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-5 shadow-2xl my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200 text-gray-900">
             <div className="flex justify-between items-center border-b border-gray-100 pb-3">
               <h3 className="text-lg font-black text-gray-900">
                 {examModalMode === 'create' ? 'Nuevo Examen Escrito' : 'Modificar Examen'}
@@ -1075,8 +1075,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
       {/* MODAL: CONFECCIÓN / EDICIÓN DE PREGUNTA */}
       {/* ========================================================================= */}
       {isQuestionModalOpen && (
-        <div className="fixed inset-0 z-[500] bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 animate-in fade-in duration-200">
-          <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl max-w-3xl w-full h-[85vh] max-h-[820px] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-gray-900">
+        <div className="fixed inset-0 z-[500] bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl max-w-3xl w-full my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)] h-full flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-gray-900">
             {/* Header Fijo (Nunca se corta ni hace scroll fuera de vista) */}
             <div className="px-5 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 z-10">
               <div className="flex items-center gap-3">
@@ -1757,8 +1757,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
       {/* MODAL: VISTA PREVIA DEL EXAMEN (MODO RESOLUCIÓN ESTUDIANTE) */}
       {/* ========================================================================= */}
       {isStudentPreviewOpen && activeExam && (
-        <div className="fixed inset-0 z-[500] bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 animate-in fade-in duration-200">
-          <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl max-w-3xl w-full h-[85vh] max-h-[850px] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-gray-900">
+        <div className="fixed inset-0 z-[500] bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 md:p-6 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl max-w-3xl w-full my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2.5rem)] h-full flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-gray-900">
             {/* Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0 z-20">
               <div className="space-y-1">
