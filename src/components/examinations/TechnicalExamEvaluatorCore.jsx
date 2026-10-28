@@ -953,6 +953,33 @@ export default function TechnicalExamEvaluatorCore({
     return criteria.filter(Boolean);
   }, [getStudentSyllabus]);
 
+  // Detectar si la tanda actual tiene karatecas de distintos cinturones / temarios
+  const isMixedTanda = useMemo(() => {
+    if (!tandaStudents || tandaStudents.length <= 1) return false;
+    const ranks = new Set(
+      tandaStudents.map(st => (st.currentRank || '').toLowerCase().trim()).filter(Boolean)
+    );
+    if (ranks.size > 1) return true;
+    const syllabiIds = new Set(
+      tandaStudents.map(st => {
+        const syl = getStudentSyllabus(st);
+        return String(syl?._id || syl?.id || '');
+      }).filter(Boolean)
+    );
+    return syllabiIds.size > 1;
+  }, [tandaStudents, getStudentSyllabus]);
+
+  // Criterios unificados de cabecera cuando todos los atletas son del mismo cinturón
+  const headerCriteria = useMemo(() => {
+    if (tandaStudents.length > 0) {
+      return getStudentCriteriaForPhase(tandaStudents[0], effectivePhase, activeTechnique);
+    }
+    return [];
+  }, [tandaStudents, getStudentCriteriaForPhase, effectivePhase, activeTechnique]);
+
+  // Número efectivo de pasos según si la tanda es mixta o de un solo cinturón
+  const totalPhaseSteps = isMixedTanda ? maxTechniquesInPhase : tandaTechniques.length;
+
   // Guardar estado de navegación en localStorage
   useEffect(() => {
     try {
@@ -1321,7 +1348,7 @@ export default function TechnicalExamEvaluatorCore({
   const isFirstPhaseInTanda = currentPhaseIndex <= 0;
   const isLastPhaseInTanda = currentPhaseIndex >= availablePhaseKeys.length - 1;
   const isFirstTechniqueInPhase = selectedTechniqueIndex === 0;
-  const isLastTechniqueInPhase = selectedTechniqueIndex >= maxTechniquesInPhase - 1;
+  const isLastTechniqueInPhase = selectedTechniqueIndex >= totalPhaseSteps - 1;
 
   // ¿Está en el primer paso absoluto de esta tanda?
   const isFirstStepInTanda = isFirstPhaseInTanda && isFirstTechniqueInPhase;
@@ -1384,7 +1411,7 @@ export default function TechnicalExamEvaluatorCore({
     setValidationWarning(null);
 
     // 1. Si no es el último paso de la fase actual, avanzar al siguiente paso
-    if (selectedTechniqueIndex < maxTechniquesInPhase - 1) {
+    if (selectedTechniqueIndex < totalPhaseSteps - 1) {
       setSelectedTechniqueIndex(prev => prev + 1);
       setStudentTechOverrides({});
       return;
@@ -1629,29 +1656,68 @@ export default function TechnicalExamEvaluatorCore({
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <div className="text-center flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-widest font-black text-amber-400 flex items-center justify-center gap-1.5">
-            <BookOpen className="w-3 h-3 text-amber-400" />
-            <span>{effectivePhase.toUpperCase()} • PASO {selectedTechniqueIndex + 1} DE {maxTechniquesInPhase}</span>
+        {isMixedTanda ? (
+          <div className="text-center flex-1 min-w-0">
+            <div className="text-[10px] uppercase tracking-widest font-black text-amber-400 flex items-center justify-center gap-1.5">
+              <BookOpen className="w-3 h-3 text-amber-400" />
+              <span>{effectivePhase.toUpperCase()} • PASO {selectedTechniqueIndex + 1} DE {totalPhaseSteps}</span>
+            </div>
+            <h2 className="text-sm sm:text-lg md:text-xl font-black text-white truncate tracking-tight mt-0.5">
+              🥋 Evaluación Simultánea en Paralelo ({tandaStudents.length} {tandaStudents.length === 1 ? 'Karateca' : 'Karatecas'} — Cinturones Mixtos)
+            </h2>
+            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+              {tandaStudents.map((st, i) => {
+                const sTechniques = getStudentTechniques(st, effectivePhase);
+                const activeIdx = studentTechOverrides[st._id || st.id] !== undefined ? studentTechOverrides[st._id || st.id] : selectedTechniqueIndex;
+                const curTech = sTechniques[activeIdx];
+                return (
+                  <span key={st._id || st.id} className="inline-flex items-center gap-1">
+                    {i > 0 && <span className="text-slate-600">|</span>}
+                    <span className="font-semibold text-slate-300">{st.name.split(' ')[0]}:</span>
+                    <span className="text-amber-300 font-bold">{curTech?.name || 'Completado'}</span>
+                  </span>
+                );
+              })}
+            </div>
           </div>
-          <h2 className="text-sm sm:text-lg md:text-xl font-black text-white truncate tracking-tight mt-0.5">
-            🥋 Evaluación Simultánea en Paralelo ({tandaStudents.length} {tandaStudents.length === 1 ? 'Karateca' : 'Karatecas'})
-          </h2>
-          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
-            {tandaStudents.map((st, i) => {
-              const sTechniques = getStudentTechniques(st, effectivePhase);
-              const activeIdx = studentTechOverrides[st._id || st.id] !== undefined ? studentTechOverrides[st._id || st.id] : selectedTechniqueIndex;
-              const curTech = sTechniques[activeIdx];
-              return (
-                <span key={st._id || st.id} className="inline-flex items-center gap-1">
-                  {i > 0 && <span className="text-slate-600">|</span>}
-                  <span className="font-semibold text-slate-300">{st.name.split(' ')[0]}:</span>
-                  <span className="text-amber-300 font-bold">{curTech?.name || 'Completado'}</span>
+        ) : (
+          <div className="text-center flex-1 min-w-0">
+            <div className="text-[10px] uppercase tracking-widest font-black text-amber-400 flex items-center justify-center gap-1.5">
+              <BookOpen className="w-3 h-3 text-amber-400" />
+              <span>{effectivePhase.toUpperCase()} • PASO {selectedTechniqueIndex + 1} DE {totalPhaseSteps}</span>
+            </div>
+            <h2 className="text-base sm:text-xl md:text-2xl font-black text-white truncate tracking-tight mt-0.5">
+              {activeTechnique.name}
+            </h2>
+            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+              {activeTechnique.stance && (
+                <span className="text-amber-300/90 font-bold bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                  {activeTechnique.stance}
                 </span>
-              );
-            })}
+              )}
+              {activeTechnique.direction && (
+                <span className="text-cyan-300/90 font-semibold bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-400/20">
+                  {activeTechnique.direction}
+                </span>
+              )}
+              {activeTechnique.repetitions && (
+                <span className="text-emerald-300/90 font-bold bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">
+                  {activeTechnique.repetitions} repeticiones
+                </span>
+              )}
+              {activeTechnique.embusen && (
+                <span className="text-purple-300/90 font-medium bg-purple-400/10 px-2 py-0.5 rounded border border-purple-400/20">
+                  {activeTechnique.embusen}
+                </span>
+              )}
+            </div>
+            {activeTechnique.notes && (
+              <p className="text-[11px] text-slate-400 max-w-2xl mx-auto truncate mt-1 italic">
+                {activeTechnique.notes}
+              </p>
+            )}
           </div>
-        </div>
+        )}
 
         <button
           type="button"
@@ -1693,7 +1759,7 @@ export default function TechnicalExamEvaluatorCore({
         </div>
       )}
 
-      {/* 5. VISTA DE EVALUACIÓN: COLUMNAS PARALELAS POR KARATECA EN TATAMI */}
+      {/* 5. VISTA DE EVALUACIÓN: COLUMNAS PARALELAS (CINTURONES DISTINTOS) O TABLA COMPLETA (MISMO CINTURÓN) */}
       {tandaStudents.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 font-bold shadow-xl">
           <div className="max-w-md mx-auto space-y-2">
@@ -1704,7 +1770,7 @@ export default function TechnicalExamEvaluatorCore({
             </div>
           </div>
         </div>
-      ) : (
+      ) : isMixedTanda ? (
         <div className={`grid grid-cols-1 ${tandaStudents.length === 2 ? 'md:grid-cols-2' : tandaStudents.length >= 3 ? 'md:grid-cols-2 xl:grid-cols-3' : 'max-w-3xl mx-auto'} gap-4 lg:gap-6`}>
           {tandaStudents.map((student, sIdx) => {
             const sId = String(student._id || student.id);
@@ -1981,6 +2047,292 @@ export default function TechnicalExamEvaluatorCore({
             );
           })}
         </div>
+      ) : (
+        /* VISTA UNIFICADA SIN DIVIDIR PANTALLA (TODOS DEL MISMO CINTURÓN) */
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[840px]">
+              <thead>
+                <tr className="bg-slate-950/90 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                  <th className="py-3 px-3 min-w-[240px] align-middle">
+                    <div className="text-[11px] font-black uppercase text-slate-400">
+                      Karateca & Cinturón
+                    </div>
+                  </th>
+                  {headerCriteria.map((criterion, cIdx) => (
+                    <th 
+                      key={criterion.key} 
+                      className="py-3 px-3 text-center align-middle min-w-[180px]" 
+                    >
+                      <div className="flex flex-col items-center gap-1.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/25 px-2 py-0.5 rounded-md whitespace-nowrap">
+                          Aspecto #{cIdx + 1}
+                        </span>
+                        <span className="text-xs font-bold text-slate-200 leading-snug text-center">
+                          {criterion.rawText || criterion.desc || criterion.label}
+                        </span>
+                      </div>
+                    </th>
+                  ))}
+                  <th className="py-3 px-2 text-center w-20 align-middle">
+                    <div className="text-[11px] font-black uppercase text-slate-400">
+                      Nota
+                    </div>
+                  </th>
+                  <th className="py-3 px-3 w-44 text-right align-middle">
+                    <div className="text-[11px] font-black uppercase text-slate-400">
+                      Observaciones
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/80">
+                {tandaStudents.map((student, sIdx) => {
+                  const sId = String(student._id || student.id);
+                  const ev = evaluationsByStudent[sId] || { scores: {}, observations: {}, notes: '' };
+                  const scores = ev.scores || {};
+                  const studentSyllabus = getStudentSyllabus(student);
+
+                  // Promedio de criterios de la técnica actual para este karateca
+                  const techKeys = headerCriteria.map(c => effectivePhase === 'aspectos' ? `aspect_${activeTechKey}_${c.key}` : `${activeTechKey}_${c.key}`);
+                  const aspectScores = techKeys.map(k => scores[k]).filter(v => typeof v === 'number' && v > 0);
+
+                  const techAvg = aspectScores.length > 0
+                    ? (aspectScores.reduce((acc, v) => acc + v, 0) / aspectScores.length)
+                    : null;
+
+                  const studentPhaseNotes = ev.phaseNotes?.[effectivePhase] !== undefined
+                    ? ev.phaseNotes[effectivePhase]
+                    : (effectivePhase === 'kihon' ? (ev.notes || '') : '');
+                  const hasPhaseNotes = Boolean(studentPhaseNotes && studentPhaseNotes.trim().length > 0);
+
+                  const hasAspects = Boolean(
+                    (student.hasSpecialCondition && student.specialCondition?.trim()) ||
+                    student.specialCondition?.trim() ||
+                    student.positiveAspects?.trim() ||
+                    student.notes?.trim()
+                  );
+
+                  return (
+                    <tr
+                      key={sId}
+                      className="hover:bg-slate-800/40 transition-colors group"
+                    >
+                      <td className="py-2.5 px-3 min-w-[240px]">
+                        <div className="flex items-center gap-2">
+                          {isDirectorRoy && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditStudentModal(student)}
+                              className="p-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 hover:border-amber-400 transition-all shadow-xs cursor-pointer shrink-0 active:scale-90"
+                              title="Sensei Roy: Editar datos del atleta (Nombre, edad, aspectos)"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          <span className="text-[10px] font-mono font-bold text-slate-500 w-4 shrink-0 text-center">
+                            #{sIdx + 1}
+                          </span>
+
+                          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-xs text-slate-300 overflow-hidden shrink-0">
+                            {student.photo ? (
+                              <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                            ) : (
+                              student.name ? student.name.substring(0, 2).toUpperCase() : <User className="w-4 h-4 text-slate-400" />
+                            )}
+                          </div>
+
+                          <div className="leading-snug min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={`text-xs whitespace-normal break-words transition-all font-black text-white ${
+                                  hasAspects ? 'white-radiance-glow' : ''
+                                }`}
+                                style={
+                                  hasAspects
+                                    ? {
+                                        color: '#ffffff',
+                                        textShadow:
+                                          '0 0 2px #ffffff, 0 0 6px rgba(255, 255, 255, 0.95), 0 0 14px rgba(255, 255, 255, 0.8), 0 0 22px rgba(255, 255, 255, 0.5)',
+                                      }
+                                    : { color: '#ffffff' }
+                                }
+                              >
+                                {student.name}
+                              </span>
+
+                              {hasAspects && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedStudentForAspects(student)}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 transition-all cursor-pointer shadow-[0_0_8px_rgba(245,158,11,0.35)] shrink-0 active:scale-95"
+                                  title="Clic para ver los aspectos a considerar de este atleta"
+                                >
+                                  <AlertTriangle className="w-3 h-3 text-amber-300 fill-amber-400/40 animate-pulse shrink-0" />
+                                  <span className="text-[9px] font-black uppercase tracking-wider">REVISAR</span>
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              {student.birthDate && (
+                                <span className="text-[10px] text-slate-400 font-mono" title={`Nacimiento: ${formatDateDDMMAAAA(student.birthDate)}`}>
+                                  {calculateAge(student.birthDate) !== null ? `${calculateAge(student.birthDate)} años` : ''} ({formatDateDDMMAAAA(student.birthDate)})
+                                </span>
+                              )}
+                              {studentSyllabus?.targetRank && studentSyllabus.targetRank !== student.currentRank && (
+                                <span className="text-[9px] text-amber-300/80 font-mono" title={`Aspira a: ${studentSyllabus.targetRank}`}>
+                                  ➔ Aspira: {studentSyllabus.targetRank.split(' ')[0]}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Celdas con las 10 estrellas por criterio */}
+                      {headerCriteria.map(criterion => {
+                        const criterionKey = effectivePhase === 'aspectos'
+                          ? `aspect_${activeTechKey}_${criterion.key}`
+                          : `${activeTechKey}_${criterion.key}`;
+                        const currentVal = scores[criterionKey] || scores[criterion.key] || 0;
+                        const cellKey = `${sId}__${criterionKey}`;
+                        const isMissing = unratedStarKeys.has(cellKey);
+
+                        return (
+                          <td
+                            key={criterion.key}
+                            className={`py-2 px-1 text-center transition-all ${
+                              isMissing
+                                ? 'bg-rose-950/40 ring-2 ring-rose-500 rounded-xl animate-pulse shadow-sm shadow-rose-500/25'
+                                : ''
+                            }`}
+                          >
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="flex flex-col items-center justify-center gap-1 select-none">
+                                {/* Fila 1: Estrellas 1 a 5 */}
+                                <div className="flex items-center justify-center gap-1">
+                                  {[1, 2, 3, 4, 5].map(starVal => {
+                                    const isFilled = starVal <= currentVal;
+                                    const isHalf = !isFilled && (starVal - 0.5 <= currentVal);
+                                    return (
+                                      <button
+                                        key={starVal}
+                                        type="button"
+                                        onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
+                                        onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
+                                        className={`p-0.5 rounded active:scale-125 transition-transform cursor-pointer select-none ${
+                                          isMissing && !isFilled && !isHalf ? 'hover:bg-rose-900/40' : 'hover:bg-slate-800'
+                                        }`}
+                                        title={`${criterion.label}: ${starVal}/10 estrellas (Doble clic para ${starVal - 0.5} media estrella)`}
+                                      >
+                                        {isHalf ? (
+                                          <span className="relative inline-flex items-center justify-center">
+                                            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
+                                            <StarHalf className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute inset-0 text-amber-400 fill-amber-400" />
+                                          </span>
+                                        ) : (
+                                          <Star
+                                            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
+                                              isFilled
+                                                ? 'text-amber-400 fill-amber-400'
+                                                : isMissing
+                                                ? 'text-rose-400 hover:text-amber-300 stroke-2'
+                                                : 'text-slate-700 hover:text-amber-300'
+                                            }`}
+                                          />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Fila 2: Estrellas 6 a 10 */}
+                                <div className="flex items-center justify-center gap-1">
+                                  {[6, 7, 8, 9, 10].map(starVal => {
+                                    const isFilled = starVal <= currentVal;
+                                    const isHalf = !isFilled && (starVal - 0.5 <= currentVal);
+                                    return (
+                                      <button
+                                        key={starVal}
+                                        type="button"
+                                        onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
+                                        onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
+                                        className={`p-0.5 rounded active:scale-125 transition-transform cursor-pointer select-none ${
+                                          isMissing && !isFilled && !isHalf ? 'hover:bg-rose-900/40' : 'hover:bg-slate-800'
+                                        }`}
+                                        title={`${criterion.label}: ${starVal}/10 estrellas (Doble clic para ${starVal - 0.5} media estrella)`}
+                                      >
+                                        {isHalf ? (
+                                          <span className="relative inline-flex items-center justify-center">
+                                            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
+                                            <StarHalf className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute inset-0 text-amber-400 fill-amber-400" />
+                                          </span>
+                                        ) : (
+                                          <Star
+                                            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
+                                              isFilled
+                                                ? 'text-amber-400 fill-amber-400'
+                                                : isMissing
+                                                ? 'text-rose-400 hover:text-amber-300 stroke-2'
+                                                : 'text-slate-700 hover:text-amber-300'
+                                            }`}
+                                          />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-400 mt-0.5">
+                                {currentVal > 0 ? `${currentVal}/10` : '-'}
+                              </span>
+                            </div>
+                          </td>
+                        );
+                      })}
+
+                      {/* Columna: Nota promedio de la técnica */}
+                      <td className="py-2 px-2 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <span
+                            className={`text-xs font-black font-mono px-2 py-1 rounded-lg ${
+                              techAvg === null
+                                ? 'text-slate-600 bg-slate-800/40'
+                                : techAvg >= 7
+                                ? 'text-emerald-300 bg-emerald-950/60 border border-emerald-500/30'
+                                : 'text-amber-300 bg-amber-950/60 border border-amber-500/30'
+                            }`}
+                          >
+                            {techAvg !== null ? techAvg.toFixed(1) : '-'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Columna: Observaciones */}
+                      <td className="py-2.5 px-3 text-right align-middle">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenObsModal(student)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer border active:scale-95 ${
+                            hasPhaseNotes
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'
+                          }`}
+                          title={`Notas y observaciones de ${effectivePhase} para ${student.name}`}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                          <span>{hasPhaseNotes ? 'Ver Notas' : 'Añadir'}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* 6. BARRA FIJA INFERIOR PARA AVANCE RÁPIDO */}
@@ -2016,7 +2368,7 @@ export default function TechnicalExamEvaluatorCore({
               Tanda {selectedTandaIndex + 1} de {tandas.length}
             </span>
             <span className="text-white font-mono truncate hidden sm:inline">
-              {effectivePhase.toUpperCase()} • Paso {selectedTechniqueIndex + 1} de {maxTechniquesInPhase}
+              {effectivePhase.toUpperCase()} • Paso {selectedTechniqueIndex + 1} de {totalPhaseSteps}
             </span>
             <span className="text-slate-500 text-[11px] hidden md:inline">({tandaStudents.length} karatecas)</span>
           </div>
