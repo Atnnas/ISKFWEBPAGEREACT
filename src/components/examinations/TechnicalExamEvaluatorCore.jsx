@@ -479,6 +479,9 @@ export default function TechnicalExamEvaluatorCore({
     return typeof cached?.selectedTechniqueIndex === 'number' ? cached.selectedTechniqueIndex : 0;
   });
 
+  // Control manual independiente de técnica por karateca en caso de desajuste en tatami
+  const [studentTechOverrides, setStudentTechOverrides] = useState({});
+
   // Modal rápido de observaciones por estudiante
   const [activeObsStudent, setActiveObsStudent] = useState(null);
 
@@ -724,120 +727,73 @@ export default function TechnicalExamEvaluatorCore({
   // Fase efectiva considerando si hay o no aspectos evaluables
   const effectivePhase = (selectedPhase === 'aspectos' && !hasEvaluableAspects) ? 'kihon' : selectedPhase;
 
-  // Helper para verificar si una técnica le corresponde al temario oficial del estudiante
-  const doesStudentHaveTechnique = useCallback((student, technique) => {
-    if (!technique) return false;
-    if (effectivePhase === 'aspectos') return true;
+  // Obtener la secuencia exacta de técnicas oficiales para cada estudiante según su propio temario
+  const getStudentTechniques = useCallback((student, phase = effectivePhase) => {
+    if (!student) return DEFAULT_TECHNIQUES[phase] || [];
     const syl = getStudentSyllabus(student);
-    if (!syl || !Array.isArray(syl.techniques) || syl.techniques.length === 0) return true;
-    const techCanon = getCanonicalTechKey(technique.canonKey || technique.name || technique.id);
-    return syl.techniques.some(t => {
-      const tGroup = (t.group || t.phase || 'kihon').toLowerCase();
-      if (tGroup !== effectivePhase.toLowerCase()) return false;
-      return getCanonicalTechKey(t.canonKey || t.name || t.id) === techCanon;
-    });
-  }, [effectivePhase, getStudentSyllabus]);
+    if (!syl) return DEFAULT_TECHNIQUES[phase] || [];
 
-  // Técnicas tomadas directamente de los temarios de los karatecas en esta tanda
-  const tandaTechniques = useMemo(() => {
-    const list = [];
-    const seenNames = new Set();
-    const relevantSyllabi = tandaStudents.map(st => getStudentSyllabus(st)).filter(Boolean);
-    const pool = relevantSyllabi.length > 0 ? relevantSyllabi : (syllabi.length > 0 ? syllabi : []);
-
-    if (effectivePhase === 'aspectos') {
-      // En la fase de Aspectos Generales, NO se evalúan Tsuki, Uke, Dachi, Geri, Kata ni Kumite por separado,
-      // pues se evalúan dentro de sus fases específicas correspondientes.
-      // SÓLO se evalúan los aspectos de Sección 2 (Físicos, Mentales, DO) marcados con isEvaluable: true.
-      pool.forEach(syl => {
-        (syl.technicalAspects || []).forEach((asp, aIdx) => {
-          const cat = (asp.category || '').toLowerCase();
-          
-          // Omitir Tsuki, Uke, Dachi, Geri, Kata y Kumite: ya tienen sus fases dedicadas
-          if (['tsuki', 'uke', 'dachi', 'geri', 'kata', 'kumite'].includes(cat)) {
-            return;
-          }
-
-          const isSec2 = ['physical', 'mental', 'do'].includes(cat);
-          const validPoints = (asp.points || []).filter(p => {
-            if (!p) return false;
-            if (!isSec2) return true;
-            if (typeof p === 'object') {
-              return Boolean(p.isEvaluable || p.evaluableInExam || p.evaluable);
-            }
-            return false;
-          });
-
-          // Si es un aspecto de sección 2 y no tiene parámetros marcados para evaluar en examen, no se añade
-          if (isSec2 && validPoints.length === 0) return;
-
-          const aspId = asp.id || asp.category || `asp_${aIdx}`;
-          if (!seenNames.has(aspId)) {
-            seenNames.add(aspId);
-            list.push({
-              id: aspId,
-              name: asp.title || `Aspecto ${aIdx + 1}`,
-              stance: asp.subtitle || asp.categoryLabel || 'Aspecto Normativo Oficial',
-              direction: `${validPoints.length} parámetros evaluables`,
-              repetitions: validPoints.length,
-              notes: asp.subtitle || '',
-              syllabusName: syl.name,
-              aspectObj: asp
-            });
-          }
+    if (phase === 'aspectos') {
+      const list = [];
+      (syl.technicalAspects || []).forEach((asp, aIdx) => {
+        const cat = (asp.category || '').toLowerCase();
+        if (['tsuki', 'uke', 'dachi', 'geri', 'kata', 'kumite'].includes(cat)) return;
+        const isSec2 = ['physical', 'mental', 'do'].includes(cat);
+        const validPoints = (asp.points || []).filter(p => {
+          if (!p) return false;
+          if (!isSec2) return true;
+          if (typeof p === 'object') return Boolean(p.isEvaluable || p.evaluableInExam || p.evaluable);
+          return false;
+        });
+        if (isSec2 && validPoints.length === 0) return;
+        list.push({
+          id: asp.id || asp.category || `asp_${aIdx}`,
+          name: asp.title || `Aspecto ${aIdx + 1}`,
+          stance: asp.subtitle || asp.categoryLabel || 'Aspecto Normativo Oficial',
+          direction: `${validPoints.length} parámetros evaluables`,
+          repetitions: validPoints.length,
+          notes: asp.subtitle || '',
+          aspectObj: asp
         });
       });
-      if (list.length > 0) return list;
-      return [];
-    } else {
-      pool.forEach(syl => {
-        (syl.techniques || []).forEach(t => {
-          const group = (t.group || t.phase || 'kihon').toLowerCase();
-          if (group === effectivePhase.toLowerCase()) {
-            const canonKey = getCanonicalTechKey(t.name || t.id);
-            if (canonKey && !seenNames.has(canonKey)) {
-              seenNames.add(canonKey);
-              list.push({
-                id: t.id || `tech_${canonKey}`,
-                canonKey,
-                name: t.name,
-                stance: t.stance || '',
-                direction: t.direction || '',
-                repetitions: t.repetitions || 3,
-                notes: t.notes || '',
-                embusen: t.embusen || '',
-                syllabusName: syl.name
-              });
-            }
-          }
-        });
-      });
-      if (list.length > 0) {
-        if (effectivePhase === 'kihon') {
-          list.sort((a, b) => {
-            const idxA = KIHON_CANON_ORDER.indexOf(a.canonKey);
-            const idxB = KIHON_CANON_ORDER.indexOf(b.canonKey);
-            const posA = idxA !== -1 ? idxA : 999;
-            const posB = idxB !== -1 ? idxB : 999;
-            return posA - posB;
-          });
-        } else if (effectivePhase === 'kata') {
-          list.sort((a, b) => {
-            const idxA = KATA_CANON_ORDER.indexOf(a.canonKey);
-            const idxB = KATA_CANON_ORDER.indexOf(b.canonKey);
-            const posA = idxA !== -1 ? idxA : 999;
-            const posB = idxB !== -1 ? idxB : 999;
-            return posA - posB;
-          });
-        }
-        return list;
-      }
+      return list;
     }
 
-    return DEFAULT_TECHNIQUES[effectivePhase] || DEFAULT_TECHNIQUES.kihon;
-  }, [tandaStudents, getStudentSyllabus, syllabi, effectivePhase]);
+    const list = [];
+    (syl.techniques || []).forEach((t, tIdx) => {
+      const group = (t.group || t.phase || 'kihon').toLowerCase();
+      if (group === phase.toLowerCase()) {
+        list.push({
+          id: t.id || `tech_${student._id || student.id}_${tIdx}`,
+          canonKey: getCanonicalTechKey(t.name || t.id),
+          name: t.name,
+          stance: t.stance || '',
+          direction: t.direction || '',
+          repetitions: t.repetitions || 3,
+          notes: t.notes || '',
+          embusen: t.embusen || ''
+        });
+      }
+    });
 
-  // Técnica activa
+    return list.length > 0 ? list : (DEFAULT_TECHNIQUES[phase] || []);
+  }, [effectivePhase, getStudentSyllabus]);
+
+  // Máximo número de pasos/técnicas en la fase actual entre todos los karatecas en tatami
+  const maxTechniquesInPhase = useMemo(() => {
+    if (!tandaStudents || tandaStudents.length === 0) return 1;
+    return Math.max(...tandaStudents.map(st => getStudentTechniques(st, effectivePhase).length), 1);
+  }, [tandaStudents, getStudentTechniques, effectivePhase]);
+
+  // Técnicas consolidadas de referencia
+  const tandaTechniques = useMemo(() => {
+    if (tandaStudents.length > 0) {
+      return getStudentTechniques(tandaStudents[0], effectivePhase);
+    }
+    return DEFAULT_TECHNIQUES[effectivePhase] || DEFAULT_TECHNIQUES.kihon;
+  }, [tandaStudents, getStudentTechniques, effectivePhase]);
+
+  // Técnica activa de referencia
   const activeTechnique = useMemo(() => {
     return tandaTechniques[selectedTechniqueIndex] || tandaTechniques[0] || { id: 't1', name: 'Técnica de Evaluación' };
   }, [tandaTechniques, selectedTechniqueIndex]);
@@ -977,14 +933,6 @@ export default function TechnicalExamEvaluatorCore({
 
     return criteria.filter(Boolean);
   }, [getStudentSyllabus]);
-
-  // Criterios representativos para los encabezados de la tabla
-  const headerCriteria = useMemo(() => {
-    if (tandaStudents.length > 0) {
-      return getStudentCriteriaForPhase(tandaStudents[0], effectivePhase, activeTechnique);
-    }
-    return getStudentCriteriaForPhase(null, effectivePhase, activeTechnique);
-  }, [tandaStudents, effectivePhase, activeTechnique, getStudentCriteriaForPhase]);
 
   // Guardar estado de navegación en localStorage
   useEffect(() => {
@@ -1308,70 +1256,53 @@ export default function TechnicalExamEvaluatorCore({
     return ['kihon', 'kata', 'kumite', ...(hasEvaluableAspects ? ['aspectos'] : [])];
   }, [hasEvaluableAspects]);
 
-  // Validar si todos los karatecas en tatami tienen todas sus estrellas asignadas (> 0) en todos los aspectos de la técnica actual
+  // Validar si todos los karatecas en tatami tienen todas sus estrellas asignadas (> 0) en sus técnicas activas
   const validateCurrentTechniqueComplete = useCallback(() => {
     const missing = new Set();
     if (!tandaStudents || tandaStudents.length === 0) {
       return { isValid: true, missing };
     }
 
-    if (effectivePhase === 'kata' && tandaTechniques.length > 1) {
-      // Si estamos en kata y se evalúan las columnas de katas en paralelo:
-      tandaTechniques.forEach(kataTech => {
-        const kTechKey = kataTech.id || kataTech.name;
-        tandaStudents.forEach(student => {
-          if (!doesStudentHaveTechnique(student, kataTech)) {
-            return; // No le aplica este kata, no se le exige nota
-          }
-          const sId = String(student._id || student.id);
-          const ev = evaluationsByStudent[sId] || { scores: {} };
-          const scores = ev.scores || {};
-          const criteria = getStudentCriteriaForPhase(student, 'kata', kataTech);
-          criteria.forEach(criterion => {
-            const criterionKey = `${kTechKey}_${criterion.key}`;
-            const scoreVal = scores[criterionKey] ?? scores[criterion.key];
-            if (!scoreVal || Number(scoreVal) <= 0) {
-              missing.add(`${sId}__${criterionKey}`);
-            }
-          });
-        });
-      });
-    } else {
-      // Kihon, Kumite, Aspectos o Kata único
-      tandaStudents.forEach(student => {
-        if (!doesStudentHaveTechnique(student, activeTechnique)) {
-          return; // Exento: no le aplica esta técnica a su grado
+    tandaStudents.forEach(student => {
+      const sId = String(student._id || student.id);
+      const studentTechs = getStudentTechniques(student, effectivePhase);
+      const activeIdx = studentTechOverrides[sId] !== undefined ? studentTechOverrides[sId] : selectedTechniqueIndex;
+
+      // Si el karateca ya terminó sus técnicas en esta fase, no le falta nada
+      if (activeIdx >= studentTechs.length) return;
+
+      const activeTech = studentTechs[activeIdx];
+      if (!activeTech) return;
+
+      const ev = evaluationsByStudent[sId] || { scores: {} };
+      const scores = ev.scores || {};
+      const criteria = getStudentCriteriaForPhase(student, effectivePhase, activeTech);
+      const techKey = activeTech.id || activeTech.name || `tech_${activeIdx}`;
+
+      criteria.forEach(criterion => {
+        const criterionKey = effectivePhase === 'aspectos'
+          ? `aspect_${techKey}_${criterion.key}`
+          : `${techKey}_${criterion.key}`;
+
+        const scoreVal = scores[criterionKey] ?? scores[criterion.key];
+        if (!scoreVal || Number(scoreVal) <= 0) {
+          missing.add(`${sId}__${criterionKey}`);
         }
-        const sId = String(student._id || student.id);
-        const ev = evaluationsByStudent[sId] || { scores: {} };
-        const scores = ev.scores || {};
-
-        headerCriteria.forEach(criterion => {
-          const criterionKey = effectivePhase === 'aspectos'
-            ? `aspect_${activeTechKey}_${criterion.key}`
-            : `${activeTechKey}_${criterion.key}`;
-
-          const scoreVal = scores[criterionKey] ?? scores[`${activeTechKey}_${criterion.key}`] ?? scores[criterion.key];
-          if (!scoreVal || Number(scoreVal) <= 0) {
-            missing.add(`${sId}__${criterionKey}`);
-          }
-        });
       });
-    }
+    });
 
     return {
       isValid: missing.size === 0,
       missing
     };
-  }, [tandaStudents, evaluationsByStudent, headerCriteria, effectivePhase, activeTechKey, activeTechnique, tandaTechniques, doesStudentHaveTechnique, getStudentCriteriaForPhase]);
+  }, [tandaStudents, evaluationsByStudent, effectivePhase, selectedTechniqueIndex, studentTechOverrides, getStudentTechniques, getStudentCriteriaForPhase]);
 
   // Flags para control de avance entre técnicas, fases y tandas
-  const isKataDual = effectivePhase === 'kata' && tandaTechniques.length > 1;
   const currentPhaseIndex = availablePhaseKeys.indexOf(effectivePhase);
   const isFirstPhaseInTanda = currentPhaseIndex <= 0;
   const isLastPhaseInTanda = currentPhaseIndex >= availablePhaseKeys.length - 1;
   const isFirstTechniqueInPhase = selectedTechniqueIndex === 0;
-  const isLastTechniqueInPhase = isKataDual || (selectedTechniqueIndex >= tandaTechniques.length - 1);
+  const isLastTechniqueInPhase = selectedTechniqueIndex >= maxTechniquesInPhase - 1;
 
   // ¿Está en el primer paso absoluto de esta tanda?
   const isFirstStepInTanda = isFirstPhaseInTanda && isFirstTechniqueInPhase;
@@ -1387,25 +1318,18 @@ export default function TechnicalExamEvaluatorCore({
     setValidationWarning(null);
     setUnratedStarKeys(new Set());
 
-    // Si estamos en Kata dual, retroceder directamente a la fase previa (Kihon)
-    if (isKataDual) {
-      if (currentPhaseIndex > 0) {
-        setSelectedPhase(availablePhaseKeys[currentPhaseIndex - 1]);
-        setSelectedTechniqueIndex(0);
-        return;
-      }
-    }
-
-    // 1. Si no es la primera técnica de la fase, retroceder de técnica
+    // 1. Si no es el primer paso de la fase, retroceder de paso
     if (selectedTechniqueIndex > 0) {
       setSelectedTechniqueIndex(prev => prev - 1);
+      setStudentTechOverrides({});
       return;
     }
 
-    // 2. Si es la primera técnica pero no la primera fase, retroceder a la fase previa
+    // 2. Si es el primer paso pero no la primera fase, retroceder a la fase previa
     if (currentPhaseIndex > 0) {
       setSelectedPhase(availablePhaseKeys[currentPhaseIndex - 1]);
       setSelectedTechniqueIndex(0);
+      setStudentTechOverrides({});
       return;
     }
 
@@ -1415,6 +1339,7 @@ export default function TechnicalExamEvaluatorCore({
       setSelectedTandaIndex(prevTIdx);
       setSelectedPhase(availablePhaseKeys[0] || 'kihon');
       setSelectedTechniqueIndex(0);
+      setStudentTechOverrides({});
       setTandaToast({
         title: `Tanda Anterior: ${tandas[prevTIdx]?.blockName || `Tanda ${prevTIdx + 1}`}`,
         desc: `Regresando a los karatecas de la tanda ${prevTIdx + 1}`
@@ -1429,11 +1354,9 @@ export default function TechnicalExamEvaluatorCore({
     if (!isValid) {
       setUnratedStarKeys(missing);
       setValidationWarning({
-        techName: isKataDual ? 'Evaluación de Katas' : activeTechnique.name,
+        techName: `Paso ${selectedTechniqueIndex + 1}`,
         count: missing.size,
-        message: isKataDual
-          ? `Debe completar la calificación de todos los karatecas en sus respectivos katas antes de continuar. Las estrellas vacías han sido resaltadas en rojo.`
-          : `Debe completar la calificación de todos los karatecas en todos los aspectos de "${activeTechnique.name}" antes de avanzar. Las estrellas vacías han sido resaltadas en rojo.`
+        message: `Debe completar la calificación de todos los karatecas en sus técnicas activas antes de avanzar. Las estrellas vacías han sido resaltadas en rojo.`
       });
       return;
     }
@@ -1441,39 +1364,18 @@ export default function TechnicalExamEvaluatorCore({
     setUnratedStarKeys(new Set());
     setValidationWarning(null);
 
-    // Si estamos en Kata dual, avanzar directamente a la siguiente fase (Kumite)
-    if (isKataDual) {
-      if (!isLastPhaseInTanda) {
-        setSelectedPhase(availablePhaseKeys[currentPhaseIndex + 1]);
-        setSelectedTechniqueIndex(0);
-        return;
-      }
-      if (hasNextTanda) {
-        const nextTIdx = selectedTandaIndex + 1;
-        setSelectedTandaIndex(nextTIdx);
-        setSelectedPhase(availablePhaseKeys[0] || 'kihon');
-        setSelectedTechniqueIndex(0);
-        setTandaToast({
-          title: `¡Avanzando a ${tandas[nextTIdx]?.blockName || `Tanda ${nextTIdx + 1}`}!`,
-          desc: `Cargando el siguiente grupo de karatecas en el tatami.`
-        });
-        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
-      setShowTribunalMonitorModal(true);
-      return;
-    }
-
-    // 1. Si no es la última técnica de la fase actual, avanzar a la siguiente técnica
-    if (selectedTechniqueIndex < tandaTechniques.length - 1) {
+    // 1. Si no es el último paso de la fase actual, avanzar al siguiente paso
+    if (selectedTechniqueIndex < maxTechniquesInPhase - 1) {
       setSelectedTechniqueIndex(prev => prev + 1);
+      setStudentTechOverrides({});
       return;
     }
 
-    // 2. Si es la última técnica de la fase pero faltan fases en esta tanda (Kihon -> Kata -> Kumite...)
+    // 2. Si es el último paso de la fase pero faltan fases en esta tanda (Kihon -> Kata -> Kumite...)
     if (!isLastPhaseInTanda) {
       setSelectedPhase(availablePhaseKeys[currentPhaseIndex + 1]);
       setSelectedTechniqueIndex(0);
+      setStudentTechOverrides({});
       return;
     }
 
@@ -1483,6 +1385,7 @@ export default function TechnicalExamEvaluatorCore({
       setSelectedTandaIndex(nextTIdx);
       setSelectedPhase(availablePhaseKeys[0] || 'kihon');
       setSelectedTechniqueIndex(0);
+      setStudentTechOverrides({});
       setTandaToast({
         title: `¡Avanzando a ${tandas[nextTIdx]?.blockName || `Tanda ${nextTIdx + 1}`}!`,
         desc: `Cargando el siguiente grupo de karatecas en el tatami.`
@@ -1695,58 +1598,47 @@ export default function TechnicalExamEvaluatorCore({
         </div>
       </div>
 
-      {/* 4. BARRA DE TÉCNICA ACTIVA (TOMADA DEL TEMARIO OFICIAL) */}
+      {/* 4. BARRA DE FASE Y PASO ACTIVO */}
       <div className="bg-linear-to-r from-slate-950 via-slate-900 to-slate-950 border border-amber-400/30 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-3 shadow-md">
         <button
           type="button"
           onClick={handlePrevTechnique}
-          disabled={!isKataDual && selectedTechniqueIndex === 0 && effectivePhase === 'kihon'}
+          disabled={selectedTechniqueIndex === 0 && effectivePhase === 'kihon'}
           className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors shrink-0"
-          title="Técnica anterior"
+          title="Paso anterior"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        {isKataDual ? (
-          <div className="text-center flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-widest font-black text-amber-400 flex items-center justify-center gap-1.5">
-              <BookOpen className="w-3 h-3 text-amber-400" />
-              <span>KATA • EVALUACIÓN SIMULTÁNEA EN DOS COLUMNAS ({tandaTechniques.length} KATAS)</span>
-            </div>
-            <h2 className="text-sm sm:text-lg md:text-xl font-black text-white truncate tracking-tight mt-0.5">
-              🥋 {tandaTechniques.map(k => k.name).join(' & ')}
-            </h2>
-            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
-              <span className="font-semibold text-amber-300">Columna 1: {tandaTechniques[0]?.name}</span>
-              <span>•</span>
-              <span className="font-semibold text-amber-300">Columna 2: {tandaTechniques[1]?.name}</span>
-              <span className="hidden sm:inline text-slate-500">• Tablet / Computadora</span>
-            </div>
+        <div className="text-center flex-1 min-w-0">
+          <div className="text-[10px] uppercase tracking-widest font-black text-amber-400 flex items-center justify-center gap-1.5">
+            <BookOpen className="w-3 h-3 text-amber-400" />
+            <span>{effectivePhase.toUpperCase()} • PASO {selectedTechniqueIndex + 1} DE {maxTechniquesInPhase}</span>
           </div>
-        ) : (
-          <div className="text-center flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-widest font-black text-amber-400 flex items-center justify-center gap-1.5">
-              <BookOpen className="w-3 h-3 text-amber-400" />
-              <span>{effectivePhase.toUpperCase()} • TÉCNICA {selectedTechniqueIndex + 1} DE {tandaTechniques.length}</span>
-            </div>
-            <h2 className="text-sm sm:text-lg md:text-xl font-black text-white truncate tracking-tight mt-0.5">
-              {activeTechnique.name}
-            </h2>
-            {(activeTechnique.stance || activeTechnique.direction || activeTechnique.notes) && (
-              <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-0.5 truncate">
-                {activeTechnique.stance && <span className="font-semibold text-slate-300">{activeTechnique.stance}</span>}
-                {activeTechnique.direction && <span>• {activeTechnique.direction}</span>}
-                {activeTechnique.repetitions > 0 && <span>• {activeTechnique.repetitions} rep</span>}
-              </div>
-            )}
+          <h2 className="text-sm sm:text-lg md:text-xl font-black text-white truncate tracking-tight mt-0.5">
+            🥋 Evaluación Simultánea en Paralelo ({tandaStudents.length} {tandaStudents.length === 1 ? 'Karateca' : 'Karatecas'})
+          </h2>
+          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+            {tandaStudents.map((st, i) => {
+              const sTechniques = getStudentTechniques(st, effectivePhase);
+              const activeIdx = studentTechOverrides[st._id || st.id] !== undefined ? studentTechOverrides[st._id || st.id] : selectedTechniqueIndex;
+              const curTech = sTechniques[activeIdx];
+              return (
+                <span key={st._id || st.id} className="inline-flex items-center gap-1">
+                  {i > 0 && <span className="text-slate-600">|</span>}
+                  <span className="font-semibold text-slate-300">{st.name.split(' ')[0]}:</span>
+                  <span className="text-amber-300 font-bold">{curTech?.name || 'Completado'}</span>
+                </span>
+              );
+            })}
           </div>
-        )}
+        </div>
 
         <button
           type="button"
           onClick={handleNextTechnique}
           className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-colors shrink-0"
-          title="Siguiente técnica"
+          title="Siguiente paso"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -1782,620 +1674,300 @@ export default function TechnicalExamEvaluatorCore({
         </div>
       )}
 
-      {/* 5. VISTA DE EVALUACIÓN: DUAL KATA COLUMNS (TABLETS/DESKTOP) O TABLA ÁGIL */}
-      {isKataDual ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-          {tandaTechniques.map((kataTech, kIdx) => {
-            const kTechKey = kataTech.id || kataTech.name;
-            const isFirstKata = kIdx === 0;
+      {/* 5. VISTA DE EVALUACIÓN: COLUMNAS PARALELAS POR KARATECA EN TATAMI */}
+      {tandaStudents.length === 0 ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 font-bold shadow-xl">
+          <div className="max-w-md mx-auto space-y-2">
+            <div className="text-3xl">🥋</div>
+            <div className="text-sm font-black text-white">Esta tanda no tiene karatecas asignados aún</div>
+            <div className="text-xs text-slate-400">
+              La administración está organizando el tatami. En cuanto se asigne un karateca, aparecerá automáticamente en pantalla en tiempo real.
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className={`grid grid-cols-1 ${tandaStudents.length === 2 ? 'md:grid-cols-2' : tandaStudents.length >= 3 ? 'md:grid-cols-2 xl:grid-cols-3' : 'max-w-3xl mx-auto'} gap-4 lg:gap-6`}>
+          {tandaStudents.map((student, sIdx) => {
+            const sId = String(student._id || student.id);
+            const ev = evaluationsByStudent[sId] || { scores: {}, observations: {}, notes: '' };
+            const scores = ev.scores || {};
+            const studentSyllabus = getStudentSyllabus(student);
+            const studentTechs = getStudentTechniques(student, effectivePhase);
+            const activeTechIdx = studentTechOverrides[sId] !== undefined ? studentTechOverrides[sId] : selectedTechniqueIndex;
+            const isCompleted = activeTechIdx >= studentTechs.length;
+            const activeTech = !isCompleted ? studentTechs[activeTechIdx] : null;
+
+            const studentPhaseNotes = ev.phaseNotes?.[effectivePhase] !== undefined
+              ? ev.phaseNotes[effectivePhase]
+              : (effectivePhase === 'kihon' ? (ev.notes || '') : '');
+            const hasPhaseNotes = Boolean(studentPhaseNotes && studentPhaseNotes.trim().length > 0);
+
+            const hasAspects = Boolean(
+              (student.hasSpecialCondition && student.specialCondition?.trim()) ||
+              student.specialCondition?.trim() ||
+              student.positiveAspects?.trim() ||
+              student.notes?.trim()
+            );
+
+            // Criterios de la técnica activa de este estudiante
+            const criteria = activeTech ? getStudentCriteriaForPhase(student, effectivePhase, activeTech) : [];
+            const techKey = activeTech?.id || activeTech?.name || `tech_${activeTechIdx}`;
+            const criterionKeys = criteria.map(c => effectivePhase === 'aspectos' ? `aspect_${techKey}_${c.key}` : `${techKey}_${c.key}`);
+            const aspectScores = criterionKeys.map(k => scores[k]).filter(v => typeof v === 'number' && v > 0);
+            const techAvg = aspectScores.length > 0 ? (aspectScores.reduce((acc, v) => acc + v, 0) / aspectScores.length) : null;
 
             return (
               <div
-                key={kTechKey || kIdx}
-                className="bg-slate-950/70 border-2 border-indigo-500/30 rounded-2xl p-3.5 sm:p-4 shadow-xl flex flex-col space-y-3"
+                key={sId}
+                className="bg-slate-950/80 border-2 border-indigo-500/30 rounded-2xl p-3.5 sm:p-4 shadow-xl flex flex-col space-y-3.5"
               >
-                {/* Header de la Columna del Kata */}
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-sm shadow-xs">
-                      🥋
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-400/15 text-amber-300 border border-amber-400/30">
-                          KATA {kIdx + 1}
+                {/* Encabezado del Karateca en su Columna */}
+                <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {isDirectorRoy && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditStudentModal(student)}
+                        className="p-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 hover:border-amber-400 transition-all shadow-xs cursor-pointer shrink-0 active:scale-90"
+                        title="Sensei Roy: Editar datos del atleta"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    <span className="text-[11px] font-mono text-slate-500 font-bold shrink-0">#{sIdx + 1}</span>
+
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-sm text-slate-300 overflow-hidden shrink-0 shadow-inner">
+                      {student.photo ? (
+                        <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
+                      ) : (
+                        student.name ? student.name.substring(0, 2).toUpperCase() : <User className="w-5 h-5 text-slate-400" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-sm sm:text-base font-black text-white truncate ${hasAspects ? 'white-radiance-glow' : ''}`}>
+                          {student.name}
                         </span>
-                        <span className="text-xs text-slate-400 font-mono">
-                          {isFirstKata ? 'Todos los grados' : 'Aspirantes a 8° Kyu+'}
-                        </span>
+                        {hasAspects && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedStudentForAspects(student)}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 transition-all cursor-pointer shadow-[0_0_8px_rgba(245,158,11,0.35)] shrink-0 active:scale-95"
+                            title="Clic para ver los aspectos a considerar de este atleta"
+                          >
+                            <AlertTriangle className="w-3 h-3 text-amber-300 fill-amber-400/40 animate-pulse shrink-0" />
+                            <span className="text-[9px] font-black uppercase tracking-wider">REVISAR</span>
+                          </button>
+                        )}
                       </div>
-                      <h3 className="text-base sm:text-lg font-black text-white mt-0.5">
-                        {kataTech.name}
-                      </h3>
+
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap text-[11px] font-mono text-slate-400">
+                        {student.currentRank && (
+                          <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${getBeltBadge(student.currentRank).bg}`}>
+                            {getBeltBadge(student.currentRank).label}
+                          </span>
+                        )}
+                        {student.birthDate && (
+                          <span>{calculateAge(student.birthDate)} años</span>
+                        )}
+                        {studentSyllabus?.targetRank && (
+                          <span className="text-amber-300/90 font-semibold">
+                            ➔ {studentSyllabus.targetRank.split(' ')[0]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {kataTech.notes && (
-                    <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
-                      {kataTech.notes}
-                    </span>
-                  )}
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {techAvg !== null ? (
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-black font-mono shadow-xs ${
+                        techAvg >= 7.0 ? 'bg-emerald-950/90 text-emerald-400 border border-emerald-500/30' : 'bg-amber-950/90 text-amber-300 border border-amber-500/30'
+                      }`}>
+                        ★ {techAvg.toFixed(1)}/10
+                      </span>
+                    ) : (
+                      <span className="text-xs font-mono text-slate-600 px-2 py-1 bg-slate-900 rounded border border-slate-800">
+                        ★ —
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenObsModal(student)}
+                      className={`p-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
+                        hasPhaseNotes
+                          ? 'bg-amber-400 text-slate-950 border-amber-400 hover:bg-amber-300 shadow-xs'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
+                      }`}
+                      title="Anotar observaciones técnicas"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Lista de Karatecas para este Kata */}
-                <div className="space-y-3 flex-1">
-                  {tandaStudents.map((student, sIdx) => {
-                    const sId = String(student._id || student.id);
-                    const ev = evaluationsByStudent[sId] || { scores: {}, observations: {}, notes: '' };
-                    const scores = ev.scores || {};
-                    const applies = doesStudentHaveTechnique(student, kataTech);
-
-                    const studentPhaseNotes = ev.phaseNotes?.kata !== undefined
-                      ? ev.phaseNotes.kata
-                      : '';
-                    const hasPhaseNotes = Boolean(studentPhaseNotes && studentPhaseNotes.trim().length > 0);
-
-                    const hasAspects = Boolean(
-                      (student.hasSpecialCondition && student.specialCondition?.trim()) ||
-                      student.specialCondition?.trim() ||
-                      student.positiveAspects?.trim() ||
-                      student.notes?.trim()
-                    );
-
-                    // Si este kata NO le aplica al estudiante (ej. Heian Nidan a 10° Kyu Blanca):
-                    if (!applies) {
-                      return (
-                        <div
-                          key={sId}
-                          className="p-3.5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 space-y-2 opacity-80"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono text-slate-500 font-bold">#{sIdx + 1}</span>
-                              <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-slate-400 overflow-hidden">
-                                {student.photo ? (
-                                  <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
-                                ) : (
-                                  student.name ? student.name.substring(0, 2).toUpperCase() : <User className="w-3.5 h-3.5" />
-                                )}
-                              </div>
-                              <div>
-                                <div className="text-xs font-bold text-slate-300">{student.name}</div>
-                                <div className="text-[10px] text-slate-500 font-mono">{student.currentRank}</div>
-                              </div>
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                              N/A
-                            </span>
-                          </div>
-
-                          <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 text-center space-y-0.5">
-                            <div className="text-xs font-bold text-amber-400 flex items-center justify-center gap-1.5">
-                              <span>⏸️ No aplica para {student.currentRank || 'este grado'}</span>
-                            </div>
-                            <div className="text-[10px] text-slate-400">
-                              En temario oficial solo ejecuta {tandaTechniques[0]?.name || 'Heian Shodan'}
-                            </div>
-                            <div className="text-[9px] text-slate-500 font-mono">
-                              En descanso marcial (Fudodachi) / Observando tatami
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    // Si SÍ le aplica el kata:
-                    const criteria = getStudentCriteriaForPhase(student, 'kata', kataTech);
-                    const kataKeys = criteria.map(c => `${kTechKey}_${c.key}`);
-                    const kataScores = kataKeys.map(k => scores[k]).filter(v => typeof v === 'number' && v > 0);
-                    const kataAvg = kataScores.length > 0 ? (kataScores.reduce((a, b) => a + b, 0) / kataScores.length) : null;
-
-                    return (
-                      <div
-                        key={sId}
-                        className="p-3 sm:p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition-all space-y-3 shadow-md"
+                {/* Tarjeta de Técnica Activa de este Karateca */}
+                {isCompleted ? (
+                  <div className="p-4 rounded-xl bg-slate-900/40 border border-dashed border-emerald-500/40 text-center space-y-1.5 flex-1 flex flex-col justify-center items-center py-8">
+                    <span className="text-2xl">✅</span>
+                    <div className="text-sm font-black text-emerald-400">
+                      {effectivePhase.toUpperCase()} COMPLETADO
+                    </div>
+                    <div className="text-xs text-slate-300">
+                      Ha ejecutado todas las {studentTechs.length} técnicas de su temario oficial.
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-1">
+                      En posición de descanso marcial (Fudodachi) atento al tatami.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-amber-400/30">
+                      <button
+                        type="button"
+                        disabled={activeTechIdx === 0}
+                        onClick={() => setStudentTechOverrides(prev => ({ ...prev, [sId]: Math.max(0, activeTechIdx - 1) }))}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                        title="Técnica anterior para este karateca"
                       >
-                        {/* Encabezado del Atleta en este Kata */}
-                        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-[10px] font-mono text-slate-500 font-bold shrink-0">#{sIdx + 1}</span>
-                            <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-xs text-slate-300 overflow-hidden shrink-0">
-                              {student.photo ? (
-                                <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
-                              ) : (
-                                student.name ? student.name.substring(0, 2).toUpperCase() : <User className="w-4 h-4 text-slate-400" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-xs sm:text-sm font-black text-white truncate">
-                                  {student.name}
-                                </span>
-                                {hasAspects && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedStudentForAspects(student)}
-                                    className="px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/50 text-[8px] font-black uppercase cursor-pointer"
-                                    title="Ver aspectos especiales"
-                                  >
-                                    REVISAR
-                                  </button>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono mt-0.5">
-                                {student.currentRank && (
-                                  <span className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${getBeltBadge(student.currentRank).bg}`}>
-                                    {getBeltBadge(student.currentRank).label}
-                                  </span>
-                                )}
-                                {student.birthDate && (
-                                  <span>{calculateAge(student.birthDate)} años</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            {kataAvg !== null ? (
-                              <span className={`px-2 py-0.5 rounded text-xs font-black font-mono ${
-                                kataAvg >= 7.0 ? 'bg-emerald-950/90 text-emerald-400 border border-emerald-500/30' : 'bg-amber-950/90 text-amber-300 border border-amber-500/30'
-                              }`}>
-                                ★ {kataAvg.toFixed(1)}/10
-                              </span>
-                            ) : (
-                              <span className="text-xs font-mono text-slate-600 px-2 py-0.5 bg-slate-950/60 rounded border border-slate-800">
-                                ★ —
-                              </span>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => handleOpenObsModal(student)}
-                              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                                hasPhaseNotes
-                                  ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-xs'
-                                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
-                              }`}
-                              title="Anotar observaciones de Kata"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                      <div className="text-center min-w-0 flex-1">
+                        <div className="text-[10px] uppercase tracking-wider font-mono text-amber-400 font-bold">
+                          Paso {activeTechIdx + 1} de {studentTechs.length}
                         </div>
-
-                        {/* Criterios Técnicos con Estrellas */}
-                        <div className="space-y-1.5">
-                          {criteria.map((criterion, cIdx) => {
-                            const criterionKey = `${kTechKey}_${criterion.key}`;
-                            const currentVal = scores[criterionKey] || scores[criterion.key] || 0;
-                            const cellKey = `${sId}__${criterionKey}`;
-                            const isMissing = unratedStarKeys.has(cellKey);
-
-                            return (
-                              <div
-                                key={criterion.key}
-                                className={`flex items-center justify-between gap-2 p-1.5 sm:p-2 rounded-xl transition-all ${
-                                  isMissing
-                                    ? 'bg-rose-950/40 border border-rose-500 shadow-xs shadow-rose-500/30 animate-pulse'
-                                    : 'bg-slate-950/60 border border-slate-800/80 hover:border-slate-700'
-                                }`}
-                              >
-                                <div className="min-w-0 flex-1 pr-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] font-black uppercase text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded shrink-0">
-                                      #{cIdx + 1}
-                                    </span>
-                                    <span className="text-xs font-bold text-slate-200 truncate">
-                                      {criterion.rawText || criterion.desc || criterion.label}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2 shrink-0 select-none">
-                                  {/* Estrellas 1 a 5 y 6 a 10 */}
-                                  <div className="flex flex-col items-center gap-0.5">
-                                    <div className="flex items-center gap-0.5 sm:gap-1">
-                                      {[1, 2, 3, 4, 5].map(starVal => {
-                                        const isFilled = starVal <= currentVal;
-                                        const isHalf = !isFilled && (starVal - 0.5 <= currentVal);
-                                        return (
-                                          <button
-                                            key={starVal}
-                                            type="button"
-                                            onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
-                                            onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
-                                            className="p-0.5 rounded active:scale-125 transition-transform cursor-pointer"
-                                            title={`${criterion.label}: ${starVal}/10`}
-                                          >
-                                            {isHalf ? (
-                                              <span className="relative inline-flex items-center justify-center">
-                                                <Star className="w-3.5 h-3.5 text-slate-700" />
-                                                <StarHalf className="w-3.5 h-3.5 absolute inset-0 text-amber-400 fill-amber-400" />
-                                              </span>
-                                            ) : (
-                                              <Star className={`w-3.5 h-3.5 ${isFilled ? 'text-amber-400 fill-amber-400' : isMissing ? 'text-rose-400' : 'text-slate-700 hover:text-amber-300'}`} />
-                                            )}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                    <div className="flex items-center gap-0.5 sm:gap-1">
-                                      {[6, 7, 8, 9, 10].map(starVal => {
-                                        const isFilled = starVal <= currentVal;
-                                        const isHalf = !isFilled && (starVal - 0.5 <= currentVal);
-                                        return (
-                                          <button
-                                            key={starVal}
-                                            type="button"
-                                            onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
-                                            onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
-                                            className="p-0.5 rounded active:scale-125 transition-transform cursor-pointer"
-                                            title={`${criterion.label}: ${starVal}/10`}
-                                          >
-                                            {isHalf ? (
-                                              <span className="relative inline-flex items-center justify-center">
-                                                <Star className="w-3.5 h-3.5 text-slate-700" />
-                                                <StarHalf className="w-3.5 h-3.5 absolute inset-0 text-amber-400 fill-amber-400" />
-                                              </span>
-                                            ) : (
-                                              <Star className={`w-3.5 h-3.5 ${isFilled ? 'text-amber-400 fill-amber-400' : isMissing ? 'text-rose-400' : 'text-slate-700 hover:text-amber-300'}`} />
-                                            )}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-
-                                  <span className="text-xs font-bold font-mono text-amber-300 w-7 text-right">
-                                    {currentVal > 0 ? `${currentVal}` : '—'}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
+                        <div className="text-sm sm:text-base font-black text-white truncate">
+                          {activeTech?.name || 'Técnica de Evaluación'}
                         </div>
+                        {(activeTech?.stance || activeTech?.direction) && (
+                          <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                            {activeTech.stance && <span className="font-semibold text-slate-300">{activeTech.stance}</span>}
+                            {activeTech.direction && <span> • {activeTech.direction}</span>}
+                            {activeTech.repetitions > 0 && <span> • {activeTech.repetitions} rep</span>}
+                          </div>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <button
+                        type="button"
+                        disabled={activeTechIdx >= studentTechs.length - 1}
+                        onClick={() => setStudentTechOverrides(prev => ({ ...prev, [sId]: Math.min(studentTechs.length - 1, activeTechIdx + 1) }))}
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                        title="Siguiente técnica para este karateca"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Criterios Técnicos y Estrellas */}
+                    <div className="space-y-2 flex-1">
+                      {criteria.map((criterion, cIdx) => {
+                        const criterionKey = effectivePhase === 'aspectos'
+                          ? `aspect_${techKey}_${criterion.key}`
+                          : `${techKey}_${criterion.key}`;
+                        const currentVal = scores[criterionKey] || scores[criterion.key] || 0;
+                        const cellKey = `${sId}__${criterionKey}`;
+                        const isMissing = unratedStarKeys.has(cellKey);
+
+                        return (
+                          <div
+                            key={criterion.key}
+                            className={`flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 p-2 sm:p-2.5 rounded-xl transition-all ${
+                              isMissing
+                                ? 'bg-rose-950/40 border border-rose-500 shadow-xs shadow-rose-500/30 animate-pulse'
+                                : 'bg-slate-950/60 border border-slate-800/80 hover:border-slate-700'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1 pr-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded shrink-0">
+                                  #{cIdx + 1}
+                                </span>
+                                <span className="text-xs font-bold text-slate-200 leading-tight">
+                                  {criterion.rawText || criterion.desc || criterion.label}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 shrink-0 select-none">
+                              {/* Estrellas 1 a 5 y 6 a 10 */}
+                              <div className="flex flex-col items-center gap-0.5">
+                                <div className="flex items-center gap-0.5 sm:gap-1">
+                                  {[1, 2, 3, 4, 5].map(starVal => {
+                                    const isFilled = starVal <= currentVal;
+                                    const isHalf = !isFilled && (starVal - 0.5 <= currentVal);
+                                    return (
+                                      <button
+                                        key={starVal}
+                                        type="button"
+                                        onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
+                                        onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
+                                        className="p-0.5 rounded active:scale-125 transition-transform cursor-pointer"
+                                        title={`${criterion.label}: ${starVal}/10`}
+                                      >
+                                        {isHalf ? (
+                                          <span className="relative inline-flex items-center justify-center">
+                                            <Star className="w-3.5 h-3.5 text-slate-700" />
+                                            <StarHalf className="w-3.5 h-3.5 absolute inset-0 text-amber-400 fill-amber-400" />
+                                          </span>
+                                        ) : (
+                                          <Star className={`w-3.5 h-3.5 ${isFilled ? 'text-amber-400 fill-amber-400' : isMissing ? 'text-rose-400' : 'text-slate-700 hover:text-amber-300'}`} />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <div className="flex items-center gap-0.5 sm:gap-1">
+                                  {[6, 7, 8, 9, 10].map(starVal => {
+                                    const isFilled = starVal <= currentVal;
+                                    const isHalf = !isFilled && (starVal - 0.5 <= currentVal);
+                                    return (
+                                      <button
+                                        key={starVal}
+                                        type="button"
+                                        onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
+                                        onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
+                                        className="p-0.5 rounded active:scale-125 transition-transform cursor-pointer"
+                                        title={`${criterion.label}: ${starVal}/10`}
+                                      >
+                                        {isHalf ? (
+                                          <span className="relative inline-flex items-center justify-center">
+                                            <Star className="w-3.5 h-3.5 text-slate-700" />
+                                            <StarHalf className="w-3.5 h-3.5 absolute inset-0 text-amber-400 fill-amber-400" />
+                                          </span>
+                                        ) : (
+                                          <Star className={`w-3.5 h-3.5 ${isFilled ? 'text-amber-400 fill-amber-400' : isMissing ? 'text-rose-400' : 'text-slate-700 hover:text-amber-300'}`} />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              <span className="text-xs font-bold font-mono text-amber-300 w-7 text-right">
+                                {currentVal > 0 ? `${currentVal}` : '—'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
-        </div>
-      ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[840px]">
-              <thead>
-                <tr className="bg-slate-950/90 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                  <th className="py-3 px-3 min-w-[240px] align-middle">
-                    <div className="text-[11px] font-black uppercase text-slate-400">
-                      Karateca & Cinturón
-                    </div>
-                  </th>
-                  {headerCriteria.map((criterion, cIdx) => (
-                    <th 
-                      key={criterion.key} 
-                      className="py-3 px-3 text-center align-middle min-w-[180px]" 
-                    >
-                      <div className="flex flex-col items-center gap-1.5">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/25 px-2 py-0.5 rounded-md whitespace-nowrap">
-                          Aspecto #{cIdx + 1}
-                        </span>
-                        <span className="text-xs font-bold text-slate-200 leading-snug text-center">
-                          {criterion.rawText || criterion.desc || criterion.label}
-                        </span>
-                      </div>
-                    </th>
-                  ))}
-                  <th className="py-3 px-2 text-center w-20 align-middle">
-                    <div className="text-[11px] font-black uppercase text-slate-400">
-                      Nota
-                    </div>
-                  </th>
-                  <th className="py-3 px-3 w-44 text-right align-middle">
-                    <div className="text-[11px] font-black uppercase text-slate-400">
-                      Observaciones
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80">
-                {tandaStudents.length === 0 ? (
-                  <tr>
-                    <td colSpan={headerCriteria.length + 3} className="py-12 text-center text-slate-400 font-bold bg-slate-950/40">
-                      <div className="max-w-md mx-auto space-y-2">
-                        <div className="text-3xl">🥋</div>
-                        <div className="text-sm font-black text-white">Esta tanda no tiene karatecas asignados aún</div>
-                        <div className="text-xs text-slate-400">
-                          La administración está organizando el tatami. Si se asigna o mueve un karateca a esta tanda, aparecerá aquí automáticamente en tiempo real.
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  tandaStudents.map((student, sIdx) => {
-                    const sId = String(student._id || student.id);
-                    const ev = evaluationsByStudent[sId] || { scores: {}, observations: {}, notes: '' };
-                    const scores = ev.scores || {};
-                    const studentSyllabus = getStudentSyllabus(student);
-                    const appliesToStudent = doesStudentHaveTechnique(student, activeTechnique);
-
-                    // Promedio de criterios de la técnica actual para este karateca
-                    const techKeys = headerCriteria.map(c => selectedPhase === 'aspectos' ? `aspect_${activeTechKey}_${c.key}` : `${activeTechKey}_${c.key}`);
-                    const aspectScores = techKeys.map(k => scores[k]).filter(v => typeof v === 'number' && v > 0);
-
-                    const techAvg = aspectScores.length > 0
-                      ? (aspectScores.reduce((acc, v) => acc + v, 0) / aspectScores.length)
-                      : null;
-
-                    // Observación correspondiente a la fase actual (Kihon, Kata o Kumite)
-                    const studentPhaseNotes = ev.phaseNotes?.[effectivePhase] !== undefined
-                      ? ev.phaseNotes[effectivePhase]
-                      : (effectivePhase === 'kihon' ? (ev.notes || '') : '');
-                    const hasPhaseNotes = Boolean(studentPhaseNotes && studentPhaseNotes.trim().length > 0);
-
-                    const hasAspects = Boolean(
-                      (student.hasSpecialCondition && student.specialCondition?.trim()) ||
-                      student.specialCondition?.trim() ||
-                      student.positiveAspects?.trim() ||
-                      student.notes?.trim()
-                    );
-
-                    return (
-                      <tr
-                        key={sId}
-                        className="hover:bg-slate-800/40 transition-colors group"
-                      >
-                        {/* Columna: Karateca y Grado */}
-                        <td className="py-2.5 px-3 min-w-[240px]">
-                          <div className="flex items-center gap-2">
-                            {/* Botón para Sensei Roy (Director de Evaluación) para editar datos al lado izquierdo del atleta */}
-                            {isDirectorRoy && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEditStudentModal(student)}
-                                className="p-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 hover:border-amber-400 transition-all shadow-xs cursor-pointer shrink-0 active:scale-90"
-                                title="Sensei Roy: Editar datos del atleta (Nombre, edad, aspectos)"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-
-                            <span className="text-[10px] font-mono font-bold text-slate-500 w-4 shrink-0 text-center">
-                              #{sIdx + 1}
-                            </span>
-
-                            <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-xs text-slate-300 overflow-hidden shrink-0">
-                              {student.photo ? (
-                                <img src={student.photo} alt={student.name} className="w-full h-full object-cover" />
-                              ) : (
-                                student.name ? student.name.substring(0, 2).toUpperCase() : <User className="w-4 h-4 text-slate-400" />
-                              )}
-                            </div>
-
-                            <div className="leading-snug min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span
-                                  className={`text-xs whitespace-normal break-words transition-all font-black text-white ${
-                                    hasAspects ? 'white-radiance-glow' : ''
-                                  }`}
-                                  style={
-                                    hasAspects
-                                      ? {
-                                          color: '#ffffff',
-                                          textShadow:
-                                            '0 0 2px #ffffff, 0 0 6px rgba(255, 255, 255, 0.95), 0 0 14px rgba(255, 255, 255, 0.8), 0 0 22px rgba(255, 255, 255, 0.5)',
-                                        }
-                                      : { color: '#ffffff' }
-                                  }
-                                >
-                                  {student.name}
-                                </span>
-
-                                {hasAspects && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedStudentForAspects(student)}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/50 transition-all cursor-pointer shadow-[0_0_8px_rgba(245,158,11,0.35)] shrink-0 active:scale-95"
-                                    title="Clic para ver los aspectos a considerar de este atleta"
-                                  >
-                                    <AlertTriangle className="w-3 h-3 text-amber-300 fill-amber-400/40 animate-pulse shrink-0" />
-                                    <span className="text-[9px] font-black uppercase tracking-wider">REVISAR</span>
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                {student.birthDate && (
-                                  <span className="text-[10px] text-slate-400 font-mono" title={`Nacimiento: ${formatDateDDMMAAAA(student.birthDate)}`}>
-                                    {calculateAge(student.birthDate) !== null ? `${calculateAge(student.birthDate)} años` : ''} ({formatDateDDMMAAAA(student.birthDate)})
-                                  </span>
-                                )}
-                                {studentSyllabus?.targetRank && studentSyllabus.targetRank !== student.currentRank && (
-                                  <span className="text-[9px] text-amber-300/80 font-mono" title={`Aspira a: ${studentSyllabus.targetRank}`}>
-                                    ➔ Aspira: {studentSyllabus.targetRank.split(' ')[0]}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Si la técnica no le aplica a este grado (ej. Chudan Uchi Uke para 10° Kyu o Kumite alterno): */}
-                        {!appliesToStudent ? (
-                          <>
-                            <td colSpan={headerCriteria.length} className="py-4 px-3 text-center bg-slate-900/30 border-y border-slate-800">
-                              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-slate-300">
-                                <span className="text-amber-400 font-mono text-xs">⏸️</span>
-                                <span className="text-xs font-bold text-slate-300">
-                                  No aplica para {student.currentRank || 'este grado'}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-mono bg-slate-900 px-2 py-0.5 rounded-md">
-                                  En espera marcial / Fudodachi
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-2 text-center">
-                              <span className="text-xs text-slate-500 font-mono italic">N/A</span>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            {/* Columnas: Criterios Técnicos de la Rúbrica Oficial con Estrellas (1 a 5) */}
-                            {headerCriteria.map(criterion => {
-                              const criterionKey = selectedPhase === 'aspectos' ? `aspect_${activeTechKey}_${criterion.key}` : `${activeTechKey}_${criterion.key}`;
-                              const currentVal = scores[criterionKey] || scores[`${activeTechKey}_${criterion.key}`] || scores[criterion.key] || 0;
-                              const cellKey = `${sId}__${criterionKey}`;
-                              const isMissing = unratedStarKeys.has(cellKey);
-
-                              return (
-                                <td
-                                  key={criterion.key}
-                                  className={`py-2 px-1 text-center transition-all ${
-                                    isMissing
-                                      ? 'bg-rose-950/40 ring-2 ring-rose-500 rounded-xl animate-pulse shadow-sm shadow-rose-500/25'
-                                      : ''
-                                  }`}
-                                >
-                                  <div className="flex flex-col items-center justify-center">
-                                    <div className="flex flex-col items-center justify-center gap-1 select-none">
-                                      {/* Fila 1: Estrellas 1 a 5 */}
-                                      <div className="flex items-center justify-center gap-1">
-                                        {[1, 2, 3, 4, 5].map(starVal => {
-                                          const isFilled = starVal <= currentVal;
-                                          const isHalf = !isFilled && (starVal - 0.5 <= currentVal);
-                                          return (
-                                            <button
-                                              key={starVal}
-                                              type="button"
-                                              onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
-                                              onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
-                                              className={`p-0.5 rounded active:scale-125 transition-transform cursor-pointer select-none ${
-                                                isMissing && !isFilled && !isHalf ? 'hover:bg-rose-900/40' : 'hover:bg-slate-800'
-                                              }`}
-                                              title={`${criterion.label}: ${starVal}/10 estrellas (Doble clic para ${starVal - 0.5} media estrella)`}
-                                            >
-                                              {isHalf ? (
-                                                <span className="relative inline-flex items-center justify-center">
-                                                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
-                                                  <StarHalf className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute inset-0 text-amber-400 fill-amber-400" />
-                                                </span>
-                                              ) : (
-                                                <Star
-                                                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
-                                                    isFilled
-                                                      ? 'text-amber-400 fill-amber-400'
-                                                      : isMissing
-                                                      ? 'text-rose-400 hover:text-amber-300 stroke-2'
-                                                      : 'text-slate-700 hover:text-amber-300'
-                                                  }`}
-                                                />
-                                              )}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-
-                                      {/* Fila 2: Estrellas 6 a 10 */}
-                                      <div className="flex items-center justify-center gap-1">
-                                        {[6, 7, 8, 9, 10].map(starVal => {
-                                          const isFilled = starVal <= currentVal;
-                                          const isHalf = !isFilled && (starVal - 0.5 <= currentVal);
-                                          return (
-                                            <button
-                                              key={starVal}
-                                              type="button"
-                                              onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
-                                              onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
-                                              className={`p-0.5 rounded active:scale-125 transition-transform cursor-pointer select-none ${
-                                                isMissing && !isFilled && !isHalf ? 'hover:bg-rose-900/40' : 'hover:bg-slate-800'
-                                              }`}
-                                              title={`${criterion.label}: ${starVal}/10 estrellas (Doble clic para ${starVal - 0.5} media estrella)`}
-                                            >
-                                              {isHalf ? (
-                                                <span className="relative inline-flex items-center justify-center">
-                                                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700" />
-                                                  <StarHalf className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute inset-0 text-amber-400 fill-amber-400" />
-                                                </span>
-                                              ) : (
-                                                <Star
-                                                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
-                                                    isFilled
-                                                      ? 'text-amber-400 fill-amber-400'
-                                                      : isMissing
-                                                      ? 'text-rose-400 hover:text-amber-300 stroke-2'
-                                                      : 'text-slate-700 hover:text-amber-300'
-                                                  }`}
-                                                />
-                                              )}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                    <span className="text-[10px] font-bold font-mono text-slate-400 mt-0.5">
-                                      {currentVal > 0 ? `${currentVal}/10` : '—'}
-                                    </span>
-                                    {isMissing && (
-                                      <span className="text-[9px] font-black uppercase text-rose-400 mt-0.5 tracking-wider">
-                                        ★ Falta Nota
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                              );
-                            })}
-
-                            {/* Columna: Nota de la Técnica */}
-                            <td className="py-2.5 px-2 text-center">
-                              {techAvg !== null ? (
-                                <span className={`inline-block px-2 py-0.5 rounded text-xs font-black font-mono ${
-                                  techAvg >= 7.0 ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30' : 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
-                                }`}>
-                                  ★ {techAvg.toFixed(1)}/10
-                                </span>
-                              ) : (
-                                <span className="text-xs text-slate-600 font-mono">-</span>
-                              )}
-                            </td>
-                          </>
-                        )}
-
-                        {/* Columna: Observaciones */}
-                        <td className="py-2.5 px-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenObsModal(student)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                                hasPhaseNotes
-                                  ? 'bg-amber-400 text-slate-950 border-amber-400 hover:bg-amber-300 shadow-xs'
-                                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
-                              }`}
-                              title="Anotar observaciones técnicas"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5" />
-                              <span>{hasPhaseNotes ? 'Editar Notas' : '+ Observación'}</span>
-                              {hasPhaseNotes && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
       {/* 6. BARRA FIJA INFERIOR PARA AVANCE RÁPIDO */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 p-2.5 sm:p-3 shadow-2xl">
         <div className="w-full px-2 sm:px-4 md:px-6 flex items-center justify-between gap-2 sm:gap-3">
-          {/* BOTÓN ANTERIOR: Si está en el primer paso de Tanda 2 o superior, muestra 'Tanda Anterior' */}
+          {/* BOTÓN ANTERIOR */}
           {isFirstStepInTanda && hasPrevTanda ? (
             <button
               type="button"
@@ -2412,25 +1984,25 @@ export default function TechnicalExamEvaluatorCore({
               onClick={handlePrevTechnique}
               disabled={isFirstStepInTanda && !hasPrevTanda}
               className="px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer shrink-0"
-              title="Retroceder a la técnica o fase anterior"
+              title="Retroceder al paso anterior"
             >
               <ChevronLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Anterior</span>
             </button>
           )}
 
-          {/* INDICADOR CENTRAL DE TANDA Y TÉCNICA */}
+          {/* INDICADOR CENTRAL DE TANDA Y PASO */}
           <div className="text-center text-xs font-bold text-slate-400 flex items-center justify-center gap-2 truncate px-1 min-w-0">
             <span className="px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 text-[11px] font-mono shrink-0 border border-slate-700">
               Tanda {selectedTandaIndex + 1} de {tandas.length}
             </span>
             <span className="text-white font-mono truncate hidden sm:inline">
-              {isKataDual ? `Kata: ${tandaTechniques.map(k => k.name).join(' & ')}` : activeTechnique.name}
+              {effectivePhase.toUpperCase()} • Paso {selectedTechniqueIndex + 1} de {maxTechniquesInPhase}
             </span>
             <span className="text-slate-500 text-[11px] hidden md:inline">({tandaStudents.length} karatecas)</span>
           </div>
 
-          {/* BOTÓN SIGUIENTE: Al llegar a lo último de la tanda, pasa a 'Siguiente Tanda' */}
+          {/* BOTÓN SIGUIENTE */}
           {isLastStepInTanda && hasNextTanda ? (
             <button
               type="button"
@@ -2457,7 +2029,7 @@ export default function TechnicalExamEvaluatorCore({
               onClick={handleNextTechnique}
               className="px-4 sm:px-5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
             >
-              <span>{isKataDual || selectedTechniqueIndex >= tandaTechniques.length - 1 ? 'Siguiente Fase' : 'Siguiente Técnica'}</span>
+              <span>{selectedTechniqueIndex < maxTechniquesInPhase - 1 ? 'Siguiente Paso' : 'Siguiente Fase'}</span>
               <ChevronRight className="w-4 h-4" />
             </button>
           )}
