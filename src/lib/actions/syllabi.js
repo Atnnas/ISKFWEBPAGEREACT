@@ -31,10 +31,11 @@ function sanitizeString(val, maxLen = 300) {
  */
 const DEFAULT_INITIAL_SYLLABI = [
   {
-    name: 'Temario Oficial: Cinturón Blanco (10° Kyu)',
+    name: 'Temario Oficial: Cinturón Blanco (Examen de 10 Kyu a 9 Kyu)',
     currentRank: '10° Kyu (Cinta Blanca)',
-    targetRank: '10° Kyu (Cinta Blanca)',
-    description: 'Temario oficial de evaluación técnica para Cinturón Blanco (10° Kyu).',
+    targetRank: '9° Kyu (Cinta Amarilla)',
+    targetRanks: ['10° Kyu (Cinta Blanca)', '9° Kyu (Cinta Amarilla)'],
+    description: 'Temario oficial de evaluación técnica para Cinturón Blanco (Examen de 10 Kyu a 9 Kyu) según el manual ISKF Costa Rica.',
     isOfficial: true,
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: DEFAULT_TECHNICAL_ASPECTS,
@@ -43,35 +44,38 @@ const DEFAULT_INITIAL_SYLLABI = [
       {
         id: 'tech-10-9-k1',
         group: 'kihon',
-        name: 'Oi Zuki Chudan',
+        name: 'Chudan Oi Zuki',
         stance: 'Zenkutsu Dachi',
         direction: 'Adelante (Mae)',
-        repetitions: 3,
+        repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 1,
-        notes: 'Avanzar 3 pasos con Oi Zuki, Mawatte Gedan Barai al giro, regresar con 3 pasos y Mawatte.'
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi - Gedan Barai (Hidari). Avanzar 5 pasos con Chudan Oi Zuki, última con Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k2',
         group: 'kihon',
-        name: 'Age Uke',
+        name: 'Jodan Age Uke',
         stance: 'Zenkutsu Dachi',
         direction: 'Atrás (Ushiro)',
-        repetitions: 3,
+        repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 2,
-        notes: 'Retroceder 3 pasos bloqueando Age Uke, giro con Mawatte y regresar.'
+        embusen: 'Embusen Oficial',
+        notes: 'Retroceder 5 pasos con Jodan Age Uke, última con Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k3',
         group: 'kihon',
-        name: 'Soto Uke',
+        name: 'Chudan Soto Uke',
         stance: 'Zenkutsu Dachi',
         direction: 'Adelante (Mae)',
-        repetitions: 3,
+        repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 3,
-        notes: 'Avanzar 3 pasos bloqueando Soto Uke hacia el interior.'
+        embusen: 'Embusen Oficial',
+        notes: 'Avanzar 5 pasos con Chudan Soto Uke, última con Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k4',
@@ -79,32 +83,35 @@ const DEFAULT_INITIAL_SYLLABI = [
         name: 'Gedan Barai',
         stance: 'Zenkutsu Dachi',
         direction: 'Atrás (Ushiro)',
-        repetitions: 3,
+        repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 4,
-        notes: 'Retroceder 3 pasos con bloqueo bajo Gedan Barai.'
+        embusen: 'Embusen Oficial',
+        notes: 'Retroceder 5 pasos con Gedan Barai, última con Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k5',
         group: 'kihon',
-        name: 'Shuto Uke',
+        name: 'Chudan Shuto Uke',
         stance: 'Kokutsu Dachi',
         direction: 'Adelante (Mae)',
-        repetitions: 3,
+        repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 5,
-        notes: 'Avanzar en postura Kokutsu Dachi mano espada a 3 pasos.'
+        embusen: 'Embusen Oficial',
+        notes: 'Postura Kokutsu Dachi. Avanzar 5 pasos con Chudan Shuto Uke, última con Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k6',
         group: 'kihon',
-        name: 'Mae Geri Keage',
+        name: 'Mae Geri Chudan',
         stance: 'Zenkutsu Dachi',
         direction: 'Adelante (Mae)',
-        repetitions: 3,
+        repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 6,
-        notes: 'Patada frontal con Hikiashi rápido, caer en Zenkutsu Dachi firme.'
+        embusen: 'Embusen Oficial',
+        notes: 'Postura Zenkutsu Dachi. Avanzar 5 pasos con Mae Geri Chudan, última con Kiai, ida y vuelta.'
       },
       // KUMITE
       {
@@ -112,18 +119,25 @@ const DEFAULT_INITIAL_SYLLABI = [
         group: 'kumite',
         name: 'Gohon Kumite (Jodan Zuki)',
         stance: 'Zenkutsu Dachi',
-        order: 1,
-        notes: 'Atacante 5 pasos Jodan Zuki. Defensor retrocede con Age Uke y contraataca con Gyaku Zuki Chudan + Kiai.'
+        direction: 'Adelante / Atrás',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 7,
+        embusen: 'Embusen Oficial',
+        notes: 'Yakusoku-Kumite: Gohon Kumite (Jodan Zuki). Atacante 5 pasos Jodan Zuki. Defensor retrocede con Age Uke y contraataca con Gyaku Zuki Chudan + Kiai.'
       },
       // KATA
       {
         id: 'tech-10-9-ka1',
         group: 'kata',
-        name: 'Heian Shodan',
+        name: 'Heian Shodan (Órdenes)',
         stance: 'Zenkutsu / Kokutsu Dachi',
-        embusen: 'Embusen Oficial ISKF (21 movimientos)',
-        order: 1,
-        notes: '21 movimientos oficiales. Kiai en el paso 8 y paso 16. Mantener ritmo y estabilidad.'
+        direction: 'Embusen Oficial',
+        repetitions: 1,
+        tripType: 'solo_ida',
+        order: 8,
+        embusen: 'Embusen Oficial',
+        notes: 'Heian Shodan ejecutado por órdenes del examinador (21 movimientos oficiales).'
       }
     ]
   }
