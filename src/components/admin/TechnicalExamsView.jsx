@@ -484,7 +484,7 @@ function getEvaluatorPhaseDetails(ev, techniques = []) {
       target.techniques.push({
         id: techId,
         name: techMap[techId]?.name || techId,
-        score: Number(avg) || 0
+        score: (Number(avg) <= 10 && Number(avg) > 0 ? Math.round(Number(avg) * 10) : (Number(avg) || 0))
       });
     });
   }
@@ -494,7 +494,7 @@ function getEvaluatorPhaseDetails(ev, techniques = []) {
     const list = phases[k].techniques;
     const avg = list.length > 0
       ? Math.round(list.reduce((sum, t) => sum + t.score, 0) / list.length)
-      : (ev.percentage || 0);
+      : 0;
     result[k] = {
       ...phases[k],
       average: avg
@@ -515,7 +515,7 @@ function getStudentConsolidatedPhases(evaluations = [], techniques = []) {
     const evPhases = getEvaluatorPhaseDetails(ev, techniques);
     Object.keys(phaseStats).forEach(phKey => {
       const p = evPhases[phKey];
-      if (p && p.average > 0) {
+      if (p && p.average > 0 && p.techniques.length > 0) {
         phaseStats[phKey].sum += p.average;
         phaseStats[phKey].count++;
         p.techniques.forEach(t => {
@@ -572,7 +572,7 @@ function StudentEvaluationBreakdown({ item, examTechniques = [], onGenerateAI, i
           }`}
         >
           <Award className="w-3.5 h-3.5" />
-          <span>Promedios Finales</span>
+          <span>Promedio Colegiado</span>
           <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-black ${
             activeTabKey === 'final' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'
           }`}>
@@ -1683,8 +1683,18 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           }));
         }
 
+        // Promedio colegiado calculado estrictamente entre las tres fases finales: Kihon, Kata y Kumite
+        const consolidatedPhases = getStudentConsolidatedPhases(evals, examTechniques);
+        const phaseAveragesList = [
+          consolidatedPhases.kihon?.average,
+          consolidatedPhases.kata?.average,
+          consolidatedPhases.kumite?.average
+        ].filter(v => typeof v === 'number' && v > 0);
+
         let avgPct = 0;
-        if (evals.length > 0) {
+        if (phaseAveragesList.length > 0) {
+          avgPct = Math.round(phaseAveragesList.reduce((sum, v) => sum + v, 0) / phaseAveragesList.length);
+        } else if (evals.length > 0) {
           avgPct = Math.round(evals.reduce((sum, e) => sum + (e.percentage || 0), 0) / evals.length);
         } else if (existing) {
           avgPct = existing.overallPercentage || 0;
@@ -2888,27 +2898,31 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
       // Calcular promedios por grupo técnico: Kihon, Kata, Kumite
       const calcGroupScore = (grp) => {
-        const groupTechs = examTechniques.filter(t => t.group === grp);
-        if (groupTechs.length === 0) return item.averagePercentage || 85;
+        const groupTechs = examTechniques.filter(t => (t.group || t.phase || 'kihon').toLowerCase() === grp);
+        if (groupTechs.length === 0) return 0;
         let total = 0;
         let count = 0;
         evals.forEach(ev => {
           groupTechs.forEach(t => {
             const score = ev.techniqueAverages?.[t.id];
-            if (typeof score === 'number') {
-              total += score;
+            if (typeof score === 'number' && score > 0) {
+              total += (score <= 10 ? score * 10 : score);
               count++;
             }
           });
         });
-        return count > 0 ? Math.round(total / count) : (item.averagePercentage || 85);
+        return count > 0 ? Math.round(total / count) : 0;
       };
 
       const kihonScore = calcGroupScore('kihon');
       const kataScore = calcGroupScore('kata');
       const kumiteScore = calcGroupScore('kumite');
       const writtenScore = 95; // Nota teórica oficial
-      const finalScore = item.averagePercentage || Math.round((kihonScore + kataScore + kumiteScore + writtenScore) / 4);
+      // El promedio colegiado técnico es estrictamente entre las tres fases finales: Kihon, Kata y Kumite
+      const activePhaseScores = [kihonScore, kataScore, kumiteScore].filter(v => typeof v === 'number' && v > 0);
+      const finalScore = activePhaseScores.length > 0
+        ? Math.round(activePhaseScores.reduce((sum, v) => sum + v, 0) / activePhaseScores.length)
+        : (item.averagePercentage || 85);
 
       // Agrupar observaciones de texto de todos los Senseis por Kihon, Kata y Kumite
       const getGroupObservations = (grp) => {

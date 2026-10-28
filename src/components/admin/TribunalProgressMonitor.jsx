@@ -175,7 +175,12 @@ function StudentMonitorDrawer({
   const colegiadoKata = kataVals.length ? Math.round(kataVals.reduce((a, b) => a + b, 0) / kataVals.length) : null;
   const colegiadoKumite = kumiteVals.length ? Math.round(kumiteVals.reduce((a, b) => a + b, 0) / kumiteVals.length) : null;
   const colegiadoAspectos = aspectosVals.length ? Math.round(aspectosVals.reduce((a, b) => a + b, 0) / aspectosVals.length) : null;
-  const colegiadoTotal = totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : null;
+
+  // El promedio colegiado total es estrictamente el promedio entre las tres fases finales: Kihon, Kata y Kumite
+  const activeFases = [colegiadoKihon, colegiadoKata, colegiadoKumite].filter(v => typeof v === 'number');
+  const colegiadoTotal = activeFases.length > 0
+    ? Math.round(activeFases.reduce((a, b) => a + b, 0) / activeFases.length)
+    : (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : null);
 
   // Apuntes de todos los Senseis clasificados por fase técnica
   const kihonNotesList = evalItems
@@ -335,9 +340,9 @@ function StudentMonitorDrawer({
                 </span>
               </div>
               <div className="text-2xl font-black text-emerald-950 mt-1">
-                {consolidation?.finalGrade || colegiadoTotal || '—'}%
+                {colegiadoTotal || consolidation?.finalGrade || '—'}%
               </div>
-              <div className="text-[10px] text-emerald-700 font-medium mt-0.5">Promedio general del Tribunal</div>
+              <div className="text-[10px] text-emerald-700 font-medium mt-0.5">Promedio colegiado de las 3 fases (Kihon, Kata, Kumite)</div>
             </div>
           </div>
 
@@ -682,7 +687,12 @@ export default function TribunalProgressMonitor({
       const kScore = kihonVals.length ? Math.round(kihonVals.reduce((a, b) => a + b, 0) / kihonVals.length) : (cons?.finalGrade || 90);
       const kaScore = kataVals.length ? Math.round(kataVals.reduce((a, b) => a + b, 0) / kataVals.length) : (cons?.finalGrade || 90);
       const kuScore = kumiteVals.length ? Math.round(kumiteVals.reduce((a, b) => a + b, 0) / kumiteVals.length) : (cons?.finalGrade || 90);
-      const finalScore = cons?.finalGrade || (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : 90);
+
+      // El promedio colegiado final es estrictamente el promedio entre las tres fases finales: Kihon, Kata y Kumite
+      const phaseScoresList = [kScore, kaScore, kuScore].filter(v => typeof v === 'number' && v > 0);
+      const finalScore = phaseScoresList.length > 0
+        ? Math.round(phaseScoresList.reduce((a, b) => a + b, 0) / phaseScoresList.length)
+        : (cons?.finalGrade || (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : 90));
 
       const allTechs = progressData?.syllabusTechniques || [];
       const kihonTechScores = allTechs
@@ -1482,14 +1492,33 @@ export default function TribunalProgressMonitor({
                                 const sId = String(st._id || st.id);
                                 const isExpanded = expandedStudentId === sId;
 
-                                // Promedio del resto de los senseis para este alumno
-                                const studentGrades = evaluatorsProgress
-                                  .map(item => item.evaluationsByStudent[sId]?.percentage)
-                                  .filter(p => typeof p === 'number' && p > 0);
+                                // Promedio colegiado entre las tres fases finales (Kihon, Kata y Kumite) para este aspirante
+                                const stKihonVals = evaluatorsProgress
+                                  .map(item => item.evaluationsByStudent[sId]?.phaseAverages?.kihon)
+                                  .filter(v => typeof v === 'number');
+                                const stKataVals = evaluatorsProgress
+                                  .map(item => item.evaluationsByStudent[sId]?.phaseAverages?.kata)
+                                  .filter(v => typeof v === 'number');
+                                const stKumiteVals = evaluatorsProgress
+                                  .map(item => item.evaluationsByStudent[sId]?.phaseAverages?.kumite)
+                                  .filter(v => typeof v === 'number');
 
-                                const avg = studentGrades.length > 0
-                                  ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length)
-                                  : null;
+                                const stKihonAvg = stKihonVals.length ? (stKihonVals.reduce((a, b) => a + b, 0) / stKihonVals.length) : null;
+                                const stKataAvg = stKataVals.length ? (stKataVals.reduce((a, b) => a + b, 0) / stKataVals.length) : null;
+                                const stKumiteAvg = stKumiteVals.length ? (stKumiteVals.reduce((a, b) => a + b, 0) / stKumiteVals.length) : null;
+
+                                const stPhaseAvgs = [stKihonAvg, stKataAvg, stKumiteAvg].filter(v => v !== null);
+
+                                const avg = stPhaseAvgs.length > 0
+                                  ? Math.round(stPhaseAvgs.reduce((a, b) => a + b, 0) / stPhaseAvgs.length)
+                                  : (() => {
+                                      const studentGrades = evaluatorsProgress
+                                        .map(item => item.evaluationsByStudent[sId]?.percentage)
+                                        .filter(p => typeof p === 'number' && p > 0);
+                                      return studentGrades.length > 0
+                                        ? Math.round(studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length)
+                                        : null;
+                                    })();
 
                                 return (
                                   <React.Fragment key={sId}>

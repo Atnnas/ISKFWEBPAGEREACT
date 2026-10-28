@@ -968,25 +968,62 @@ export default function TechnicalExamEvaluatorCore({
 
     prevScores[criterionKey] = Number(scoreVal);
 
-    // Calcular promedio general del estudiante (0-100) en escala de 1 a 10 estrellas
     const scoreValues = Object.values(prevScores).filter(v => typeof v === 'number' && v > 0);
     const sum = scoreValues.reduce((acc, v) => acc + v, 0);
     const avg = scoreValues.length > 0 ? (sum / scoreValues.length) : 0;
-    const percentage = Math.round((avg / 10) * 100);
-    const isPassed = percentage >= 70;
 
     // Calcular promedio específico de esta técnica (1 a 10)
     const techKeys = headerCriteria.map(c => effectivePhase === 'aspectos' ? `aspect_${activeTechKey}_${c.key}` : `${activeTechKey}_${c.key}`);
     const techScores = techKeys.map(k => prevScores[k]).filter(v => typeof v === 'number' && v > 0);
     const techAvg = techScores.length > 0 ? (techScores.reduce((acc, v) => acc + v, 0) / techScores.length) : (prevScores[criterionKey] || 0);
 
+    const updatedTechniqueAverages = {
+      ...(prevEval.techniqueAverages || {}),
+      [activeTechKey]: Number(techAvg.toFixed(1))
+    };
+
+    // Calcular promedio general equilibrado estrictamente entre las tres fases finales: Kihon, Kata y Kumite
+    const resolvePhaseForTech = (tKey) => {
+      if (!tKey) return 'kihon';
+      const tk = String(tKey).toLowerCase();
+      if (tk.includes('-ka') || tk.includes('kata')) return 'kata';
+      if (tk.includes('-ku') || tk.includes('kumite')) return 'kumite';
+      if (tk.startsWith('aspect')) return 'aspectos';
+      for (const syl of syllabi || []) {
+        const found = (syl.techniques || []).find(t => t.id === tKey);
+        if (found) return (found.group || found.phase || 'kihon').toLowerCase();
+      }
+      return 'kihon';
+    };
+
+    const phaseSums = { kihon: 0, kata: 0, kumite: 0 };
+    const phaseCounts = { kihon: 0, kata: 0, kumite: 0 };
+
+    Object.entries(updatedTechniqueAverages).forEach(([tKey, tAvg]) => {
+      if (typeof tAvg !== 'number' || tAvg <= 0) return;
+      const ph = resolvePhaseForTech(tKey);
+      if (phaseSums[ph] !== undefined) {
+        const norm = tAvg <= 10 ? tAvg * 10 : tAvg;
+        phaseSums[ph] += norm;
+        phaseCounts[ph]++;
+      }
+    });
+
+    const evaluatedPhases = [
+      phaseCounts.kihon > 0 ? (phaseSums.kihon / phaseCounts.kihon) : null,
+      phaseCounts.kata > 0 ? (phaseSums.kata / phaseCounts.kata) : null,
+      phaseCounts.kumite > 0 ? (phaseSums.kumite / phaseCounts.kumite) : null,
+    ].filter(v => v !== null);
+
+    const percentage = evaluatedPhases.length > 0
+      ? Math.round(evaluatedPhases.reduce((acc, v) => acc + v, 0) / evaluatedPhases.length)
+      : (scoreValues.length > 0 ? Math.round((avg / 10) * 100) : 0);
+    const isPassed = percentage >= 70;
+
     const updatedData = {
       ...prevEval,
       scores: prevScores,
-      techniqueAverages: {
-        ...(prevEval.techniqueAverages || {}),
-        [activeTechKey]: Number(techAvg.toFixed(1))
-      },
+      techniqueAverages: updatedTechniqueAverages,
       percentage,
       pointsEarned: sum,
       pointsPossible: scoreValues.length * 10,

@@ -2301,12 +2301,20 @@ export async function getTribunalProgressForCall(params) {
           total: item.percentage || 0
         };
 
+        // El promedio colegiado de este evaluador se equilibra equitativamente entre las 3 fases finales (Kihon, Kata y Kumite)
+        const evaluatedPhaseAvgs = [phaseAverages.kihon, phaseAverages.kata, phaseAverages.kumite].filter(v => typeof v === 'number');
+        const balancedPercentage = evaluatedPhaseAvgs.length > 0
+          ? Math.round(evaluatedPhaseAvgs.reduce((a, b) => a + b, 0) / evaluatedPhaseAvgs.length)
+          : (item.percentage || 0);
+
+        phaseAverages.total = balancedPercentage;
+
         evaluationsByStudent[stId] = {
           id: item._id.toString(),
           studentId: stId,
           studentName: item.studentName,
-          percentage: item.percentage || 0,
-          isPassed: Boolean(item.isPassed),
+          percentage: balancedPercentage,
+          isPassed: balancedPercentage >= 70,
           scoresCount: scCount,
           scores: item.scores || {},
           techniqueAverages: item.techniqueAverages || {},
@@ -2344,8 +2352,8 @@ export async function getTribunalProgressForCall(params) {
             isFullyDone
           }
         };
-        totalPercentage += (item.percentage || 0);
-        if (item.isPassed) passedCount += 1;
+        totalPercentage += balancedPercentage;
+        if (balancedPercentage >= 70) passedCount += 1;
 
         if (!lastEvaluatedAt || new Date(item.evaluatedAt) > new Date(lastEvaluatedAt)) {
           lastEvaluatedAt = item.evaluatedAt ? item.evaluatedAt.toISOString() : null;

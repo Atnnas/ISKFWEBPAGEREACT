@@ -32,6 +32,13 @@ export async function generateTechnicalExamCertificatePDF({
   _generalComment = '',
   evaluators = []
 }) {
+  // El promedio colegiado final técnico debe ser estrictamente el promedio entre las tres fases finales: Kihon, Kata y Kumite
+  const phaseScores = [kihonScore, kataScore, kumiteScore].filter(v => typeof v === 'number' && v > 0);
+  const resolvedFinalScore = phaseScores.length > 0
+    ? Math.round(phaseScores.reduce((a, b) => a + b, 0) / phaseScores.length)
+    : (finalScore || 80);
+  const resolvedIsPassed = isPassed !== null ? isPassed : (resolvedFinalScore >= 70);
+
   const jsPdfModule = await import('jspdf');
   const JsPDF = jsPdfModule.jsPDF || jsPdfModule.default?.jsPDF || jsPdfModule.default;
 
@@ -194,12 +201,12 @@ export async function generateTechnicalExamCertificatePDF({
   doc.text(String(Math.round(writtenScore || 95)), cols[4].x + cols[4].w / 2, dataRowY + 5.2, { align: 'center' });
 
   doc.setFontSize(11.5);
-  doc.text(String(Math.round(finalScore || 80)), cols[5].x + cols[5].w / 2, dataRowY + 5.3, { align: 'center' });
+  doc.text(String(Math.round(resolvedFinalScore)), cols[5].x + cols[5].w / 2, dataRowY + 5.3, { align: 'center' });
 
   // Resultado (Con espacio generoso de 26mm - cero colisiones)
   doc.setFontSize(8.5);
-  doc.setTextColor(...(isPassed ? COLOR_GREEN_PASS : COLOR_RED_FAIL));
-  doc.text(isPassed ? 'APROBADO' : 'PENDIENTE', cols[6].x + cols[6].w / 2, dataRowY + 5.1, { align: 'center' });
+  doc.setTextColor(...(resolvedIsPassed ? COLOR_GREEN_PASS : COLOR_RED_FAIL));
+  doc.text(resolvedIsPassed ? 'APROBADO' : 'PENDIENTE', cols[6].x + cols[6].w / 2, dataRowY + 5.1, { align: 'center' });
 
   // Nuevo Grado (Con espacio generoso de 26mm - cero colisiones)
   doc.setFontSize(8.0);
@@ -364,7 +371,7 @@ export async function generateTechnicalExamCertificatePDF({
 
   const defaultPositive = `* Corrección en Kata: Durante la forma (Heian Shodan), el estudiante debe mantenerse quieto, firme y con la mirada atenta al frente, sin tocarse ni acomodarse el uniforme en ningún momento.
 * Corrección de postura básica: En la posición adelantada (Zenkutsu Dachi), estirar por completo la pierna de atrás apoyando todo el talón en el suelo, y flexionar bien la rodilla del frente sin subir la altura del cuerpo.
-* Detalle para la nota máxima (10 de 10): Con una nota de ${Math.round(finalScore || 80)}%, para alcanzar la perfección faltó: cero reajustes a la vestimenta en tatami, bajar más el centro del cuerpo, y mayor sincronía de cadera en el impacto final.
+* Detalle para la nota máxima (10 de 10): Con una nota de ${Math.round(resolvedFinalScore)}%, para alcanzar la perfección faltó: cero reajustes a la vestimenta en tatami, bajar más el centro del cuerpo, y mayor sincronía de cadera en el impacto final.
 * Aspectos aprobados demostrados: muy buen saludo, respeto y disciplina dentro del tatami, y buena fuerza al golpear.`;
 
   const contentPositive = (positiveText && positiveText.trim().length > 15) ? positiveText : defaultPositive;
