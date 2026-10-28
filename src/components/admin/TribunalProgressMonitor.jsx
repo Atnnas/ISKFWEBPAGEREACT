@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
-import { getKataForRank, getKumiteForRank } from '../../lib/utils/shotokanCriteriaFeedback';
+import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
 
 // Helper para formatear tiempo relativo transcurrido
 function formatTimeAgo(dateStr) {
@@ -114,85 +114,15 @@ function getEvalPhaseMetrics(evData, syllabusSummary = null) {
   };
 }
 
-// Helper para extraer exclusivamente las viñetas técnicas de corrección y mejora consensuadas por los evaluadores
-function getPhaseImprovementBullets(phase, notesList) {
-  if (!notesList || notesList.length === 0) {
-    return ['Mantener la práctica constante para consolidar las técnicas de esta fase.'];
-  }
-
-  const combined = notesList
-    .map(n => (typeof n === 'string' ? n : n.note || ''))
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  const bullets = [];
-
-  if (phase === 'kata') {
-    const hasKarategui = combined.includes('karategui') || combined.includes('dogi') || combined.includes('uniforme') || combined.includes('acomoda') || combined.includes('ropa');
-    if (hasKarategui) {
-      bullets.push('Uniforme y atención: No tocarse ni acomodarse el karategui durante el kata. Debe mantenerse firme, quieto y con la mirada atenta al frente.');
-    }
-    if (combined.includes('zanshin') || combined.includes('mirada') || combined.includes('vista') || combined.includes('concentración')) {
-      bullets.push('Mirada y concentración: Mantener la vista fija hacia adelante después de cada giro y después de gritar el kiai.');
-    }
-    if (combined.includes('ritmo') || combined.includes('fluidez') || combined.includes('embusen') || combined.includes('pausas')) {
-      bullets.push('Ritmo continuo: Seguir los pasos del kata sin detenerse indebidamente entre un movimiento y otro.');
-    }
-    if (combined.includes('postura') || combined.includes('balance') || combined.includes('dachi')) {
-      bullets.push('Posiciones del kata: Bajar bien en las posiciones (Zenkutsu y Kokutsu Dachi) y mantener el cuerpo firme sin balancearse.');
-    }
-    if (bullets.length === 0) {
-      bullets.push('Mantener posturas firmes, ritmo parejo y la mirada fija al terminar cada técnica.');
-    }
-    return bullets;
-  }
-
-  if (phase === 'kihon') {
-    if (combined.includes('zenkutsu') || combined.includes('pierna') || combined.includes('dachi') || combined.includes('postura') || combined.includes('talón')) {
-      bullets.push('Posición adelantada (Zenkutsu Dachi): Estirar bien la pierna de atrás apoyando todo el talón en el suelo sin levantarlo al golpear.');
-    }
-    if (combined.includes('hikite') || combined.includes('cadera') || combined.includes('puño')) {
-      bullets.push('Mano a la cintura (Hikite): Jalar y pegar bien el puño que no golpea a la cintura en cada técnica.');
-    }
-    if (combined.includes('hombro') || combined.includes('gravedad') || combined.includes('centro') || combined.includes('altura')) {
-      bullets.push('Altura del cuerpo: Mantener los hombros relajados hacia abajo y no subir el cuerpo al dar los pasos.');
-    }
-    if (combined.includes('mae geri') || combined.includes('hikiashi') || combined.includes('recoger') || combined.includes('pie de apoyo')) {
-      bullets.push('Patada de frente (Mae Geri): Recoger la pierna rápido después de patear y apoyar firme el otro pie sin perder el equilibrio.');
-    }
-    if (combined.includes('media luna') || combined.includes('pies en falso') || combined.includes('desplazamiento')) {
-      bullets.push('Pasos al avanzar: Dar los pasos continuos y directos sin mover los pies en falso antes de avanzar.');
-    }
-    if (bullets.length === 0) {
-      bullets.push('Hacer los bloqueos limpios a un puño del cuerpo y girar bien la cadera al final.');
-    }
-    return bullets;
-  }
-
-  if (phase === 'kumite') {
-    if (combined.includes('distancia') || combined.includes('ma-ai') || combined.includes('retrocede')) {
-      bullets.push('Distancia con el compañero: Calcular bien el espacio para bloquear y atacar sin retroceder antes de la orden.');
-    }
-    if (combined.includes('guardia') || combined.includes('kamae') || combined.includes('soto uke')) {
-      bullets.push('Guardia defensiva: Proteger el centro del cuerpo y no bajar las manos de defensa tras bloquear.');
-    }
-    if (combined.includes('kime') || combined.includes('cadera') || combined.includes('contraataque') || combined.includes('rotación')) {
-      bullets.push('Golpe de contraataque: Girar la cadera y golpear con fuerza, precisión y un kiai fuerte.');
-    }
-    if (bullets.length === 0) {
-      bullets.push('Mantener la postura de combate lista y responder con atención y rapidez.');
-    }
-    return bullets;
-  }
-
-  if (phase === 'aspectos') {
-    bullets.push('Saludo y respeto: Saludar con energía, respeto y buena postura al entrar y salir del tatami.');
-    bullets.push('Atención en tatami: Mantenerse quieto y atento a las indicaciones de los profesores evaluadores.');
-    return bullets;
-  }
-
-  return notesList.map(n => (typeof n === 'string' ? n : n.note || '')).filter(Boolean);
+// Helper inteligente para comparar y sintetizar viñetas consensuadas por fase entre todos los evaluadores
+function getPhaseImprovementBullets(phase, notesList, techniqueScores = [], phaseAverage = 75, targetRank = '9° Kyu (Cinta Amarilla)') {
+  return synthesizePhaseBulletsWithAI({
+    phase,
+    notesList,
+    techniqueScores,
+    phaseAverage,
+    targetRank
+  });
 }
 
 // Drawer interactivo con pestañas de Promedios Colegiados y pestañas por cada Sensei Evaluador
@@ -281,6 +211,32 @@ function StudentMonitorDrawer({
     .filter(item => item.note && item.note.trim().length > 0);
 
   const selectedEvalItem = evalItems.find(e => e.key === activeTab);
+  const targetRankStr = student?.targetRank || consolidation?.promotedRank || '9° Kyu (Cinta Amarilla)';
+
+  // Extraer promedios por técnica del temario según las notas asignadas
+  const kihonTechScores = (syllabusTechniques || [])
+    .filter(t => (t.group || t.phase || 'kihon').toLowerCase() === 'kihon')
+    .map(t => {
+      const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+      const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+      return { id: t.id, name: t.name, score: avg };
+    });
+
+  const kataTechScores = (syllabusTechniques || [])
+    .filter(t => (t.group || t.phase || '').toLowerCase() === 'kata')
+    .map(t => {
+      const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+      const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+      return { id: t.id, name: t.name, score: avg };
+    });
+
+  const kumiteTechScores = (syllabusTechniques || [])
+    .filter(t => (t.group || t.phase || '').toLowerCase() === 'kumite')
+    .map(t => {
+      const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+      const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+      return { id: t.id, name: t.name, score: avg };
+    });
 
   return (
     <div className="bg-white rounded-2xl border border-indigo-200/90 p-4 sm:p-5 shadow-sm space-y-4 text-xs">
@@ -412,16 +368,19 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-2 bg-white p-3 rounded-lg border border-blue-100 shadow-2xs">
-                    {getPhaseImprovementBullets('kihon', kihonNotesList).map((bullet, bIdx) => (
-                      <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
-                        <span className="text-blue-600 font-black mt-0.5 select-none">•</span>
-                        <span>{bullet}</span>
-                      </div>
-                    ))}
+                    {getPhaseImprovementBullets('kihon', kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr).map((bItem, bIdx) => {
+                      const text = typeof bItem === 'string' ? bItem : bItem.text;
+                      return (
+                        <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
+                          <span className="text-blue-600 font-black mt-0.5 select-none">•</span>
+                          <span className="flex-1">{text}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="text-[9px] text-blue-700/80 font-bold pt-1">
-                  🥋 Coincidencias de {kihonNotesList.length} evaluadores
+                  🥋 Indicaciones técnicas de Kihon
                 </div>
               </div>
 
@@ -439,8 +398,9 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-1.5 bg-white p-3 rounded-lg border border-purple-100 shadow-2xs">
-                    {getPhaseImprovementBullets('kata', kataNotesList).map((bullet, bIdx) => {
-                      const isKarategui = bullet.toLowerCase().includes('karategui');
+                    {getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, colegiadoKata, targetRankStr).map((bItem, bIdx) => {
+                      const text = typeof bItem === 'string' ? bItem : bItem.text;
+                      const isKarategui = text.toLowerCase().includes('karategui') || text.toLowerCase().includes('cabello') || text.toLowerCase().includes('uniforme');
                       return (
                         <div
                           key={bIdx}
@@ -449,14 +409,14 @@ function StudentMonitorDrawer({
                           }`}
                         >
                           <span className={`font-black mt-0.5 select-none ${isKarategui ? 'text-amber-700' : 'text-purple-600'}`}>•</span>
-                          <span>{bullet}</span>
+                          <span className="flex-1">{text}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
                 <div className="text-[9px] text-purple-700/80 font-bold pt-1">
-                  🥋 Coincidencias de {kataNotesList.length} evaluadores
+                  🥋 Indicaciones técnicas de Kata
                 </div>
               </div>
 
@@ -474,16 +434,19 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-2 bg-white p-3 rounded-lg border border-amber-100 shadow-2xs">
-                    {getPhaseImprovementBullets('kumite', kumiteNotesList).map((bullet, bIdx) => (
-                      <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
-                        <span className="text-amber-600 font-black mt-0.5 select-none">•</span>
-                        <span>{bullet}</span>
-                      </div>
-                    ))}
+                    {getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr).map((bItem, bIdx) => {
+                      const text = typeof bItem === 'string' ? bItem : bItem.text;
+                      return (
+                        <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
+                          <span className="text-amber-600 font-black mt-0.5 select-none">•</span>
+                          <span className="flex-1">{text}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="text-[9px] text-amber-700/80 font-bold pt-1">
-                  🥋 Coincidencias de {kumiteNotesList.length} evaluadores
+                  🥋 Indicaciones técnicas de Kumite
                 </div>
               </div>
             </div>
@@ -505,12 +468,15 @@ function StudentMonitorDrawer({
                   )}
                 </div>
                 <div className="mt-2 space-y-1.5 bg-white p-3 rounded-lg border border-emerald-100 shadow-2xs">
-                  {getPhaseImprovementBullets('aspectos', aspectosNotesList).map((bullet, bIdx) => (
-                    <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
-                      <span className="text-emerald-600 font-black mt-0.5 select-none">•</span>
-                      <span>{bullet}</span>
-                    </div>
-                  ))}
+                  {getPhaseImprovementBullets('aspectos', aspectosNotesList, [], colegiadoAspectos, targetRankStr).map((bItem, bIdx) => {
+                    const text = typeof bItem === 'string' ? bItem : bItem.text;
+                    return (
+                      <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
+                        <span className="text-emerald-600 font-black mt-0.5 select-none">•</span>
+                        <span>{text}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -717,41 +683,30 @@ export default function TribunalProgressMonitor({
       const kuScore = kumiteVals.length ? Math.round(kumiteVals.reduce((a, b) => a + b, 0) / kumiteVals.length) : (cons?.finalGrade || 90);
       const finalScore = cons?.finalGrade || (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : 90);
 
-      const kataName = getKataForRank(targetRank);
-      const kumiteName = getKumiteForRank(targetRank);
+      const kihonRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kihon })).filter(i => i.note);
+      const kataRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kata })).filter(i => i.note);
+      const kumiteRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kumite })).filter(i => i.note);
 
-      let resolvedKihonNotes = evalItems.map(e => e.evalRecord?.phaseNotes?.kihon).filter(Boolean).join('\n');
-      if (!resolvedKihonNotes) {
-        if (kScore < 70) {
-          resolvedKihonNotes = 'En la posición adelantada (Zenkutsu Dachi), estirar bien la pierna de atrás sin despegar el talón del suelo al avanzar.\nLlevar la mano de Hikite pegada con firmeza sobre la cintura en cada golpe o bloqueo.\nNo subir el cuerpo en los desplazamientos y recoger la pierna rápido al patear (Hikiashi).';
-        } else if (kScore >= 85) {
-          resolvedKihonNotes = 'Mayor aceleración y sincronía en el tirón del Hikite hacia la cintura en el instante exacto del impacto final.\nDescender medio puño más el centro de gravedad sin oscilar la altura durante los avances.';
-        } else {
-          resolvedKihonNotes = 'En la posición adelantada (Zenkutsu Dachi), estirar bien la pierna de atrás con el talón apoyado en el suelo.\nLlevar la mano que no golpea bien pegada a la cintura (Hikite).\nNo subir el cuerpo al avanzar y recoger rápido la pierna al patear.';
-        }
-      }
+      const resolvedKihonNotes = synthesizePhaseBulletsWithAI({
+        phase: 'kihon',
+        notesList: kihonRawList,
+        phaseAverage: kScore,
+        targetRank
+      }).map(b => b.text).join('\n');
 
-      let resolvedKataNotes = evalItems.map(e => e.evalRecord?.phaseNotes?.kata).filter(Boolean).join('\n');
-      if (!resolvedKataNotes) {
-        if (kaScore < 70) {
-          resolvedKataNotes = `Durante ${kataName}, no tocarse ni acomodarse el uniforme (karategui). Mantenerse firme, quieto y con la mirada atenta al frente.\nRepasar la secuencia oficial y el embusen para no dudar en los giros.\nBajar bien las posiciones y no balancear el cuerpo.`;
-        } else if (kaScore >= 85) {
-          resolvedKataNotes = `En ${kataName}, mantener la concentración absoluta e inmovilidad total tras el kiai final sin ningún ajuste a la vestimenta hasta la voz oficial de descanso.\nBajar medio puño más la posición en cada transición para ganar 10 de 10.`;
-        } else {
-          resolvedKataNotes = `Durante ${kataName}, mantener la vista fija hacia adelante después de cada giro y después del grito (kiai).\nBajar bien las posiciones y evitar tocarse la vestimenta.`;
-        }
-      }
+      const resolvedKataNotes = synthesizePhaseBulletsWithAI({
+        phase: 'kata',
+        notesList: kataRawList,
+        phaseAverage: kaScore,
+        targetRank
+      }).map(b => b.text).join('\n');
 
-      let resolvedKumiteNotes = evalItems.map(e => e.evalRecord?.phaseNotes?.kumite).filter(Boolean).join('\n');
-      if (!resolvedKumiteNotes) {
-        if (kuScore < 70) {
-          resolvedKumiteNotes = `En ${kumiteName}, calcular con precisión la distancia de combate (Ma-ai) para no quedar desprotegido.\nNo bajar los brazos de defensa (Kamae) después de bloquear.\nNo retroceder con miedo o antes de tiempo; mantener actitud marcial decidida.`;
-        } else if (kuScore >= 85) {
-          resolvedKumiteNotes = `En ${kumiteName}, mayor velocidad explosiva y rotación de cadera en la respuesta de contraataque inmediatamente tras el bloqueo.\nMantener la guardia y el zanshin permanente al concluir cada intercambio.`;
-        } else {
-          resolvedKumiteNotes = `En ${kumiteName}, calcular bien la distancia con su compañero para no quedar muy cerca ni muy lejos.\nNo bajar las manos de defensa después de bloquear.\nGirar la cadera y golpear con fuerza, buena dirección y un kiai fuerte.`;
-        }
-      }
+      const resolvedKumiteNotes = synthesizePhaseBulletsWithAI({
+        phase: 'kumite',
+        notesList: kumiteRawList,
+        phaseAverage: kuScore,
+        targetRank
+      }).map(b => b.text).join('\n');
 
       const positiveText = cons?.aiAnalysis || `${studentName} demostró un espíritu marcial ejemplar, constancia y disciplina sobresaliente en el tatami.`;
 

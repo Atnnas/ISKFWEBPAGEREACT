@@ -17,6 +17,7 @@ import {
   getPrimaryStance,
   generateShotokanFeedbackBullets
 } from '../utils/shotokanCriteriaFeedback';
+import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
 
 /**
  * Obtener evaluaciones técnicas de un dojo específico (para Padrón y Tatami)
@@ -322,7 +323,12 @@ TU TAREA OBLIGATORIA:
      Tono de alta precisión técnica. Enfocado EXCLUSIVAMENTE en el detalle fino que le faltó para corregir y ganar 100% (10 de 10) (ej: descender medio puño más el centro de gravedad sin oscilar la altura, máxima aceleración en el Hikite en el impacto final, cero movimientos tras el kiai en ${kataName}).
    - SI LA NOTA ES MEDIA (70% - 84% o 3 estrellas):
      Correcciones constructivas directas para afianzar la fijación de posturas y kime.
-3. Formato OBLIGATORIO: Lista con viñetas (*), una por línea.
+3. COMPARACIÓN Y SÍNTESIS INTELIGENTE DE COMENTARIOS:
+   - Compara las observaciones de los evaluadores por cada fase (Kihon, Kata, Kumite).
+   - Si dos o más Senseis coinciden o se parecen en un rubro (por ejemplo: la salida con la punta del pie antes de avanzar, acomodarse el cabello o uniforme, los codos en un bloqueo, la respiración o la distancia), sintétizalos y unifícalos en una sola viñeta concisa de consenso.
+   - Si las observaciones de los Senseis coinciden con las técnicas de baja calificación de estrellas, intégralas directamente en la corrección de esa técnica.
+   - Si una técnica recibió estrellas bajas y no fue mencionada en texto, añade la corrección técnica correspondiente.
+4. Formato OBLIGATORIO: Lista con viñetas (*), una por línea.
 * [Corrección en Kata (${kataName})]
 * [Corrección en Kihon / Posturas]
 * [Corrección en Kumite (${kumiteName})]
@@ -401,15 +407,64 @@ TU TAREA OBLIGATORIA:
       }
     }
 
-    // 6. Motor Heurístico Experto: Basado estrictamente en los aspectos del temario y estrellas
-    const listItems = generateShotokanFeedbackBullets({
+    // 6. Motor Heurístico y Semántico de Síntesis Marcial Colegiada
+    // Clasificar y comparar las notas de los evaluadores por fase técnica
+    const kihonNotes = validNotes
+      .filter(n => {
+        const t = (n.techniqueName || '').toLowerCase();
+        return t.includes('kihon') || t.includes('dachi') || t.includes('zuki') || t.includes('uke') || t.includes('geri') || t.includes('básic');
+      })
+      .map(n => ({ evaluatorName: n.evaluatorName, note: n.observation }));
+
+    const kataNotes = validNotes
+      .filter(n => (n.techniqueName || '').toLowerCase().includes('kata') || (n.techniqueName || '').toLowerCase().includes('shodan') || (n.techniqueName || '').toLowerCase().includes('heian'))
+      .map(n => ({ evaluatorName: n.evaluatorName, note: n.observation }));
+
+    const kumiteNotes = validNotes
+      .filter(n => (n.techniqueName || '').toLowerCase().includes('kumite') || (n.techniqueName || '').toLowerCase().includes('gohon') || (n.techniqueName || '').toLowerCase().includes('combate'))
+      .map(n => ({ evaluatorName: n.evaluatorName, note: n.observation }));
+
+    // Si algunas notas no coincidieron por nombre específico, distribuirlas según contexto
+    validNotes.forEach(n => {
+      const lowerObs = (n.observation || '').toLowerCase();
+      const inK = kihonNotes.some(x => x.note === n.observation);
+      const inKa = kataNotes.some(x => x.note === n.observation);
+      const inKu = kumiteNotes.some(x => x.note === n.observation);
+      if (!inK && !inKa && !inKu) {
+        if (lowerObs.includes('kata') || lowerObs.includes('karategui') || lowerObs.includes('embusen') || lowerObs.includes('mirada')) {
+          kataNotes.push({ evaluatorName: n.evaluatorName, note: n.observation });
+        } else if (lowerObs.includes('kumite') || lowerObs.includes('combate') || lowerObs.includes('distancia') || lowerObs.includes('guardia') || lowerObs.includes('respiracion')) {
+          kumiteNotes.push({ evaluatorName: n.evaluatorName, note: n.observation });
+        } else {
+          kihonNotes.push({ evaluatorName: n.evaluatorName, note: n.observation });
+        }
+      }
+    });
+
+    const synK = synthesizePhaseBulletsWithAI({ phase: 'kihon', notesList: kihonNotes, phaseAverage: pct, targetRank });
+    const synKa = synthesizePhaseBulletsWithAI({ phase: 'kata', notesList: kataNotes, phaseAverage: pct, targetRank });
+    const synKu = synthesizePhaseBulletsWithAI({ phase: 'kumite', notesList: kumiteNotes, phaseAverage: pct, targetRank });
+
+    const combinedList = [];
+    synK.forEach(b => combinedList.push(`* ${b.text}`));
+    synKa.forEach(b => combinedList.push(`* ${b.text}`));
+    synKu.forEach(b => combinedList.push(`* ${b.text}`));
+
+    const fallbackList = generateShotokanFeedbackBullets({
       percentage: pct,
       targetRank,
       techniques,
       validNotes
     });
 
-    const synthesizedVerdict = listItems.join('\n');
+    fallbackList.forEach(fb => {
+      const isExtra = fb.includes('100%') || fb.includes('no aprobación') || fb.includes('demostrados');
+      if (isExtra && !combinedList.some(c => c.slice(0, 20) === fb.slice(0, 20))) {
+        combinedList.push(fb);
+      }
+    });
+
+    const synthesizedVerdict = combinedList.length > 0 ? combinedList.join('\n') : fallbackList.join('\n');
 
     return {
       success: true,
