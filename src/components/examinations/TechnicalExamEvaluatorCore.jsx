@@ -688,21 +688,37 @@ export default function TechnicalExamEvaluatorCore({
   // Helper para resolver el temario aplicable de cada estudiante según su grado/cinturón
   const getStudentSyllabus = useCallback((st) => {
     if (!st) return syllabi[0] || null;
-    const rankTarget = (st.targetRank || '').toLowerCase();
-    const rankCurrent = (st.currentRank || '').toLowerCase();
+    const rankTarget = (st.targetRank || '').toLowerCase().trim();
+    const rankCurrent = (st.currentRank || '').toLowerCase().trim();
 
-    const match = syllabi.find(s => {
-      const sTarget = (s.targetRank || '').toLowerCase();
-      const sCurrent = (s.currentRank || '').toLowerCase();
-      const targets = Array.isArray(s.targetRanks) ? s.targetRanks.map(r => (r || '').toLowerCase()) : [];
+    // 1. Prioridad: Coincidencia exacta por rango actual del estudiante (ej: Cinta Blanca -> Temario Blanco)
+    let match = syllabi.find(s => {
+      const sCurrent = (s.currentRank || '').toLowerCase().trim();
+      return rankCurrent && sCurrent === rankCurrent;
+    });
+    if (match) return match;
+
+    // 2. Prioridad: Coincidencia por rango objetivo (targetRank)
+    match = syllabi.find(s => {
+      const sTarget = (s.targetRank || '').toLowerCase().trim();
+      const targets = Array.isArray(s.targetRanks) ? s.targetRanks.map(r => (r || '').toLowerCase().trim()) : [];
       return (
         (rankTarget && sTarget === rankTarget) ||
-        (rankCurrent && sTarget === rankCurrent) ||
-        (rankCurrent && sCurrent === rankCurrent) ||
-        (rankTarget && targets.includes(rankTarget)) ||
-        (rankCurrent && targets.includes(rankCurrent))
+        (rankTarget && targets.includes(rankTarget))
       );
     });
+    if (match) return match;
+
+    // 3. Coincidencia difusa por nombre de temario
+    match = syllabi.find(s => {
+      const sName = (s.name || '').toLowerCase();
+      if (rankCurrent && (rankCurrent.includes('blanco') || rankCurrent.includes('blanca')) && (sName.includes('blanco') || sName.includes('blanca') || sName.includes('10'))) return true;
+      if (rankCurrent && rankCurrent.includes('amarill') && (sName.includes('amarill') || sName.includes('9'))) return true;
+      if (rankTarget && (rankTarget.includes('blanco') || rankTarget.includes('blanca')) && (sName.includes('blanco') || sName.includes('blanca') || sName.includes('10'))) return true;
+      if (rankTarget && rankTarget.includes('amarill') && (sName.includes('amarill') || sName.includes('9'))) return true;
+      return false;
+    });
+
     return match || syllabi[0] || null;
   }, [syllabi]);
 
@@ -771,10 +787,13 @@ export default function TechnicalExamEvaluatorCore({
           direction: t.direction || '',
           repetitions: t.repetitions || 3,
           notes: t.notes || '',
-          embusen: t.embusen || ''
+          embusen: t.embusen || '',
+          order: t.order !== undefined ? t.order : tIdx
         });
       }
     });
+
+    list.sort((a, b) => (a.order || 0) - (b.order || 0));
 
     return list.length > 0 ? list : (DEFAULT_TECHNIQUES[phase] || []);
   }, [effectivePhase, getStudentSyllabus]);
@@ -1251,9 +1270,9 @@ export default function TechnicalExamEvaluatorCore({
     handleUpdateStudentNotes(student, formatted, phase);
   };
 
-  // Fases disponibles dinámicamente
+  // Fases disponibles dinámicamente según el orden oficial ISKF (1. Kihon, 2. Kumite, 3. Kata)
   const availablePhaseKeys = useMemo(() => {
-    return ['kihon', 'kata', 'kumite', ...(hasEvaluableAspects ? ['aspectos'] : [])];
+    return ['kihon', 'kumite', 'kata', ...(hasEvaluableAspects ? ['aspectos'] : [])];
   }, [hasEvaluableAspects]);
 
   // Validar si todos los karatecas en tatami tienen todas sus estrellas asignadas (> 0) en sus técnicas activas
@@ -1568,13 +1587,13 @@ export default function TechnicalExamEvaluatorCore({
           })}
         </div>
 
-        {/* Selector de Fases */}
+        {/* Selector de Fases Oficial ISKF */}
         <div className="flex items-center gap-1 overflow-x-auto py-0.5">
           {[
-            { key: 'kihon', label: 'Kihon' },
-            { key: 'kata', label: 'Kata' },
-            { key: 'kumite', label: 'Kumite' },
-            ...(hasEvaluableAspects ? [{ key: 'aspectos', label: 'Aspectos Generales' }] : [])
+            { key: 'kihon', label: '1. Kihon' },
+            { key: 'kumite', label: '2. Kumite' },
+            { key: 'kata', label: '3. Kata' },
+            ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '4. Aspectos Generales' }] : [])
           ].map(phase => {
             const isSelected = effectivePhase === phase.key;
             return (
@@ -2053,8 +2072,8 @@ export default function TechnicalExamEvaluatorCore({
 
         const phaseList = [
           { key: 'kihon', label: 'Kihon', desc: 'Técnicas Básicas' },
-          { key: 'kata', label: 'Kata', desc: 'Formas' },
           { key: 'kumite', label: 'Kumite', desc: 'Combate' },
+          { key: 'kata', label: 'Kata', desc: 'Formas' },
           ...(hasEvaluableAspects ? [{ key: 'aspectos', label: 'Aspectos', desc: 'Generales' }] : [])
         ];
 
