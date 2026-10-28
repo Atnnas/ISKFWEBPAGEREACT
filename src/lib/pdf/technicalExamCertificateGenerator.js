@@ -253,7 +253,7 @@ export async function generateTechnicalExamCertificatePDF({
     rawLines.forEach(l => {
       const sentences = l.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 10);
       sentences.forEach(s => {
-        const cleanS = s.replace(/^[•\s*-]+/, '').trim();
+        const cleanS = s.replace(/^[•\s*-]+/, '').replace(/^ajuste t[eé]cnico:?\s*/i, '').trim();
         if (cleanS && !bulletPoints.includes(cleanS)) {
           bulletPoints.push(cleanS);
         }

@@ -507,6 +507,7 @@ function StudentMonitorDrawer({
                   .map((line, lIdx) => {
                     const cleanLine = line
                       .replace(/^\*\s*/, '')
+                      .replace(/^ajuste t[eé]cnico:?\s*/i, '')
                       .replace(/^observaciones directas del [^:]+:?\s*/i, '')
                       .replace(/^observaciones directas de [^:]+:?\s*/i, '')
                       .replace(/\s*\([^)]*tribunal[^)]*\):?/gi, ':')
