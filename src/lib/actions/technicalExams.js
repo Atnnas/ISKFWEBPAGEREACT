@@ -441,9 +441,27 @@ TU TAREA OBLIGATORIA:
       }
     });
 
-    const synK = synthesizePhaseBulletsWithAI({ phase: 'kihon', notesList: kihonNotes, phaseAverage: pct, targetRank });
-    const synKa = synthesizePhaseBulletsWithAI({ phase: 'kata', notesList: kataNotes, phaseAverage: pct, targetRank });
-    const synKu = synthesizePhaseBulletsWithAI({ phase: 'kumite', notesList: kumiteNotes, phaseAverage: pct, targetRank });
+    const synK = synthesizePhaseBulletsWithAI({
+      phase: 'kihon',
+      notesList: kihonNotes,
+      techniqueScores: lowTechs.filter(t => t.group === 'kihon'),
+      phaseAverage: pct,
+      targetRank
+    });
+    const synKa = synthesizePhaseBulletsWithAI({
+      phase: 'kata',
+      notesList: kataNotes,
+      techniqueScores: lowTechs.filter(t => t.group === 'kata'),
+      phaseAverage: pct,
+      targetRank
+    });
+    const synKu = synthesizePhaseBulletsWithAI({
+      phase: 'kumite',
+      notesList: kumiteNotes,
+      techniqueScores: lowTechs.filter(t => t.group === 'kumite'),
+      phaseAverage: pct,
+      targetRank
+    });
 
     const combinedList = [];
     synK.forEach(b => combinedList.push(`* ${b.text}`));

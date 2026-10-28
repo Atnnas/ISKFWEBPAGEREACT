@@ -684,6 +684,31 @@ export default function TribunalProgressMonitor({
       const kuScore = kumiteVals.length ? Math.round(kumiteVals.reduce((a, b) => a + b, 0) / kumiteVals.length) : (cons?.finalGrade || 90);
       const finalScore = cons?.finalGrade || (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : 90);
 
+      const allTechs = progressData?.syllabusTechniques || [];
+      const kihonTechScores = allTechs
+        .filter(t => (t.group || t.phase || 'kihon').toLowerCase() === 'kihon')
+        .map(t => {
+          const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+          const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+          return { id: t.id, name: t.name, score: avg };
+        });
+
+      const kataTechScores = allTechs
+        .filter(t => (t.group || t.phase || '').toLowerCase() === 'kata')
+        .map(t => {
+          const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+          const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+          return { id: t.id, name: t.name, score: avg };
+        });
+
+      const kumiteTechScores = allTechs
+        .filter(t => (t.group || t.phase || '').toLowerCase() === 'kumite')
+        .map(t => {
+          const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+          const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+          return { id: t.id, name: t.name, score: avg };
+        });
+
       const kihonRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kihon })).filter(i => i.note);
       const kataRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kata })).filter(i => i.note);
       const kumiteRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kumite })).filter(i => i.note);
@@ -691,6 +716,7 @@ export default function TribunalProgressMonitor({
       const resolvedKihonNotes = synthesizePhaseBulletsWithAI({
         phase: 'kihon',
         notesList: kihonRawList,
+        techniqueScores: kihonTechScores,
         phaseAverage: kScore,
         targetRank
       }).map(b => b.text).join('\n');
@@ -698,6 +724,7 @@ export default function TribunalProgressMonitor({
       const resolvedKataNotes = synthesizePhaseBulletsWithAI({
         phase: 'kata',
         notesList: kataRawList,
+        techniqueScores: kataTechScores,
         phaseAverage: kaScore,
         targetRank
       }).map(b => b.text).join('\n');
@@ -705,6 +732,7 @@ export default function TribunalProgressMonitor({
       const resolvedKumiteNotes = synthesizePhaseBulletsWithAI({
         phase: 'kumite',
         notesList: kumiteRawList,
+        techniqueScores: kumiteTechScores,
         phaseAverage: kuScore,
         targetRank
       }).map(b => b.text).join('\n');
