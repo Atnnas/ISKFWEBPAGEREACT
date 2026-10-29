@@ -1807,7 +1807,31 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
     if (call._id) {
       evalQuery.callId = call._id;
     }
-    const evaluations = await TechnicalExamEvaluation.find(evalQuery).lean();
+    let evaluations = await TechnicalExamEvaluation.find(evalQuery).lean();
+
+    // AUTO-RECUPERACIÓN DEFENSIVA: Si algún estudiante convocado no tiene evaluación en este callId,
+    // recuperar automáticamente si tiene notas previas de este evaluador (ej. si se recreó o actualizó la convocatoria)
+    const evaluatedStudentIdSet = new Set(evaluations.map(e => e.studentId.toString()));
+    for (const stId of uniqueStudentIds) {
+      if (!evaluatedStudentIdSet.has(stId)) {
+        const priorEval = await TechnicalExamEvaluation.findOne({
+          studentId: new mongoose.Types.ObjectId(stId),
+          evaluatorEmail: evaluator.email,
+          scores: { $exists: true, $ne: {} }
+        }).sort({ evaluatedAt: -1 }).lean();
+
+        if (priorEval && Object.keys(priorEval.scores || {}).length > 0) {
+          if (call._id) {
+            await TechnicalExamEvaluation.findByIdAndUpdate(priorEval._id, { callId: call._id });
+          }
+          evaluations.push({
+            ...priorEval,
+            callId: call._id
+          });
+          evaluatedStudentIdSet.add(stId);
+        }
+      }
+    }
 
     return {
       success: true,
@@ -2197,10 +2221,42 @@ export async function getEvaluatorGradesForCall({ callId, evaluatorEmail }) {
       callFilter.callId = new mongoose.Types.ObjectId(callId);
     }
 
-    const evals = await TechnicalExamEvaluation.find({
+    let evals = await TechnicalExamEvaluation.find({
       ...callFilter,
       evaluatorEmail: safeEmail
     }).lean();
+
+    // AUTO-RECUPERACIÓN: Si para los estudiantes de esta convocatoria falta evaluación en este callId, auto-recuperar notas previas
+    if (mongoose.Types.ObjectId.isValid(callId)) {
+      const callRecord = await TechnicalExamCall.findById(callId).select('aspirants schedules').lean();
+      if (callRecord) {
+        const callStudentIds = [
+          ...(callRecord.aspirants || []).map(a => a.studentId.toString()),
+          ...(callRecord.schedules || []).flatMap(s => (s.studentIds || []).map(String))
+        ];
+        const uniqueCallStudentIds = [...new Set(callStudentIds)].filter(id => mongoose.Types.ObjectId.isValid(id));
+        const currentEvaluatedIds = new Set(evals.map(e => e.studentId.toString()));
+
+        for (const stId of uniqueCallStudentIds) {
+          if (!currentEvaluatedIds.has(stId)) {
+            const priorEval = await TechnicalExamEvaluation.findOne({
+              studentId: new mongoose.Types.ObjectId(stId),
+              evaluatorEmail: safeEmail,
+              scores: { $exists: true, $ne: {} }
+            }).sort({ evaluatedAt: -1 }).lean();
+
+            if (priorEval && Object.keys(priorEval.scores || {}).length > 0) {
+              await TechnicalExamEvaluation.findByIdAndUpdate(priorEval._id, { callId: new mongoose.Types.ObjectId(callId) });
+              evals.push({
+                ...priorEval,
+                callId: new mongoose.Types.ObjectId(callId)
+              });
+              currentEvaluatedIds.add(stId);
+            }
+          }
+        }
+      }
+    }
 
     return {
       success: true,
@@ -2319,7 +2375,28 @@ export async function getTribunalProgressForCall(params) {
         evaluatorEmail: cleanEmail,
         studentId: { $in: studentObjIds }
       };
-      const evals = await TechnicalExamEvaluation.find(evalFilter).lean();
+      let evals = await TechnicalExamEvaluation.find(evalFilter).lean();
+
+      // AUTO-RECUPERACIÓN DEFENSIVA: Si algún estudiante convocado no tiene evaluación en este callId, vincular notas previas
+      const evaluatedInCall = new Set(evals.map(e => e.studentId.toString()));
+      for (const stId of uniqueStudentIds) {
+        if (!evaluatedInCall.has(stId)) {
+          const priorEval = await TechnicalExamEvaluation.findOne({
+            studentId: new mongoose.Types.ObjectId(stId),
+            evaluatorEmail: cleanEmail,
+            scores: { $exists: true, $ne: {} }
+          }).sort({ evaluatedAt: -1 }).lean();
+
+          if (priorEval && Object.keys(priorEval.scores || {}).length > 0) {
+            await TechnicalExamEvaluation.findByIdAndUpdate(priorEval._id, { callId: callObjId });
+            evals.push({
+              ...priorEval,
+              callId: callObjId
+            });
+            evaluatedInCall.add(stId);
+          }
+        }
+      }
 
       const evaluationsByStudent = {};
       let totalPercentage = 0;
