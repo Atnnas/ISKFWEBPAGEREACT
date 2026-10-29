@@ -28,7 +28,7 @@ import {
   Sparkles,
   ChevronDown
 } from 'lucide-react';
-import { saveEvaluatorAtomicGrade, getCallSchedulesLatest } from '../../lib/actions/technicalExams';
+import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall } from '../../lib/actions/technicalExams';
 import { updateStudent } from '../../lib/actions/students';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
 import TribunalProgressMonitor from '../admin/TribunalProgressMonitor';
@@ -307,6 +307,7 @@ export default function TechnicalExamEvaluatorCore({
   const safeKeyId = String(callId || '').replace(/[^a-zA-Z0-9_-]/g, '');
   const safeKeyEmail = String(evaluatorEmail || '').replace(/[^a-zA-Z0-9_@-]/g, '');
   const localStorageKey = `iskf_eval_${safeKeyId}_${safeKeyEmail}`;
+  const localEvaluationsKey = `iskf_eval_grades_${safeKeyId}_${safeKeyEmail}`;
 
   // Tandas y estudiantes con sincronización en tiempo real desde el servidor
   const [liveSchedules, setLiveSchedules] = useState(() => Array.isArray(call?.schedules) ? call.schedules : []);
@@ -427,7 +428,7 @@ export default function TechnicalExamEvaluatorCore({
 
   const tandas = liveSchedules;
 
-  // Evaluaciones en memoria indexadas por studentId
+  // Evaluaciones en memoria indexadas por studentId con caché local y datos de servidor
   const [evaluationsByStudent, setEvaluationsByStudent] = useState(() => {
     const map = {};
     (initialEvaluations || []).forEach(ev => {
@@ -441,8 +442,92 @@ export default function TechnicalExamEvaluatorCore({
         phaseNotes: existingPhaseNotes
       };
     });
+
+    // Fusión con caché local para prevenir cualquier pérdida visual al cambiar de pestaña o viñeta
+    if (typeof window !== 'undefined') {
+      try {
+        const rawCached = localStorage.getItem(localEvaluationsKey);
+        if (rawCached) {
+          const parsed = JSON.parse(rawCached);
+          if (typeof parsed === 'object' && parsed !== null) {
+            Object.entries(parsed).forEach(([sId, cEv]) => {
+              map[sId] = {
+                ...(map[sId] || {}),
+                ...cEv,
+                scores: {
+                  ...(map[sId]?.scores || {}),
+                  ...(cEv.scores || {})
+                },
+                techniqueAverages: {
+                  ...(map[sId]?.techniqueAverages || {}),
+                  ...(cEv.techniqueAverages || {})
+                },
+                phaseNotes: {
+                  ...(map[sId]?.phaseNotes || {}),
+                  ...(cEv.phaseNotes || {})
+                }
+              };
+            });
+          }
+        }
+      } catch (err) {
+        console.debug('Error al leer caché local de evaluaciones:', err);
+      }
+    }
+
     return map;
   });
+
+  // Sincronizar evaluaciones existentes desde la base de datos para este evaluador y convocatoria
+  useEffect(() => {
+    if (!callId || !evaluatorEmail) return;
+
+    let isMounted = true;
+    const fetchExistingGrades = async () => {
+      try {
+        const res = await getEvaluatorGradesForCall({ callId, evaluatorEmail });
+        if (res.success && Array.isArray(res.evaluations) && res.evaluations.length > 0 && isMounted) {
+          setEvaluationsByStudent(prev => {
+            const merged = { ...prev };
+            res.evaluations.forEach(ev => {
+              const sId = String(ev.studentId);
+              merged[sId] = {
+                ...(merged[sId] || {}),
+                ...ev,
+                scores: {
+                  ...(ev.scores || {}),
+                  ...(merged[sId]?.scores || {})
+                },
+                techniqueAverages: {
+                  ...(ev.techniqueAverages || {}),
+                  ...(merged[sId]?.techniqueAverages || {})
+                },
+                phaseNotes: {
+                  ...(ev.phaseNotes || {}),
+                  ...(merged[sId]?.phaseNotes || {})
+                }
+              };
+            });
+
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem(localEvaluationsKey, JSON.stringify(merged));
+              } catch (e) {
+                console.debug('Error al actualizar localStorage con notas de BD:', e);
+              }
+            }
+
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.debug('Error al consultar evaluaciones del evaluador:', err);
+      }
+    };
+
+    fetchExistingGrades();
+    return () => { isMounted = false; };
+  }, [callId, evaluatorEmail, localEvaluationsKey]);
 
   // Fase seleccionada en el modal de observaciones (Kihon, Kata, Kumite)
   const [obsModalPhase, setObsModalPhase] = useState('kihon');
@@ -1034,13 +1119,41 @@ export default function TechnicalExamEvaluatorCore({
   const persistStudentGrade = useCallback((studentId, newEvalData, studentObj) => {
     if (!studentId || !evaluatorEmail) return;
 
-    setEvaluationsByStudent(prev => ({
-      ...prev,
-      [studentId]: {
-        ...(prev[studentId] || {}),
-        ...newEvalData
+    setEvaluationsByStudent(prev => {
+      const prevStudentEval = prev[studentId] || {};
+      const updatedStudentEval = {
+        ...prevStudentEval,
+        ...newEvalData,
+        scores: {
+          ...(prevStudentEval.scores || {}),
+          ...(newEvalData.scores || {})
+        },
+        techniqueAverages: {
+          ...(prevStudentEval.techniqueAverages || {}),
+          ...(newEvalData.techniqueAverages || {})
+        },
+        phaseNotes: {
+          ...(prevStudentEval.phaseNotes || {}),
+          ...(newEvalData.phaseNotes || {})
+        }
+      };
+
+      const updatedMap = {
+        ...prev,
+        [studentId]: updatedStudentEval
+      };
+
+      // Respaldo sincrónico inmediato en localStorage para evitar pérdida de datos si se cambia de viñeta
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(localEvaluationsKey, JSON.stringify(updatedMap));
+        } catch (e) {
+          console.debug('Error en localStorage evals:', e);
+        }
       }
-    }));
+
+      return updatedMap;
+    });
 
     setSaveStatus('saving');
 
@@ -1086,7 +1199,7 @@ export default function TechnicalExamEvaluatorCore({
         setSaveStatus(navigator.onLine ? 'error' : 'offline');
       }
     }, 350);
-  }, [evaluatorEmail, evaluator, getStudentSyllabus, liveStudents, callId, call?._id, call?.id]);
+  }, [evaluatorEmail, evaluator, getStudentSyllabus, liveStudents, callId, call?._id, call?.id, localEvaluationsKey]);
 
   // Calificar un criterio específico para un karateca con estrellas (1 a 5)
   const handleRateStudentCriterion = (student, criterionKey, scoreVal) => {

@@ -2061,29 +2061,6 @@ export async function saveEvaluatorAtomicGrade({
     const safeSyllabusName = String(syllabusName || 'Temario Oficial ISKF').replace(/<[^>]*>/g, '').trim().substring(0, 150);
     const safeCallId = (callId && mongoose.Types.ObjectId.isValid(callId)) ? new mongoose.Types.ObjectId(callId) : null;
 
-    const payload = {
-      ...(safeCallId ? { callId: safeCallId } : {}),
-      studentId: student._id,
-      studentName: student.name,
-      studentRank: student.currentRank || '10° Kyu (Cinta Blanca)',
-      targetRank: student.currentRank || '10° Kyu (Cinta Blanca)',
-      dojoId: student.dojoId,
-      syllabusId: safeSyllabusId,
-      syllabusName: safeSyllabusName,
-      scores: safeScores,
-      techniqueAverages: safeAverages,
-      observations: safeObservations,
-      phaseNotes: safePhaseNotes,
-      percentage: Math.max(0, Math.min(100, Math.round(Number(percentage) || 0))),
-      pointsEarned: Math.max(0, Math.min(5000, Number(pointsEarned) || 0)),
-      pointsPossible: Math.max(0, Math.min(5000, Number(pointsPossible) || 0)),
-      isPassed: Boolean(isPassed),
-      evaluatorName: safeEvaluatorName,
-      evaluatorEmail: safeEmail,
-      notes: safeNotes,
-      evaluatedAt: new Date()
-    };
-
     const updateFilter = {
       studentId: student._id,
       evaluatorEmail: safeEmail
@@ -2093,6 +2070,93 @@ export async function saveEvaluatorAtomicGrade({
     } else {
       updateFilter.syllabusId = safeSyllabusId;
     }
+
+    // FUSIÓN DEFENSIVA: Recuperar evaluación existente para no sobreescribir ni perder técnicas previas al cambiar de viñeta o paso
+    const existing = await TechnicalExamEvaluation.findOne(updateFilter).lean();
+
+    const mergedScores = {
+      ...(existing?.scores || {}),
+      ...safeScores
+    };
+
+    const mergedTechniqueAverages = {
+      ...(existing?.techniqueAverages || {}),
+      ...safeAverages
+    };
+
+    const mergedObservations = {
+      ...(existing?.observations || {}),
+      ...safeObservations
+    };
+
+    const mergedPhaseNotes = {
+      ...(existing?.phaseNotes || {}),
+      ...safePhaseNotes
+    };
+
+    let effectiveNotes = safeNotes;
+    if (!effectiveNotes && existing?.notes) {
+      effectiveNotes = existing.notes;
+    }
+
+    // Calcular porcentaje balanceado general sobre todas las técnicas evaluadas
+    let calculatedPercentage = Number(percentage) || 0;
+    if (Object.keys(mergedTechniqueAverages).length > 0) {
+      const resolvePhaseForTech = (tKey) => {
+        if (!tKey) return 'kihon';
+        const tk = String(tKey).toLowerCase();
+        if (tk.includes('-ka') || tk.includes('kata') || tk.includes('heian') || tk.includes('tekki') || tk.includes('bassai')) return 'kata';
+        if (tk.includes('-ku') || tk.includes('kumite') || tk.includes('sambon') || tk.includes('gohon')) return 'kumite';
+        if (tk.startsWith('aspect')) return 'aspectos';
+        return 'kihon';
+      };
+
+      const phaseSums = { kihon: 0, kata: 0, kumite: 0 };
+      const phaseCounts = { kihon: 0, kata: 0, kumite: 0 };
+
+      Object.entries(mergedTechniqueAverages).forEach(([tKey, tAvg]) => {
+        if (typeof tAvg !== 'number' || tAvg <= 0) return;
+        const ph = resolvePhaseForTech(tKey);
+        if (phaseSums[ph] !== undefined) {
+          const norm = tAvg <= 10 ? tAvg * 10 : tAvg;
+          phaseSums[ph] += norm;
+          phaseCounts[ph]++;
+        }
+      });
+
+      const evaluatedPhases = [
+        phaseCounts.kihon > 0 ? (phaseSums.kihon / phaseCounts.kihon) : null,
+        phaseCounts.kata > 0 ? (phaseSums.kata / phaseCounts.kata) : null,
+        phaseCounts.kumite > 0 ? (phaseSums.kumite / phaseCounts.kumite) : null,
+      ].filter(v => v !== null);
+
+      if (evaluatedPhases.length > 0) {
+        calculatedPercentage = Math.round(evaluatedPhases.reduce((a, b) => a + b, 0) / evaluatedPhases.length);
+      }
+    }
+
+    const payload = {
+      ...(safeCallId ? { callId: safeCallId } : {}),
+      studentId: student._id,
+      studentName: student.name,
+      studentRank: student.currentRank || '10° Kyu (Cinta Blanca)',
+      targetRank: student.currentRank || '10° Kyu (Cinta Blanca)',
+      dojoId: student.dojoId,
+      syllabusId: safeSyllabusId,
+      syllabusName: safeSyllabusName,
+      scores: mergedScores,
+      techniqueAverages: mergedTechniqueAverages,
+      observations: mergedObservations,
+      phaseNotes: mergedPhaseNotes,
+      percentage: Math.max(0, Math.min(100, Math.round(Number(calculatedPercentage) || 0))),
+      pointsEarned: Math.max(0, Math.min(5000, Number(pointsEarned) || 0)),
+      pointsPossible: Math.max(0, Math.min(5000, Number(pointsPossible) || 0)),
+      isPassed: calculatedPercentage > 0 ? (calculatedPercentage >= 70) : Boolean(isPassed),
+      evaluatorName: safeEvaluatorName,
+      evaluatorEmail: safeEmail,
+      notes: effectiveNotes,
+      evaluatedAt: new Date()
+    };
 
     const saved = await TechnicalExamEvaluation.findOneAndUpdate(
       updateFilter,
@@ -2116,6 +2180,48 @@ export async function saveEvaluatorAtomicGrade({
   } catch (error) {
     console.error('Error al guardar calificación atómica:', error);
     return { success: false, error: error.message || 'Error al registrar la calificación.' };
+  }
+}
+
+/**
+ * Obtener todas las calificaciones emitidas por un evaluador específico en una convocatoria
+ */
+export async function getEvaluatorGradesForCall({ callId, evaluatorEmail }) {
+  try {
+    await dbConnect();
+    if (!callId || !evaluatorEmail) return { success: false, evaluations: [] };
+    const safeEmail = String(evaluatorEmail).trim().toLowerCase();
+
+    let callFilter = {};
+    if (mongoose.Types.ObjectId.isValid(callId)) {
+      callFilter.callId = new mongoose.Types.ObjectId(callId);
+    }
+
+    const evals = await TechnicalExamEvaluation.find({
+      ...callFilter,
+      evaluatorEmail: safeEmail
+    }).lean();
+
+    return {
+      success: true,
+      evaluations: evals.map(ev => ({
+        _id: ev._id.toString(),
+        id: ev._id.toString(),
+        studentId: ev.studentId.toString(),
+        studentName: ev.studentName,
+        scores: ev.scores || {},
+        techniqueAverages: ev.techniqueAverages || {},
+        observations: ev.observations || {},
+        percentage: ev.percentage || 0,
+        isPassed: Boolean(ev.isPassed),
+        phaseNotes: ev.phaseNotes || {},
+        notes: ev.notes || '',
+        evaluatedAt: ev.evaluatedAt ? ev.evaluatedAt.toISOString() : null
+      }))
+    };
+  } catch (error) {
+    console.error('Error al obtener evaluaciones del evaluador:', error);
+    return { success: false, evaluations: [] };
   }
 }
 
