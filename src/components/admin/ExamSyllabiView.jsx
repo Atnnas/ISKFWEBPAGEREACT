@@ -274,14 +274,35 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   // =========================================================================
   // ESTADO DE LA PESTAÑA: ASPECTOS TÉCNICOS Y RÚBRICA (PERSISTIDA EN BD)
   // =========================================================================
-  // Seleccionar qué temario se está visualizando/editando en Aspectos Técnicos
+  // El temario de Aspectos Técnicos se determina automáticamente por el cinturón elegido en Temario
   const [aspectSyllabusId, setAspectSyllabusId] = useState(() => {
     return initialSyllabi[0]?._id || initialSyllabi[0]?.id || null;
   });
 
+  // Sincronizar automáticamente con el cinturón elegido en la pestaña de Temario
+  useEffect(() => {
+    if (selectedRankFilter !== 'all') {
+      const matched =
+        syllabi.find(s => s.currentRank === selectedRankFilter) ||
+        syllabi.find(s => s.targetRank === selectedRankFilter);
+      if (matched) {
+        const matchedId = matched.id || matched._id;
+        setAspectSyllabusId(matchedId);
+      }
+    } else if (!aspectSyllabusId && syllabi.length > 0) {
+      setAspectSyllabusId(syllabi[0].id || syllabi[0]._id);
+    }
+  }, [selectedRankFilter, syllabi, aspectSyllabusId]);
+
   const selectedAspectSyllabus = useMemo(() => {
+    if (selectedRankFilter !== 'all') {
+      const matched =
+        syllabi.find(s => s.currentRank === selectedRankFilter) ||
+        syllabi.find(s => s.targetRank === selectedRankFilter);
+      if (matched) return matched;
+    }
     return syllabi.find(s => (s.id || s._id) === aspectSyllabusId) || syllabi[0] || null;
-  }, [syllabi, aspectSyllabusId]);
+  }, [syllabi, aspectSyllabusId, selectedRankFilter]);
 
   // Respetar estrictamente los aspectos técnicos guardados por el usuario en MongoDB
   const mergeAspectsWithDefaults = (existingAspects) => {
@@ -1362,46 +1383,35 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
       {/* ========================================================================= */}
       {activeMainTab === 'aspectos' && (
         <div className="space-y-6">
-          {/* Barra de Selección de Temario para Aspectos Técnicos */}
+          {/* Cabecera informativa del Cinturón elegido desde Temario (Sin selector redundante) */}
           <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-2 text-xs font-black text-slate-700 uppercase tracking-wider shrink-0">
-                <Sliders className="w-4 h-4 text-[#2D2E83]" />
-                <span>Grado a Configurar:</span>
-              </div>
-              <div className="w-full sm:w-80">
-                <select
-                  value={aspectSyllabusId || ''}
-                  onChange={(e) => setAspectSyllabusId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2D2E83]/20 cursor-pointer"
-                >
-                  {syllabi.map(s => (
-                    <option key={s.id || s._id} value={s.id || s._id}>
-                      {s.targetRank} — {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              {selectedAspectSyllabus ? (
+                <>
+                  <BeltBadge rankString={selectedAspectSyllabus.currentRank || selectedAspectSyllabus.targetRank} />
+                  <span className="text-sm font-bold text-[#2D2E83]">
+                    {selectedAspectSyllabus.name}
+                  </span>
+                </>
+              ) : (
+                <span className="text-xs text-slate-500 font-medium">
+                  Selecciona o crea un temario en la pestaña de Temarios de Técnicas.
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
               {selectedAspectSyllabus && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 font-medium">Temario Activo:</span>
-                    <BeltBadge rankString={selectedAspectSyllabus.targetRank} />
-                  </div>
-                  <button
-                    type="button"
-                    disabled={isSavingAspects}
-                    onClick={handleClearAllAspectsForBelt}
-                    className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
-                    title="Borrar todos los criterios técnicos de este cinturón para empezar en limpio"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                    <span>Borrar Aspectos de este Cinturón</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  disabled={isSavingAspects}
+                  onClick={handleClearAllAspectsForBelt}
+                  className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+                  title="Borrar todos los criterios técnicos de este cinturón para empezar en limpio"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                  <span>Borrar Aspectos de este Cinturón</span>
+                </button>
               )}
             </div>
           </div>
