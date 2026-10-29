@@ -40,30 +40,30 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: DEFAULT_TECHNICAL_ASPECTS,
     techniques: [
-      // KIHON
+      // 1. KIHON
       {
         id: 'tech-10-9-k1',
         group: 'kihon',
-        name: 'Chudan Oi Zuki',
-        stance: 'Zenkutsu Dachi',
+        name: 'Chudan Oi zuki',
+        stance: 'Zenkutsu Dachi - Gedan Barai (Hidari)',
         direction: 'Adelante (Mae)',
         repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 1,
         embusen: 'Embusen Oficial',
-        notes: 'Zenkutsu Dachi - Gedan Barai (Hidari). Avanzar 5 pasos con Chudan Oi Zuki, última con Kiai, ida y vuelta.'
+        notes: 'Zenkutsu Dachi - Gedan Barai (Hidari). 5 veces, última Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k2',
         group: 'kihon',
         name: 'Jodan Age Uke',
         stance: 'Zenkutsu Dachi',
-        direction: 'Atrás (Ushiro)',
+        direction: 'Adelante (Mae)',
         repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 2,
         embusen: 'Embusen Oficial',
-        notes: 'Retroceder 5 pasos con Jodan Age Uke, última con Kiai, ida y vuelta.'
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k3',
@@ -75,19 +75,19 @@ const DEFAULT_INITIAL_SYLLABI = [
         tripType: 'ida_y_vuelta',
         order: 3,
         embusen: 'Embusen Oficial',
-        notes: 'Avanzar 5 pasos con Chudan Soto Uke, última con Kiai, ida y vuelta.'
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k4',
         group: 'kihon',
         name: 'Gedan Barai',
         stance: 'Zenkutsu Dachi',
-        direction: 'Atrás (Ushiro)',
+        direction: 'Adelante (Mae)',
         repetitions: 5,
         tripType: 'ida_y_vuelta',
         order: 4,
         embusen: 'Embusen Oficial',
-        notes: 'Retroceder 5 pasos con Gedan Barai, última con Kiai, ida y vuelta.'
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k5',
@@ -99,7 +99,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         tripType: 'ida_y_vuelta',
         order: 5,
         embusen: 'Embusen Oficial',
-        notes: 'Postura Kokutsu Dachi. Avanzar 5 pasos con Chudan Shuto Uke, última con Kiai, ida y vuelta.'
+        notes: 'Kokutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
       },
       {
         id: 'tech-10-9-k6',
@@ -111,9 +111,9 @@ const DEFAULT_INITIAL_SYLLABI = [
         tripType: 'ida_y_vuelta',
         order: 6,
         embusen: 'Embusen Oficial',
-        notes: 'Postura Zenkutsu Dachi. Avanzar 5 pasos con Mae Geri Chudan, última con Kiai, ida y vuelta.'
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
       },
-      // KUMITE
+      // 2. YAKUSOKU-KUMITE
       {
         id: 'tech-10-9-ku1',
         group: 'kumite',
@@ -124,20 +124,20 @@ const DEFAULT_INITIAL_SYLLABI = [
         tripType: 'ida_y_vuelta',
         order: 7,
         embusen: 'Embusen Oficial',
-        notes: 'Yakusoku-Kumite: Gohon Kumite (Jodan Zuki). Atacante 5 pasos Jodan Zuki. Defensor retrocede con Age Uke y contraataca con Gyaku Zuki Chudan + Kiai.'
+        notes: 'Yakusoku-Kumite: Gohon Kumite (Jodan Zuki).'
       },
-      // KATA
+      // 3. KATA
       {
         id: 'tech-10-9-ka1',
         group: 'kata',
-        name: 'Heian Shodan (Órdenes)',
+        name: 'Heian Shodan (Ordenes)',
         stance: 'Zenkutsu / Kokutsu Dachi',
         direction: 'Embusen Oficial',
         repetitions: 1,
         tripType: 'solo_ida',
         order: 8,
         embusen: 'Embusen Oficial',
-        notes: 'Heian Shodan ejecutado por órdenes del examinador (21 movimientos oficiales).'
+        notes: 'Heian Shodan (Ordenes).'
       }
     ]
   }
