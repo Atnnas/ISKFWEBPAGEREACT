@@ -4,9 +4,55 @@ import { revalidatePath } from 'next/cache';
 import mongoose from 'mongoose';
 import dbConnect from '../mongodb';
 import ExamSyllabus from '../../models/ExamSyllabus';
+import TechnicalExamCall from '../../models/TechnicalExamCall';
 import { auth } from '../../auth';
 
 import { DEFAULT_TECHNICAL_ASPECTS } from '../constants/technicalAspects';
+import { isSameRank } from '../constants/kyuRanks';
+
+/**
+ * Sincroniza automáticamente los syllabusSnapshots en cualquier convocatoria activa (no cerrada)
+ * cuando se modifica un temario o sus aspectos técnicos.
+ */
+async function syncOpenCallsSnapshots(syllabusDoc) {
+  if (!syllabusDoc) return;
+  try {
+    const syllabusIdStr = String(syllabusDoc._id);
+    const activeCalls = await TechnicalExamCall.find({ status: { $ne: 'cerrado' } });
+
+    for (const call of activeCalls) {
+      let modified = false;
+      const snaps = Array.isArray(call.syllabusSnapshots) ? [...call.syllabusSnapshots] : [];
+
+      const updatedSnaps = snaps.map(snap => {
+        const matchesId = String(snap.syllabusId) === syllabusIdStr;
+        const matchesRank =
+          isSameRank(snap.targetRank, syllabusDoc.targetRank) ||
+          isSameRank(snap.targetRank, syllabusDoc.currentRank);
+
+        if (matchesId || matchesRank) {
+          modified = true;
+          return {
+            syllabusId: syllabusIdStr,
+            targetRank: syllabusDoc.targetRank,
+            name: syllabusDoc.name,
+            techniques: syllabusDoc.techniques || [],
+            technicalAspects: syllabusDoc.technicalAspects || [],
+            version: syllabusDoc.version || 1
+          };
+        }
+        return snap;
+      });
+
+      if (modified) {
+        call.syllabusSnapshots = updatedSnaps;
+        await call.save();
+      }
+    }
+  } catch (err) {
+    console.warn('No se pudo sincronizar snapshots en convocatorias abiertas:', err);
+  }
+}
 
 /**
  * Sanitizar texto eliminando etiquetas HTML, caracteres de control no imprimibles
@@ -344,11 +390,15 @@ export async function updateExamSyllabus(id, data) {
     }
     updatePayload.version = (existing.version || 1) + 1;
 
-    await ExamSyllabus.findByIdAndUpdate(
+    const updatedDoc = await ExamSyllabus.findByIdAndUpdate(
       id,
       { $set: updatePayload },
       { new: true, runValidators: false }
-    );
+    ).lean();
+
+    if (updatedDoc) {
+      await syncOpenCallsSnapshots(updatedDoc);
+    }
 
     revalidatePath('/admin/examinations/syllabi');
     revalidatePath('/admin/examinations/technical');
@@ -451,11 +501,13 @@ export async function updateSyllabusTechnicalAspects(syllabusId, technicalAspect
       syllabusId,
       { $set: { technicalAspects: cleanedAspects } },
       { new: true, runValidators: false }
-    );
+    ).lean();
 
     if (!updated) {
       return { success: false, error: 'Temario no encontrado.' };
     }
+
+    await syncOpenCallsSnapshots(updated);
 
     revalidatePath('/admin/examinations/syllabi');
     revalidatePath('/admin/examinations/technical');

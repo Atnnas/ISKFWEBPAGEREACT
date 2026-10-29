@@ -114,11 +114,11 @@ const TechnicalExamEvaluationSchema = new mongoose.Schema({
   strict: false
 });
 
-TechnicalExamEvaluationSchema.index({ dojoId: 1, studentId: 1 });
+TechnicalExamEvaluationSchema.index({ dojoId: 1, studentId: 1, updatedAt: -1 });
 TechnicalExamEvaluationSchema.index({ studentId: 1, syllabusId: 1 });
 TechnicalExamEvaluationSchema.index({ studentId: 1, evaluatorEmail: 1, syllabusId: 1 });
 TechnicalExamEvaluationSchema.index({ callId: 1, evaluatorEmail: 1, studentId: 1 });
-TechnicalExamEvaluationSchema.index({ callId: 1, studentId: 1 });
+TechnicalExamEvaluationSchema.index({ callId: 1, studentId: 1, updatedAt: -1 });
 
 if (mongoose.models && mongoose.models.TechnicalExamEvaluation) {
   if (!mongoose.models.TechnicalExamEvaluation.schema?.paths?.callId) {

@@ -41,56 +41,14 @@ import {
   updateSyllabusTechnicalAspects
 } from '../../lib/actions/syllabi';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
-
-
-// Iconos marciales alusivos a cada aspecto técnico
-export const ASPECT_ICONS = {
-  tsuki: '👊',
-  uke: '🛡️',
-  dachi: '🦵',
-  geri: '🦶',
-  kata: '📜',
-  kumite: '⚔️',
-  physical: '⚡',
-  mental: '🧠',
-  do: '🥋'
-};
-
-// Definición oficial de grados y colores sólidos ISKF Costa Rica
-export const KYU_DEFINITIONS = [
-  { id: '10-kyu', digit: '10° Kyu', name: 'Cinta Blanca', full: '10° Kyu (Cinta Blanca)', solidClass: 'bg-white border-2 border-slate-300' },
-  { id: '9-kyu', digit: '9° Kyu', name: 'Cinta Amarilla', full: '9° Kyu (Cinta Amarilla)', solidClass: 'bg-[#EAB308]' },
-  { id: '8-kyu', digit: '8° Kyu', name: 'Cinta Naranja', full: '8° Kyu (Cinta Naranja)', solidClass: 'bg-[#EA580C]' },
-  { id: '7-kyu', digit: '7° Kyu', name: 'Cinta Verde', full: '7° Kyu (Cinta Verde)', solidClass: 'bg-[#16A34A]' },
-  { id: '6-kyu', digit: '6° Kyu', name: 'Cinta Azul', full: '6° Kyu (Cinta Azul)', solidClass: 'bg-[#2563EB]' },
-  { id: '5-kyu', digit: '5° Kyu', name: 'Cinta Morada', full: '5° Kyu (Cinta Morada)', solidClass: 'bg-[#7C3AED]' },
-  { id: '4-kyu', digit: '4° Kyu', name: 'Cinta Morada (Línea Blanca)', full: '4° Kyu (Cinta Morada con Línea Blanca)', solidClass: 'bg-[#7C3AED] relative overflow-hidden', hasStripe: true },
-  { id: '3-kyu', digit: '3° Kyu', name: 'Cinta Marrón 3', full: '3° Kyu (Cinta Marrón 3)', solidClass: 'bg-[#602D0E]' },
-  { id: '2-kyu', digit: '2° Kyu', name: 'Cinta Marrón 2', full: '2° Kyu (Cinta Marrón 2)', solidClass: 'bg-[#602D0E]' },
-  { id: '1-kyu', digit: '1° Kyu', name: 'Cinta Marrón 1', full: '1° Kyu (Cinta Marrón 1)', solidClass: 'bg-[#602D0E]' },
-  { id: '1-dan', digit: '1° Dan', name: 'Cinta Negra (Shodan)', full: '1° Dan (Cinta Negra / Shodan)', solidClass: 'bg-black border border-slate-800' }
-];
-
-export const KYU_OPTIONS = KYU_DEFINITIONS.map(k => k.full);
-
-const COMMON_STANCES = [
-  'Zenkutsu Dachi',
-  'Kokutsu Dachi',
-  'Kiba Dachi',
-  'Heiko Dachi',
-  'Musubi Dachi',
-  'Fudo Dachi / Sochin Dachi',
-  'Kosa Dachi'
-];
-
-const COMMON_DIRECTIONS = [
-  'Adelante (Mae)',
-  'Atrás (Ushiro)',
-  'En el lugar (Sonoba)',
-  'Diagonal',
-  'Lateral (Yoko)',
-  'Embusen Oficial'
-];
+import {
+  ASPECT_ICONS,
+  KYU_DEFINITIONS,
+  KYU_OPTIONS,
+  COMMON_STANCES,
+  COMMON_DIRECTIONS,
+  isSameRank
+} from '../../lib/constants/kyuRanks';
 
 /**
  * Indicador visual sobrio de cinturón con color sólido
@@ -283,8 +241,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   useEffect(() => {
     if (selectedRankFilter !== 'all') {
       const matched =
-        syllabi.find(s => s.currentRank === selectedRankFilter) ||
-        syllabi.find(s => s.targetRank === selectedRankFilter);
+        syllabi.find(s => isSameRank(s.currentRank, selectedRankFilter)) ||
+        syllabi.find(s => isSameRank(s.targetRank, selectedRankFilter));
       if (matched) {
         const matchedId = matched.id || matched._id;
         setAspectSyllabusId(matchedId);
@@ -297,8 +255,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   const selectedAspectSyllabus = useMemo(() => {
     if (selectedRankFilter !== 'all') {
       const matched =
-        syllabi.find(s => s.currentRank === selectedRankFilter) ||
-        syllabi.find(s => s.targetRank === selectedRankFilter);
+        syllabi.find(s => isSameRank(s.currentRank, selectedRankFilter)) ||
+        syllabi.find(s => isSameRank(s.targetRank, selectedRankFilter));
       if (matched) return matched;
     }
     return syllabi.find(s => (s.id || s._id) === aspectSyllabusId) || syllabi[0] || null;
@@ -742,8 +700,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   const filteredSyllabi = useMemo(() => {
     return syllabi.filter(item => {
       const matchesRank = selectedRankFilter === 'all' || 
-        item.targetRank === selectedRankFilter || 
-        item.currentRank === selectedRankFilter;
+        isSameRank(item.targetRank, selectedRankFilter) || 
+        isSameRank(item.currentRank, selectedRankFilter);
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch = !term || 
         item.name.toLowerCase().includes(term) || 
