@@ -433,6 +433,263 @@ const DEFAULT_INITIAL_SYLLABI = [
         notes: 'Heian Nidan.'
       }
     ]
+  },
+  {
+    name: 'Temario Oficial: Cinturón Naranja (Examen de 8 Kyu a 7 Kyu)',
+    currentRank: '8° Kyu (Cinta Naranja)',
+    targetRank: '7° Kyu (Cinta Verde)',
+    targetRanks: ['8° Kyu (Cinta Naranja)', '7° Kyu (Cinta Verde)'],
+    description: 'Temario oficial de evaluación técnica para Cinturón Naranja (Examen de 8 Kyu a 7 Kyu) según el manual ISKF Costa Rica.',
+    isOfficial: true,
+    createdBy: 'Comisión Técnica ISKF Costa Rica',
+    technicalAspects: [
+      {
+        id: 'aspect-tsuki',
+        category: 'tsuki',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'TZUKI WAZA (Ataques de Puño)',
+        subtitle: 'Relación Tsuki te / Hikite y postura',
+        points: [
+          'Inicia relación entre el Tsuki te y el Hikite según técnica.',
+          'Tronco recto, hombros hacia abajo, vista al frente al horizonte, barbilla levantada.'
+        ],
+        order: 1
+      },
+      {
+        id: 'aspect-uke',
+        category: 'uke',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'UKE WAZA (Bloqueos y Defensas)',
+        subtitle: 'Angulación de codo y distancia al cuerpo',
+        points: [
+          'Mecánica de la técnica de angulación del codo con relación al dorso según cada bloqueo, (un puño entre el codo y el costado del cuerpo)'
+        ],
+        order: 2
+      },
+      {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Bases, flexión, talones y cadera',
+        points: [
+          'Posiciones de paso largo al frente con énfasis en la pierna delantera en forma correcta (Rodilla sobre los dedos de los pies) Zenkutsu-Dachi 70/30',
+          'Desplazamientos de Media Luna hacia atrás sin mover ni levantar el talón.',
+          'Postura atrasada (Kokutsu Dachi) con flexión de rodilla delantera.',
+          'Manejo correcto de la distancia en Sam -Bon -Kumite (medición de rodilla con respecto al oponente).',
+          'Inicio de utilización de la cadera con relación al bloqueo.'
+        ],
+        order: 3
+      },
+      {
+        id: 'aspect-geri',
+        category: 'geri',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'GERI WAZA (Patadas)',
+        subtitle: 'Relación tronco/patada y guardia',
+        points: [
+          'Buena relación entre el tronco y el desarrollo de la patada',
+          'Preparación de la guardia dentro de la ejecución de la patada'
+        ],
+        order: 4
+      },
+      {
+        id: 'aspect-kata',
+        category: 'kata',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'KATA (Heian Sandan)',
+        subtitle: 'Forma oficial y embusen',
+        points: [
+          'Posturas oficiales (Zenkutsu, Kokutsu, Kiba Dachi) firmes y estables.',
+          'Técnicas oficiales de Heian Sandan con precisión mecánica y transiciones limpias.',
+          'Ritmo marcial, respiración coordinada, Kime y fidelidad al Embusen oficial.'
+        ],
+        order: 5
+      },
+      {
+        id: 'aspect-kumite',
+        category: 'kumite',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'KUMITE (Sambon Kumite: Jodan y Chudan)',
+        subtitle: 'Distancia (Ma-ai), medición y control',
+        points: [
+          'Manejo correcto de la distancia en Sam -Bon -Kumite (medición de rodilla con respecto al oponente).',
+          'Defensa y contraataque coordinado en Jodan Zuki y Chudan Zuki.',
+          'Inicio de utilización de cadera, zanshin y control técnico sin contacto.'
+        ],
+        order: 6
+      },
+      {
+        id: 'aspect-physical',
+        category: 'physical',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'CAPACIDADES FISICAS COORDINATIVAS',
+        subtitle: 'Coordinación desplazamiento y técnica',
+        points: [
+          'Desarrollo de la coordinación entre desplazamiento y la técnica.'
+        ],
+        order: 7
+      },
+      {
+        id: 'aspect-mental',
+        category: 'mental',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'CAPACIDADES MENTALES',
+        subtitle: 'Pertenencia y capacidad neuromuscular',
+        points: [
+          'Fomentar la pertenecía al Dojo y a su grupo de trabajo.',
+          'Mejorar la capacidad de Neuro-Muscular.'
+        ],
+        order: 8
+      },
+      {
+        id: 'aspect-do',
+        category: 'do',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'DO (Camino y Protocolo Marcial)',
+        subtitle: 'Esfuerzo, direcciones y Niju Kun',
+        points: [
+          'Mejorar el sentido de esfuerzo al entrenar.',
+          'Dominio del vocabulario técnico (derecho izquierdo adelante atrás)',
+          'Vocabulario básico general (Primeros 5 conceptos del NIYIKUM)'
+        ],
+        order: 9
+      }
+    ],
+    techniques: [
+      {
+        id: 'tech-8-7-k1',
+        group: 'kihon',
+        name: 'Chudan Oi zuki',
+        stance: 'Zenkutsu Dachi - Gedan Barai (Hidari)',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 1,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi - Gedan Barai (Hidari). 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-k2',
+        group: 'kihon',
+        name: 'Chudan Gyaku zuki',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 2,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-k3',
+        group: 'kihon',
+        name: 'Jodan Age Uke',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 3,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-k4',
+        group: 'kihon',
+        name: 'Chudan Soto Uke',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 4,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces última, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-k5',
+        group: 'kihon',
+        name: 'Chudan Uchi Uke',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 5,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces última, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-k6',
+        group: 'kihon',
+        name: 'Gedan Barai',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 6,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces última, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-k7',
+        group: 'kihon',
+        name: 'Chudan Shuto Uke',
+        stance: 'Kokutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 7,
+        embusen: 'Embusen Oficial',
+        notes: 'Kokutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-k8',
+        group: 'kihon',
+        name: 'Mae Geri Chudan',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 8,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-k9',
+        group: 'kihon',
+        name: 'Yoko Geri Keague',
+        stance: 'Kiba Dachi',
+        direction: 'Lateral (Yoko)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 9,
+        embusen: 'Embusen Oficial',
+        notes: 'Kiba Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-8-7-ku1',
+        group: 'kumite',
+        name: 'Sambon Kumite (Jodan Zuki y Chudan zuki)',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante / Atrás',
+        repetitions: 3,
+        tripType: 'ida_y_vuelta',
+        order: 10,
+        embusen: 'Embusen Oficial',
+        notes: 'Yakusoku Kumite: Sambon Kumite (Jodan Zuki y Chudan zuki).'
+      },
+      {
+        id: 'tech-8-7-ka1',
+        group: 'kata',
+        name: 'Heian Sandan',
+        stance: 'Kokutsu / Zenkutsu / Kiba Dachi',
+        direction: 'Embusen Oficial',
+        repetitions: 1,
+        tripType: 'solo_ida',
+        order: 11,
+        embusen: 'Embusen Oficial',
+        notes: 'Heian Sandan.'
+      }
+    ]
   }
 ];
 
