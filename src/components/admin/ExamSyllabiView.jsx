@@ -47,7 +47,8 @@ import {
   KYU_OPTIONS,
   COMMON_STANCES,
   COMMON_DIRECTIONS,
-  isSameRank
+  isSameRank,
+  normalizeRankKey
 } from '../../lib/constants/kyuRanks';
 
 /**
@@ -188,7 +189,9 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   const [activeMainTab, setActiveMainTab] = useState('temario');
 
   const [syllabi, setSyllabi] = useState(initialSyllabi);
-  const [selectedRankFilter, setSelectedRankFilter] = useState('all');
+  const [selectedRankFilter, setSelectedRankFilter] = useState(() => {
+    return initialSyllabi[0]?.currentRank || '10° Kyu (Cinta Blanca)';
+  });
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modales de Temario
@@ -241,17 +244,23 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     // 1. Coincidencia primaria por el grado actual (cinturón que rinde el examen)
     const byCurrent = syllabi.find(s => isSameRank(s.currentRank, rank));
     if (byCurrent) return byCurrent;
-    // 2. Fallback solo si un temario antiguo no tiene currentRank especificado
-    return syllabi.find(s => !s.currentRank && isSameRank(s.targetRank, rank)) || null;
+    // 2. Coincidencia por grado objetivo
+    const byTarget = syllabi.find(s => isSameRank(s.targetRank, rank));
+    if (byTarget) return byTarget;
+    // 3. Fallback por nombre
+    return syllabi.find(s => {
+      const norm = normalizeRankKey(rank);
+      return normalizeRankKey(s.name).includes(norm);
+    }) || null;
   }, [syllabi]);
 
-  // El temario activo para aspectos técnicos se deriva estrictamente del selector de cinturón
+  // El temario activo para aspectos técnicos se deriva estrictamente del temario seleccionado
   const selectedAspectSyllabus = useMemo(() => {
     if (selectedRankFilter === 'all') {
-      return null;
+      return syllabi[0] || null;
     }
-    return findSyllabusForRank(selectedRankFilter);
-  }, [selectedRankFilter, findSyllabusForRank]);
+    return findSyllabusForRank(selectedRankFilter) || syllabi[0] || null;
+  }, [selectedRankFilter, findSyllabusForRank, syllabi]);
 
   // Respetar estrictamente los aspectos técnicos guardados por el usuario en MongoDB
   const mergeAspectsWithDefaults = (existingAspects) => {
@@ -1045,7 +1054,20 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                       </div>
 
                       {/* Acciones */}
-                      <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+                      <div className="flex items-center gap-2 self-start md:self-auto shrink-0 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedRankFilter(syllabus.currentRank || syllabus.targetRank);
+                            setActiveMainTab('aspectos');
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[#2D2E83]/10 hover:bg-[#2D2E83] text-[#2D2E83] hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          title="Ver y configurar los aspectos técnicos de este cinturón"
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          <span>Ver Aspectos Técnicos</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => handleDuplicate(syllabus)}
@@ -1293,50 +1315,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
       {/* ========================================================================= */}
       {activeMainTab === 'aspectos' && (
         <div className="space-y-6">
-          {/* Si está seleccionado "Todos", mostrar selector guiado para elegir el grado */}
-          {selectedRankFilter === 'all' ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-12 text-center space-y-5 shadow-2xs">
-              <div className="w-14 h-14 rounded-2xl bg-[#2D2E83]/10 text-[#2D2E83] flex items-center justify-center mx-auto">
-                <Sliders className="w-7 h-7" />
-              </div>
-              <div className="space-y-1.5 max-w-lg mx-auto">
-                <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
-                  Selecciona un cinturón para ver y configurar sus aspectos técnicos
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Los criterios y rúbricas técnicas pertenecen de forma individual a cada grado. Elige a continuación el cinturón que deseas consultar o editar:
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2.5 justify-center max-w-3xl mx-auto pt-2">
-                {KYU_DEFINITIONS.map(kyu => {
-                  const hasSyllabus = syllabi.some(s => 
-                    isSameRank(s.currentRank, kyu.full) || 
-                    (!s.currentRank && isSameRank(s.targetRank, kyu.full))
-                  );
-                  return (
-                    <button
-                      key={kyu.id}
-                      type="button"
-                      onClick={() => setSelectedRankFilter(kyu.full)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-2.5 cursor-pointer transition-all shadow-2xs active:scale-95 ${
-                        hasSyllabus
-                          ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300 hover:border-[#2D2E83]'
-                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100 hover:text-slate-600'
-                      }`}
-                    >
-                      <span className={`w-3.5 h-3.5 rounded-xs shrink-0 shadow-2xs ${kyu.solidClass} ${kyu.hasStripe ? 'ring-1 ring-white ring-inset' : ''}`} />
-                      <span className="font-mono">{kyu.digit}</span>
-                      <span className="font-normal text-slate-600 truncate">— {kyu.name}</span>
-                      {hasSyllabus && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Temario disponible" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : !selectedAspectSyllabus ? (
-            /* Si se eligió un cinturón que aún no tiene temario */
+          {!selectedAspectSyllabus ? (
+            /* Si no hay temario seleccionado */
             <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-12 text-center space-y-4 shadow-2xs max-w-xl mx-auto">
               <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto">
                 <BookOpen className="w-7 h-7" />
@@ -1346,7 +1326,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                   Sin temario oficial para este grado
                 </h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Aún no existe un temario registrado para <span className="font-bold text-slate-800">{selectedRankFilter}</span>. Crea primero el temario para este cinturón en la pestaña de Técnicas para poder configurar sus aspectos técnicos.
+                  Aún no existe un temario registrado para <span className="font-bold text-slate-800">{selectedRankFilter}</span>. Selecciona un grado en la pestaña de Temario o crea su temario de técnicas primero.
                 </p>
               </div>
               <div className="pt-2 flex justify-center gap-3">
@@ -1361,10 +1341,10 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
               </div>
             </div>
           ) : (
-            /* Cinturón con temario activo: mostrar aspectos técnicos */
+            /* Cinturón con temario activo: mostrar aspectos técnicos directamente */
             <>
-              {/* Cabecera informativa del Cinturón elegido desde Temario */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              {/* Cabecera informativa del Cinturón elegido desde Temario (sin cambio de grado aquí) */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Cinturón en Configuración:</span>
                   <BeltBadge rankString={selectedAspectSyllabus.currentRank || selectedAspectSyllabus.targetRank} />
@@ -1372,17 +1352,9 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                     {selectedAspectSyllabus.name}
                   </span>
                 </div>
-
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedRankFilter('all')}
-                    className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
-                    title="Ver lista de todos los grados"
-                  >
-                    Cambiar Cinturón
-                  </button>
-                </div>
+                <span className="text-xs text-slate-500 font-medium">
+                  Para cambiar de grado o cinturón, selecciónalo en la pestaña <button type="button" onClick={() => setActiveMainTab('temario')} className="font-bold text-[#2D2E83] hover:underline cursor-pointer">Temario de Técnicas</button>.
+                </span>
               </div>
 
               {/* Grid de Aspectos Técnicos (Categoría 1 y Categoría 2) */}
