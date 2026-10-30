@@ -219,3 +219,4 @@ export const DEFAULT_TECHNIQUES = {
   ],
   aspectos: []
 };
+

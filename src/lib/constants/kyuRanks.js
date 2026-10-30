@@ -103,3 +103,4 @@ export function getBeltBadgeClass(rankStr = '') {
   if (key.endsWith('-dan')) return 'bg-black text-amber-300 border border-amber-400/50 font-black shadow-sm';
   return 'bg-indigo-600 text-white font-bold';
 }
+
