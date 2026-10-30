@@ -8,7 +8,7 @@ import TechnicalExamCall from '../../models/TechnicalExamCall';
 import { auth } from '../../auth';
 
 import { DEFAULT_TECHNICAL_ASPECTS } from '../constants/technicalAspects';
-import { isSameRank } from '../constants/kyuRanks';
+import { isSameRank, KYU_DEFINITIONS, normalizeRankKey } from '../constants/kyuRanks';
 
 /**
  * Sincroniza automáticamente los syllabusSnapshots en cualquier convocatoria activa (no cerrada)
@@ -711,7 +711,19 @@ export async function getExamSyllabi(targetRankFilter = null) {
       query.targetRank = targetRankFilter;
     }
 
-    const docs = await ExamSyllabus.find(query).sort({ targetRank: 1, name: 1 }).lean();
+    const docs = await ExamSyllabus.find(query).lean();
+
+    // Ordenar de acuerdo a la jerarquía oficial de grados (10° Kyu, 9° Kyu, 8° Kyu...)
+    docs.sort((a, b) => {
+      const normA = normalizeRankKey(a.currentRank || a.targetRank);
+      const normB = normalizeRankKey(b.currentRank || b.targetRank);
+      const idxA = KYU_DEFINITIONS.findIndex(k => normalizeRankKey(k.full) === normA || k.id === normA);
+      const idxB = KYU_DEFINITIONS.findIndex(k => normalizeRankKey(k.full) === normB || k.id === normB);
+      const posA = idxA === -1 ? 999 : idxA;
+      const posB = idxB === -1 ? 999 : idxB;
+      if (posA !== posB) return posA - posB;
+      return (a.name || '').localeCompare(b.name || '');
+    });
 
     return docs.map(doc => ({
       _id: doc._id.toString(),

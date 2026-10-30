@@ -189,9 +189,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   const [activeMainTab, setActiveMainTab] = useState('temario');
 
   const [syllabi, setSyllabi] = useState(initialSyllabi);
-  const [selectedRankFilter, setSelectedRankFilter] = useState(() => {
-    return initialSyllabi[0]?.currentRank || '10° Kyu (Cinta Blanca)';
-  });
+  const [selectedRankFilter, setSelectedRankFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modales de Temario
@@ -662,7 +660,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     return syllabi.filter(item => {
       const matchesRank = selectedRankFilter === 'all' || 
         isSameRank(item.currentRank, selectedRankFilter) || 
-        (!item.currentRank && isSameRank(item.targetRank, selectedRankFilter));
+        isSameRank(item.targetRank, selectedRankFilter);
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch = !term || 
         item.name.toLowerCase().includes(term) || 
@@ -1047,7 +1045,17 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                   >
                     {/* Cabecera del Temario */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                      <div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <BeltBadge rankString={syllabus.currentRank || syllabus.targetRank} />
+                          {syllabus.targetRank && (
+                            <>
+                              <span className="text-slate-400 text-xs font-bold">→</span>
+                              <BeltBadge rankString={syllabus.targetRank} />
+                            </>
+                          )}
+                          <span className="text-xs text-slate-500 font-semibold">({syllabus.techniques?.length || 0} técnicas)</span>
+                        </div>
                         <h2 className="text-xl font-bold text-[#2D2E83] tracking-tight">
                           {syllabus.name}
                         </h2>
