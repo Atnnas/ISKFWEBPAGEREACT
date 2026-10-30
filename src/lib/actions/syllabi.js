@@ -186,6 +186,261 @@ const DEFAULT_INITIAL_SYLLABI = [
         notes: 'Heian Shodan (Ordenes).'
       }
     ]
+  },
+  {
+    name: 'Temario Oficial: Cinturón Amarillo (Examen de 9 Kyu a 8 Kyu)',
+    currentRank: '9° Kyu (Cinta Amarilla)',
+    targetRank: '8° Kyu (Cinta Naranja)',
+    targetRanks: ['9° Kyu (Cinta Amarilla)', '8° Kyu (Cinta Naranja)'],
+    description: 'Temario oficial de evaluación técnica para Cinturón Amarillo (Examen de 9 Kyu a 8 Kyu) según el manual ISKF Costa Rica.',
+    isOfficial: true,
+    createdBy: 'Comisión Técnica ISKF Costa Rica',
+    technicalAspects: [
+      {
+        id: 'aspect-tsuki',
+        category: 'tsuki',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'TZUKI WAZA (Ataques de Puño)',
+        subtitle: 'Enfoque, punto focal y trayectoria',
+        points: [
+          'Golpes dirigidos la zona específica enfocada en un punto particular.',
+          'Brazos de Hikite, con puño en la cadera sobre el cinturón.',
+          'Tronco recto, hombros hacia abajo, vista al frente al horizonte.'
+        ],
+        order: 1
+      },
+      {
+        id: 'aspect-uke',
+        category: 'uke',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'UKE WAZA (Bloqueos y Defensas)',
+        subtitle: 'Mecánica de codo y cobertura',
+        points: [
+          'Mecánica de la técnica de angulación del codo con relación al antebrazo y bíceps en cada bloque.'
+        ],
+        order: 2
+      },
+      {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Bases y desplazamientos sin paso en falso',
+        points: [
+          'Posiciones de paso largo al frente con énfasis en la pierna de atrás estirada completamente. Posición Adelantada 70/30.',
+          'Desplazamientos de Media Luna sin mover los pies.',
+          'No ajustar las posiciones al avanzar.',
+          'Posturas atrasada 70/30 (Kokutsu Dachi) pie de adelante hacia adelante.',
+          'Movimiento de técnica de tren superior con desplazamiento de piernas (Postura primero y luego la técnica)'
+        ],
+        order: 3
+      },
+      {
+        id: 'aspect-geri',
+        category: 'geri',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'GERI WAZA (Patadas)',
+        subtitle: 'Pie base y trayectoria',
+        points: [
+          'Manejo correcto de la distancia en Sam-Bon-Kumite.',
+          'Énfasis en el movimiento o no movimiento del pie base según la patada.'
+        ],
+        order: 4
+      },
+      {
+        id: 'aspect-kata',
+        category: 'kata',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'KATA (Forma Oficial y Embusen)',
+        subtitle: '10 Criterios Técnicos Oficiales de Evaluación',
+        points: [
+          'Posturas (Dachi Waza): Firmeza, alineación y transición clara en las posturas oficiales (Zenkutsu, Kokutsu, Kiba Dachi).',
+          'Técnicas (Waza): Precisión mecánica, trayectoria y correcta aplicación técnica en cada movimiento.',
+          'Movimientos de Transición: Desplazamientos fluidos, giros limpios y estabilidad del centro de gravedad.',
+          'Tiempo y Sincronización: Ritmo marcial adecuado y coordinación simultánea de extremidades y cadera.',
+          'Respiración Correcta: Inhalación controlada y exhalación potente sincronizada con el Kiai.',
+          'Enfoque y Kime: Contracción explosiva al término del impacto y concentración mental.',
+          'Conformidad (Kihon): Fidelidad y consistencia en la ejecución con el estándar oficial de Kihon.',
+          'Fuerza: Potencia efectiva generada desde el suelo y rotación de cadera.',
+          'Velocidad: Rapidez en la aceleración de ataque y recogida rápida de defensas.',
+          'Equilibrio: Estabilidad corporal constante sin balanceos ni pérdida de balance.'
+        ],
+        order: 5
+      },
+      {
+        id: 'aspect-kumite',
+        category: 'kumite',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'KUMITE (Combate y Yakusoku)',
+        subtitle: 'Distancia (Ma-ai), control y reflejos en Sambon Kumite',
+        points: [
+          'Manejo correcto de la distancia en Sam-Bon-Kumite.',
+          'Control Técnico y Precisión: Ataque y bloqueo sin contacto desmedido.',
+          'Kime y Reflejos (Deai): Anticipación, respuesta inmediata y cadera activa.',
+          'Zanshin y Guardia (Kamae): Postura de combate firme y espíritu marcial.'
+        ],
+        order: 6
+      },
+      {
+        id: 'aspect-physical',
+        category: 'physical',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'CAPACIDADES FÍSICAS COORDINATIVAS',
+        subtitle: 'Ritmo y respiración',
+        points: [
+          'Desarrollo del ritmo mediante la respiración correcta por cada técnica.'
+        ],
+        order: 7
+      },
+      {
+        id: 'aspect-mental',
+        category: 'mental',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'CAPACIDADES MENTALES',
+        subtitle: 'Disciplina y kiai',
+        points: [
+          'Disciplina en cuanto a la frecuencia a los entrenamientos.',
+          'Utilización del KIAI en el momento correcto de la técnica.'
+        ],
+        order: 8
+      },
+      {
+        id: 'aspect-do',
+        category: 'do',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'DO (Camino y Protocolo Marcial)',
+        subtitle: 'Etiqueta, rituales y vocabulario',
+        points: [
+          'Respuesta más rápida hacia los comandos que se le piden.',
+          'Memorización del ritual del saludo inicial y final de la clase (Seiretsu, seiza, mokutso) etc.',
+          'Dominio del vocabulario técnico (golpes, defensas aposiciones y ataques)',
+          'Vocabulario básico general (Dojo- Kun)'
+        ],
+        order: 9
+      }
+    ],
+    techniques: [
+      {
+        id: 'tech-9-8-k1',
+        group: 'kihon',
+        name: 'Chudan Oi zuki',
+        stance: 'Zenkutsu Dachi - Gedan Barai (Hidari)',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 1,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi - Gedan Barai (Hidari). 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-9-8-k2',
+        group: 'kihon',
+        name: 'Jodan Age Uke',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 2,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-9-8-k3',
+        group: 'kihon',
+        name: 'Chudan Soto Uke',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 3,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces última, ida y vuelta.'
+      },
+      {
+        id: 'tech-9-8-k4',
+        group: 'kihon',
+        name: 'Chudan Uchi Uke',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 4,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces última, ida y vuelta.'
+      },
+      {
+        id: 'tech-9-8-k5',
+        group: 'kihon',
+        name: 'Gedan Barai',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 5,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces última, ida y vuelta.'
+      },
+      {
+        id: 'tech-9-8-k6',
+        group: 'kihon',
+        name: 'Chudan Shuto Uke',
+        stance: 'Kokutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 6,
+        embusen: 'Embusen Oficial',
+        notes: 'Kokutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-9-8-k7',
+        group: 'kihon',
+        name: 'Mae Geri Chudan',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 7,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-9-8-ku1',
+        group: 'kumite',
+        name: 'Sambon Kumite (Jodan Zuki)',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante / Atrás',
+        repetitions: 3,
+        tripType: 'ida_y_vuelta',
+        order: 8,
+        embusen: 'Embusen Oficial',
+        notes: 'Yakusoku Kumite: Sambon Kumite (Jodan Zuki).'
+      },
+      {
+        id: 'tech-9-8-ka1',
+        group: 'kata',
+        name: 'Heian Shodan',
+        stance: 'Zenkutsu / Kokutsu Dachi',
+        direction: 'Embusen Oficial',
+        repetitions: 1,
+        tripType: 'solo_ida',
+        order: 9,
+        embusen: 'Embusen Oficial',
+        notes: 'Heian Shodan.'
+      },
+      {
+        id: 'tech-9-8-ka2',
+        group: 'kata',
+        name: 'Heian Nidan',
+        stance: 'Zenkutsu / Kokutsu / Kiba Dachi',
+        direction: 'Embusen Oficial',
+        repetitions: 1,
+        tripType: 'solo_ida',
+        order: 10,
+        embusen: 'Embusen Oficial',
+        notes: 'Heian Nidan.'
+      }
+    ]
   }
 ];
 
