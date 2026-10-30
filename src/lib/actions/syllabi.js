@@ -1213,6 +1213,285 @@ const DEFAULT_INITIAL_SYLLABI = [
         notes: 'Heian Godan.'
       }
     ]
+  },
+  {
+    name: 'Temario Oficial: Cinturón Morado (Examen de 5 Kyu a 4 Kyu)',
+    currentRank: '5° Kyu (Cinta Morada)',
+    targetRank: '4° Kyu (Cinta Morada con Línea Blanca)',
+    targetRanks: ['5° Kyu (Cinta Morada)', '4° Kyu (Cinta Morada con Línea Blanca)'],
+    description: 'Temario oficial de evaluación técnica para Cinturón Morado (Examen de 5 Kyu a 4 Kyu) según el manual ISKF Costa Rica.',
+    isOfficial: true,
+    createdBy: 'Comisión Técnica ISKF Costa Rica',
+    technicalAspects: [
+      {
+        id: 'aspect-tsuki',
+        category: 'tsuki',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'TZUKI WAZA (Ataques de Puño)',
+        subtitle: 'Coordinación técnica con capacidad física',
+        points: [
+          'Coordinación entre la aplicación de técnica del golpe con la capacidad física.'
+        ],
+        order: 1
+      },
+      {
+        id: 'aspect-uke',
+        category: 'uke',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'UKE WAZA (Bloqueos y Defensas)',
+        subtitle: 'Coordinación técnica con capacidad física',
+        points: [
+          'Coordinación entre la aplicación de técnica del bloqueo con la capacidad física.'
+        ],
+        order: 2
+      },
+      {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Translación de posturas, cadera y desplazamiento diagonal',
+        points: [
+          'Translación de Posiciones de paso largo al frente con posición atrasada.',
+          'Desplazamientos de Media Luna con la cadera al mismo nivel.',
+          'Postura atrasada (Kokutsu Dachi) con la cadera en dirección de la rodilla atrasada.',
+          'Manejo correcto del desplazamiento diagonal.',
+          'Manejo del peso corporal según técnica.'
+        ],
+        order: 3
+      },
+      {
+        id: 'aspect-geri',
+        category: 'geri',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'GERI WAZA (Patadas)',
+        subtitle: 'Forma correcta del pie según patada',
+        points: [
+          'Aplicación del Geri dándole énfasis a la forma correcta del pie según patada (Mawashi Geri Kiba Dachi Kokutsu Dachi)'
+        ],
+        order: 4
+      },
+      {
+        id: 'aspect-kata',
+        category: 'kata',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'KATA (Tekki Shodan)',
+        subtitle: 'Forma oficial, kiba dachi y embusen lineal',
+        points: [
+          'Postura Kiba Dachi firme y baja con rodillas hacia afuera y centro de gravedad constante.',
+          'Técnicas oficiales de Tekki Shodan (Kagi Zuki, Haishu Uke, Empi Uchi, Morote Uke, Nami Gaeshi).',
+          'Ritmo, fluidez, respiración coordinada, Kime y desplazamiento en línea recta (Embusen).'
+        ],
+        order: 5
+      },
+      {
+        id: 'aspect-kumite',
+        category: 'kumite',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'KUMITE (Kihon Ippon Kumite: 2 Repeticiones c/u Diferente)',
+        subtitle: 'Distancia, control, Yoko Geri y Mawashi Geri',
+        points: [
+          'Manejo correcto de la distancia (Ma-ai) y desplazamiento en ataque y defensa con Mawashi Geri.',
+          'Control de las técnicas con un oponente sin contacto lesivo (2 repeticiones cada lado diferente).',
+          'Actitud de combate, zanshin, anticipación, reflejos y contraataque explosivo.'
+        ],
+        order: 6
+      },
+      {
+        id: 'aspect-physical',
+        category: 'physical',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'COMPONENTES FISICOS',
+        subtitle: 'Agilidad y flexo elasticidad en piernas',
+        points: [
+          'Desarrollo de la agilidad y flexo elasticidad a los movimientos básicos énfasis en piernas.'
+        ],
+        order: 7
+      },
+      {
+        id: 'aspect-mental',
+        category: 'mental',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'CAPACIDADES MENTALES',
+        subtitle: 'Actitud de combate y concentración en enfoque',
+        points: [
+          'Actitud de combate.',
+          'Concentración en el enfoque de la técnica.'
+        ],
+        order: 8
+      },
+      {
+        id: 'aspect-do',
+        category: 'do',
+        categoryLabel: '2. Aspectos Físicos, Mentales y DO',
+        title: 'DO (Camino y Protocolo Marcial)',
+        subtitle: 'Carácter fuerte, golpes de codo y Niju Kun',
+        points: [
+          'Evitar la autocompasión y desarrollo de un carácter fuerte.',
+          'Vocabulario básico general golpes de codo.',
+          'Dominio del vocabulario (5 conceptos del NIYIKUM).'
+        ],
+        order: 9
+      }
+    ],
+    techniques: [
+      {
+        id: 'tech-5-4-k1',
+        group: 'kihon',
+        name: 'Chudan Sambon zuki',
+        stance: 'Zenkutsu Dachi - Gedan Barai (Hidari)',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 1,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi - Gedan Barai (Hidari). 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-5-4-k2',
+        group: 'kihon',
+        name: 'Chudan Gyaku zuki',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 2,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-5-4-k3',
+        group: 'kihon',
+        name: 'Jodan Age Uke - Gyaku zuki',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 3,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-5-4-k4',
+        group: 'kihon',
+        name: 'Chudan Soto Uke - Empi en Kiba Dachi - Uraken',
+        stance: 'Zenkutsu Dachi / Kiba Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 4,
+        embusen: 'Embusen Oficial',
+        notes: 'Chudan Soto Uke - Empi en Kiba Dachi - Uraken (5 veces, última Kiai, ida y vuelta).'
+      },
+      {
+        id: 'tech-5-4-k5',
+        group: 'kihon',
+        name: 'Chudan Uchi Uke - Gyaku zuki',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 5,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-5-4-k6',
+        group: 'kihon',
+        name: 'Gedan Barai - Gyaku zuki',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 6,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-7-6-k7',
+        group: 'kihon',
+        name: 'Chudan Shuto Uke - Nukite en Zenkutsu Dachi',
+        stance: 'Kokutsu Dachi / Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 7,
+        embusen: 'Embusen Oficial',
+        notes: 'Kokutsu Dachi. Chudan Shuto Uke - Nukite en Zenkutsu Dachi (5 veces, última Kiai, ida y vuelta).'
+      },
+      {
+        id: 'tech-5-4-k8',
+        group: 'kihon',
+        name: 'Mae Geri Chudan',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 8,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-5-4-k9',
+        group: 'kihon',
+        name: 'Mawashi Geri',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante (Mae)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 9,
+        embusen: 'Embusen Oficial',
+        notes: 'Zenkutsu Dachi. Mawashi Geri (5 veces, última Kiai, ida y vuelta).'
+      },
+      {
+        id: 'tech-5-4-k10',
+        group: 'kihon',
+        name: 'Yoko Geri Keague',
+        stance: 'Kiba Dachi',
+        direction: 'Lateral (Yoko)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 10,
+        embusen: 'Embusen Oficial',
+        notes: 'Kiba Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-5-4-k11',
+        group: 'kihon',
+        name: 'Yoko Geri Kekomi',
+        stance: 'Kiba Dachi',
+        direction: 'Lateral (Yoko)',
+        repetitions: 5,
+        tripType: 'ida_y_vuelta',
+        order: 11,
+        embusen: 'Embusen Oficial',
+        notes: 'Kiba Dachi. 5 veces, última Kiai, ida y vuelta.'
+      },
+      {
+        id: 'tech-5-4-ku1',
+        group: 'kumite',
+        name: 'Kihon Ippon Kumite (Jodan Zuki, Chudan zuki, Mae Geri, Yoko Geri y Mawashi Geri)',
+        stance: 'Zenkutsu Dachi',
+        direction: 'Adelante / Atrás',
+        repetitions: 2,
+        tripType: 'ida_y_vuelta',
+        order: 12,
+        embusen: 'Embusen Oficial',
+        notes: 'Yakusoku Kumite (2-Rep C/U-Dif): Kihon Ippon Kumite (Jodan Zuki, Chudan zuki, Mae Geri, Yoko Geri y Mawashi Geri).'
+      },
+      {
+        id: 'tech-5-4-ka1',
+        group: 'kata',
+        name: 'Tekki Shodan',
+        stance: 'Kiba Dachi',
+        direction: 'Embusen Oficial (Lineal)',
+        repetitions: 1,
+        tripType: 'solo_ida',
+        order: 13,
+        embusen: 'Embusen Oficial',
+        notes: 'Tekki Shodan.'
+      }
+    ]
   }
 ];
 
