@@ -513,47 +513,6 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     });
   };
 
-  // Borrar todos los aspectos técnicos referentes al cinturón activo y guardar en BD
-  const handleClearAllAspectsForBelt = () => {
-    if (!selectedAspectSyllabus) return;
-    const syllabusId = selectedAspectSyllabus.id || selectedAspectSyllabus._id;
-
-    showConfirm({
-      title: 'Borrar Aspectos Técnicos del Cinturón',
-      message: `¿Estás seguro de que deseas borrar todos los criterios y aspectos técnicos de "${selectedAspectSyllabus.name}" (${selectedAspectSyllabus.targetRank})? Las categorías quedarán en blanco listas para que cargues los nuevos criterios de este cinturón.`,
-      onConfirm: async () => {
-        const clearedAspects = aspectsState.map(a => ({
-          ...a,
-          points: []
-        }));
-        setAspectsState(clearedAspects);
-        setIsSavingAspects(true);
-        try {
-          const res = await updateSyllabusTechnicalAspects(syllabusId, clearedAspects);
-          if (res.success) {
-            setSyllabi(prev => prev.map(s => {
-              if ((s.id || s._id) === syllabusId) {
-                return { ...s, technicalAspects: clearedAspects };
-              }
-              return s;
-            }));
-            showAlert(
-              `Se han borrado todos los aspectos técnicos de "${selectedAspectSyllabus.name}". Ahora puedes ingresar los criterios propios de este cinturón.`,
-              'Aspectos Técnicos Borrados'
-            );
-          } else {
-            showAlert(res.error || 'No se pudieron borrar los aspectos técnicos.', 'Error', true);
-          }
-        } catch (err) {
-          console.error(err);
-          showAlert('Error al borrar los aspectos técnicos en base de datos.', 'Error', true);
-        } finally {
-          setIsSavingAspects(false);
-        }
-      }
-    });
-  };
-
   // Guardar aspectos técnicos en Base de Datos
   const handleSaveAspectsToDatabase = async () => {
     if (!selectedAspectSyllabus) {
@@ -1422,16 +1381,6 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                     title="Ver lista de todos los grados"
                   >
                     Cambiar Cinturón
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSavingAspects}
-                    onClick={handleClearAllAspectsForBelt}
-                    className="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
-                    title="Borrar todos los criterios técnicos de este cinturón para empezar en limpio"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                    <span>Borrar Aspectos de este Cinturón</span>
                   </button>
                 </div>
               </div>
