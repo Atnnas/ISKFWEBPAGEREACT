@@ -227,11 +227,12 @@ const DEFAULT_INITIAL_SYLLABI = [
         title: 'DACHI WAZA (Posturas y Desplazamientos)',
         subtitle: 'Bases y desplazamientos sin paso en falso',
         points: [
-          'Posiciones de paso largo al frente con énfasis en la pierna de atrás estirada completamente. Posición Adelantada 70/30.',
+          'Posiciones de paso largo al frente con énfasis en la pierna de atrás estirada completamente, Posición Adelantada 70/30.',
           'Desplazamientos de Media Luna sin mover los pies.',
           'No ajustar las posiciones al avanzar.',
-          'Posturas atrasada 70/30 (Kokutsu Dachi) pie de adelante hacia adelante.',
-          'Movimiento de técnica de tren superior con desplazamiento de piernas (Postura primero y luego la técnica)'
+          'Posturas atrasada 70/30 (Kokutsu Dachi) pie de adelante hacia adelante',
+          'Movimiento de técnica de tren superior con desplazamiento de piernas (Postura primero y luego la técnica)',
+          'Manejo correcto de la distancia en Sam -Bon -Kumite.'
         ],
         order: 3
       },
@@ -242,7 +243,6 @@ const DEFAULT_INITIAL_SYLLABI = [
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Pie base y trayectoria',
         points: [
-          'Manejo correcto de la distancia en Sam-Bon-Kumite.',
           'Énfasis en el movimiento o no movimiento del pie base según la patada.'
         ],
         order: 4
@@ -251,19 +251,12 @@ const DEFAULT_INITIAL_SYLLABI = [
         id: 'aspect-kata',
         category: 'kata',
         categoryLabel: '1. Aspectos Técnicos',
-        title: 'KATA (Forma Oficial y Embusen)',
-        subtitle: '10 Criterios Técnicos Oficiales de Evaluación',
+        title: 'KATA (Heian Shodan & Heian Nidan)',
+        subtitle: 'Forma oficial y embusen',
         points: [
-          'Posturas (Dachi Waza): Firmeza, alineación y transición clara en las posturas oficiales (Zenkutsu, Kokutsu, Kiba Dachi).',
-          'Técnicas (Waza): Precisión mecánica, trayectoria y correcta aplicación técnica en cada movimiento.',
-          'Movimientos de Transición: Desplazamientos fluidos, giros limpios y estabilidad del centro de gravedad.',
-          'Tiempo y Sincronización: Ritmo marcial adecuado y coordinación simultánea de extremidades y cadera.',
-          'Respiración Correcta: Inhalación controlada y exhalación potente sincronizada con el Kiai.',
-          'Enfoque y Kime: Contracción explosiva al término del impacto y concentración mental.',
-          'Conformidad (Kihon): Fidelidad y consistencia en la ejecución con el estándar oficial de Kihon.',
-          'Fuerza: Potencia efectiva generada desde el suelo y rotación de cadera.',
-          'Velocidad: Rapidez en la aceleración de ataque y recogida rápida de defensas.',
-          'Equilibrio: Estabilidad corporal constante sin balanceos ni pérdida de balance.'
+          'Posturas oficiales (Zenkutsu, Kokutsu, Kiba Dachi) firmes y estables.',
+          'Técnicas (Waza): Precisión mecánica y embusen oficial en Heian Shodan y Heian Nidan.',
+          'Ritmo, respiración correcta y Kime en los movimientos de ataque y defensa.'
         ],
         order: 5
       },
@@ -271,13 +264,12 @@ const DEFAULT_INITIAL_SYLLABI = [
         id: 'aspect-kumite',
         category: 'kumite',
         categoryLabel: '1. Aspectos Técnicos',
-        title: 'KUMITE (Combate y Yakusoku)',
-        subtitle: 'Distancia (Ma-ai), control y reflejos en Sambon Kumite',
+        title: 'KUMITE (Sambon Kumite)',
+        subtitle: 'Distancia (Ma-ai), control y reflejos',
         points: [
-          'Manejo correcto de la distancia en Sam-Bon-Kumite.',
-          'Control Técnico y Precisión: Ataque y bloqueo sin contacto desmedido.',
-          'Kime y Reflejos (Deai): Anticipación, respuesta inmediata y cadera activa.',
-          'Zanshin y Guardia (Kamae): Postura de combate firme y espíritu marcial.'
+          'Manejo correcto de la distancia en Sam -Bon -Kumite.',
+          'Control técnico, anticipación y reflejos sin contacto desmedido.',
+          'Zanshin y postura de combate firme (Kamae).'
         ],
         order: 6
       },
@@ -285,7 +277,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         id: 'aspect-physical',
         category: 'physical',
         categoryLabel: '2. Aspectos Físicos, Mentales y DO',
-        title: 'CAPACIDADES FÍSICAS COORDINATIVAS',
+        title: 'CAPACIDADES FISICAS COORDINATIVAS',
         subtitle: 'Ritmo y respiración',
         points: [
           'Desarrollo del ritmo mediante la respiración correcta por cada técnica.'
@@ -312,7 +304,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         subtitle: 'Etiqueta, rituales y vocabulario',
         points: [
           'Respuesta más rápida hacia los comandos que se le piden.',
-          'Memorización del ritual del saludo inicial y final de la clase (Seiretsu, seiza, mokutso) etc.',
+          'Memorización del ritual del saludo inicial y final de la clase (Seiretsu,seiza, mokutso) etc.',
           'Dominio del vocabulario técnico (golpes, defensas aposiciones y ataques)',
           'Vocabulario básico general (Dojo- Kun)'
         ],
