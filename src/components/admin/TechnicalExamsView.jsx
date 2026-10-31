@@ -298,6 +298,7 @@ export function generateExamTechniques(syllabus) {
   return items;
 }
 
+// Grados Kyu oficiales para evaluación técnica (10° Kyu a 1° Kyu). Los exámenes de Dan se evalúan a nivel internacional.
 const KYU_OPTIONS = [
   '10° Kyu (Cinta Blanca)',
   '9° Kyu (Cinta Amarilla)',
@@ -309,7 +310,6 @@ const KYU_OPTIONS = [
   '3° Kyu (Cinta Marrón 3)',
   '2° Kyu (Cinta Marrón 2)',
   '1° Kyu (Cinta Marrón 1)',
-  '1° Dan (Cinta Negra / Shodan)',
 ];
 
 function getRankWeight(rank) {

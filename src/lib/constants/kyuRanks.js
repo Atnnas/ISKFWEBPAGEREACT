@@ -25,14 +25,20 @@ export const KYU_DEFINITIONS = [
   { id: '4-kyu', digit: '4° Kyu', name: 'Cinta Morada (Línea Blanca)', full: '4° Kyu (Cinta Morada con Línea Blanca)', solidClass: 'bg-[#7C3AED] relative overflow-hidden', hasStripe: true },
   { id: '3-kyu', digit: '3° Kyu', name: 'Cinta Marrón 3', full: '3° Kyu (Cinta Marrón 3)', solidClass: 'bg-[#602D0E]' },
   { id: '2-kyu', digit: '2° Kyu', name: 'Cinta Marrón 2', full: '2° Kyu (Cinta Marrón 2)', solidClass: 'bg-[#602D0E]' },
-  { id: '1-kyu', digit: '1° Kyu', name: 'Cinta Marrón 1', full: '1° Kyu (Cinta Marrón 1)', solidClass: 'bg-[#602D0E]' },
+  { id: '1-kyu', digit: '1° Kyu', name: 'Cinta Marrón 1', full: '1° Kyu (Cinta Marrón 1)', solidClass: 'bg-[#602D0E]' }
+];
+
+export const DAN_DEFINITIONS = [
   { id: '1-dan', digit: '1° Dan', name: 'Cinta Negra (Shodan)', full: '1° Dan (Cinta Negra / Shodan)', solidClass: 'bg-black border border-slate-800' },
   { id: '2-dan', digit: '2° Dan', name: 'Cinta Negra (Nidan)', full: '2° Dan (Cinta Negra / Nidan)', solidClass: 'bg-black border border-slate-800' },
   { id: '3-dan', digit: '3° Dan', name: 'Cinta Negra (Sandan)', full: '3° Dan (Cinta Negra / Sandan)', solidClass: 'bg-black border border-slate-800' },
   { id: '4-dan', digit: '4° Dan', name: 'Cinta Negra (Yondan)', full: '4° Dan (Cinta Negra / Yondan)', solidClass: 'bg-black border border-slate-800' }
 ];
 
+export const ALL_RANKS_DEFINITIONS = [...KYU_DEFINITIONS, ...DAN_DEFINITIONS];
+
 export const KYU_OPTIONS = KYU_DEFINITIONS.map(k => k.full);
+export const ALL_RANKS_OPTIONS = ALL_RANKS_DEFINITIONS.map(k => k.full);
 
 export const COMMON_STANCES = [
   'Zenkutsu Dachi',
