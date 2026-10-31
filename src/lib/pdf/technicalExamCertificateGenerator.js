@@ -82,7 +82,7 @@ export async function generateTechnicalExamCertificatePDF({
 
   // 1. Logo ISKF Centrado Superior
   try {
-    doc.addImage(ISKF_CERT_LOGO_BASE64, 'JPEG', 92.5, 12, 25, 24);
+    doc.addImage(ISKF_CERT_LOGO_BASE64, 'PNG', 92.5, 11, 25, 25);
   } catch (err) {
     console.warn('Error al cargar logo de encabezado:', err);
   }
@@ -357,20 +357,20 @@ export async function generateTechnicalExamCertificatePDF({
 
   // 1. Encabezado Hoja 2
   try {
-    doc.addImage(ISKF_CERT_LOGO_BASE64, 'JPEG', 15, 11, 15, 14.5);
+    doc.addImage(ISKF_CERT_LOGO_BASE64, 'PNG', 15, 10.5, 15, 15);
   } catch (err) {
     console.warn('Error al cargar logo hoja 2:', err);
   }
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
+  doc.setFontSize(9.2);
   doc.setTextColor(...COLOR_ORANGE_TITLE);
-  doc.text('INTERNATIONAL SHOTOKAN KARATE FEDERATION • COSTA RICA', 33, 16.5);
+  doc.text('INTERNATIONAL SHOTOKAN KARATE FEDERATION • COSTA RICA', 33, 15.5);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
+  doc.setFontSize(7.2);
   doc.setTextColor(...COLOR_MUTED);
-  doc.text('Boleta Oficial de Evaluación Técnica — Hoja 2: Aspectos Positivos y Firmas', 33, 21.0);
+  doc.text('Boleta Oficial de Evaluación Técnica — Hoja 2: Aspectos Positivos y Firmas', 33, 20.2);
 
   // Alumno y fecha a la derecha
   doc.setFont('helvetica', 'bold');
@@ -549,7 +549,7 @@ export async function generateTechnicalExamCertificatePDF({
 
   // 4. Pie de Página Institucional (Hoja 2)
   try {
-    doc.addImage(ISKF_CERT_EMBLEM_BASE64, 'JPEG', 98, 240, 14, 13.5);
+    doc.addImage(ISKF_CERT_EMBLEM_BASE64, 'PNG', 98, 240, 14, 14);
   } catch (err) {
     console.warn('Error al cargar emblema inferior:', err);
   }
