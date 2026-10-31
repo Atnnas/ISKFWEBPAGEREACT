@@ -747,7 +747,8 @@ export default function TribunalProgressMonitor({
         targetRank
       }).map(b => b.text).join('\n');
 
-      const positiveText = cons?.aiAnalysis || `${studentName} demostró un espíritu marcial ejemplar, constancia y disciplina sobresaliente en el tatami.`;
+      // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
+      const positiveText = (st?.positiveAspects || '').trim();
 
       await generateTechnicalExamCertificatePDF({
         studentName,

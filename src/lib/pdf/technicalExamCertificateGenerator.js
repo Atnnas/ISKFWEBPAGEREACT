@@ -402,24 +402,24 @@ export async function generateTechnicalExamCertificatePDF({
   doc.setDrawColor(...COLOR_GRAY_BORDER);
   doc.rect(15, dictamenY + 6.5, 180, dictamenBoxH, 'FD');
 
-  const defaultPositive = `* Corrección en Kata: Durante la forma (Heian Shodan), el estudiante debe mantenerse quieto, firme y con la mirada atenta al frente, sin tocarse ni acomodarse el uniforme en ningún momento.
-* Corrección de postura básica: En la posición adelantada (Zenkutsu Dachi), estirar por completo la pierna de atrás apoyando todo el talón en el suelo, y flexionar bien la rodilla del frente sin subir la altura del cuerpo.
-* Detalle para la nota máxima (10 de 10): Con una nota de ${Math.round(resolvedFinalScore)}%, para alcanzar la perfección faltó: cero reajustes a la vestimenta en tatami, bajar más el centro del cuerpo, y mayor sincronía de cadera en el impacto final.
-* Aspectos aprobados demostrados: muy buen saludo, respeto y disciplina dentro del tatami, y buena fuerza al golpear.`;
-
-  const contentPositive = (positiveText && positiveText.trim().length > 15) ? positiveText : defaultPositive;
-
-  const rawBullets = contentPositive
-    .split('\n')
-    .map(b => b.trim())
-    .map(b => b
-      .replace(/^observaciones directas del [^:]+:?\s*/i, '')
-      .replace(/^observaciones directas de [^:]+:?\s*/i, '')
-      .replace(/\s*\([^)]*tribunal[^)]*\):?/gi, ':')
-      .replace(/\s*\([^)]*profesores[^)]*\):?/gi, ':')
-      .trim()
-    )
-    .filter(b => b.length > 5);
+  // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
+  const cleanPositiveText = (positiveText || '').trim();
+  const rawBullets = cleanPositiveText
+    ? cleanPositiveText
+        .split('\n')
+        .map(b => b.trim())
+        .map(b => b
+          .replace(/^[•\s*-]+/, '')
+          .replace(/^observaciones directas del [^:]+:?\s*/i, '')
+          .replace(/^observaciones directas de [^:]+:?\s*/i, '')
+          .replace(/\s*\([^)]*tribunal[^)]*\):?/gi, ':')
+          .replace(/\s*\([^)]*profesores[^)]*\):?/gi, ':')
+          .trim()
+        )
+        .filter(b => b.length > 0)
+    : [
+        'Demuestra disciplina, respeto y actitud positiva constante dentro del dojo.'
+      ];
 
   let curDictY = dictamenY + 12.0;
   doc.setFont('helvetica', 'normal');

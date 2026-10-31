@@ -2946,23 +2946,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       const kataText = getGroupObservations('kata');
       const kumiteText = getGroupObservations('kumite');
 
-      // Aspectos Positivos
-      let positiveText = '';
-      if (item.aiSummary) {
-        const lines = item.aiSummary
-          .split('\n')
-          .filter(l => l.includes('*') && (l.toLowerCase().includes('satisfactorio') || l.toLowerCase().includes('actitud') || l.toLowerCase().includes('firme') || l.toLowerCase().includes('disciplina') || l.toLowerCase().includes('constancia')));
-        if (lines.length > 0) {
-          positiveText = lines.map(l => l.replace(/^\*\s*/, '')).join('. ');
-        }
-      }
-      if (!positiveText || positiveText.length < 15) {
-        if (item.student.positiveAspects && item.student.positiveAspects.trim().length > 0) {
-          positiveText = item.student.positiveAspects.trim();
-        } else {
-          positiveText = `${item.student.name} es un ejemplo de tenacidad y disciplina en el dojo, luchando diariamente con esfuerzo continuo. Su constancia en los entrenamientos es admirable, siempre esforzándose por dar lo mejor de sí y superando valientemente cualquier desafío que se le presente.`;
-        }
-      }
+      // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
+      const positiveText = (item.student?.positiveAspects || '').trim();
 
       const generalComment = 'Tomar las notas y recomendaciones anteriores para corregir y asi mejorar su nivel';
 
