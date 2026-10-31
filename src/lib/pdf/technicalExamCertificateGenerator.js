@@ -9,7 +9,8 @@
 import {
   ISKF_CERT_LOGO_BASE64,
   ISKF_CERT_EMBLEM_BASE64,
-  ISKF_ROY_SIGNATURE_BASE64
+  ISKF_ROY_SIGNATURE_BASE64,
+  ISKF_CERT_BACKGROUND_BASE64
 } from './certificateAssets.js';
 import { getKataForRank, getKumiteForRank } from '../utils/shotokanCriteriaFeedback.js';
 
@@ -62,6 +63,22 @@ export async function generateTechnicalExamCertificatePDF({
   // =========================================================================
   // HOJA 1: ENCABEZADO INSTITUCIONAL, CALIFICACIONES Y PUNTOS A MEJORAR
   // =========================================================================
+
+  // 0. Fondo Oficial ISKF (Mismo fondo institucional de la web con opacidad calibrada)
+  try {
+    if (ISKF_CERT_BACKGROUND_BASE64) {
+      if (typeof doc.GState === 'function') {
+        doc.saveGraphicsState();
+        doc.setGState(new doc.GState({ opacity: 0.40 }));
+        doc.addImage(ISKF_CERT_BACKGROUND_BASE64, 'JPEG', 0, 0, 210, 297);
+        doc.restoreGraphicsState();
+      } else {
+        doc.addImage(ISKF_CERT_BACKGROUND_BASE64, 'JPEG', 0, 0, 210, 297);
+      }
+    }
+  } catch (err) {
+    console.warn('Error al cargar fondo en hoja 1:', err);
+  }
 
   // 1. Logo ISKF Centrado Superior
   try {
@@ -321,6 +338,22 @@ export async function generateTechnicalExamCertificatePDF({
   // HOJA 2: ASPECTOS POSITIVOS, COMENTARIO, FIRMAS Y EXAMINADORES
   // =========================================================================
   doc.addPage();
+
+  // 0. Fondo Oficial ISKF en Hoja 2 con opacidad calibrada
+  try {
+    if (ISKF_CERT_BACKGROUND_BASE64) {
+      if (typeof doc.GState === 'function') {
+        doc.saveGraphicsState();
+        doc.setGState(new doc.GState({ opacity: 0.40 }));
+        doc.addImage(ISKF_CERT_BACKGROUND_BASE64, 'JPEG', 0, 0, 210, 297);
+        doc.restoreGraphicsState();
+      } else {
+        doc.addImage(ISKF_CERT_BACKGROUND_BASE64, 'JPEG', 0, 0, 210, 297);
+      }
+    }
+  } catch (err) {
+    console.warn('Error al cargar fondo en hoja 2:', err);
+  }
 
   // 1. Encabezado Hoja 2
   try {
