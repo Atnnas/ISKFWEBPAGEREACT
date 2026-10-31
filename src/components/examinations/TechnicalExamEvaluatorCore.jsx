@@ -1407,68 +1407,140 @@ export default function TechnicalExamEvaluatorCore({
         </div>
       )}
 
-      {/* 2. ENCABEZADO ULTRA COMPACTO: IDENTIFICACIÓN DEL SENSEI Y ESTADO */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-white flex flex-wrap items-center justify-between gap-2.5 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 font-black flex items-center justify-center text-sm shadow-xs">
-            🥋
-          </span>
-          <div className="leading-tight">
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm font-black text-white">{evaluator?.name || 'Sensei Sinodal'}</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-white/10 text-amber-300 rounded font-semibold">
-                {evaluator?.role || 'Sinodal'}
-              </span>
-              {isAdmin && (
-                <span className="text-[10px] px-1.5 py-0.2 bg-indigo-500/30 text-indigo-200 rounded font-bold">
-                  Admin
+      {/* 2. ENCABEZADO ULTRA COMPACTO: IDENTIFICACIÓN DEL SENSEI, TANDAS, FASES Y ESTADO */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-white flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shadow-sm">
+        {/* LADO IZQUIERDO: Info del Sensei + A su derecha la Tanda */}
+        <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap">
+          {/* Sensei Info */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <span className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 font-black flex items-center justify-center text-sm shadow-xs shrink-0">
+              🥋
+            </span>
+            <div className="leading-tight">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs sm:text-sm font-black text-white">{evaluator?.name || 'Sensei Sinodal'}</span>
+                <span className="text-[10px] px-1.5 py-0.2 bg-white/10 text-amber-300 rounded font-semibold">
+                  {evaluator?.role || 'Sinodal'}
                 </span>
-              )}
+                {isAdmin && (
+                  <span className="text-[10px] px-1.5 py-0.2 bg-indigo-500/30 text-indigo-200 rounded font-bold">
+                    Admin
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 truncate max-w-[180px] sm:max-w-xs">
+                {call?.title || 'Examen Técnico'} • {call?.dojoName}
+              </p>
             </div>
-            <p className="text-[10px] text-slate-400 truncate max-w-xs sm:max-w-md">
-              {call?.title || 'Examen Técnico'} • {call?.dojoName}
-            </p>
+          </div>
+
+          {/* Separador vertical sutil */}
+          <div className="hidden sm:block h-7 w-px bg-slate-800 shrink-0" />
+
+          {/* A LA DERECHA DEL SENSEI: Selector / Información de Tanda */}
+          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-0.5">
+            <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 px-0.5">
+              <Clock className="w-3 h-3 text-amber-400" /> Tanda:
+            </span>
+            {tandas.map((tanda, tIdx) => {
+              const isSelected = selectedTandaIndex === tIdx;
+              const studentCount = (tanda.studentIds || []).length;
+              return (
+                <button
+                  key={tanda.id || tIdx}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTandaIndex(tIdx);
+                    setSelectedTechniqueIndex(0);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
+                  <span className={`text-[10px] px-1 rounded-full font-mono ${
+                    isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
+                  }`}>
+                    {studentCount}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Botón Monitor Tribunal, Sincronización en Vivo y Estado */}
-        <div className="flex items-center gap-2.5 text-[11px] flex-wrap">
+        {/* LADO DERECHO: Fases Oficiales ISKF + Monitor Tribunal + Sincronización + Estado */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Selector de Fases Oficial ISKF */}
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-950/70 p-0.5 rounded-xl border border-slate-800/90 overflow-x-auto">
+            {[
+              { key: 'kihon', label: '1. Kihon' },
+              { key: 'kumite', label: '2. Kumite' },
+              { key: 'kata', label: '3. Kata' },
+              ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '4. Aspectos' }] : [])
+            ].map(phase => {
+              const isSelected = effectivePhase === phase.key;
+              return (
+                <button
+                  key={phase.key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPhase(phase.key);
+                    setSelectedTechniqueIndex(0);
+                  }}
+                  className={`px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    isSelected
+                      ? 'bg-[#2D2E83] text-white border border-indigo-400/50 shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  {phase.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Botón Monitor Tribunal */}
           <button
             type="button"
             onClick={() => setShowTribunalMonitorModal(true)}
-            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border border-indigo-400/40 active:scale-95"
-            title="Supervisar avance tanda por tanda de los demás Senseis"
+            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border border-indigo-400/40 active:scale-95 text-xs"
+            title="Supervisar avance del tribunal"
           >
             <Users className="w-3.5 h-3.5 text-amber-300" />
-            <span>Monitor Tribunal</span>
+            <span className="hidden lg:inline">Monitor Tribunal</span>
           </button>
 
-          {/* Botón de Sincronización en Tiempo Real */}
+          {/* Sincronización en Vivo */}
           <button
             type="button"
             onClick={() => pollCallRoster(true)}
             disabled={isSyncingRoster}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-[11px]"
-            title="Sincronizar tandas y lista de karatecas ahora mismo"
+            className="flex items-center gap-1.5 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-[11px]"
+            title="Sincronizar en tiempo real"
           >
             <RotateCcw className={`w-3.5 h-3.5 text-cyan-400 ${isSyncingRoster ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{isSyncingRoster ? 'Sincronizando...' : 'En Vivo'}</span>
+            <span className="hidden sm:inline">{isSyncingRoster ? 'Sync...' : 'En Vivo'}</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
           </button>
 
+          {/* Estado de Guardado */}
           {saveStatus === 'saving' ? (
-            <span className="flex items-center gap-1 text-amber-300 font-medium">
-              <RotateCcw className="w-3 h-3 animate-spin" /> Guardando...
+            <span className="flex items-center gap-1 text-amber-300 font-medium text-xs">
+              <RotateCcw className="w-3 h-3 animate-spin" />
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-emerald-400 font-bold">
-              <Check className="w-3.5 h-3.5" /> Guardado
+            <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs" title="Todo guardado en base de datos">
+              <Check className="w-3.5 h-3.5" />
             </span>
           )}
 
+          {/* Conectividad */}
           {!isOnline ? (
-            <span className="flex items-center gap-1 text-rose-400 font-bold" title="Sin conexión">
-              <WifiOff className="w-3.5 h-3.5" /> Offline
+            <span className="flex items-center gap-1 text-rose-400 font-bold text-xs" title="Sin conexión">
+              <WifiOff className="w-3.5 h-3.5" />
             </span>
           ) : (
             <Wifi className="w-3 h-3 text-emerald-400" title="En línea" />
@@ -1500,153 +1572,6 @@ export default function TechnicalExamEvaluatorCore({
           </button>
         </div>
       )}
-
-      {/* 3. SELECTOR DE TANDAS Y FASES */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-xl p-2">
-        {/* Selector de Tandas */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-          <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 px-1">
-            <Clock className="w-3 h-3" /> Tanda:
-          </span>
-          {tandas.map((tanda, tIdx) => {
-            const isSelected = selectedTandaIndex === tIdx;
-            const studentCount = (tanda.studentIds || []).length;
-            return (
-              <button
-                key={tanda.id || tIdx}
-                type="button"
-                onClick={() => {
-                  setSelectedTandaIndex(tIdx);
-                  setSelectedTechniqueIndex(0);
-                }}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-amber-400 text-slate-950 shadow-xs'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
-                <span className={`text-[10px] px-1 rounded-full font-mono ${
-                  isSelected ? 'bg-slate-950/20 text-slate-950' : 'bg-slate-700 text-slate-300'
-                }`}>
-                  {studentCount}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Selector de Fases Oficial ISKF */}
-        <div className="flex items-center gap-1 overflow-x-auto py-0.5">
-          {[
-            { key: 'kihon', label: '1. Kihon' },
-            { key: 'kumite', label: '2. Kumite' },
-            { key: 'kata', label: '3. Kata' },
-            ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '4. Aspectos Generales' }] : [])
-          ].map(phase => {
-            const isSelected = effectivePhase === phase.key;
-            return (
-              <button
-                key={phase.key}
-                type="button"
-                onClick={() => {
-                  setSelectedPhase(phase.key);
-                  setSelectedTechniqueIndex(0);
-                }}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#2D2E83] text-white border border-indigo-400/50 shadow-xs'
-                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                {phase.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 4. BARRA DE FASE Y PASO ACTIVO */}
-      <div className="bg-linear-to-r from-slate-950 via-slate-900 to-slate-950 border border-amber-400/30 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-3 shadow-md">
-        <button
-          type="button"
-          onClick={handlePrevTechnique}
-          disabled={selectedTechniqueIndex === 0 && effectivePhase === 'kihon'}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer transition-colors shrink-0"
-          title="Paso anterior"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        {isMixedTanda ? (
-          <div className="text-center flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-widest font-black text-amber-400 flex items-center justify-center gap-1.5">
-              <BookOpen className="w-3 h-3 text-amber-400" />
-              <span>{effectivePhase.toUpperCase()} • PASO {selectedTechniqueIndex + 1} DE {totalPhaseSteps}</span>
-            </div>
-            <h2 className="text-sm sm:text-lg md:text-xl font-black text-white truncate tracking-tight mt-0.5">
-              🥋 Evaluación Simultánea en Paralelo ({beltGroups.length} Cinturones Distintos • {tandaStudents.length} Karatecas)
-            </h2>
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-300 mt-1 flex-wrap">
-              {beltGroups.map(group => {
-                const curTech = group.techniques[selectedTechniqueIndex];
-                return (
-                  <span key={group.key} className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-800 border border-slate-700 shadow-xs">
-                    <span className="font-bold text-amber-300">{group.rankLabel}:</span>
-                    <span className="font-extrabold text-white">{curTech?.name || '✅ Completado'}</span>
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center flex-1 min-w-0">
-            <div className="text-[10px] uppercase tracking-widest font-black text-amber-400 flex items-center justify-center gap-1.5">
-              <BookOpen className="w-3 h-3 text-amber-400" />
-              <span>{effectivePhase.toUpperCase()} • PASO {selectedTechniqueIndex + 1} DE {totalPhaseSteps}</span>
-            </div>
-            <h2 className="text-base sm:text-xl md:text-2xl font-black text-white truncate tracking-tight mt-0.5">
-              {beltGroups[0]?.techniques[selectedTechniqueIndex]?.name || activeTechnique.name}
-            </h2>
-            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-0.5 flex-wrap">
-              {activeTechnique.stance && (
-                <span className="text-amber-300/90 font-bold bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
-                  {activeTechnique.stance}
-                </span>
-              )}
-              {activeTechnique.direction && (
-                <span className="text-cyan-300/90 font-semibold bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-400/20">
-                  {activeTechnique.direction}
-                </span>
-              )}
-              {activeTechnique.repetitions && (
-                <span className="text-emerald-300/90 font-bold bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">
-                  {activeTechnique.repetitions} repeticiones
-                </span>
-              )}
-              {activeTechnique.embusen && (
-                <span className="text-purple-300/90 font-medium bg-purple-400/10 px-2 py-0.5 rounded border border-purple-400/20">
-                  {activeTechnique.embusen}
-                </span>
-              )}
-            </div>
-            {activeTechnique.notes && (
-              <p className="text-[11px] text-slate-400 max-w-2xl mx-auto truncate mt-1 italic">
-                {activeTechnique.notes}
-              </p>
-            )}
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handleNextTechnique}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white cursor-pointer transition-colors shrink-0"
-          title="Siguiente paso"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
 
       {/* ALERTA DE BLOQUEO POR ESTRELLAS FALTANTES */}
       {validationWarning && (
@@ -1739,16 +1664,42 @@ export default function TechnicalExamEvaluatorCore({
                         <span>{phaseTitleName} Completado para este cinturón</span>
                       </div>
                     ) : (
-                      <div className="flex flex-col md:items-end text-left md:text-right">
-                        <div className="text-xs font-black text-white flex items-center gap-2">
-                          <span className="text-[10px] font-mono text-amber-400 bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.5 rounded-md">
-                            Paso {groupTechIdx + 1} de {groupTechs.length}
+                      <div className="flex flex-col md:items-end text-left md:text-right gap-0.5">
+                        <div className="text-xs font-black text-white flex items-center gap-2 flex-wrap md:justify-end">
+                          <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-amber-400 bg-amber-400/10 border border-amber-400/25 px-2 py-0.5 rounded-md">
+                            {effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1} de {groupTechs.length}
                           </span>
-                          <span className="text-amber-200 text-sm font-black">{groupActiveTech?.name}</span>
+                          <span className="text-sm sm:text-base font-black text-amber-200 tracking-tight">
+                            {groupActiveTech?.name}
+                          </span>
                         </div>
-                        {(groupActiveTech?.stance || groupActiveTech?.direction || groupActiveTech?.repetitions) && (
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            {[groupActiveTech.stance, groupActiveTech.direction, groupActiveTech.repetitions].filter(Boolean).join(' · ')}
+                        {(groupActiveTech?.stance || groupActiveTech?.direction || groupActiveTech?.repetitions || groupActiveTech?.embusen) && (
+                          <div className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5 flex-wrap md:justify-end mt-0.5">
+                            {groupActiveTech.stance && (
+                              <span className="text-amber-300/90 font-semibold bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 text-[10px]">
+                                {groupActiveTech.stance}
+                              </span>
+                            )}
+                            {groupActiveTech.direction && (
+                              <span className="text-cyan-300/90 font-medium bg-cyan-400/10 px-1.5 py-0.5 rounded border border-cyan-400/20 text-[10px]">
+                                {groupActiveTech.direction}
+                              </span>
+                            )}
+                            {groupActiveTech.repetitions && (
+                              <span className="text-emerald-300/90 font-medium bg-emerald-400/10 px-1.5 py-0.5 rounded border border-emerald-400/20 text-[10px]">
+                                {groupActiveTech.repetitions} rep.
+                              </span>
+                            )}
+                            {groupActiveTech.embusen && (
+                              <span className="text-purple-300/90 font-medium bg-purple-400/10 px-1.5 py-0.5 rounded border border-purple-400/20 text-[10px]">
+                                {groupActiveTech.embusen}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {groupActiveTech?.notes && (
+                          <div className="text-[10px] text-slate-400 italic max-w-md truncate">
+                            {groupActiveTech.notes}
                           </div>
                         )}
                       </div>
