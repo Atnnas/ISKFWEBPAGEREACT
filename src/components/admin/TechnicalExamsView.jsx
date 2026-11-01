@@ -85,8 +85,7 @@ import {
   saveCallSchedules,
   toggleStudentPromotionForCall,
   updateExamCallSchedulesAndEvaluators,
-  updateExamCallMaxPerTanda,
-  toggleExamCallLock
+  updateExamCallMaxPerTanda
 } from '../../lib/actions/technicalExams';
 import { getExamCostConfig } from '../../lib/actions/examCosts';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
@@ -1057,16 +1056,11 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   const [detailMaxPerTanda, setDetailMaxPerTanda] = useState(6);
   const [isUpdatingMaxPerTanda, setIsUpdatingMaxPerTanda] = useState(false);
   const [callDetailSubTab, setCallDetailSubTab] = useState('tandas'); // 'tandas' | 'evaluation' | 'monitor'
-  const [isTogglingLock, setIsTogglingLock] = useState(false);
 
-  // Determinar si la evaluación en tatami y el monitor están desbloqueados
+  // Las pestañas de evaluación y monitor se desbloquean automáticamente al agrupar en tandas
   const isCallUnlocked = useMemo(() => {
-    if (!selectedCallForDetail) return false;
-    if (selectedCallForDetail.isUnlocked !== undefined) {
-      return Boolean(selectedCallForDetail.isUnlocked);
-    }
-    return selectedCallForDetail.status === 'en_tatami';
-  }, [selectedCallForDetail]);
+    return Array.isArray(callTandas) && callTandas.length > 0;
+  }, [callTandas]);
 
   // Si la evaluación está bloqueada, asegurar que permanezca en la pestaña de tandas
   useEffect(() => {
@@ -1108,53 +1102,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       }).catch(console.error);
     }
   }, [callDetailSubTab, selectedCallForDetail]);
-
-  const handleToggleCallLock = async () => {
-    if (!selectedCallForDetail) return;
-    const callId = selectedCallForDetail._id || selectedCallForDetail.id;
-    if (!callId) return;
-
-    const nextUnlocked = !isCallUnlocked;
-
-    // Validación preventiva al desbloquear: debe tener al menos una tanda para garantizar que todo se reparta bien
-    if (nextUnlocked && callTandas.length === 0) {
-      showAlert(
-        'Para garantizar que todo se reparta bien, debe organizar y asignar al menos una tanda con los aspirantes antes de desbloquear la evaluación.',
-        'Organice las Tandas Primero'
-      );
-      return;
-    }
-
-    setIsTogglingLock(true);
-    try {
-      const res = await toggleExamCallLock({ callId, isUnlocked: nextUnlocked });
-      if (res.success) {
-        setSelectedCallForDetail(prev => prev ? ({
-          ...prev,
-          isUnlocked: res.isUnlocked,
-          status: res.status
-        }) : null);
-        setExamCalls(prev => prev.map(c => {
-          if ((c._id || c.id) === callId) {
-            return {
-              ...c,
-              isUnlocked: res.isUnlocked,
-              status: res.status
-            };
-          }
-          return c;
-        }));
-        showAlert(res.message, nextUnlocked ? '¡Evaluación Desbloqueada!' : 'Evaluación Bloqueada');
-      } else {
-        showAlert(res.error || 'No se pudo cambiar el estado de bloqueo.', 'Error');
-      }
-    } catch (err) {
-      console.error('Error al alternar bloqueo de examen:', err);
-      showAlert('Ocurrió un error inesperado al cambiar el bloqueo.', 'Error');
-    } finally {
-      setIsTogglingLock(false);
-    }
-  };
 
   const handleChangeMaxPerTanda = async (newVal) => {
     const parsed = parseInt(newVal, 10);
@@ -3464,7 +3411,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                     onClick={() => {
                       if (!isCallUnlocked) {
                         showAlert(
-                          '🔒 Los paneles de "Mi Evaluación" y "Monitor del Tribunal" están bloqueados para garantizar que todo se reparta bien en las tandas.\n\nOrganice a los atletas y presione "🔓 Desbloquear Evaluación y Monitor" en la barra de Tandas.',
+                          '🔒 Los paneles de "Mi Evaluación" y "Monitor del Tribunal" están bloqueados para garantizar que todo se reparta bien en las tandas.\n\nOrganice a los atletas y presione "⚡ Agrupar en Tandas" en la configuración de tandas.',
                           'Evaluación en Preparación'
                         );
                         return;
@@ -3501,7 +3448,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                     onClick={() => {
                       if (!isCallUnlocked) {
                         showAlert(
-                          '🔒 El Monitor del Tribunal está bloqueado para garantizar que todo se reparta bien en las tandas.\n\nOrganice a los atletas y presione "🔓 Desbloquear Evaluación y Monitor" en la barra de Tandas.',
+                          '🔒 El Monitor del Tribunal está bloqueado para garantizar que todo se reparta bien en las tandas.\n\nOrganice a los atletas y presione "⚡ Agrupar en Tandas" en la configuración de tandas.',
                           'Monitor en Preparación'
                         );
                         return;
@@ -3584,40 +3531,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
               {callDetailSubTab === 'tandas' && (
                 <>
-                  {/* Banner Informativo de Bloqueo / Desbloqueo de Tatami */}
-                  {!isCallUnlocked ? (
-                    <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-3 sm:p-4 flex items-center gap-3.5 text-xs text-amber-950 shadow-2xs mb-4">
-                      <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300/80 text-amber-800 flex items-center justify-center shrink-0">
-                        <Lock className="w-5 h-5" />
-                      </div>
-                      <div className="space-y-0.5 flex-1 leading-relaxed">
-                        <div className="font-black text-amber-900 flex items-center gap-1.5">
-                          <span>Evaluación en Modo Preparación (Paneles Bloqueados)</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 font-bold">
-                            Tandas Pendientes
-                          </span>
-                        </div>
-                        <p className="text-amber-800/90 text-[11px] sm:text-xs">
-                          Para garantizar que todos los atletas se repartan correctamente, los paneles de <strong>Mi Evaluación</strong> y <strong>Monitor del Tribunal</strong> permanecerán bloqueados hasta que termine de distribuir las tandas y presione <span className="font-bold text-emerald-800 underline">"🔓 Desbloquear Evaluación y Monitor"</span>.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs text-emerald-950 shadow-2xs flex-wrap mb-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                          <CheckCircle2 className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-emerald-900">Tatami Activo y Desbloqueado:</span>
-                          <span className="text-emerald-800/90 ml-1">Los paneles de Mi Evaluación y Monitor ya se encuentran habilitados para calificar y supervisar.</span>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold">
-                        Listo para Tatami
-                      </span>
-                    </div>
-                  )}
                   {/* Barra de Acciones Superior Compacta de Tandas */}
                   <div className="bg-white/95 backdrop-blur-md border border-gray-200/90 rounded-2xl p-3 sm:p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3 flex-wrap">
@@ -3667,36 +3580,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
                 {/* Botones de Acción de Tandas y Convocatoria Alineados */}
                 <div className="flex flex-wrap items-center gap-2.5">
-                  {/* Botón Principal: Desbloquear / Bloquear Evaluación en Tatami */}
-                  <button
-                    type="button"
-                    disabled={isTogglingLock}
-                    onClick={handleToggleCallLock}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
-                      !isCallUnlocked
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-700/20 ring-2 ring-emerald-400/50 animate-pulse'
-                        : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300'
-                    }`}
-                    title={
-                      !isCallUnlocked
-                        ? 'Desbloquea los paneles de Mi Evaluación y Monitor Tribunal para dar inicio oficial al tatami'
-                        : 'Bloquea temporalmente la evaluación para reorganizar tandas'
-                    }
-                  >
-                    {isTogglingLock ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : !isCallUnlocked ? (
-                      <Unlock className="w-4 h-4 text-emerald-100" />
-                    ) : (
-                      <Lock className="w-4 h-4 text-amber-700" />
-                    )}
-                    <span>
-                      {!isCallUnlocked
-                        ? '🔓 Desbloquear Evaluación y Monitor'
-                        : '🔒 Bloquear Evaluación'}
-                    </span>
-                  </button>
-
                   {/* 2. Agrupar en Tandas */}
                   <button
                     type="button"
@@ -3706,16 +3589,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                   >
                     <Sparkles className="w-4 h-4" />
                     <span>⚡ Agrupar en Tandas de {detailMaxPerTanda}</span>
-                  </button>
-
-                  {/* 3. Nueva Tanda */}
-                  <button
-                    type="button"
-                    onClick={handleAddNewTanda}
-                    className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>+ Nueva Tanda</span>
                   </button>
 
                   {/* Eliminar Convocatoria */}
