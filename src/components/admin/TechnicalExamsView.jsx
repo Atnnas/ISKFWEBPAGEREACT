@@ -1057,10 +1057,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   const [isUpdatingMaxPerTanda, setIsUpdatingMaxPerTanda] = useState(false);
   const [callDetailSubTab, setCallDetailSubTab] = useState('tandas'); // 'tandas' | 'evaluation' | 'monitor'
 
-  // Las pestañas de evaluación y monitor se desbloquean automáticamente al agrupar en tandas
+  // Las pestañas de evaluación y monitor se desbloquean única y exclusivamente cuando se hayan agrupado las tandas
   const isCallUnlocked = useMemo(() => {
-    return Array.isArray(callTandas) && callTandas.length > 0;
-  }, [callTandas]);
+    return Boolean(selectedCallForDetail?.isUnlocked && Array.isArray(callTandas) && callTandas.length > 0);
+  }, [selectedCallForDetail, callTandas]);
 
   // Si la evaluación está bloqueada, asegurar que permanezca en la pestaña de tandas
   useEffect(() => {
@@ -1166,7 +1166,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           ...prev,
           schedulesCount: newTandas.length,
           schedules: res.schedules,
-          status: res.status || prev.status
+          status: res.status || prev.status,
+          isUnlocked: Boolean(res.isUnlocked)
         }) : null);
         setExamCalls(prev => prev.map(c => {
           if ((c._id || c.id) === callId) {
@@ -1174,7 +1175,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
               ...c,
               schedulesCount: newTandas.length,
               schedules: res.schedules,
-              status: res.status || c.status
+              status: res.status || c.status,
+              isUnlocked: Boolean(res.isUnlocked)
             };
           }
           return c;
@@ -2204,31 +2206,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           endTime: s.endTime || '09:45 AM',
           studentIds: Array.isArray(s.studentIds) ? s.studentIds.map(String) : []
         })));
-      } else if (readyStudents && readyStudents.length > 0) {
-        // Autodistribuir inicialmente en tandas según maxPerTanda si está vacía
-        const chunks = [];
-        const chunkSize = Number(call.maxPerTanda) || 6;
-        for (let i = 0; i < readyStudents.length; i += chunkSize) {
-          const chunk = readyStudents.slice(i, i + chunkSize);
-          const tandaNum = Math.floor(i / chunkSize) + 1;
-          const startM = (9 * 60) + (tandaNum - 1) * 45;
-          const endM = startM + 45;
-          const fmt = (min) => {
-            const h = Math.floor(min / 60) % 24;
-            const m = min % 60;
-            const p = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${p}`;
-          };
-          chunks.push({
-            id: `tanda_${tandaNum}_${Date.now()}`,
-            blockName: `Tanda ${tandaNum}`,
-            startTime: fmt(startM),
-            endTime: fmt(endM),
-            studentIds: chunk.map(s => s._id || s.id)
-          });
-        }
-        setCallTandas(chunks);
       } else {
         setCallTandas([]);
       }

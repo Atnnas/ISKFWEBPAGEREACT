@@ -634,7 +634,7 @@ export async function getConsolidatedEvaluationsByDojo(dojoId, syllabusId = null
       criteriaSnapshot: c.criteriaSnapshot || null,
       consolidatedBy: c.consolidatedBy,
       status: c.status,
-      isUnlocked: Boolean(c.isUnlocked || c.status === 'en_tatami'),
+      isUnlocked: Boolean(c.isUnlocked && (c.schedules || []).length > 0),
       consolidatedAt: c.consolidatedAt ? c.consolidatedAt.toISOString() : null,
       updatedAt: c.updatedAt ? c.updatedAt.toISOString() : null,
     }));
@@ -889,7 +889,7 @@ export async function getTechnicalExamCallByToken(accessToken) {
         location: call.location,
         accessToken: call.accessToken,
         status: call.status,
-        isUnlocked: Boolean(call.isUnlocked || call.status === 'en_tatami'),
+      isUnlocked: Boolean(call.isUnlocked && (call.schedules || []).length > 0),
         syllabusIds: call.syllabusIds || [],
         syllabusSnapshots: (call.syllabusSnapshots || []).map(s => ({
           syllabusId: String(s.syllabusId || s._id || ''),
@@ -1219,6 +1219,7 @@ export async function updateExamCallSchedulesAndEvaluators({
     return {
       success: true,
       status: call.status,
+      isUnlocked: Boolean(call.isUnlocked),
       evaluatorCount: call.evaluators.length,
       evaluators: call.evaluators.map(e => ({
         name: e.name,
@@ -1603,7 +1604,7 @@ export async function getExamCallsByDojo(dojoId) {
       location: c.location || '',
       accessToken: c.accessToken,
       status: c.status,
-      isUnlocked: Boolean(c.isUnlocked || c.status === 'en_tatami'),
+      isUnlocked: Boolean(c.isUnlocked && (c.schedules || []).length > 0),
       aspirantsCount: (c.aspirants || []).length,
       evaluatorCount: (c.evaluators || []).length,
       schedulesCount: (c.schedules || []).length,
@@ -1755,8 +1756,12 @@ export async function saveCallSchedules({ callId, schedules = [], maxPerTanda = 
       studentIds: Array.isArray(s.studentIds) ? s.studentIds.map(id => String(id)) : []
     }));
 
-    if (call.status === 'convocado' && call.schedules.length > 0) {
-      call.status = 'programado';
+    if (call.schedules.length > 0) {
+      call.status = 'en_tatami';
+      call.isUnlocked = true;
+    } else {
+      call.status = 'convocado';
+      call.isUnlocked = false;
     }
 
     // Asegurar que cualquier alumno asignado en tanda esté registrado en el padrón de aspirantes
@@ -1790,6 +1795,7 @@ export async function saveCallSchedules({ callId, schedules = [], maxPerTanda = 
     return {
       success: true,
       status: call.status,
+      isUnlocked: Boolean(call.isUnlocked),
       schedules: call.schedules.map(s => ({
         blockName: s.blockName,
         startTime: s.startTime,
@@ -1883,7 +1889,7 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
         location: call.location || '',
         accessToken: call.accessToken,
         status: call.status,
-        isUnlocked: Boolean(call.isUnlocked || call.status === 'en_tatami'),
+      isUnlocked: Boolean(call.isUnlocked && (call.schedules || []).length > 0),
         maxPerTanda: call.maxPerTanda || 6,
         schedules: (call.schedules || []).map(s => ({
           blockName: s.blockName,
@@ -2703,6 +2709,7 @@ export async function getCallSchedulesLatest({ callId, accessToken }) {
     return {
       success: true,
       status: call.status,
+      isUnlocked: Boolean(call.isUnlocked),
       maxPerTanda: call.maxPerTanda || 6,
       schedules: (call.schedules || []).map(s => ({
         blockName: s.blockName,
