@@ -27,6 +27,7 @@ import {
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
+import { compareStudentsForExam, getRankSortOrder } from '../../lib/constants/kyuRanks';
 
 const KYU_OPTIONS = [
   '10° Kyu (Cinta Blanca)',
@@ -372,7 +373,8 @@ export default function StudentsRosterView({
   const sortedStudents = useMemo(() => {
     const list = filteredStudents.map((s, idx) => ({ ...s, originalIndex: idx + 1 }));
     if (sortField === 'index') {
-      return sortDirection === 'desc' ? list.reverse() : list;
+      const sorted = [...list].sort(compareStudentsForExam);
+      return sortDirection === 'desc' ? sorted.reverse() : sorted;
     }
 
     list.sort((a, b) => {
@@ -380,7 +382,7 @@ export default function StudentsRosterView({
       if (sortField === 'name') {
         comparison = a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
       } else if (sortField === 'rank') {
-        comparison = getRankWeight(b.currentRank) - getRankWeight(a.currentRank);
+        comparison = getRankSortOrder(a.currentRank) - getRankSortOrder(b.currentRank);
       } else if (sortField === 'birthDate') {
         const timeA = a.birthDate ? new Date(a.birthDate).getTime() : 0;
         const timeB = b.birthDate ? new Date(b.birthDate).getTime() : 0;

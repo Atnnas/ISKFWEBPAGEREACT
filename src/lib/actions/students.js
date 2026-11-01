@@ -6,6 +6,7 @@ import dbConnect from '../mongodb';
 import Student from '../../models/Student';
 import Dojo from '../../models/Dojo';
 import { auth } from '../../auth';
+import { compareStudentsForExam } from '../constants/kyuRanks';
 
 /**
  * Obtiene todos los dojos registrados para el combobox, incluyendo la información de su Sensei.
@@ -56,11 +57,9 @@ export async function getStudentsByDojo(dojoId) {
       return [];
     }
 
-    const students = await Student.find({ dojoId: new mongoose.Types.ObjectId(dojoId) })
-      .sort({ currentRank: 1, name: 1 })
-      .lean();
+    const students = await Student.find({ dojoId: new mongoose.Types.ObjectId(dojoId) }).lean();
 
-    return students.map(s => ({
+    const formatted = students.map(s => ({
       _id: s._id.toString(),
       id: s._id.toString(),
       name: s.name,
@@ -79,6 +78,8 @@ export async function getStudentsByDojo(dojoId) {
       createdAt: s.createdAt ? s.createdAt.toISOString() : null,
       updatedAt: s.updatedAt ? s.updatedAt.toISOString() : null,
     }));
+
+    return formatted.sort(compareStudentsForExam);
   } catch (error) {
     console.error('Error en getStudentsByDojo:', error);
     return [];

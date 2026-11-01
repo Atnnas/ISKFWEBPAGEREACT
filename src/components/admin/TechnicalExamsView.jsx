@@ -1319,7 +1319,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       if (studentSortField === 'name') {
         comparison = a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
       } else if (studentSortField === 'rank') {
-        comparison = getRankWeight(b.currentRank) - getRankWeight(a.currentRank);
+        comparison = getRankSortOrder(a.currentRank) - getRankSortOrder(b.currentRank);
       } else if (studentSortField === 'birthDate') {
         const timeA = a.birthDate ? new Date(a.birthDate).getTime() : 0;
         const timeB = b.birthDate ? new Date(b.birthDate).getTime() : 0;
