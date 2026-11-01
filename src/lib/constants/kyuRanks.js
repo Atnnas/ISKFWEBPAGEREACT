@@ -95,6 +95,27 @@ export function isSameRank(rankA, rankB) {
 }
 
 /**
+ * Obtiene el siguiente grado promocionado a partir de un grado Kyu o Dan actual.
+ * Por ejemplo: "9° Kyu (Cinta Amarilla)" -> "8° Kyu (Cinta Naranja)"
+ */
+export function getNextRank(currentRankStr = '') {
+  if (!currentRankStr) return null;
+  const norm = normalizeRankKey(currentRankStr);
+  const kyuIdx = KYU_DEFINITIONS.findIndex(k => k.id === norm || normalizeRankKey(k.full) === norm);
+  if (kyuIdx !== -1) {
+    if (kyuIdx + 1 < KYU_DEFINITIONS.length) {
+      return KYU_DEFINITIONS[kyuIdx + 1].full;
+    }
+    return DAN_DEFINITIONS[0]?.full || '1° Dan (Cinta Negra / Shodan)';
+  }
+  const danIdx = DAN_DEFINITIONS.findIndex(d => d.id === norm || normalizeRankKey(d.full) === norm);
+  if (danIdx !== -1 && danIdx + 1 < DAN_DEFINITIONS.length) {
+    return DAN_DEFINITIONS[danIdx + 1].full;
+  }
+  return null;
+}
+
+/**
  * Obtiene la clase visual de insignia de cinturón según el texto del grado
  */
 export function getBeltBadgeClass(rankStr = '') {

@@ -93,6 +93,7 @@ import TechnicalExamEvaluatorCore from '../examinations/TechnicalExamEvaluatorCo
 import TribunalProgressMonitor from './TribunalProgressMonitor';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
+import { getNextRank } from '../../lib/constants/kyuRanks';
 
 function pointToRubric(pointStr, idx, category, defaultIcon = '🎯') {
   let text = '';
@@ -1802,7 +1803,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
       const res = await synthesizeSenseiObservationsWithAI({
         studentName: item.student.name,
-        targetRank: activeSyllabus?.targetRank || item.student.currentRank,
+        targetRank: activeSyllabus?.targetRank || getNextRank(item.student?.currentRank) || item.student?.currentRank || '8° Kyu (Cinta Naranja)',
         syllabusName: activeSyllabus?.name || 'Temario Oficial ISKF',
         averagedPercentage: item.averagePercentage,
         isPassed: item.isPassed,
@@ -1862,7 +1863,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         studentId,
         studentName: item.student.name,
         studentRank: item.student.currentRank,
-        targetRank: activeSyllabus?.targetRank || item.student.currentRank,
+        targetRank: activeSyllabus?.targetRank || getNextRank(item.student?.currentRank) || item.student?.currentRank || '8° Kyu (Cinta Naranja)',
         dojoId: selectedDojo._id || selectedDojo.id,
         dojoName: selectedDojo.name,
         syllabusId: activeSyllabus?._id || activeSyllabus?.id,
@@ -2955,7 +2956,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         studentName: item.student.name,
         dojoName: selectedDojo?.name || 'Kuma',
         dojoSensei: selectedDojo?.sensei || 'David Artavia Rodríguez',
-        targetRank: activeSyllabus?.targetRank || item.student.currentRank,
+        targetRank: activeSyllabus?.targetRank || getNextRank(item.student?.currentRank) || item.student?.currentRank || '8° Kyu (Cinta Naranja)',
         examDate: new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }),
         kihonScore,
         kataScore,

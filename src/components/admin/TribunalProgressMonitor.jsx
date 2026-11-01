@@ -24,6 +24,7 @@ import {
 import { getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
+import { getNextRank } from '../../lib/constants/kyuRanks';
 
 // Helper para formatear tiempo relativo transcurrido
 function formatTimeAgo(dateStr) {
@@ -216,7 +217,10 @@ function StudentMonitorDrawer({
     .filter(item => item.note && item.note.trim().length > 0);
 
   const selectedEvalItem = evalItems.find(e => e.key === activeTab);
-  const targetRankStr = student?.targetRank || consolidation?.promotedRank || '9° Kyu (Cinta Amarilla)';
+  const targetRankStr = consolidation?.promotedRank
+    || student?.targetRank
+    || getNextRank(student?.currentRank)
+    || '8° Kyu (Cinta Naranja)';
 
   // Extraer promedios por técnica del temario según las notas asignadas
   const kihonTechScores = (syllabusTechniques || [])
@@ -676,7 +680,19 @@ export default function TribunalProgressMonitor({
       const studentName = st.name || 'Estudiante';
       const dojoName = progressData?.dojoName || call?.dojoName || 'Dojo Kuma';
       const dojoSensei = call?.dojoSensei || 'Sensei David Artavia';
-      const targetRank = st.targetRank || cons?.promotedRank || '9° Kyu (Cinta Amarilla)';
+
+      const aspirantInfo = (progressData?.aspirants || []).find(a => String(a.studentId) === sId)
+        || (call?.aspirants || []).find(a => String(a.studentId) === sId);
+
+      const currentRank = st.currentRank || aspirantInfo?.currentRank || '9° Kyu (Cinta Amarilla)';
+
+      const targetRank = cons?.promotedRank
+        || st.targetRank
+        || aspirantInfo?.targetRank
+        || getNextRank(currentRank)
+        || call?.syllabusSnapshots?.[0]?.targetRank
+        || '8° Kyu (Cinta Naranja)';
+
       const examDate = call?.examDate || new Date().toLocaleDateString('es-CR');
 
       const kihonVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kihon).filter(v => typeof v === 'number');
@@ -1425,19 +1441,32 @@ export default function TribunalProgressMonitor({
                   const studentIds = tanda.studentIds || [];
                   const tandaStudentsList = studentIds
                     .map(id => {
-                      const fromProps = students.find(s => String(s._id || s.id) === String(id));
-                      if (fromProps) return fromProps;
-                      const fromAspirants = (progressData?.aspirants || []).find(a => String(a.studentId) === String(id));
-                      if (fromAspirants) {
-                        return {
-                          _id: fromAspirants.studentId,
-                          id: fromAspirants.studentId,
-                          name: fromAspirants.studentName,
-                          currentRank: fromAspirants.currentRank || '10° Kyu (Cinta Blanca)',
-                          targetRank: fromAspirants.targetRank
-                        };
-                      }
-                      return null;
+                      const sId = String(id);
+                      const fromProps = (students || []).find(s => String(s._id || s.id) === sId);
+                      const fromAspirants = (progressData?.aspirants || []).find(a => String(a.studentId) === sId)
+                        || (call?.aspirants || []).find(a => String(a.studentId) === sId);
+                      const fromCons = progressData?.consolidationsByStudent?.[sId];
+
+                      if (!fromProps && !fromAspirants) return null;
+
+                      const currentRank = fromAspirants?.currentRank || fromProps?.currentRank || '10° Kyu (Cinta Blanca)';
+                      const targetRank = fromCons?.promotedRank
+                        || fromAspirants?.targetRank
+                        || fromProps?.targetRank
+                        || getNextRank(currentRank)
+                        || call?.syllabusSnapshots?.[0]?.targetRank
+                        || '8° Kyu (Cinta Naranja)';
+                      const positiveAspects = (fromProps?.positiveAspects || fromAspirants?.positiveAspects || '').trim();
+
+                      return {
+                        ...(fromProps || {}),
+                        _id: sId,
+                        id: sId,
+                        name: fromProps?.name || fromAspirants?.studentName || 'Estudiante',
+                        currentRank,
+                        targetRank,
+                        positiveAspects
+                      };
                     })
                     .filter(Boolean);
 

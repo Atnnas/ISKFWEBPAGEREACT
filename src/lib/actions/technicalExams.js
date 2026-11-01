@@ -18,6 +18,7 @@ import {
   generateShotokanFeedbackBullets
 } from '../utils/shotokanCriteriaFeedback';
 import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
+import { getNextRank } from '../constants/kyuRanks';
 
 /**
  * Obtener evaluaciones técnicas de un dojo específico (para Padrón y Tatami)
@@ -2516,6 +2517,60 @@ export async function getTribunalProgressForCall(params) {
       };
     });
 
+    // Cargar información de los estudiantes para complementar datos de aspirantes (targetRank, positiveAspects)
+    const dbStudents = studentObjIds.length > 0
+      ? await Student.find({ _id: { $in: studentObjIds } }).select('name currentRank targetRank positiveAspects').lean()
+      : [];
+    const dbStudentsMap = new Map();
+    dbStudents.forEach(st => {
+      dbStudentsMap.set(st._id.toString(), st);
+    });
+
+    const aspirantsList = (call.aspirants || []).map(a => {
+      const sId = a.studentId.toString();
+      const dbSt = dbStudentsMap.get(sId);
+      const currentRank = a.currentRank || dbSt?.currentRank || '10° Kyu (Cinta Blanca)';
+      const targetRank = a.targetRank
+        || dbSt?.targetRank
+        || getNextRank(currentRank)
+        || call.syllabusSnapshots?.[0]?.targetRank
+        || '9° Kyu (Cinta Amarilla)';
+      const positiveAspects = (a.positiveAspects || dbSt?.positiveAspects || '').trim();
+
+      return {
+        studentId: sId,
+        studentName: a.studentName || dbSt?.name || 'Estudiante',
+        currentRank,
+        targetRank,
+        positiveAspects,
+        scheduleBlock: a.scheduleBlock
+      };
+    });
+
+    // Asegurar que si hay estudiantes en horarios (schedules) que no estaban en call.aspirants, se incluyan
+    const seenAspirantIds = new Set(aspirantsList.map(a => a.studentId));
+    uniqueStudentIds.forEach(stId => {
+      if (!seenAspirantIds.has(stId)) {
+        const dbSt = dbStudentsMap.get(stId);
+        const currentRank = dbSt?.currentRank || '10° Kyu (Cinta Blanca)';
+        const targetRank = dbSt?.targetRank
+          || getNextRank(currentRank)
+          || call.syllabusSnapshots?.[0]?.targetRank
+          || '9° Kyu (Cinta Amarilla)';
+        const positiveAspects = (dbSt?.positiveAspects || '').trim();
+
+        aspirantsList.push({
+          studentId: stId,
+          studentName: dbSt?.name || 'Estudiante',
+          currentRank,
+          targetRank,
+          positiveAspects,
+          scheduleBlock: ''
+        });
+        seenAspirantIds.add(stId);
+      }
+    });
+
     return {
       success: true,
       callId: call._id.toString(),
@@ -2533,13 +2588,7 @@ export async function getTribunalProgressForCall(params) {
       syllabusTechniques: (call.syllabusSnapshots?.[0]?.techniques || []),
       syllabusAspects: (call.syllabusSnapshots?.[0]?.technicalAspects || []),
       consolidationsByStudent,
-      aspirants: (call.aspirants || []).map(a => ({
-        studentId: a.studentId.toString(),
-        studentName: a.studentName,
-        currentRank: a.currentRank,
-        targetRank: a.targetRank,
-        scheduleBlock: a.scheduleBlock
-      })),
+      aspirants: aspirantsList,
       progressByEvaluator,
       schedules: (call.schedules || []).map(s => ({
         blockName: s.blockName,
