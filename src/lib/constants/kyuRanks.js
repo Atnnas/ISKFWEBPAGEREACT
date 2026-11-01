@@ -131,3 +131,57 @@ export function getBeltBadgeClass(rankStr = '') {
   return 'bg-indigo-600 text-white font-bold';
 }
 
+/**
+ * Retorna el peso/orden de un rango marcial para ordenación oficial de exámenes:
+ * 10° Kyu (Blanca) -> 9° Kyu (Amarilla) -> 8° Kyu (Naranja) -> ... -> 1° Kyu (Marrón) -> Dan (Negra)
+ */
+export function getRankSortOrder(rankStr = '') {
+  if (!rankStr) return 999;
+  const norm = normalizeRankKey(rankStr);
+  const kyuIdx = KYU_DEFINITIONS.findIndex(k => k.id === norm || normalizeRankKey(k.full) === norm);
+  if (kyuIdx !== -1) return kyuIdx;
+  const danIdx = DAN_DEFINITIONS.findIndex(d => d.id === norm || normalizeRankKey(d.full) === norm);
+  if (danIdx !== -1) return 10 + danIdx;
+
+  const r = rankStr.toLowerCase();
+  if (r.includes('blanca') || r.includes('10')) return 0;
+  if (r.includes('amarilla') || r.includes('9')) return 1;
+  if (r.includes('naranja') || r.includes('8')) return 2;
+  if (r.includes('verde') && !r.includes('azul')) return 3;
+  if (r.includes('azul')) return 4;
+  if (r.includes('morada') && !r.includes('línea') && !r.includes('linea')) return 5;
+  if (r.includes('morada') && (r.includes('línea') || r.includes('linea'))) return 6;
+  if (r.includes('marrón') || r.includes('marron')) {
+    if (r.includes('3') || r.includes('iii')) return 7;
+    if (r.includes('2') || r.includes('ii')) return 8;
+    if (r.includes('1') || r.includes('i')) return 9;
+    return 7;
+  }
+  if (r.includes('dan') || r.includes('negra')) return 10;
+  return 999;
+}
+
+/**
+ * Función comparadora oficial ISKF para ordenar estudiantes de examen:
+ * 1. Por cinturón descendente en Kyu: 10° Kyu Blanca -> 9° Kyu Amarilla -> 8° Kyu Naranja -> ... -> 1° Kyu Marrón -> Dan
+ * 2. Por edad según fecha de nacimiento: menor edad a mayor edad (niños primero -> jóvenes -> adultos)
+ * 3. Alfabético por nombre como desempate
+ */
+export function compareStudentsForExam(a, b) {
+  const rankA = getRankSortOrder(a?.currentRank || a?.targetRank || '');
+  const rankB = getRankSortOrder(b?.currentRank || b?.targetRank || '');
+  if (rankA !== rankB) {
+    return rankA - rankB;
+  }
+
+  // Menor edad a mayor edad: niños primero (fecha de nacimiento más reciente -> mayor timestamp)
+  const timeA = a?.birthDate ? new Date(a.birthDate).getTime() : 0;
+  const timeB = b?.birthDate ? new Date(b.birthDate).getTime() : 0;
+  if (timeA !== timeB) {
+    if (!timeA) return 1;
+    if (!timeB) return -1;
+    return timeB - timeA;
+  }
+
+  return (a?.name || '').localeCompare(b?.name || '', 'es', { sensitivity: 'base' });
+}

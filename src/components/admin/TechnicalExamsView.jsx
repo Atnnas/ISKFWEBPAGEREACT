@@ -95,7 +95,7 @@ import TechnicalExamEvaluatorCore from '../examinations/TechnicalExamEvaluatorCo
 import TribunalProgressMonitor from './TribunalProgressMonitor';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
-import { getNextRank } from '../../lib/constants/kyuRanks';
+import { getNextRank, compareStudentsForExam, getRankSortOrder } from '../../lib/constants/kyuRanks';
 
 function pointToRubric(pointStr, idx, category, defaultIcon = '🎯') {
   let text = '';
@@ -2192,7 +2192,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         getStudentsByDojo(call.dojoId),
         getExamSyllabi()
       ]);
-      setCallReadyStudents(readyStudents || []);
+      setCallReadyStudents((readyStudents || []).sort(compareStudentsForExam));
       setDojoAllStudents((allStudents || []).filter(s => s.status !== 'inactive'));
       if (freshSyllabi && freshSyllabi.length > 0) {
         setSyllabi(freshSyllabi);
@@ -2248,7 +2248,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     }
     setCallTandas(chunks);
     persistTandasEvent(chunks);
-    showAlert(`Se organizaron ${callReadyStudents.length} examinandos en ${chunks.length} tandas de ${maxPerTanda} karatecas.`, 'Tandas Organizadas');
+    showAlert(`Se organizaron ${callReadyStudents.length} examinandos en ${chunks.length} tandas ordenadas por cinturón y edad.`, 'Tandas Organizadas');
   };
 
   // Funciones utilitarias para cálculo y sincronización de horarios de tandas

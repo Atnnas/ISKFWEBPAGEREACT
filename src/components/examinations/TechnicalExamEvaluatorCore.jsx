@@ -31,7 +31,7 @@ import {
 import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall } from '../../lib/actions/technicalExams';
 import { updateStudent } from '../../lib/actions/students';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
-import { KYU_OPTIONS, getBeltBadgeClass } from '../../lib/constants/kyuRanks';
+import { KYU_OPTIONS, getBeltBadgeClass, compareStudentsForExam, getRankSortOrder } from '../../lib/constants/kyuRanks';
 import TribunalProgressMonitor from '../admin/TribunalProgressMonitor';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 import {
@@ -64,7 +64,7 @@ export default function TechnicalExamEvaluatorCore({
 
   // Tandas y estudiantes con sincronización en tiempo real desde el servidor
   const [liveSchedules, setLiveSchedules] = useState(() => Array.isArray(call?.schedules) ? call.schedules : []);
-  const [liveStudents, setLiveStudents] = useState(() => Array.isArray(students) ? students : []);
+  const [liveStudents, setLiveStudents] = useState(() => Array.isArray(students) ? [...students].sort(compareStudentsForExam) : []);
   const [isSyncingRoster, setIsSyncingRoster] = useState(false);
   const [rosterAlert, setRosterAlert] = useState(null);
   const [isCallClosed, setIsCallClosed] = useState(() => call?.status === 'cerrado');
@@ -74,7 +74,7 @@ export default function TechnicalExamEvaluatorCore({
   // Sincronizar estudiantes en vivo si la prop se actualiza desde el exterior
   useEffect(() => {
     if (Array.isArray(students) && students.length > 0) {
-      setLiveStudents(students);
+      setLiveStudents([...students].sort(compareStudentsForExam));
     }
   }, [students]);
 
@@ -105,7 +105,7 @@ export default function TechnicalExamEvaluatorCore({
           prevSignatureRef.current = newSig;
           setLiveSchedules(res.schedules);
           if (Array.isArray(res.students) && res.students.length > 0) {
-            setLiveStudents(res.students);
+            setLiveStudents([...res.students].sort(compareStudentsForExam));
           }
           setRosterAlert('¡Tandas y lista de karatecas actualizadas en vivo por la administración!');
 
@@ -134,7 +134,7 @@ export default function TechnicalExamEvaluatorCore({
           prevSignatureRef.current = newSig;
           setLiveSchedules(res.schedules);
           if (Array.isArray(res.students) && res.students.length > 0) {
-            setLiveStudents(res.students);
+            setLiveStudents([...res.students].sort(compareStudentsForExam));
           }
         }
       }
@@ -516,7 +516,7 @@ export default function TechnicalExamEvaluatorCore({
   const tandaStudents = useMemo(() => {
     // Si no se han definido tandas (examen sin bloques), se muestran todos los alumnos convocados
     if (!tandas || tandas.length === 0) {
-      return liveStudents;
+      return [...liveStudents].sort(compareStudentsForExam);
     }
     if (!activeTanda) return [];
     if (!Array.isArray(activeTanda.studentIds) || activeTanda.studentIds.length === 0) {
@@ -528,12 +528,12 @@ export default function TechnicalExamEvaluatorCore({
       studentMap.set(String(s._id || s.id), s);
     });
 
-    // Mapear respetando fielmente el orden específico de la tanda fijado por el admin
+    // Mapear y ordenar por cinturón (10° Kyu Blanca -> 9° Kyu Amarilla...) y por edad (menor edad primero)
     const orderedList = activeTanda.studentIds
       .map(id => studentMap.get(String(id)))
       .filter(Boolean);
 
-    return orderedList;
+    return orderedList.sort(compareStudentsForExam);
   }, [activeTanda, liveStudents, tandas]);
 
   // Helper para resolver el temario aplicable de cada estudiante según su grado/cinturón
@@ -842,7 +842,20 @@ export default function TechnicalExamEvaluatorCore({
       groupsMap.get(key).students.push(student);
     });
 
-    return Array.from(groupsMap.values());
+    const groups = Array.from(groupsMap.values());
+    // Ordenar grupos de cinturón: 10° Kyu (Blanca) -> 9° Kyu (Amarilla) -> 8° Kyu (Naranja)... -> Dan (Negra)
+    groups.sort((a, b) => {
+      const orderA = getRankSortOrder(a.rankLabel || a.syllabus?.currentRank || '');
+      const orderB = getRankSortOrder(b.rankLabel || b.syllabus?.currentRank || '');
+      return orderA - orderB;
+    });
+
+    // Ordenar estudiantes dentro de cada cinturón por edad (menor edad a mayor edad: niños primero)
+    groups.forEach(g => {
+      g.students.sort(compareStudentsForExam);
+    });
+
+    return groups;
   }, [tandaStudents, getStudentSyllabus, getStudentTechniques, effectivePhase]);
 
   // Número máximo de pasos entre todos los grupos de cinturones en tatami

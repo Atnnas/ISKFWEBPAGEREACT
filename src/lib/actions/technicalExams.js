@@ -18,7 +18,7 @@ import {
   generateShotokanFeedbackBullets
 } from '../utils/shotokanCriteriaFeedback';
 import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
-import { getNextRank } from '../constants/kyuRanks';
+import { getNextRank, compareStudentsForExam, getRankSortOrder } from '../constants/kyuRanks';
 
 /**
  * Obtener evaluaciones técnicas de un dojo específico (para Padrón y Tatami)
@@ -1672,9 +1672,9 @@ export async function getStudentsReadyForExam(dojoId) {
       dojoId: new mongoose.Types.ObjectId(dojoId),
       isPromotedForExam: true,
       status: 'active'
-    }).sort({ currentRank: 1, name: 1 }).lean();
+    }).lean();
 
-    return students.map(s => ({
+    const formattedStudents = students.map(s => ({
       _id: s._id.toString(),
       id: s._id.toString(),
       name: s.name,
@@ -1687,6 +1687,8 @@ export async function getStudentsReadyForExam(dojoId) {
       notes: s.notes || '',
       isPromotedForExam: true,
     }));
+
+    return formattedStudents.sort(compareStudentsForExam);
   } catch (error) {
     console.error('Error al obtener estudiantes listos para examen:', error);
     return [];
@@ -1931,7 +1933,7 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
           isPromotedForExam: Boolean(s.isPromotedForExam),
           promotedAt: s.promotedAt ? s.promotedAt.toISOString() : null
         };
-      }),
+      }).sort(compareStudentsForExam),
       syllabi: syllabi.map(s => ({
         _id: s._id.toString(),
         id: s._id.toString(),
@@ -2585,7 +2587,7 @@ export async function getTribunalProgressForCall(params) {
 
     // Cargar información de los estudiantes para complementar datos de aspirantes (targetRank, positiveAspects)
     const dbStudents = studentObjIds.length > 0
-      ? await Student.find({ _id: { $in: studentObjIds } }).select('name currentRank targetRank positiveAspects').lean()
+      ? await Student.find({ _id: { $in: studentObjIds } }).select('name currentRank targetRank positiveAspects birthDate').lean()
       : [];
     const dbStudentsMap = new Map();
     dbStudents.forEach(st => {
@@ -2609,6 +2611,7 @@ export async function getTribunalProgressForCall(params) {
         currentRank,
         targetRank,
         positiveAspects,
+        birthDate: dbSt?.birthDate ? dbSt.birthDate.toISOString() : null,
         scheduleBlock: a.scheduleBlock
       };
     });
@@ -2655,7 +2658,7 @@ export async function getTribunalProgressForCall(params) {
       syllabusTechniques: (call.syllabusSnapshots?.[0]?.techniques || []),
       syllabusAspects: (call.syllabusSnapshots?.[0]?.technicalAspects || []),
       consolidationsByStudent,
-      aspirants: aspirantsList,
+      aspirants: aspirantsList.sort(compareStudentsForExam),
       progressByEvaluator,
       schedules: (call.schedules || []).map(s => ({
         blockName: s.blockName,
@@ -2739,7 +2742,7 @@ export async function getCallSchedulesLatest({ callId, accessToken }) {
           isPromotedForExam: Boolean(s.isPromotedForExam),
           promotedAt: s.promotedAt ? s.promotedAt.toISOString() : null
         };
-      })
+      }).sort(compareStudentsForExam)
     };
   } catch (err) {
     console.error('Error al consultar horarios recientes de convocatoria:', err);
