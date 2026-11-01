@@ -82,7 +82,7 @@ export async function generateTechnicalExamCertificatePDF({
 
   // 1. Logo ISKF Centrado Superior
   try {
-    doc.addImage(ISKF_CERT_LOGO_BASE64, 'PNG', 92.5, 11, 25, 25);
+    doc.addImage(ISKF_CERT_LOGO_BASE64, 'PNG', 86, 12, 38, 18.6);
   } catch (err) {
     console.warn('Error al cargar logo de encabezado:', err);
   }
@@ -91,14 +91,14 @@ export async function generateTechnicalExamCertificatePDF({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12.5);
   doc.setTextColor(...COLOR_ORANGE_TITLE);
-  doc.text('INTERNATIONAL SHOTOKAN KARATE FEDERATION', 105, 41, { align: 'center' });
-  doc.setFontSize(11.5);
-  doc.text('COSTA RICA', 105, 46.5, { align: 'center' });
+  doc.text('INTERNATIONAL SHOTOKAN KARATE FEDERATION', 105, 36.5, { align: 'center' });
+  doc.setFontSize(11.0);
+  doc.text('COSTA RICA', 105, 42.0, { align: 'center' });
 
   // Línea separadora sutil
   doc.setDrawColor(...COLOR_GRAY_BORDER);
   doc.setLineWidth(0.3);
-  doc.line(15, 50, 195, 50);
+  doc.line(15, 47, 195, 47);
 
   // 3. Metadatos: Destinatarios, Asunto, Fecha, Sensei y Dojo
   const formattedDate = examDate || new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -357,7 +357,7 @@ export async function generateTechnicalExamCertificatePDF({
 
   // 1. Encabezado Hoja 2
   try {
-    doc.addImage(ISKF_CERT_LOGO_BASE64, 'PNG', 15, 10.5, 15, 15);
+    doc.addImage(ISKF_CERT_LOGO_BASE64, 'PNG', 15, 9.5, 24, 11.8);
   } catch (err) {
     console.warn('Error al cargar logo hoja 2:', err);
   }
@@ -365,12 +365,12 @@ export async function generateTechnicalExamCertificatePDF({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.2);
   doc.setTextColor(...COLOR_ORANGE_TITLE);
-  doc.text('INTERNATIONAL SHOTOKAN KARATE FEDERATION • COSTA RICA', 33, 15.5);
+  doc.text('INTERNATIONAL SHOTOKAN KARATE FEDERATION • COSTA RICA', 43, 14.5);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.2);
   doc.setTextColor(...COLOR_MUTED);
-  doc.text('Boleta Oficial de Evaluación Técnica — Hoja 2: Aspectos Positivos y Firmas', 33, 20.2);
+  doc.text('Boleta Oficial de Evaluación Técnica — Hoja 2: Aspectos Positivos y Firmas', 43, 19.5);
 
   // Alumno y fecha a la derecha
   doc.setFont('helvetica', 'bold');
@@ -549,7 +549,7 @@ export async function generateTechnicalExamCertificatePDF({
 
   // 4. Pie de Página Institucional (Hoja 2)
   try {
-    doc.addImage(ISKF_CERT_EMBLEM_BASE64, 'PNG', 98, 240, 14, 14);
+    doc.addImage(ISKF_CERT_EMBLEM_BASE64, 'PNG', 93, 241, 24, 11.8);
   } catch (err) {
     console.warn('Error al cargar emblema inferior:', err);
   }
