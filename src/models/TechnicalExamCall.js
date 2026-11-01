@@ -49,6 +49,11 @@ const TechnicalExamCallSchema = new mongoose.Schema({
     enum: ['convocado', 'programado', 'en_tatami', 'cerrado'],
     default: 'convocado',
   },
+  // Bloqueo de seguridad: la evaluación en tatami y el monitor permanecen bloqueados hasta que se desbloqueen en tandas
+  isUnlocked: {
+    type: Boolean,
+    default: false,
+  },
   // Temarios aplicables
   syllabusIds: [{
     type: String,

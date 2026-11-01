@@ -77,11 +77,39 @@ export default async function EvaluatorTatamiPage({ params }) {
               <ChevronLeft className="w-4 h-4" />
               <span>Volver a Convocatorias</span>
             </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si la convocatoria aún no ha sido desbloqueada en Tandas por el Sensei Administrador
+  const isCallUnlocked = Boolean(result.call.isUnlocked || result.call.status === 'en_tatami');
+  if (!isCallUnlocked) {
+    return (
+      <div className="min-h-screen bg-linear-to-b from-slate-900 via-gray-900 to-black text-white flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white/10 backdrop-blur-xl border border-indigo-500/30 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/30">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400/90 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+              Mesa de Examen en Preparación
+            </span>
+            <h1 className="text-xl font-black text-white">
+              Tandas en Configuración
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+              El Sensei Administrador está organizando las tandas y horarios en el tatami. Esta pantalla se activará automáticamente tan pronto se desbloquee el examen.
+            </p>
+          </div>
+          <div className="pt-2 flex items-center justify-center gap-3">
             <Link
-              href={`/convocatoria/${callToken}`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all"
+              href="/admin/examinations/technical"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/15"
             >
-              <span>Ver Acta del Dojo</span>
+              <ChevronLeft className="w-4 h-4" />
+              <span>Volver a Convocatorias</span>
             </Link>
           </div>
         </div>

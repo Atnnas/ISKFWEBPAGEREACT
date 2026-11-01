@@ -634,6 +634,7 @@ export async function getConsolidatedEvaluationsByDojo(dojoId, syllabusId = null
       criteriaSnapshot: c.criteriaSnapshot || null,
       consolidatedBy: c.consolidatedBy,
       status: c.status,
+      isUnlocked: Boolean(c.isUnlocked || c.status === 'en_tatami'),
       consolidatedAt: c.consolidatedAt ? c.consolidatedAt.toISOString() : null,
       updatedAt: c.updatedAt ? c.updatedAt.toISOString() : null,
     }));
@@ -765,6 +766,7 @@ export async function createTechnicalExamCall({
       location: location ? String(location).trim() : (dojo.location || ''),
       accessToken,
       status: 'convocado',
+      isUnlocked: false,
       syllabusIds: syllabusIds || [],
       syllabusSnapshots,
       evaluators: defaultEvaluators,
@@ -787,6 +789,7 @@ export async function createTechnicalExamCall({
       location: String(newCall.location || ''),
       accessToken: String(newCall.accessToken || ''),
       status: String(newCall.status || 'convocado'),
+      isUnlocked: false,
       aspirantsCount: 0,
       evaluatorCount: defaultEvaluators.length,
       schedulesCount: 0,
@@ -886,6 +889,7 @@ export async function getTechnicalExamCallByToken(accessToken) {
         location: call.location,
         accessToken: call.accessToken,
         status: call.status,
+        isUnlocked: Boolean(call.isUnlocked || call.status === 'en_tatami'),
         syllabusIds: call.syllabusIds || [],
         syllabusSnapshots: (call.syllabusSnapshots || []).map(s => ({
           syllabusId: String(s.syllabusId || s._id || ''),
@@ -1232,6 +1236,60 @@ export async function updateExamCallSchedulesAndEvaluators({
 }
 
 /**
+ * Desbloquear o bloquear el acceso a la mesa de evaluación y al monitor del tribunal
+ * Permite garantizar que las tandas estén totalmente repartidas antes de habilitar tatami.
+ */
+export async function toggleExamCallLock({ callId, isUnlocked }) {
+  try {
+    const session = await auth();
+    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'editor')) {
+      return { success: false, error: 'No tienes permisos para modificar el estado del examen.' };
+    }
+
+    await dbConnect();
+
+    if (!callId || !mongoose.Types.ObjectId.isValid(callId)) {
+      return { success: false, error: 'ID de convocatoria inválido.' };
+    }
+
+    const call = await TechnicalExamCall.findById(callId);
+    if (!call) {
+      return { success: false, error: 'Convocatoria no encontrada.' };
+    }
+
+    const nextUnlocked = Boolean(isUnlocked);
+    call.isUnlocked = nextUnlocked;
+    if (nextUnlocked) {
+      if (call.status === 'convocado' || call.status === 'programado') {
+        call.status = 'en_tatami';
+      }
+    } else {
+      if (call.status === 'en_tatami') {
+        call.status = (call.schedules && call.schedules.length > 0) ? 'programado' : 'convocado';
+      }
+    }
+
+    await call.save();
+
+    revalidatePath('/admin/examinations/technical');
+    revalidatePath(`/convocatoria/${call.accessToken}`);
+
+    return {
+      success: true,
+      callId: call._id.toString(),
+      isUnlocked: call.isUnlocked,
+      status: call.status,
+      message: nextUnlocked
+        ? '¡Evaluación y Monitor desbloqueados! El tatami está listo para calificar.'
+        : 'Evaluación y Monitor bloqueados temporalmente para ajustar tandas.'
+    };
+  } catch (error) {
+    console.error('Error al cambiar bloqueo de convocatoria:', error);
+    return { success: false, error: error.message || 'Error al cambiar bloqueo de convocatoria.' };
+  }
+}
+
+/**
  * ============================================================================
  * ETAPA 5: CIERRE OFICIAL DE CONVOCATORIA DE EXAMEN
  * ============================================================================
@@ -1545,6 +1603,7 @@ export async function getExamCallsByDojo(dojoId) {
       location: c.location || '',
       accessToken: c.accessToken,
       status: c.status,
+      isUnlocked: Boolean(c.isUnlocked || c.status === 'en_tatami'),
       aspirantsCount: (c.aspirants || []).length,
       evaluatorCount: (c.evaluators || []).length,
       schedulesCount: (c.schedules || []).length,
@@ -1824,6 +1883,7 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
         location: call.location || '',
         accessToken: call.accessToken,
         status: call.status,
+        isUnlocked: Boolean(call.isUnlocked || call.status === 'en_tatami'),
         maxPerTanda: call.maxPerTanda || 6,
         schedules: (call.schedules || []).map(s => ({
           blockName: s.blockName,
@@ -2576,6 +2636,7 @@ export async function getTribunalProgressForCall(params) {
       callId: call._id.toString(),
       title: call.title,
       status: call.status,
+      isUnlocked: Boolean(call.isUnlocked || call.status === 'en_tatami'),
       dojoName,
       dojoLogo,
       totalAspirants: uniqueStudentIds.length,
