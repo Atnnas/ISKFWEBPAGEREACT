@@ -51,8 +51,9 @@ export async function generateTechnicalExamCertificatePDF({
   });
 
   // Paleta de Colores Institucional
-  const COLOR_ORANGE_TITLE = [198, 89, 17]; // rgb(0.776, 0.349, 0.0667)
-  const COLOR_ORANGE_FOOTER = [255, 102, 0]; // rgb(1, 0.4, 0)
+  const COLOR_ISKF_RED = [190, 22, 34]; // Rojo oficial institucional ISKF (#BE1622)
+  const COLOR_ORANGE_TITLE = COLOR_ISKF_RED;
+  const COLOR_ORANGE_FOOTER = COLOR_ISKF_RED;
   const COLOR_GREEN_PASS = [0, 150, 70];    // Verde formal de aprobación
   const COLOR_RED_FAIL = [200, 30, 30];     // Rojo formal de pendiente
   const COLOR_GRAY_BORDER = [200, 205, 212]; // Borde sutil
@@ -221,12 +222,12 @@ export async function generateTechnicalExamCertificatePDF({
   // Nuevo Grado (Con espacio generoso de 26mm - cero colisiones)
   doc.setFontSize(8.0);
   doc.setTextColor(...COLOR_DARK);
-  const cleanRank = String(targetRank || '9° KYU')
-    .toUpperCase()
-    .replace('CINTA', '')
-    .replace('(', '')
-    .replace(')', '')
-    .trim();
+  // Extraer únicamente el número y el kyu obtenido (ej: "6° KYU"), sin color de cinta
+  const rawRankStr = String(targetRank || '9° KYU');
+  const rankMatch = rawRankStr.match(/(\d+[\s°º]*(?:kyu|dan))/i);
+  const cleanRank = rankMatch
+    ? rankMatch[1].replace(/\s+/g, ' ').toUpperCase()
+    : rawRankStr.split(/[\(\-\:]/)[0].trim().toUpperCase();
   doc.text(cleanRank, cols[7].x + cols[7].w / 2, dataRowY + 5.1, { align: 'center' });
 
   // 6. Sección: Puntos a Mejorar por Fase (Tarjetas horizontales de ancho completo)
