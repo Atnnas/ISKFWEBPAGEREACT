@@ -1459,9 +1459,7 @@ export default function TechnicalExamEvaluatorCore({
     // Recopilar evaluadores con notas en esta tanda
     const evaluatorsData = progressByEv.map(evItem => {
       const isCurrent = (evItem.evaluator?.email || '').trim().toLowerCase() === currentEvEmail;
-      const evName = isCurrent
-        ? (evaluator?.name || 'Mi Evaluación')
-        : (evItem.evaluator?.name || 'Sinodal');
+      const evName = (isCurrent ? (evaluator?.name || evItem.evaluator?.name) : evItem.evaluator?.name) || 'Sensei Evaluador';
 
       // Calificaciones por estudiante en esta tanda EXCLUSIVAMENTE para phaseToReview (NUNCA promedio final)
       const scoresByStudent = {};
@@ -1522,7 +1520,7 @@ export default function TechnicalExamEvaluatorCore({
           hasGapAlert: gap >= 5,
           gap,
           scores: studentScores,
-          scoresText: studentScores.map(s => `${s.name.split(' ')[0]}: ${s.score}%`).join(' • ')
+          scoresText: studentScores.map(s => `${s.name}: ${s.score}%`).join(' • ')
         };
       } else {
         studentAlerts[sId] = { hasGapAlert: false, gap: 0, scores: studentScores, scoresText: '' };
@@ -1551,7 +1549,7 @@ export default function TechnicalExamEvaluatorCore({
         const sId = String(topStudent._id || topStudent.id);
         topPerformerStudents.add(sId);
         topPerformerByEvaluator.push({
-          evaluatorName: ev.name.split(' ')[0],
+          evaluatorName: ev.name,
           studentId: sId,
           studentName: topStudent.name,
           phaseName: currentPhaseUpper,
@@ -1559,7 +1557,7 @@ export default function TechnicalExamEvaluatorCore({
         });
 
         if (!studentTopFor[sId]) studentTopFor[sId] = [];
-        studentTopFor[sId].push(ev.name.split(' ')[0]);
+        studentTopFor[sId].push(ev.name);
       }
     });
 
@@ -2627,9 +2625,9 @@ export default function TechnicalExamEvaluatorCore({
 
                           {/* Píldora de Alerta Discrepancia >= 5% en esta fase específica */}
                           {hasGap && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs flex items-center gap-1">
-                              <span>⚠️ Dif. {alertInfo.gap}% en {phaseToReview.toUpperCase()}</span>
-                              <span className="text-amber-900 font-semibold hidden sm:inline">({alertInfo.scoresText})</span>
+                            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-md bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs flex items-center gap-1.5 flex-wrap">
+                              <span>⚠️ Dif. {alertInfo.gap}% en {phaseToReview.toUpperCase()}:</span>
+                              <span className="text-amber-950 font-bold">{alertInfo.scoresText}</span>
                             </span>
                           )}
 
