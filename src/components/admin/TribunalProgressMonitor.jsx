@@ -18,6 +18,7 @@ import {
   EyeOff,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Sparkles,
   UserCheck
 } from 'lucide-react';
@@ -137,15 +138,29 @@ function StudentMonitorDrawer({
   isDownloading,
   onRefresh
 }) {
-  const [martialAdjustment, setMartialAdjustment] = useState(consolidation?.martialAdjustment ?? 0);
+  const [phaseAdjustments, setPhaseAdjustments] = useState({
+    kihon: consolidation?.phaseAdjustments?.kihon ?? 0,
+    kata: consolidation?.phaseAdjustments?.kata ?? 0,
+    kumite: consolidation?.phaseAdjustments?.kumite ?? 0
+  });
   const [martialAdjustmentReason, setMartialAdjustmentReason] = useState(consolidation?.martialAdjustmentReason ?? '');
   const [isSavingVerdict, setIsSavingVerdict] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
 
   useEffect(() => {
     if (consolidation) {
-      if (typeof consolidation.martialAdjustment === 'number') {
-        setMartialAdjustment(consolidation.martialAdjustment);
+      if (consolidation.phaseAdjustments) {
+        setPhaseAdjustments({
+          kihon: Number(consolidation.phaseAdjustments.kihon) || 0,
+          kata: Number(consolidation.phaseAdjustments.kata) || 0,
+          kumite: Number(consolidation.phaseAdjustments.kumite) || 0
+        });
+      } else if (typeof consolidation.martialAdjustment === 'number' && consolidation.martialAdjustment !== 0) {
+        setPhaseAdjustments({
+          kihon: consolidation.martialAdjustment,
+          kata: consolidation.martialAdjustment,
+          kumite: consolidation.martialAdjustment
+        });
       }
       if (typeof consolidation.martialAdjustmentReason === 'string') {
         setMartialAdjustmentReason(consolidation.martialAdjustmentReason);
@@ -194,11 +209,43 @@ function StudentMonitorDrawer({
   const colegiadoKumite = kumiteVals.length ? Math.round(kumiteVals.reduce((a, b) => a + b, 0) / kumiteVals.length) : null;
   const colegiadoAspectos = aspectosVals.length ? Math.round(aspectosVals.reduce((a, b) => a + b, 0) / aspectosVals.length) : null;
 
-  // El promedio colegiado total es estrictamente el promedio entre las tres fases finales: Kihon, Kata y Kumite
-  const activeFases = [colegiadoKihon, colegiadoKata, colegiadoKumite].filter(v => typeof v === 'number');
-  const colegiadoTotal = activeFases.length > 0
-    ? Math.round(activeFases.reduce((a, b) => a + b, 0) / activeFases.length)
-    : (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : null);
+  // Bases numéricas de cada fase
+  const baseKihon = colegiadoKihon !== null 
+    ? colegiadoKihon 
+    : (consolidation?.phaseScores?.kihon ?? (consolidation?.technicalPercentage || 80));
+  const baseKata = colegiadoKata !== null 
+    ? colegiadoKata 
+    : (consolidation?.phaseScores?.kata ?? (consolidation?.technicalPercentage || 80));
+  const baseKumite = colegiadoKumite !== null 
+    ? colegiadoKumite 
+    : (consolidation?.phaseScores?.kumite ?? (consolidation?.technicalPercentage || 80));
+
+  // Calificaciones finales ajustadas por fase (clamped 0 a 100%)
+  const finalKihon = Math.min(100, Math.max(0, baseKihon + (phaseAdjustments.kihon || 0)));
+  const finalKata = Math.min(100, Math.max(0, baseKata + (phaseAdjustments.kata || 0)));
+  const finalKumite = Math.min(100, Math.max(0, baseKumite + (phaseAdjustments.kumite || 0)));
+
+  // Promedio técnico base sin ajustes
+  const baseTechnicalScore = Math.round((baseKihon + baseKata + baseKumite) / 3);
+
+  // El promedio final se calcula solo automáticamente a partir de las 3 fases
+  const calculatedFinalScore = Math.round((finalKihon + finalKata + finalKumite) / 3);
+  const calculatedIsPassed = calculatedFinalScore >= 70;
+  const netAdjustment = calculatedFinalScore - baseTechnicalScore;
+  const hasAnyAdjustment = (phaseAdjustments.kihon !== 0 || phaseAdjustments.kata !== 0 || phaseAdjustments.kumite !== 0);
+
+  // Manejador de incremento / decremento con flechitas
+  const handleAdjustPhase = (phaseKey, delta) => {
+    setPhaseAdjustments(prev => {
+      const currentAdj = prev[phaseKey] || 0;
+      const base = phaseKey === 'kihon' ? baseKihon : phaseKey === 'kata' ? baseKata : baseKumite;
+      const nextScore = Math.min(100, Math.max(0, base + currentAdj + delta));
+      return {
+        ...prev,
+        [phaseKey]: nextScore - base
+      };
+    });
+  };
 
   // Apuntes de todos los Senseis clasificados por fase técnica
   const kihonNotesList = evalItems
@@ -264,20 +311,9 @@ function StudentMonitorDrawer({
       return { id: t.id, name: t.name, score: avg };
     });
 
-  // Base técnica y nota final con ajuste marcial
-  const baseTechnicalScore = colegiadoTotal !== null 
-    ? colegiadoTotal 
-    : (typeof consolidation?.technicalPercentage === 'number' 
-        ? consolidation.technicalPercentage 
-        : (consolidation?.finalGrade || 0));
-
-  const calculatedFinalScore = Math.min(100, Math.max(0, Math.round(baseTechnicalScore + Number(martialAdjustment || 0))));
-  const calculatedIsPassed = calculatedFinalScore >= 70;
-
   const handleSaveConsolidatedWithAdjustment = async () => {
-    const adjNum = Number(martialAdjustment) || 0;
-    if (adjNum !== 0 && (!martialAdjustmentReason || !martialAdjustmentReason.trim())) {
-      alert('Debe indicar la justificación obligatoria del ajuste marcial (Espíritu / Actitud).');
+    if (hasAnyAdjustment && (!martialAdjustmentReason || !martialAdjustmentReason.trim())) {
+      alert('Debe indicar la justificación obligatoria del ajuste marcial aplicado.');
       return;
     }
     setIsSavingVerdict(true);
@@ -301,17 +337,27 @@ function StudentMonitorDrawer({
         syllabusId: call?.syllabusSnapshots?.[0]?.id || call?.syllabusId,
         syllabusName: call?.syllabusSnapshots?.[0]?.name || 'Temario Oficial ISKF',
         evaluators: evaluatorsList,
+        phaseScores: {
+          kihon: finalKihon,
+          kata: finalKata,
+          kumite: finalKumite
+        },
+        phaseAdjustments: {
+          kihon: phaseAdjustments.kihon || 0,
+          kata: phaseAdjustments.kata || 0,
+          kumite: phaseAdjustments.kumite || 0
+        },
         technicalPercentage: baseTechnicalScore,
-        martialAdjustment: adjNum,
+        martialAdjustment: netAdjustment,
         martialAdjustmentReason: (martialAdjustmentReason || '').trim(),
         overallPercentage: calculatedFinalScore,
         isPassed: calculatedIsPassed,
-        aiConsolidatedSummary: consolidation?.aiAnalysis || consolidation?.observations || 'Dictamen colegiado oficializado con ajuste marcial.',
+        aiConsolidatedSummary: consolidation?.aiAnalysis || consolidation?.observations || 'Dictamen colegiado oficializado por el tribunal.',
         consolidatedBy: 'Comisión Técnica ISKF'
       });
 
       if (res?.success) {
-        setSaveFeedback({ type: 'success', message: '¡Dictamen oficial y ajuste marcial guardados en base de datos!' });
+        setSaveFeedback({ type: 'success', message: '¡Dictamen oficial y ajustes guardados en base de datos!' });
         if (typeof onRefresh === 'function') {
           onRefresh();
         }
@@ -367,8 +413,14 @@ function StudentMonitorDrawer({
           type="button"
           onClick={() => onDownloadPdf(student, evalItems, {
             ...consolidation,
+            phaseScores: {
+              kihon: finalKihon,
+              kata: finalKata,
+              kumite: finalKumite
+            },
+            phaseAdjustments,
             technicalPercentage: baseTechnicalScore,
-            martialAdjustment: Number(martialAdjustment) || 0,
+            martialAdjustment: netAdjustment,
             martialAdjustmentReason: (martialAdjustmentReason || '').trim(),
             finalGrade: calculatedFinalScore,
             isPassed: calculatedIsPassed
@@ -388,199 +440,282 @@ function StudentMonitorDrawer({
       {/* Contenido: Pestaña Promedios Colegiados */}
       {activeTab === 'colegiado' && (
         <div className="space-y-4">
-          {/* 1. Tarjetas de Resumen Numérico Colegiado */}
+          {/* 1. Tarjetas de Resumen Numérico Colegiado con flechitas de ajuste arriba/abajo */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-blue-800">Kihon Colegiado</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Básicos</span>
+            {/* KIHON COLEGIADO */}
+            <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-800">Kihon Colegiado</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Básicos</span>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-blue-950 font-mono">{finalKihon}%</span>
+                    {phaseAdjustments.kihon !== 0 && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${phaseAdjustments.kihon > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                        {phaseAdjustments.kihon > 0 ? `+${phaseAdjustments.kihon}%` : `${phaseAdjustments.kihon}%`}
+                      </span>
+                    )}
+                  </div>
+                  {/* Flechitas arriba / abajo */}
+                  <div className="flex items-center gap-0.5 bg-white border border-blue-200 rounded-lg p-0.5 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustPhase('kihon', -1)}
+                      disabled={finalKihon <= 0}
+                      className="w-6 h-6 flex items-center justify-center rounded text-blue-700 hover:bg-blue-100 active:bg-blue-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      title="Disminuir calificación de Kihon (-1%)"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustPhase('kihon', 1)}
+                      disabled={finalKihon >= 100}
+                      className="w-6 h-6 flex items-center justify-center rounded text-blue-700 hover:bg-blue-100 active:bg-blue-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      title="Aumentar calificación de Kihon (+1%)"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="text-2xl font-black text-blue-950 mt-1">
-                {colegiadoKihon !== null ? `${colegiadoKihon}%` : '—'}
+              <div className="flex items-center justify-between text-[10px] text-blue-600 font-medium mt-1.5 pt-1 border-t border-blue-100/60">
+                <span>Base: {baseKihon}% ({kihonVals.length} Senseis)</span>
+                {phaseAdjustments.kihon !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustPhase('kihon', -phaseAdjustments.kihon)}
+                    className="text-[9px] text-blue-700 font-bold underline hover:text-blue-900 cursor-pointer"
+                  >
+                    Restablecer
+                  </button>
+                )}
               </div>
-              <div className="text-[10px] text-blue-600 font-medium mt-0.5">Promedio de {kihonVals.length} Senseis</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-purple-800">Kata Colegiado</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">Forma</span>
+            {/* KATA COLEGIADO */}
+            <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-800">Kata Colegiado</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">Forma</span>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-purple-950 font-mono">{finalKata}%</span>
+                    {phaseAdjustments.kata !== 0 && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${phaseAdjustments.kata > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                        {phaseAdjustments.kata > 0 ? `+${phaseAdjustments.kata}%` : `${phaseAdjustments.kata}%`}
+                      </span>
+                    )}
+                  </div>
+                  {/* Flechitas arriba / abajo */}
+                  <div className="flex items-center gap-0.5 bg-white border border-purple-200 rounded-lg p-0.5 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustPhase('kata', -1)}
+                      disabled={finalKata <= 0}
+                      className="w-6 h-6 flex items-center justify-center rounded text-purple-700 hover:bg-purple-100 active:bg-purple-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      title="Disminuir calificación de Kata (-1%)"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustPhase('kata', 1)}
+                      disabled={finalKata >= 100}
+                      className="w-6 h-6 flex items-center justify-center rounded text-purple-700 hover:bg-purple-100 active:bg-purple-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      title="Aumentar calificación de Kata (+1%)"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="text-2xl font-black text-purple-950 mt-1">
-                {colegiadoKata !== null ? `${colegiadoKata}%` : '—'}
+              <div className="flex items-center justify-between text-[10px] text-purple-600 font-medium mt-1.5 pt-1 border-t border-purple-100/60">
+                <span>Base: {baseKata}% ({kataVals.length} Senseis)</span>
+                {phaseAdjustments.kata !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustPhase('kata', -phaseAdjustments.kata)}
+                    className="text-[9px] text-purple-700 font-bold underline hover:text-purple-900 cursor-pointer"
+                  >
+                    Restablecer
+                  </button>
+                )}
               </div>
-              <div className="text-[10px] text-purple-600 font-medium mt-0.5">Promedio de {kataVals.length} Senseis</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-800">Kumite Colegiado</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Combate</span>
+            {/* KUMITE COLEGIADO */}
+            <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-800">Kumite Colegiado</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Combate</span>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-amber-950 font-mono">{finalKumite}%</span>
+                    {phaseAdjustments.kumite !== 0 && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${phaseAdjustments.kumite > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                        {phaseAdjustments.kumite > 0 ? `+${phaseAdjustments.kumite}%` : `${phaseAdjustments.kumite}%`}
+                      </span>
+                    )}
+                  </div>
+                  {/* Flechitas arriba / abajo */}
+                  <div className="flex items-center gap-0.5 bg-white border border-amber-200 rounded-lg p-0.5 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustPhase('kumite', -1)}
+                      disabled={finalKumite <= 0}
+                      className="w-6 h-6 flex items-center justify-center rounded text-amber-700 hover:bg-amber-100 active:bg-amber-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      title="Disminuir calificación de Kumite (-1%)"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustPhase('kumite', 1)}
+                      disabled={finalKumite >= 100}
+                      className="w-6 h-6 flex items-center justify-center rounded text-amber-700 hover:bg-amber-100 active:bg-amber-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      title="Aumentar calificación de Kumite (+1%)"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="text-2xl font-black text-amber-950 mt-1">
-                {colegiadoKumite !== null ? `${colegiadoKumite}%` : '—'}
+              <div className="flex items-center justify-between text-[10px] text-amber-600 font-medium mt-1.5 pt-1 border-t border-amber-100/60">
+                <span>Base: {baseKumite}% ({kumiteVals.length} Senseis)</span>
+                {phaseAdjustments.kumite !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustPhase('kumite', -phaseAdjustments.kumite)}
+                    className="text-[9px] text-amber-700 font-bold underline hover:text-amber-900 cursor-pointer"
+                  >
+                    Restablecer
+                  </button>
+                )}
               </div>
-              <div className="text-[10px] text-amber-600 font-medium mt-0.5">Promedio de {kumiteVals.length} Senseis</div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-300 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900">Nota Total Colegiada</span>
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-200/80 text-emerald-900">
-                  {calculatedIsPassed ? 'Aprobado' : 'Pendiente'}
-                </span>
+            {/* NOTA TOTAL COLEGIADA (Se calcula sola automáticamente) */}
+            <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-300 shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900">Nota Total Colegiada</span>
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${calculatedIsPassed ? 'bg-emerald-200/90 text-emerald-900' : 'bg-red-200 text-red-900'}`}>
+                    {calculatedIsPassed ? 'Aprobado' : 'Pendiente'}
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-emerald-950 mt-1 font-mono">
+                  {calculatedFinalScore}%
+                </div>
               </div>
-              <div className="text-2xl font-black text-emerald-950 mt-1">
-                {calculatedFinalScore}%
-              </div>
-              <div className="text-[10px] text-emerald-700 font-medium mt-0.5">
-                {martialAdjustment !== 0
-                  ? `Base: ${baseTechnicalScore}% | Ajuste: ${martialAdjustment > 0 ? '+' : ''}${martialAdjustment}%`
-                  : 'Promedio colegiado de las 3 fases (Kihon, Kata, Kumite)'}
+              <div className="text-[10px] text-emerald-800 font-medium mt-1.5 pt-1 border-t border-emerald-200">
+                {hasAnyAdjustment
+                  ? `Promedio auto: (${finalKihon} + ${finalKata} + ${finalKumite}) ÷ 3 | Ajuste neto: ${netAdjustment >= 0 ? `+${netAdjustment}%` : `${netAdjustment}%`}`
+                  : `Promedio exacto automático de las 3 fases (${baseTechnicalScore}%)`}
               </div>
             </div>
           </div>
 
-          {/* Panel de Ajuste Marcial al Dictamen Final (Bono / Penalización por Espíritu, Actitud y Zanshin) */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/70 via-orange-50/30 to-amber-100/50 border border-amber-300 shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-amber-200">
+          {/* Barra de Justificación y Oficialización del Dictamen */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                <span className="w-6 h-6 rounded-lg bg-[#2D2E83] text-white flex items-center justify-center font-bold text-xs shadow-xs">
                   🥋
                 </span>
                 <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
-                    <span>Ajuste Marcial al Dictamen Final</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
-                      Espíritu & Actitud
-                    </span>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                    <span>Dictamen Oficial del Tribunal</span>
+                    {hasAnyAdjustment ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                        Ajuste Neto: {netAdjustment >= 0 ? `+${netAdjustment}%` : `${netAdjustment}%`}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-800">
+                        Promedio Técnico Directo
+                      </span>
+                    )}
                   </h4>
-                  <p className="text-[11px] text-amber-800/90 font-medium">
-                    Ajuste colegiado del tribunal con justificación obligatoria sobre el promedio técnico
+                  <p className="text-[11px] text-slate-600 font-medium">
+                    Ajuste individual por Kihon, Kata o Kumite con flechas ▲/▼. El promedio general se recalcula solo.
                   </p>
                 </div>
               </div>
 
-              {/* Botón Guardar Dictamen y Ajuste Marcial */}
-              <button
-                type="button"
-                onClick={handleSaveConsolidatedWithAdjustment}
-                disabled={isSavingVerdict}
-                className="px-3.5 py-1.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
-              >
-                {isSavingVerdict ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Check className="w-3.5 h-3.5" />
+              {/* Botón Oficializar y Guardar Dictamen */}
+              <div className="flex items-center gap-2 shrink-0">
+                {hasAnyAdjustment && (
+                  <button
+                    type="button"
+                    onClick={() => setPhaseAdjustments({ kihon: 0, kata: 0, kumite: 0 })}
+                    className="px-2.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-200/60 rounded-xl transition-all cursor-pointer"
+                  >
+                    Restablecer Fases
+                  </button>
                 )}
-                <span>Oficializar y Guardar Dictamen</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={handleSaveConsolidatedWithAdjustment}
+                  disabled={isSavingVerdict}
+                  className="px-4 py-2 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingVerdict ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>Oficializar y Guardar Dictamen</span>
+                </button>
+              </div>
             </div>
 
-            {/* Fila interactiva: Selector de Ajuste + Botones rápidos + Razón */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
-              {/* Botones de Ajuste Rápido */}
-              <div className="lg:col-span-5 space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-wider text-amber-900 block">
-                  Bonificación / Penalización Marcial:
-                </label>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {[
-                    { val: -10, label: '-10%', cls: 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200' },
-                    { val: -5, label: '-5%', cls: 'bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200' },
-                    { val: 0, label: '0% Neutro', cls: 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300' },
-                    { val: 5, label: '+5%', cls: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200' },
-                    { val: 10, label: '+10%', cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' },
-                  ].map(b => (
-                    <button
-                      key={b.val}
-                      type="button"
-                      onClick={() => setMartialAdjustment(b.val)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-all cursor-pointer ${
-                        martialAdjustment === b.val
-                          ? 'ring-2 ring-amber-500 scale-105 shadow-xs font-extrabold ' + b.cls
-                          : b.cls
-                      }`}
-                    >
-                      {b.label}
-                    </button>
-                  ))}
-
-                  {/* Input manual */}
-                  <div className="flex items-center gap-1 ml-auto">
-                    <span className="text-[10px] text-amber-900 font-bold">Manual:</span>
-                    <input
-                      type="number"
-                      min={-30}
-                      max={30}
-                      value={martialAdjustment}
-                      onChange={(e) => setMartialAdjustment(Number(e.target.value) || 0)}
-                      className="w-16 px-2 py-1 text-xs font-mono font-bold text-center rounded-lg border border-amber-300 bg-white text-gray-900 focus:ring-1 focus:ring-amber-500"
-                    />
-                    <span className="text-xs font-bold text-amber-900">%</span>
-                  </div>
-                </div>
-
-                {/* Fórmula visual en tiempo real */}
-                <div className="p-2 rounded-xl bg-white/90 border border-amber-200 text-xs flex items-center justify-between font-mono shadow-2xs">
-                  <div className="text-gray-600">
-                    Técnica: <span className="font-bold text-gray-900">{baseTechnicalScore}%</span>
-                  </div>
-                  <div className="text-amber-800 font-bold">
-                    {martialAdjustment >= 0 ? `+${martialAdjustment}%` : `${martialAdjustment}%`}
-                  </div>
-                  <div className="text-gray-400">=</div>
-                  <div className="font-black text-sm text-gray-950 flex items-center gap-1.5">
-                    <span>{calculatedFinalScore}%</span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-sans font-bold ${
-                      calculatedIsPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {calculatedIsPassed ? 'Aprobado' : 'Pendiente'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Justificación obligatoria y presets */}
-              <div className="lg:col-span-7 space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-wider text-amber-900 flex items-center justify-between">
-                  <span>Justificación Obligatoria del Ajuste:</span>
-                  {martialAdjustment !== 0 && (!martialAdjustmentReason || !martialAdjustmentReason.trim()) && (
-                    <span className="text-rose-600 text-[10px] font-bold">Requerida</span>
+            {/* Justificación obligatoria si hay ajuste */}
+            <div className="space-y-1.5 pt-1 border-t border-slate-200">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <span>Justificación {hasAnyAdjustment ? 'Obligatoria' : 'Opcional'} de Ajuste / Espíritu y Actitud:</span>
+                  {hasAnyAdjustment && (!martialAdjustmentReason || !martialAdjustmentReason.trim()) && (
+                    <span className="text-rose-600 text-[10px] font-bold">(Requerida para guardar)</span>
                   )}
                 </label>
-
-                {/* Chips de motivos predefinidos */}
-                <div className="flex flex-wrap gap-1">
-                  {[
-                    { label: '🥋 Espíritu sobresaliente / Zanshin y Kiai', adj: 5 },
-                    { label: '🥋 Superación y coraje ante la dificultad', adj: 5 },
-                    { label: '🥋 Disciplina, marcialidad y etiqueta intachable', adj: 5 },
-                    { label: '⚠️ Falta de Kiai, energía o desinterés', adj: -5 },
-                    { label: '⚠️ Actitud displicente / falta de etiqueta en tatami', adj: -10 },
-                  ].map((p, pIdx) => (
-                    <button
-                      key={pIdx}
-                      type="button"
-                      onClick={() => {
-                        setMartialAdjustmentReason(p.label);
-                        if (martialAdjustment === 0) setMartialAdjustment(p.adj);
-                      }}
-                      className="px-2 py-0.5 rounded-md bg-white/80 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[10px] font-medium transition-all cursor-pointer"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                <input
-                  type="text"
-                  value={martialAdjustmentReason}
-                  onChange={(e) => setMartialAdjustmentReason(e.target.value)}
-                  placeholder="Ej: Muestra excelente Zanshin y Kiai durante todo el examen..."
-                  className="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-amber-500 outline-hidden font-medium"
-                />
+                <span className="text-[10px] text-slate-500 font-mono">
+                  Kihon: {finalKihon}% | Kata: {finalKata}% | Kumite: {finalKumite}% → Total: {calculatedFinalScore}%
+                </span>
               </div>
+
+              {/* Chips rápidos de motivos */}
+              <div className="flex flex-wrap gap-1">
+                {[
+                  '🥋 Espíritu sobresaliente / Zanshin y Kiai',
+                  '🥋 Superación y coraje ante la dificultad',
+                  '🥋 Disciplina, marcialidad y etiqueta intachable',
+                  '⚠️ Falta de Kiai, energía o desinterés',
+                  '⚠️ Actitud displicente / falta de etiqueta en tatami',
+                ].map((preset, pIdx) => (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    onClick={() => setMartialAdjustmentReason(preset)}
+                    className="px-2 py-0.5 rounded-md bg-white hover:bg-slate-200/80 text-slate-800 border border-slate-300 text-[10px] font-medium transition-all cursor-pointer shadow-2xs"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+
+              <input
+                type="text"
+                value={martialAdjustmentReason}
+                onChange={(e) => setMartialAdjustmentReason(e.target.value)}
+                placeholder="Ej: Muestra excelente Zanshin y Kiai durante todo el examen..."
+                className="w-full px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-[#2D2E83] outline-hidden font-medium"
+              />
             </div>
 
             {/* Feedback al guardar */}
@@ -944,15 +1079,23 @@ export default function TribunalProgressMonitor({
       const kumiteVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kumite).filter(v => typeof v === 'number');
       const totalVals = evalItems.map(e => e.evalRecord?.percentage).filter(v => typeof v === 'number' && v > 0);
 
-      const kScore = kihonVals.length ? Math.round(kihonVals.reduce((a, b) => a + b, 0) / kihonVals.length) : (cons?.finalGrade || 90);
-      const kaScore = kataVals.length ? Math.round(kataVals.reduce((a, b) => a + b, 0) / kataVals.length) : (cons?.finalGrade || 90);
-      const kuScore = kumiteVals.length ? Math.round(kumiteVals.reduce((a, b) => a + b, 0) / kumiteVals.length) : (cons?.finalGrade || 90);
+      const kScore = cons?.phaseScores?.kihon !== undefined
+        ? Number(cons.phaseScores.kihon)
+        : (kihonVals.length ? Math.round(kihonVals.reduce((a, b) => a + b, 0) / kihonVals.length) : (cons?.finalGrade || 80));
+      const kaScore = cons?.phaseScores?.kata !== undefined
+        ? Number(cons.phaseScores.kata)
+        : (kataVals.length ? Math.round(kataVals.reduce((a, b) => a + b, 0) / kataVals.length) : (cons?.finalGrade || 80));
+      const kuScore = cons?.phaseScores?.kumite !== undefined
+        ? Number(cons.phaseScores.kumite)
+        : (kumiteVals.length ? Math.round(kumiteVals.reduce((a, b) => a + b, 0) / kumiteVals.length) : (cons?.finalGrade || 80));
 
-      // El promedio colegiado final es estrictamente el promedio entre las tres fases finales: Kihon, Kata y Kumite
+      // El promedio colegiado final es estrictamente el promedio automático de las 3 fases
       const phaseScoresList = [kScore, kaScore, kuScore].filter(v => typeof v === 'number' && v > 0);
-      const finalScore = phaseScoresList.length > 0
-        ? Math.round(phaseScoresList.reduce((a, b) => a + b, 0) / phaseScoresList.length)
-        : (cons?.finalGrade || (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : 90));
+      const finalScore = cons?.finalGrade !== undefined
+        ? Number(cons.finalGrade)
+        : (phaseScoresList.length > 0
+            ? Math.round(phaseScoresList.reduce((a, b) => a + b, 0) / phaseScoresList.length)
+            : (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : 80));
 
       const allTechs = progressData?.syllabusTechniques || [];
       const kihonTechScores = allTechs

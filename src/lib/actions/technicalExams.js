@@ -515,6 +515,8 @@ export async function saveConsolidatedVerdict({
   evaluators = [],
   averagedScores = {},
   averagedTechniqueScores = {},
+  phaseScores = {},
+  phaseAdjustments = {},
   technicalPercentage,
   martialAdjustment = 0,
   martialAdjustmentReason = '',
@@ -548,12 +550,28 @@ export async function saveConsolidatedVerdict({
     // Fetch syllabus snapshot if an ID is provided
     const syllabusDoc = syllabusId ? await ExamSyllabus.findById(syllabusId).lean() : null;
 
-    // Cálculo marcial consolidado: Promedio técnico base + Ajuste marcial (Espíritu / Actitud)
-    const baseTechnical = technicalPercentage !== undefined
+    // Cálculo marcial consolidado: si se proporcionan phaseScores, el promedio se calcula automáticamente
+    let finalOverall = Number(overallPercentage) || 0;
+    const activePhaseVals = [phaseScores?.kihon, phaseScores?.kata, phaseScores?.kumite]
+      .filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+
+    if (activePhaseVals.length > 0) {
+      finalOverall = Math.round(activePhaseVals.reduce((a, b) => a + b, 0) / activePhaseVals.length);
+    } else {
+      const baseTechnical = technicalPercentage !== undefined
+        ? Number(technicalPercentage)
+        : (Number(overallPercentage) || 0);
+      const adj = Number(martialAdjustment) || 0;
+      finalOverall = Math.min(100, Math.max(0, Math.round(baseTechnical + adj)));
+    }
+
+    const baseTechnicalScore = technicalPercentage !== undefined
       ? Number(technicalPercentage)
-      : (Number(overallPercentage) || 0);
-    const adj = Number(martialAdjustment) || 0;
-    const finalOverall = Math.min(100, Math.max(0, Math.round((baseTechnical + adj) * 10) / 10));
+      : finalOverall;
+    const computedAdjustment = martialAdjustment !== undefined && martialAdjustment !== 0
+      ? Number(martialAdjustment)
+      : (finalOverall - baseTechnicalScore);
+
     const passed = isPassed !== undefined ? Boolean(isPassed) : (finalOverall >= 70);
 
     const updateData = {
@@ -570,8 +588,10 @@ export async function saveConsolidatedVerdict({
       evaluatorCount: evaluators.length || 1,
       averagedScores: averagedScores || {},
       averagedTechniqueScores: averagedTechniqueScores || {},
-      technicalPercentage: baseTechnical,
-      martialAdjustment: adj,
+      phaseScores: phaseScores || {},
+      phaseAdjustments: phaseAdjustments || {},
+      technicalPercentage: baseTechnicalScore,
+      martialAdjustment: computedAdjustment,
       martialAdjustmentReason: String(martialAdjustmentReason || '').trim(),
       overallPercentage: finalOverall,
       finalGrade: finalOverall,
@@ -2596,6 +2616,8 @@ export async function getTribunalProgressForCall(params) {
         id: c._id.toString(),
         finalGrade: c.finalGrade || c.overallPercentage || 0,
         technicalPercentage: c.technicalPercentage !== undefined ? c.technicalPercentage : (c.overallPercentage || 0),
+        phaseScores: c.phaseScores || null,
+        phaseAdjustments: c.phaseAdjustments || null,
         martialAdjustment: c.martialAdjustment || 0,
         martialAdjustmentReason: c.martialAdjustmentReason || '',
         officialVerdict: c.officialVerdict || (c.isPassed ? 'Aprobado' : 'Reprobado'),

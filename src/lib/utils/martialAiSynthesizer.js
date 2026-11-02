@@ -380,12 +380,13 @@ export function synthesizePhaseBulletsWithAI({
     });
   });
 
-  // 4. Integrar con falencias derivadas de calificaciones por estrellas (1-3★ o < 75%)
+  // 4. Integrar con falencias e indicaciones correctivas derivadas de calificaciones por estrellas (técnicas < 100%)
+  // Filosofía Marcial ISKF: Siempre correctivo explicando qué está haciendo mal para no alcanzar el 100
   (techniqueScores || []).forEach(t => {
     const rawScore = typeof t.score === 'number' ? t.score : null;
     const tScore = rawScore !== null ? (rawScore <= 5 ? rawScore * 20 : (rawScore <= 10 ? rawScore * 10 : rawScore)) : null;
 
-    if (tScore !== null && tScore < 75) {
+    if (tScore !== null && tScore < 100) {
       const tName = t.name || t.id;
       const tNorm = normalizeText(tName);
 
@@ -397,25 +398,53 @@ export function synthesizePhaseBulletsWithAI({
 
         if (tNorm.includes('gedan barai') || tNorm.includes('age uke') || tNorm.includes('soto uke') || tNorm.includes('uchi uke') || tNorm.includes('shuto')) {
           aspectHeader = 'Aspecto Técnico - Defensas (Uke Waza)';
-          flawDirective = `En ${tName} (${Math.round(tScore)}%): No cierra los codos ni rota el antebrazo al armar, debe cubrir el centro del pecho a un puño del cuerpo.`;
+          if (tScore < 75) {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): No cierra los codos ni rota el antebrazo al armar, debe cubrir el centro del pecho a un puño del cuerpo y no desviar la trayectoria de bloqueo.`;
+          } else {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): Para alcanzar el 100%, falta mayor rotación de antebrazo al final del bloqueo y evitar separar el codo del cuerpo al armar la defensa.`;
+          }
         } else if (tNorm.includes('zuki') || tNorm.includes('tsuki') || tNorm.includes('gyaku')) {
           aspectHeader = 'Aspecto Técnico - Puño y Hikite (Tsuki Waza)';
-          flawDirective = `En ${tName} (${Math.round(tScore)}%): No ancla el puño de Hikite y desvía la trayectoria, debe jalar con fuerza a la cadera y alinear la muñeca recta.`;
+          if (tScore < 75) {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): No ancla el puño de Hikite y desvía la trayectoria, debe jalar con fuerza a la cintura sobre el cinturón y alinear la muñeca recta.`;
+          } else {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): Para alcanzar el 100%, falta aceleración en el tirón del Hikite y fijar el puño con mayor Kime sin elevar los hombros.`;
+          }
         } else if (tNorm.includes('geri')) {
           aspectHeader = 'Aspecto Técnico - Patadas (Geri Waza)';
-          flawDirective = `En ${tName} (${Math.round(tScore)}%): No eleva la rodilla ni recoge rápido el pie (Hikiashi), debe asentar la base y ejecutar snap controlado.`;
-        } else if (tNorm.includes('kata') || tNorm.includes('shodan') || tNorm.includes('heian')) {
+          if (tScore < 75) {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): No eleva la rodilla ni recoge rápido el pie (Hikiashi), debe asentar la base y ejecutar snap controlado sin balancear el torso.`;
+          } else {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): Para alcanzar el 100%, falta mayor velocidad al recoger la pierna (Hikiashi) y mantener la rodilla de apoyo flexionada.`;
+          }
+        } else if (tNorm.includes('kata') || tNorm.includes('shodan') || tNorm.includes('heian') || tNorm.includes('bassai') || tNorm.includes('kanku') || tNorm.includes('jion') || tNorm.includes('empi')) {
           aspectHeader = 'Aspecto Técnico - Kata (Forma y Embusen)';
-          flawDirective = `En Kata ${kataName} (${Math.round(tScore)}%): No fija las posturas bajas ni mantiene el ritmo continuo, debe repasar el embusen y sostener la vista al frente.`;
+          if (tScore < 75) {
+            flawDirective = `En Kata ${kataName} (${Math.round(tScore)}%): No fija las posturas bajas ni mantiene el ritmo continuo, debe repasar el embusen y sostener la vista al frente sin tocarse la vestimenta.`;
+          } else {
+            flawDirective = `En Kata ${kataName} (${Math.round(tScore)}%): Para alcanzar el 100%, falta sostener la mirada fija (Chakugan) al frente tras cada giro y no realizar el más mínimo micro-reajuste al karategui.`;
+          }
         } else if (tNorm.includes('kumite') || tNorm.includes('gohon') || tNorm.includes('sanbon') || tNorm.includes('ippon')) {
           aspectHeader = 'Aspecto Técnico - Combate (Kumite)';
-          flawDirective = `En Combate ${kumiteName} (${Math.round(tScore)}%): No mantiene la distancia (Ma-ai) ni sostiene la guardia, debe calcular el alcance y no desarmar el Kamae.`;
+          if (tScore < 75) {
+            flawDirective = `En Combate ${kumiteName} (${Math.round(tScore)}%): No mantiene la distancia (Ma-ai) ni sostiene la guardia, debe calcular el alcance y no desarmar el Kamae tras bloquear.`;
+          } else {
+            flawDirective = `En Combate ${kumiteName} (${Math.round(tScore)}%): Para alcanzar el 100%, falta mayor velocidad y rotación de cadera en el contraataque inmediato tras la defensa.`;
+          }
         } else if (tNorm.includes('dachi') || tNorm.includes('zenkutsu') || tNorm.includes('kokutsu') || tNorm.includes('kiba')) {
           aspectHeader = 'Aspecto Técnico - Posturas (Dachi Waza)';
-          flawDirective = `En ${tName} (${Math.round(tScore)}%): No estira la pierna posterior ni asienta el talón, debe fijar la postura antes de iniciar la técnica.`;
+          if (tScore < 75) {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): No estira la pierna posterior ni asienta el talón, debe fijar la postura baja antes de iniciar el impacto.`;
+          } else {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): Para alcanzar el 100%, falta descender medio puño más el centro de gravedad sin oscilar la altura durante el avance.`;
+          }
         } else {
           aspectHeader = `Aspecto Técnico en ${tName}`;
-          flawDirective = `En ${tName} (${Math.round(tScore)}%): No ejecuta correctamente la trayectoria ni el punto focal, debe coordinar la cadera y la postura al impacto.`;
+          if (tScore < 75) {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): No ejecuta correctamente la trayectoria ni el punto focal, debe coordinar la cadera y la postura al impacto.`;
+          } else {
+            flawDirective = `En ${tName} (${Math.round(tScore)}%): Para alcanzar el 100%, falta mayor precisión biomecánica en el punto focal y sincronización con la respiración.`;
+          }
         }
 
         const fullLine = `${aspectHeader}: ${flawDirective}`;
@@ -447,51 +476,51 @@ export function synthesizePhaseBulletsWithAI({
     }
   });
 
-  // 6. Si no hubo ninguna nota ni técnica baja, proporcionar la recomendación Shotokan oficial según el promedio
+  // 6. Si no hubo notas manuales ni técnicas específicas flagged, proporcionar la indicación correctiva Shotokan oficial para alcanzar el 100%
   if (uniqueBullets.length === 0) {
     if (phase === 'kihon') {
-      if (phaseAverage >= 85) {
+      if (phaseAverage < 75) {
         uniqueBullets.push({
-          text: `Aspecto Técnico - Posturas (Dachi Waza): En ${primaryStance}, descender medio puño más el centro de gravedad y máxima aceleración en el tirón del Hikite.`,
+          text: `Aspecto Técnico - Posturas (Dachi Waza): En ${primaryStance}, flexiona la pierna de atrás y despega el talón del suelo al avanzar. Debe corregir estirando completamente la pierna posterior y anclar el Hikite firme sobre el cinturón para no anular el Kime.`,
           coincidenceCount: 0,
           isCoincidence: false,
           evaluators: []
         });
       } else {
         uniqueBullets.push({
-          text: `Aspecto Técnico - Posturas (Dachi Waza): Despega el talón en ${primaryStance}, debe estirar la pierna posterior sin despegar el talón del suelo y fijar el puño de Hikite en la cintura.`,
+          text: `Aspecto Técnico - Posturas y Kime (Dachi Waza): Para alcanzar el 100%, en ${primaryStance} falta descender medio puño más el centro de gravedad sin oscilar la cadera, y sincronizar el tirón máximo del Hikite en el instante exacto del impacto.`,
           coincidenceCount: 0,
           isCoincidence: false,
           evaluators: []
         });
       }
     } else if (phase === 'kata') {
-      if (phaseAverage >= 85) {
+      if (phaseAverage < 75) {
         uniqueBullets.push({
-          text: `Aspecto Técnico - Kata (Forma y Enfoque): Mantener inmovilidad y concentración absoluta tras el kiai final sin acomodarse la vestimenta.`,
+          text: `Aspecto Técnico - Kata (Forma y Embusen): Duda en las secuencias del kata ${kataName} y pierde la dirección de la mirada al girar. Debe corregir repasando el embusen oficial y sostener la vista al frente (Chakugan) sin tocarse la vestimenta.`,
           coincidenceCount: 0,
           isCoincidence: false,
           evaluators: []
         });
       } else {
         uniqueBullets.push({
-          text: `Aspecto Técnico - Kata (Chakugan y Enfoque): No fija la mirada al frente tras cada giro, debe sostener la vista en la dirección del ataque y evitar tocarse el karategui.`,
+          text: `Aspecto Técnico - Kata (Chakugan y Enfoque): Para alcanzar el 100%, en ${kataName} falta fijar la mirada (Chakugan) al frente en cada pausa sin desviar los ojos, sostener la profundidad de las posturas y mantener absoluta inmovilidad tras el Kiai.`,
           coincidenceCount: 0,
           isCoincidence: false,
           evaluators: []
         });
       }
     } else if (phase === 'kumite') {
-      if (phaseAverage >= 85) {
+      if (phaseAverage < 75) {
         uniqueBullets.push({
-          text: `Aspecto Técnico - Combate (Kumite): Mayor velocidad explosiva y rotación de cadera en la respuesta de contraataque inmediatamente tras el bloqueo.`,
+          text: `Aspecto Técnico - Combate (Distancia y Guardia): En ${kumiteName}, pierde la distancia reglamentaria (Ma-ai) y desarma la guardia (Kamae) tras bloquear. Debe corregir calculando el alcance y no bajar los brazos tras la defensa.`,
           coincidenceCount: 0,
           isCoincidence: false,
           evaluators: []
         });
       } else {
         uniqueBullets.push({
-          text: `Aspecto Técnico - Combate (Distancia y Guardia): Pierde la distancia reglamentaria (Ma-ai) y desarma la guardia, debe calcular el alcance y sostener el Kamae tras bloquear.`,
+          text: `Aspecto Técnico - Combate (Kumite): Para alcanzar el 100%, en ${kumiteName} falta mayor rotación explosiva de cadera en la respuesta de contraataque inmediatamente tras el bloqueo y sostener el espíritu alerta (Zanshin).`,
           coincidenceCount: 0,
           isCoincidence: false,
           evaluators: []
@@ -499,7 +528,7 @@ export function synthesizePhaseBulletsWithAI({
       }
     } else {
       uniqueBullets.push({
-        text: 'Aspecto Técnico - Etiqueta y DO: Saludar con energía, respeto y buena postura al entrar y salir del tatami.',
+        text: 'Aspecto Técnico - Etiqueta y DO: Falta mayor energía y marcialidad en el saludo; para alcanzar el 100% debe mantener la postura firme, concentración y etiqueta intachable en tatami.',
         coincidenceCount: 0,
         isCoincidence: false,
         evaluators: []

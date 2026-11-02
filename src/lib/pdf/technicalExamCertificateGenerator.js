@@ -297,7 +297,7 @@ export async function generateTechnicalExamCertificatePDF({
     });
 
     if (bulletPoints.length === 0) {
-      bulletPoints.push('Seguir practicando con constancia y atención en cada entrenamiento para afianzar la técnica.');
+      bulletPoints.push('Para alcanzar el 100%, debe corregir la fijación de las posturas, el anclaje del Hikite y la concentración marcial.');
     }
 
     doc.setFont('helvetica', 'normal');
@@ -330,15 +330,15 @@ export async function generateTechnicalExamCertificatePDF({
 
   // Tarjeta 1: Kihon (Técnicas Básicas)
   const defaultKihon = 'En la posición adelantada (Zenkutsu Dachi), estirar bien la pierna de atrás con el talón apoyado en el suelo.\nLlevar la mano que no golpea bien pegada a la cintura (Hikite).\nNo subir el cuerpo al avanzar y recoger rápido la pierna al patear.';
-  drawPhaseCard(117, 50, '1. TÉCNICAS BÁSICAS (KIHON) — Posiciones, desplazamientos y defensas', Math.round(kihonScore || 80), kihonText || defaultKihon);
+  drawPhaseCard(117, 50, '1. TÉCNICAS BÁSICAS (KIHON) — Indicaciones correctivas para alcanzar el 100%', Math.round(kihonScore || 80), kihonText || defaultKihon);
 
   // Tarjeta 2: Kata (Forma)
   const defaultKata = `Durante ${beltKata}, no tocarse ni acomodarse el uniforme (karategui). Debe mantenerse firme, quieto y con la mirada atenta al frente.\nMantener la vista fija hacia adelante después de cada giro y después del grito (kiai).\nBajar bien las posiciones y no balancear el cuerpo.`;
-  drawPhaseCard(169, 52, `2. FORMA (KATA) — ${beltKata}: concentración, mirada y postura`, Math.round(kataScore || 80), kataText || defaultKata);
+  drawPhaseCard(169, 52, `2. FORMA (KATA) — ${beltKata}: correcciones de embusen y postura`, Math.round(kataScore || 80), kataText || defaultKata);
 
   // Tarjeta 3: Kumite (Combate Básico)
   const defaultKumite = `En ${beltKumite}, calcular bien la distancia con su compañero para no quedar muy cerca ni muy lejos.\nNo bajar las manos de defensa después de bloquear.\nGirar la cadera y golpear con fuerza, buena dirección y un kiai fuerte.`;
-  drawPhaseCard(223, 49, `3. COMBATE (KUMITE) — ${beltKumite}: distancia, bloqueos y control`, Math.round(kumiteScore || 80), kumiteText || defaultKumite);
+  drawPhaseCard(223, 49, `3. COMBATE (KUMITE) — ${beltKumite}: correcciones de distancia y guardia`, Math.round(kumiteScore || 80), kumiteText || defaultKumite);
 
   // Indicador de Hoja 1
   doc.setFont('helvetica', 'italic');

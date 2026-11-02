@@ -62,6 +62,18 @@ const TechnicalExamConsolidationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {},
   },
+  // Calificaciones oficiales por fase (Kihon, Kata, Kumite)
+  phaseScores: {
+    kihon: { type: Number, default: 0 },
+    kata: { type: Number, default: 0 },
+    kumite: { type: Number, default: 0 },
+  },
+  // Ajustes colegiados individuales aplicados por fase técnica con flechas (bono o penalización)
+  phaseAdjustments: {
+    kihon: { type: Number, default: 0 },
+    kata: { type: Number, default: 0 },
+    kumite: { type: Number, default: 0 },
+  },
   // Promedio técnico objetivo de las estrellas (Kihon, Kata, Kumite)
   technicalPercentage: {
     type: Number,
