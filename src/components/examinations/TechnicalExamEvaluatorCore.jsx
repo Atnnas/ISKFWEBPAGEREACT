@@ -1595,13 +1595,13 @@ export default function TechnicalExamEvaluatorCore({
 
         {/* LADO DERECHO: Fases Oficiales ISKF + Monitor Tribunal + Sincronización + Estado */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Selector de Fases Oficial ISKF */}
-          <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-950/70 p-0.5 rounded-xl border border-slate-800/90 overflow-x-auto">
+          {/* Selector de Fases Oficial ISKF (Grande y muy vistoso) */}
+          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto">
             {[
-              { key: 'kihon', label: '1. Kihon' },
-              { key: 'kumite', label: '2. Kumite' },
-              { key: 'kata', label: '3. Kata' },
-              ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '4. Aspectos' }] : [])
+              { key: 'kihon', label: '👊 1. KIHON' },
+              { key: 'kumite', label: '⚔️ 2. KUMITE' },
+              { key: 'kata', label: '🥋 3. KATA' },
+              ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '📋 4. ASPECTOS' }] : [])
             ].map(phase => {
               const isSelected = effectivePhase === phase.key;
               return (
@@ -1612,9 +1612,9 @@ export default function TechnicalExamEvaluatorCore({
                     setSelectedPhase(phase.key);
                     setSelectedTechniqueIndex(0);
                   }}
-                  className={`px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                     isSelected
-                      ? 'bg-[#2D2E83] text-white border border-indigo-400/50 shadow-xs'
+                      ? 'bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-300 scale-102'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
@@ -1786,12 +1786,12 @@ export default function TechnicalExamEvaluatorCore({
                         <span>{phaseTitleName} Completado para este cinturón</span>
                       </div>
                     ) : (
-                      <div className="flex flex-col md:items-end text-left md:text-right gap-0.5">
-                        <div className="text-xs font-black text-white flex items-center gap-2 flex-wrap md:justify-end">
-                          <span className="text-[10px] uppercase tracking-wider font-mono font-bold text-amber-400 bg-amber-400/10 border border-amber-400/25 px-2 py-0.5 rounded-md">
-                            {effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1} de {groupTechs.length}
+                      <div className="flex flex-col md:items-end text-left md:text-right gap-1">
+                        <div className="text-sm font-black text-white flex items-center gap-2 flex-wrap md:justify-end">
+                          <span className="text-xs sm:text-sm uppercase tracking-wider font-mono font-black text-slate-950 bg-amber-400 px-3 py-1 rounded-lg shadow-sm ring-1 ring-amber-300">
+                            {effectivePhase === 'kihon' ? '👊 KIHON' : effectivePhase === 'kata' ? '🥋 KATA' : effectivePhase === 'kumite' ? '⚔️ KUMITE' : effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1}/{groupTechs.length}
                           </span>
-                          <span className="text-sm sm:text-base font-black text-amber-200 tracking-tight">
+                          <span className="text-base sm:text-lg font-black text-amber-200 tracking-tight">
                             {groupActiveTech?.name}
                           </span>
                         </div>
@@ -2166,8 +2166,8 @@ export default function TechnicalExamEvaluatorCore({
             <span className="px-2.5 py-1 rounded-full bg-slate-800 text-amber-300 text-[11px] font-mono shrink-0 border border-slate-700">
               Tanda {selectedTandaIndex + 1} de {tandas.length}
             </span>
-            <span className="text-white font-mono truncate hidden sm:inline">
-              {effectivePhase.toUpperCase()} • Paso {selectedTechniqueIndex + 1} de {totalPhaseSteps}
+            <span className="px-3 py-1 rounded-lg bg-indigo-950/80 border border-indigo-400/30 text-white font-mono text-xs font-black truncate hidden sm:inline">
+              FASE: <span className="text-amber-400 font-black">{effectivePhase.toUpperCase()}</span> • Paso {selectedTechniqueIndex + 1} de {totalPhaseSteps}
             </span>
             <span className="text-slate-500 text-[11px] hidden md:inline">({tandaStudents.length} karatecas)</span>
           </div>
@@ -2183,7 +2183,7 @@ export default function TechnicalExamEvaluatorCore({
               className="h-11 sm:h-12 px-3.5 sm:px-4 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-amber-400/30 shrink-0"
               title="Verificar y afinar notas de la tanda para esta fase"
             >
-              <span>Revisar {effectivePhase.toUpperCase()}</span>
+              <span>Revisar <strong>{effectivePhase.toUpperCase()}</strong></span>
             </button>
 
             {isLastStepInTanda && hasNextTanda ? (
@@ -2193,7 +2193,7 @@ export default function TechnicalExamEvaluatorCore({
                 className="h-11 sm:h-12 px-4 sm:px-6 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-300 active:scale-95 shrink-0"
                 title={`Verificar fin de fase y avanzar a ${tandas[selectedTandaIndex + 1]?.blockName || `Tanda ${selectedTandaIndex + 2}`}`}
               >
-                <span>Fin de Fase ►</span>
+                <span>Fin de {effectivePhase.toUpperCase()} ►</span>
               </button>
             ) : isLastStepInTanda && !hasNextTanda ? (
               <button
@@ -2203,7 +2203,7 @@ export default function TechnicalExamEvaluatorCore({
                 title="Has concluido la última tanda del examen"
               >
                 <Check className="w-4 h-4 stroke-[3]" />
-                <span>Fin de Fase ►</span>
+                <span>Fin de {effectivePhase.toUpperCase()} ►</span>
               </button>
             ) : (
               <button
@@ -2211,7 +2211,7 @@ export default function TechnicalExamEvaluatorCore({
                 onClick={handleNextTechnique}
                 className="h-11 sm:h-12 px-4 sm:px-6 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
               >
-                <span>{selectedTechniqueIndex < maxTechniquesInPhase - 1 ? 'Siguiente Paso' : 'Fin de Fase ►'}</span>
+                <span>{selectedTechniqueIndex < maxTechniquesInPhase - 1 ? 'Siguiente Paso' : `Fin de ${effectivePhase.toUpperCase()} ►`}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             )}
@@ -2386,32 +2386,37 @@ export default function TechnicalExamEvaluatorCore({
       {showPhaseReviewModal && (
         <div className="fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-200 my-auto text-slate-900">
-            {/* Cabecera Sobria y Minimalista */}
-            <div className="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-[#2D2E83] text-white flex items-center justify-center text-lg shadow-xs shrink-0">
-                  🥋
-                </span>
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
-                    <span>Revisión de Fin de Tanda</span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase">
-                      {phaseToReview}
-                    </span>
-                  </h3>
-                  <p className="text-[11px] text-slate-400 font-medium">
-                    {tandas[selectedTandaIndex]?.blockName || `Tanda ${selectedTandaIndex + 1}`} • Verifique y afine calificaciones con ▲ / ▼
-                  </p>
+            {/* Cabecera Vistosa y Grande con la Fase Activa */}
+            <div className="px-5 py-4 bg-slate-950 text-white border-b border-slate-800 shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-[#2D2E83] text-white flex items-center justify-center text-2xl shadow-lg border border-indigo-400/40 shrink-0">
+                    {phaseToReview === 'kihon' ? '👊' : phaseToReview === 'kata' ? '🥋' : phaseToReview === 'kumite' ? '⚔️' : '📋'}
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                      Revisión de Fin de Tanda • {tandas[selectedTandaIndex]?.blockName || `Tanda ${selectedTandaIndex + 1}`}
+                    </div>
+                    <div className="flex items-center gap-2.5 mt-0.5 flex-wrap">
+                      <span className="text-xs sm:text-sm font-black text-slate-300 uppercase tracking-wider">
+                        Evaluando:
+                      </span>
+                      <span className="text-xl sm:text-2xl font-black text-amber-400 tracking-wide uppercase drop-shadow-xs">
+                        {phaseToReview === 'kihon' ? '👊 FASE DE KIHON' : phaseToReview === 'kata' ? '🥋 FASE DE KATA' : phaseToReview === 'kumite' ? '⚔️ FASE DE KUMITE' : `📋 FASE DE ${phaseToReview.toUpperCase()}`}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPhaseReviewModal(false)}
+                  className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+                  title="Volver a la evaluación"
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowPhaseReviewModal(false)}
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
-                title="Volver a la evaluación"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
             {/* Lista de Atletas de la Tanda con controles táctiles para Tablet */}
@@ -2503,11 +2508,13 @@ export default function TechnicalExamEvaluatorCore({
                 className="h-12 px-6 rounded-xl font-bold bg-[#2D2E83] hover:bg-[#232468] text-white text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
               >
                 <span>
-                  {!isLastPhaseInTanda
-                    ? `Aprobar y Pasar a ${availablePhaseKeys[currentPhaseIndex + 1]?.toUpperCase()} ►`
-                    : hasNextTanda
-                    ? `Aprobar y Pasar a Siguiente Tanda ►`
-                    : `Concluir Examen y Ver Dictamen ►`}
+                  {!isLastPhaseInTanda ? (
+                    <>Aprobar {phaseToReview.toUpperCase()} y Pasar a <span className="text-amber-300 font-black uppercase text-sm sm:text-base ml-1 px-2 py-0.5 rounded-lg bg-amber-400/20 border border-amber-400/40">{availablePhaseKeys[currentPhaseIndex + 1]?.toUpperCase()}</span> ►</>
+                  ) : hasNextTanda ? (
+                    <>Aprobar {phaseToReview.toUpperCase()} y Pasar a <span className="text-amber-300 font-black ml-1">Siguiente Tanda</span> ►</>
+                  ) : (
+                    <>Concluir Examen y Ver <span className="text-amber-300 font-black ml-1">Dictamen Final</span> ►</>
+                  )}
                 </span>
               </button>
             </div>
