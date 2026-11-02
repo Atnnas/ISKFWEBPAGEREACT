@@ -1463,16 +1463,24 @@ export default function TechnicalExamEvaluatorCore({
         ? (evaluator?.name || 'Mi Evaluación')
         : (evItem.evaluator?.name || 'Sinodal');
 
-      // Calificaciones por estudiante en esta tanda para phaseToReview
+      // Calificaciones por estudiante en esta tanda EXCLUSIVAMENTE para phaseToReview (NUNCA promedio final)
       const scoresByStudent = {};
       tandaStudents.forEach(st => {
         const sId = String(st._id || st.id);
         if (isCurrent) {
           const currentSummary = getStudentPhaseSummary(st, phaseToReview);
-          scoresByStudent[sId] = currentSummary.finalScore;
+          if (currentSummary.isEvaluated || currentSummary.adjustment !== 0) {
+            scoresByStudent[sId] = currentSummary.finalScore;
+          }
         } else {
           const stRecord = evItem.evaluationsByStudent?.[sId];
-          const val = stRecord?.phaseScores?.[phaseToReview] ?? stRecord?.phaseAverages?.[phaseToReview] ?? null;
+          // Tomar ÚNICAMENTE la nota de ESTA fase específica (Kihon, Kata o Kumite), NUNCA stRecord.percentage
+          const phaseAdjusted = stRecord?.phaseScores?.[phaseToReview];
+          const phaseBase = stRecord?.phaseAverages?.[phaseToReview];
+          const val = typeof phaseAdjusted === 'number' && phaseAdjusted > 0
+            ? phaseAdjusted
+            : (typeof phaseBase === 'number' && phaseBase > 0 ? phaseBase : null);
+
           if (typeof val === 'number') {
             scoresByStudent[sId] = val <= 10 ? Math.round(val * 10) : val;
           }
@@ -1487,13 +1495,15 @@ export default function TechnicalExamEvaluatorCore({
       };
     });
 
-    // Solo considerar evaluadores que tengan al menos una nota en la tanda para esta fase
+    // Solo considerar evaluadores que tengan al menos una nota válida en la tanda para esta fase
     const activeEvaluators = evaluatorsData.filter(ev => 
       Object.values(ev.scoresByStudent).some(s => typeof s === 'number' && s > 0)
     );
 
-    // Si hay menos de 2 evaluadores, no puede haber discrepancia entre senseis
+    // Si hay menos de 2 evaluadores con notas en esta fase, no hay discrepancia entre senseis
     if (activeEvaluators.length < 2) return null;
+
+    const currentPhaseUpper = String(phaseToReview || 'fase').toUpperCase();
 
     // 1. Alerta por estudiante: ¿Diferencia >= 5% en la nota final de la fase entre evaluadores?
     const studentAlerts = {};
@@ -1519,7 +1529,7 @@ export default function TechnicalExamEvaluatorCore({
       }
     });
 
-    // 2. Alerta de Divergencia en Mejor Atleta de la Tanda (Top Performer)
+    // 2. Alerta de Divergencia en Mejor Atleta de la Tanda (Top Performer de ESTA FASE)
     const topPerformerByEvaluator = [];
     const topPerformerStudents = new Set();
     const studentTopFor = {};
@@ -1544,6 +1554,7 @@ export default function TechnicalExamEvaluatorCore({
           evaluatorName: ev.name.split(' ')[0],
           studentId: sId,
           studentName: topStudent.name,
+          phaseName: currentPhaseUpper,
           score: maxScore
         });
 
@@ -1552,11 +1563,12 @@ export default function TechnicalExamEvaluatorCore({
       }
     });
 
-    // Hay división en el mejor de la tanda si hay más de 1 atleta distinto catalogado como el mejor
+    // Hay división en el mejor de la tanda si hay más de 1 atleta distinto catalogado como el mejor en ESTA FASE
     const hasSplitTop = tandaStudents.length > 1 && topPerformerStudents.size > 1;
 
     return {
       activeEvaluatorsCount: activeEvaluators.length,
+      currentPhaseUpper,
       studentAlerts,
       hasSplitTop,
       topPerformerByEvaluator,
@@ -2554,21 +2566,21 @@ export default function TechnicalExamEvaluatorCore({
               </div>
             </div>
 
-            {/* Banner Minimalista de Mejor Atleta Dividido (Sensei Roy / Tribunal) */}
+            {/* Banner Minimalista de Mejor Atleta Dividido EXCLUSIVO DE ESTA FASE */}
             {collegiatePhaseComparison?.hasSplitTop && (
               <div className="px-5 py-2.5 bg-amber-500/10 border-b border-amber-400/30 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-[10px] uppercase shadow-2xs">
-                    ⚡ Criterio Dividido
+                    ⚡ Criterio Dividido en {phaseToReview.toUpperCase()}
                   </span>
                   <span className="text-slate-700 font-bold text-[11px]">
-                    Mejor de tanda:
+                    Mejor nota de {phaseToReview.toUpperCase()}:
                   </span>
                   <span className="font-semibold text-slate-900 text-[11px]">
                     {collegiatePhaseComparison.topPerformerByEvaluator.map((item, i) => (
                       <span key={i}>
                         {i > 0 && <span className="text-slate-400 mx-1.5">•</span>}
-                        <strong className="text-[#2D2E83]">{item.evaluatorName}:</strong> {item.studentName} ({item.score}%)
+                        <strong className="text-[#2D2E83]">{item.evaluatorName}:</strong> {item.studentName} ({item.score}% en {phaseToReview.toUpperCase()})
                       </span>
                     ))}
                   </span>
@@ -2613,28 +2625,28 @@ export default function TechnicalExamEvaluatorCore({
                             {student.currentRank || 'Cinta Blanca'}
                           </span>
 
-                          {/* Píldora de Alerta Discrepancia >= 5% */}
+                          {/* Píldora de Alerta Discrepancia >= 5% en esta fase específica */}
                           {hasGap && (
                             <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs flex items-center gap-1">
-                              <span>⚠️ Dif. {alertInfo.gap}%</span>
+                              <span>⚠️ Dif. {alertInfo.gap}% en {phaseToReview.toUpperCase()}</span>
                               <span className="text-amber-900 font-semibold hidden sm:inline">({alertInfo.scoresText})</span>
                             </span>
                           )}
 
-                          {/* Píldora de Mejor Atleta #1 */}
+                          {/* Píldora de Mejor Atleta #1 en esta fase específica */}
                           {topForSenseis.length > 0 && (
                             <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-indigo-100 text-[#2D2E83] border border-indigo-200 shadow-2xs flex items-center gap-1">
-                              <span>👑 #1 para {topForSenseis.join(', ')}</span>
+                              <span>👑 #1 en {phaseToReview.toUpperCase()} para {topForSenseis.join(', ')}</span>
                             </span>
                           )}
 
                           <span className="text-[11px] text-slate-500 font-medium font-mono">
                             {summary.adjustment !== 0 ? (
                               <span className="text-indigo-700 font-bold">
-                                Base: {summary.baseScore}% ({summary.adjustment > 0 ? `+${summary.adjustment}%` : `${summary.adjustment}%`})
+                                {phaseToReview.toUpperCase()}: {summary.baseScore}% ({summary.adjustment > 0 ? `+${summary.adjustment}%` : `${summary.adjustment}%`})
                               </span>
                             ) : (
-                              `Nota: ${summary.baseScore}%`
+                              `${phaseToReview.toUpperCase()}: ${summary.baseScore}%`
                             )}
                           </span>
                         </div>
