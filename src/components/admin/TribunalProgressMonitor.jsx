@@ -21,7 +21,7 @@ import {
   Sparkles,
   UserCheck
 } from 'lucide-react';
-import { getTribunalProgressForCall } from '../../lib/actions/technicalExams';
+import { getTribunalProgressForCall, saveConsolidatedVerdict } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
 import { getNextRank } from '../../lib/constants/kyuRanks';
@@ -128,13 +128,30 @@ function getPhaseImprovementBullets(phase, notesList, techniqueScores = [], phas
 
 // Drawer interactivo con pestañas de Promedios Colegiados y pestañas por cada Sensei Evaluador
 function StudentMonitorDrawer({
+  call,
   student,
   evaluatorsProgress,
   syllabusTechniques = [],
   consolidation = null,
   onDownloadPdf,
-  isDownloading
+  isDownloading,
+  onRefresh
 }) {
+  const [martialAdjustment, setMartialAdjustment] = useState(consolidation?.martialAdjustment ?? 0);
+  const [martialAdjustmentReason, setMartialAdjustmentReason] = useState(consolidation?.martialAdjustmentReason ?? '');
+  const [isSavingVerdict, setIsSavingVerdict] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState(null);
+
+  useEffect(() => {
+    if (consolidation) {
+      if (typeof consolidation.martialAdjustment === 'number') {
+        setMartialAdjustment(consolidation.martialAdjustment);
+      }
+      if (typeof consolidation.martialAdjustmentReason === 'string') {
+        setMartialAdjustmentReason(consolidation.martialAdjustmentReason);
+      }
+    }
+  }, [consolidation]);
   const sId = String(student._id || student.id);
   const [activeTab, setActiveTab] = useState('colegiado');
 
@@ -247,6 +264,69 @@ function StudentMonitorDrawer({
       return { id: t.id, name: t.name, score: avg };
     });
 
+  // Base técnica y nota final con ajuste marcial
+  const baseTechnicalScore = colegiadoTotal !== null 
+    ? colegiadoTotal 
+    : (typeof consolidation?.technicalPercentage === 'number' 
+        ? consolidation.technicalPercentage 
+        : (consolidation?.finalGrade || 0));
+
+  const calculatedFinalScore = Math.min(100, Math.max(0, Math.round(baseTechnicalScore + Number(martialAdjustment || 0))));
+  const calculatedIsPassed = calculatedFinalScore >= 70;
+
+  const handleSaveConsolidatedWithAdjustment = async () => {
+    const adjNum = Number(martialAdjustment) || 0;
+    if (adjNum !== 0 && (!martialAdjustmentReason || !martialAdjustmentReason.trim())) {
+      alert('Debe indicar la justificación obligatoria del ajuste marcial (Espíritu / Actitud).');
+      return;
+    }
+    setIsSavingVerdict(true);
+    setSaveFeedback(null);
+    try {
+      const evaluatorsList = evalItems.map(e => ({
+        evaluatorName: e.evaluator.name,
+        evaluatorEmail: e.evaluator.email,
+        percentage: e.evalRecord?.percentage || 0,
+        isPassed: (e.evalRecord?.percentage || 0) >= 70
+      }));
+
+      const res = await saveConsolidatedVerdict({
+        callId: call?._id || call?.id,
+        studentId: sId,
+        studentName: student.name,
+        studentRank: student.currentRank,
+        targetRank: targetRankStr,
+        dojoId: call?.dojoId,
+        dojoName: call?.dojoName,
+        syllabusId: call?.syllabusSnapshots?.[0]?.id || call?.syllabusId,
+        syllabusName: call?.syllabusSnapshots?.[0]?.name || 'Temario Oficial ISKF',
+        evaluators: evaluatorsList,
+        technicalPercentage: baseTechnicalScore,
+        martialAdjustment: adjNum,
+        martialAdjustmentReason: (martialAdjustmentReason || '').trim(),
+        overallPercentage: calculatedFinalScore,
+        isPassed: calculatedIsPassed,
+        aiConsolidatedSummary: consolidation?.aiAnalysis || consolidation?.observations || 'Dictamen colegiado oficializado con ajuste marcial.',
+        consolidatedBy: 'Comisión Técnica ISKF'
+      });
+
+      if (res?.success) {
+        setSaveFeedback({ type: 'success', message: '¡Dictamen oficial y ajuste marcial guardados en base de datos!' });
+        if (typeof onRefresh === 'function') {
+          onRefresh();
+        }
+      } else {
+        setSaveFeedback({ type: 'error', message: res?.error || 'Error al persistir dictamen.' });
+      }
+    } catch (err) {
+      console.error('Error al guardar veredicto con ajuste:', err);
+      setSaveFeedback({ type: 'error', message: 'Error de conexión al persistir veredicto.' });
+    } finally {
+      setIsSavingVerdict(false);
+      setTimeout(() => setSaveFeedback(null), 5000);
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-indigo-200/90 p-4 sm:p-5 shadow-sm space-y-4 text-xs">
       {/* Barra superior de pestañas */}
@@ -285,7 +365,14 @@ function StudentMonitorDrawer({
         {/* Botón de Descarga del Certificado Oficial en PDF */}
         <button
           type="button"
-          onClick={() => onDownloadPdf(student, evalItems, consolidation)}
+          onClick={() => onDownloadPdf(student, evalItems, {
+            ...consolidation,
+            technicalPercentage: baseTechnicalScore,
+            martialAdjustment: Number(martialAdjustment) || 0,
+            martialAdjustmentReason: (martialAdjustmentReason || '').trim(),
+            finalGrade: calculatedFinalScore,
+            isPassed: calculatedIsPassed
+          })}
           disabled={isDownloading}
           className="px-4 py-2 bg-[#BE1622] hover:bg-[#9E121C] text-white rounded-xl font-bold transition-all shadow-md shadow-red-600/20 flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
         >
@@ -340,14 +427,171 @@ function StudentMonitorDrawer({
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900">Nota Total Colegiada</span>
                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-200/80 text-emerald-900">
-                  {consolidation?.officialVerdict || ((consolidation?.finalGrade || colegiadoTotal || 0) >= 70 ? 'Aprobado' : 'Pendiente')}
+                  {calculatedIsPassed ? 'Aprobado' : 'Pendiente'}
                 </span>
               </div>
               <div className="text-2xl font-black text-emerald-950 mt-1">
-                {colegiadoTotal || consolidation?.finalGrade || '—'}%
+                {calculatedFinalScore}%
               </div>
-              <div className="text-[10px] text-emerald-700 font-medium mt-0.5">Promedio colegiado de las 3 fases (Kihon, Kata, Kumite)</div>
+              <div className="text-[10px] text-emerald-700 font-medium mt-0.5">
+                {martialAdjustment !== 0
+                  ? `Base: ${baseTechnicalScore}% | Ajuste: ${martialAdjustment > 0 ? '+' : ''}${martialAdjustment}%`
+                  : 'Promedio colegiado de las 3 fases (Kihon, Kata, Kumite)'}
+              </div>
             </div>
+          </div>
+
+          {/* Panel de Ajuste Marcial al Dictamen Final (Bono / Penalización por Espíritu, Actitud y Zanshin) */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/70 via-orange-50/30 to-amber-100/50 border border-amber-300 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-amber-200">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  🥋
+                </span>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                    <span>Ajuste Marcial al Dictamen Final</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
+                      Espíritu & Actitud
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-amber-800/90 font-medium">
+                    Ajuste colegiado del tribunal con justificación obligatoria sobre el promedio técnico
+                  </p>
+                </div>
+              </div>
+
+              {/* Botón Guardar Dictamen y Ajuste Marcial */}
+              <button
+                type="button"
+                onClick={handleSaveConsolidatedWithAdjustment}
+                disabled={isSavingVerdict}
+                className="px-3.5 py-1.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                {isSavingVerdict ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Check className="w-3.5 h-3.5" />
+                )}
+                <span>Oficializar y Guardar Dictamen</span>
+              </button>
+            </div>
+
+            {/* Fila interactiva: Selector de Ajuste + Botones rápidos + Razón */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+              {/* Botones de Ajuste Rápido */}
+              <div className="lg:col-span-5 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-wider text-amber-900 block">
+                  Bonificación / Penalización Marcial:
+                </label>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    { val: -10, label: '-10%', cls: 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200' },
+                    { val: -5, label: '-5%', cls: 'bg-amber-50 text-amber-800 hover:bg-amber-100 border-amber-200' },
+                    { val: 0, label: '0% Neutro', cls: 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300' },
+                    { val: 5, label: '+5%', cls: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200' },
+                    { val: 10, label: '+10%', cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' },
+                  ].map(b => (
+                    <button
+                      key={b.val}
+                      type="button"
+                      onClick={() => setMartialAdjustment(b.val)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-black border transition-all cursor-pointer ${
+                        martialAdjustment === b.val
+                          ? 'ring-2 ring-amber-500 scale-105 shadow-xs font-extrabold ' + b.cls
+                          : b.cls
+                      }`}
+                    >
+                      {b.label}
+                    </button>
+                  ))}
+
+                  {/* Input manual */}
+                  <div className="flex items-center gap-1 ml-auto">
+                    <span className="text-[10px] text-amber-900 font-bold">Manual:</span>
+                    <input
+                      type="number"
+                      min={-30}
+                      max={30}
+                      value={martialAdjustment}
+                      onChange={(e) => setMartialAdjustment(Number(e.target.value) || 0)}
+                      className="w-16 px-2 py-1 text-xs font-mono font-bold text-center rounded-lg border border-amber-300 bg-white text-gray-900 focus:ring-1 focus:ring-amber-500"
+                    />
+                    <span className="text-xs font-bold text-amber-900">%</span>
+                  </div>
+                </div>
+
+                {/* Fórmula visual en tiempo real */}
+                <div className="p-2 rounded-xl bg-white/90 border border-amber-200 text-xs flex items-center justify-between font-mono shadow-2xs">
+                  <div className="text-gray-600">
+                    Técnica: <span className="font-bold text-gray-900">{baseTechnicalScore}%</span>
+                  </div>
+                  <div className="text-amber-800 font-bold">
+                    {martialAdjustment >= 0 ? `+${martialAdjustment}%` : `${martialAdjustment}%`}
+                  </div>
+                  <div className="text-gray-400">=</div>
+                  <div className="font-black text-sm text-gray-950 flex items-center gap-1.5">
+                    <span>{calculatedFinalScore}%</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-sans font-bold ${
+                      calculatedIsPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {calculatedIsPassed ? 'Aprobado' : 'Pendiente'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Justificación obligatoria y presets */}
+              <div className="lg:col-span-7 space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-amber-900 flex items-center justify-between">
+                  <span>Justificación Obligatoria del Ajuste:</span>
+                  {martialAdjustment !== 0 && (!martialAdjustmentReason || !martialAdjustmentReason.trim()) && (
+                    <span className="text-rose-600 text-[10px] font-bold">Requerida</span>
+                  )}
+                </label>
+
+                {/* Chips de motivos predefinidos */}
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { label: '🥋 Espíritu sobresaliente / Zanshin y Kiai', adj: 5 },
+                    { label: '🥋 Superación y coraje ante la dificultad', adj: 5 },
+                    { label: '🥋 Disciplina, marcialidad y etiqueta intachable', adj: 5 },
+                    { label: '⚠️ Falta de Kiai, energía o desinterés', adj: -5 },
+                    { label: '⚠️ Actitud displicente / falta de etiqueta en tatami', adj: -10 },
+                  ].map((p, pIdx) => (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() => {
+                        setMartialAdjustmentReason(p.label);
+                        if (martialAdjustment === 0) setMartialAdjustment(p.adj);
+                      }}
+                      className="px-2 py-0.5 rounded-md bg-white/80 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[10px] font-medium transition-all cursor-pointer"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                <input
+                  type="text"
+                  value={martialAdjustmentReason}
+                  onChange={(e) => setMartialAdjustmentReason(e.target.value)}
+                  placeholder="Ej: Muestra excelente Zanshin y Kiai durante todo el examen..."
+                  className="w-full px-3 py-1.5 rounded-xl border border-amber-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-amber-500 outline-hidden font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Feedback al guardar */}
+            {saveFeedback && (
+              <div className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
+                saveFeedback.type === 'success' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-red-100 text-red-900 border border-red-300'
+              }`}>
+                {saveFeedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-700" /> : <EyeOff className="w-4 h-4 text-red-700" />}
+                <span>{saveFeedback.message}</span>
+              </div>
+            )}
           </div>
 
           {/* 2. Sección Detallada: Puntos a Mejorar Desglosados en Viñetas (Kihon, Kata y Kumite) */}
@@ -766,6 +1010,10 @@ export default function TribunalProgressMonitor({
       // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
       const positiveText = (st?.positiveAspects || '').trim();
 
+      const baseTechnical = finalScore;
+      const adj = Number(cons?.martialAdjustment) || 0;
+      const adjustedFinalScore = Math.min(100, Math.max(0, Math.round(baseTechnical + adj)));
+
       await generateTechnicalExamCertificatePDF({
         studentName,
         dojoName,
@@ -776,8 +1024,11 @@ export default function TribunalProgressMonitor({
         kataScore: kaScore,
         kumiteScore: kuScore,
         writtenScore: 95,
-        finalScore,
-        isPassed: finalScore >= 70,
+        technicalScore: baseTechnical,
+        finalScore: adjustedFinalScore,
+        martialAdjustment: adj,
+        martialAdjustmentReason: cons?.martialAdjustmentReason || '',
+        isPassed: adjustedFinalScore >= 70,
         kihonText: resolvedKihonNotes,
         kataText: resolvedKataNotes,
         kumiteText: resolvedKumiteNotes,
@@ -1521,6 +1772,7 @@ export default function TribunalProgressMonitor({
                               tandaStudentsList.map((st, sIdx) => {
                                 const sId = String(st._id || st.id);
                                 const isExpanded = expandedStudentId === sId;
+                                const cons = progressData?.consolidationsByStudent?.[sId] || null;
 
                                 // Promedio colegiado entre las tres fases finales (Kihon, Kata y Kumite) para este aspirante
                                 const stKihonVals = evaluatorsProgress
@@ -1621,11 +1873,18 @@ export default function TribunalProgressMonitor({
 
                                       <td className="py-2.5 px-3 text-center font-bold font-mono">
                                         {avg !== null ? (
-                                          <span className={`px-2 py-0.5 rounded-lg text-xs ${
-                                            avg >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                          }`}>
-                                            {avg}%
-                                          </span>
+                                          <div className="inline-flex flex-col items-center gap-0.5">
+                                            <span className={`px-2 py-0.5 rounded-lg text-xs ${
+                                              (cons?.finalGrade || avg) >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                            }`}>
+                                              {cons?.finalGrade || avg}%
+                                            </span>
+                                            {cons?.martialAdjustment ? (
+                                              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                                🥋 {cons.martialAdjustment > 0 ? `+${cons.martialAdjustment}%` : `${cons.martialAdjustment}%`}
+                                              </span>
+                                            ) : null}
+                                          </div>
                                         ) : (
                                           <span className="text-gray-300">—</span>
                                         )}
@@ -1636,12 +1895,14 @@ export default function TribunalProgressMonitor({
                                       <tr className="bg-slate-50/95 border-b border-indigo-200 animate-in fade-in duration-150">
                                         <td colSpan={evaluatorsProgress.length + 3} className="p-3 sm:p-5">
                                           <StudentMonitorDrawer
+                                            call={call}
                                             student={st}
                                             evaluatorsProgress={evaluatorsProgress}
                                             syllabusTechniques={progressData?.syllabusTechniques || []}
                                             consolidation={progressData?.consolidationsByStudent?.[sId] || null}
                                             onDownloadPdf={handleDownloadCertificateForStudent}
                                             isDownloading={downloadingStudentId === sId}
+                                            onRefresh={() => fetchProgress(true)}
                                           />
                                         </td>
                                       </tr>

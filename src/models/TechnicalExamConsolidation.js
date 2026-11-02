@@ -62,7 +62,27 @@ const TechnicalExamConsolidationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {},
   },
-  // Porcentaje promediado entre todos los Senseis
+  // Promedio técnico objetivo de las estrellas (Kihon, Kata, Kumite)
+  technicalPercentage: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+  },
+  // Ajuste Marcial por Espíritu / Actitud (Bono o Penalización en %, ej: +5, -10)
+  martialAdjustment: {
+    type: Number,
+    default: 0,
+    min: -50,
+    max: 50,
+  },
+  // Justificación obligatoria del ajuste marcial
+  martialAdjustmentReason: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  // Porcentaje promediado final oficial (técnico + ajuste marcial)
   overallPercentage: {
     type: Number,
     default: 0,

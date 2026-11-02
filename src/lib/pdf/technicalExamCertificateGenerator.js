@@ -25,6 +25,9 @@ export async function generateTechnicalExamCertificatePDF({
   kumiteScore = 80,
   writtenScore = 95,
   finalScore = 80,
+  technicalScore = null,
+  martialAdjustment = 0,
+  martialAdjustmentReason = '',
   isPassed = true,
   kihonText = '',
   kataText = '',
@@ -33,11 +36,16 @@ export async function generateTechnicalExamCertificatePDF({
   _generalComment = '',
   evaluators = []
 }) {
-  // El promedio colegiado final técnico debe ser estrictamente el promedio entre las tres fases finales: Kihon, Kata y Kumite
+  // El promedio colegiado técnico base debe ser estrictamente el promedio entre las tres fases finales: Kihon, Kata y Kumite
   const phaseScores = [kihonScore, kataScore, kumiteScore].filter(v => typeof v === 'number' && v > 0);
-  const resolvedFinalScore = phaseScores.length > 0
-    ? Math.round(phaseScores.reduce((a, b) => a + b, 0) / phaseScores.length)
-    : (finalScore || 80);
+  const baseTechnicalScore = technicalScore !== null && typeof technicalScore === 'number'
+    ? technicalScore
+    : (phaseScores.length > 0
+        ? Math.round(phaseScores.reduce((a, b) => a + b, 0) / phaseScores.length)
+        : (finalScore || 80));
+
+  const adj = Number(martialAdjustment) || 0;
+  const resolvedFinalScore = Math.min(100, Math.max(0, Math.round(baseTechnicalScore + adj)));
   const resolvedIsPassed = isPassed !== null ? isPassed : (resolvedFinalScore >= 70);
 
   const jsPdfModule = await import('jspdf');
@@ -229,6 +237,16 @@ export async function generateTechnicalExamCertificatePDF({
     ? rankMatch[1].replace(/\s+/g, ' ').toUpperCase()
     : rawRankStr.split(/[\(\-\:]/)[0].trim().toUpperCase();
   doc.text(cleanRank, cols[7].x + cols[7].w / 2, dataRowY + 5.1, { align: 'center' });
+
+  // Nota de Ajuste Marcial (si aplica)
+  if (adj !== 0) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(6.8);
+    doc.setTextColor(...COLOR_MUTED);
+    const sign = adj > 0 ? '+' : '';
+    const reasonText = martialAdjustmentReason ? ` (${martialAdjustmentReason})` : '';
+    doc.text(`* Dictamen Oficial incluye Ajuste Marcial de ${sign}${adj}% por Espíritu/Actitud${reasonText}. Promedio técnico base: ${baseTechnicalScore}%.`, 15, 106.8);
+  }
 
   // 6. Sección: Puntos a Mejorar por Fase (Tarjetas horizontales de ancho completo)
   const secTitleY = 108.5;

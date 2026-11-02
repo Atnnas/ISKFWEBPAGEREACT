@@ -503,6 +503,7 @@ TU TAREA OBLIGATORIA:
  * Guardar el dictamen consolidado final del tribunal en MongoDB
  */
 export async function saveConsolidatedVerdict({
+  callId = null,
   studentId,
   studentName,
   studentRank,
@@ -514,8 +515,11 @@ export async function saveConsolidatedVerdict({
   evaluators = [],
   averagedScores = {},
   averagedTechniqueScores = {},
+  technicalPercentage,
+  martialAdjustment = 0,
+  martialAdjustmentReason = '',
   overallPercentage = 0,
-  isPassed = false,
+  isPassed,
   rawObservationsByTechnique = {},
   aiConsolidatedSummary = '',
   consolidatedBy = 'Comisión Técnica ISKF'
@@ -544,7 +548,16 @@ export async function saveConsolidatedVerdict({
     // Fetch syllabus snapshot if an ID is provided
     const syllabusDoc = syllabusId ? await ExamSyllabus.findById(syllabusId).lean() : null;
 
+    // Cálculo marcial consolidado: Promedio técnico base + Ajuste marcial (Espíritu / Actitud)
+    const baseTechnical = technicalPercentage !== undefined
+      ? Number(technicalPercentage)
+      : (Number(overallPercentage) || 0);
+    const adj = Number(martialAdjustment) || 0;
+    const finalOverall = Math.min(100, Math.max(0, Math.round((baseTechnical + adj) * 10) / 10));
+    const passed = isPassed !== undefined ? Boolean(isPassed) : (finalOverall >= 70);
+
     const updateData = {
+      ...(callId && mongoose.Types.ObjectId.isValid(callId) ? { callId: new mongoose.Types.ObjectId(callId) } : {}),
       studentId: new mongoose.Types.ObjectId(studentId),
       studentName: studentName || 'Estudiante',
       studentRank: studentRank || '10° Kyu (Cinta Blanca)',
@@ -557,8 +570,13 @@ export async function saveConsolidatedVerdict({
       evaluatorCount: evaluators.length || 1,
       averagedScores: averagedScores || {},
       averagedTechniqueScores: averagedTechniqueScores || {},
-      overallPercentage: Number(overallPercentage) || 0,
-      isPassed: Boolean(isPassed),
+      technicalPercentage: baseTechnical,
+      martialAdjustment: adj,
+      martialAdjustmentReason: String(martialAdjustmentReason || '').trim(),
+      overallPercentage: finalOverall,
+      finalGrade: finalOverall,
+      officialVerdict: passed ? 'Aprobado' : 'Reprobado',
+      isPassed: passed,
       rawObservationsByTechnique: rawObservationsByTechnique || {},
       aiConsolidatedSummary: String(aiConsolidatedSummary || '').trim(),
       consolidatedBy: consolidatedBy || session.user.name || 'Comisión Técnica ISKF',
@@ -627,6 +645,9 @@ export async function getConsolidatedEvaluationsByDojo(dojoId, syllabusId = null
       evaluatorCount: c.evaluatorCount || 1,
       averagedScores: c.averagedScores || {},
       averagedTechniqueScores: c.averagedTechniqueScores || {},
+      technicalPercentage: c.technicalPercentage !== undefined ? c.technicalPercentage : (c.overallPercentage || 0),
+      martialAdjustment: c.martialAdjustment || 0,
+      martialAdjustmentReason: c.martialAdjustmentReason || '',
       overallPercentage: c.overallPercentage || 0,
       isPassed: c.isPassed,
       rawObservationsByTechnique: c.rawObservationsByTechnique || {},
@@ -2574,6 +2595,9 @@ export async function getTribunalProgressForCall(params) {
       consolidationsByStudent[c.studentId.toString()] = {
         id: c._id.toString(),
         finalGrade: c.finalGrade || c.overallPercentage || 0,
+        technicalPercentage: c.technicalPercentage !== undefined ? c.technicalPercentage : (c.overallPercentage || 0),
+        martialAdjustment: c.martialAdjustment || 0,
+        martialAdjustmentReason: c.martialAdjustmentReason || '',
         officialVerdict: c.officialVerdict || (c.isPassed ? 'Aprobado' : 'Reprobado'),
         isPassed: Boolean(c.isPassed),
         promotedRank: c.promotedRank || c.targetRank,

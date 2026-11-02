@@ -1885,8 +1885,11 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         syllabusId: activeSyllabus?._id || activeSyllabus?.id,
         syllabusName: activeSyllabus?.name || 'Temario Oficial ISKF',
         evaluators: evaluatorsList,
-        overallPercentage: item.averagePercentage,
-        isPassed: item.isPassed,
+        technicalPercentage: item.averagePercentage,
+        martialAdjustment: item.martialAdjustment || 0,
+        martialAdjustmentReason: item.martialAdjustmentReason || '',
+        overallPercentage: Math.min(100, Math.max(0, (item.averagePercentage || 0) + (item.martialAdjustment || 0))),
+        isPassed: ((item.averagePercentage || 0) + (item.martialAdjustment || 0)) >= 70,
         rawObservationsByTechnique: item.rawObservations,
         aiConsolidatedSummary: item.aiSummary || '',
         consolidatedBy: currentUser?.name || activeEvaluatorName || 'Comisión Técnica ISKF'
@@ -2376,28 +2379,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     }
   };
 
-  // Agregar una nueva tanda vacía
-  const handleAddNewTanda = () => {
-    const nextNum = callTandas.length + 1;
-    let startM = 9 * 60;
-    if (callTandas.length > 0) {
-      const lastTanda = callTandas[callTandas.length - 1];
-      startM = parseTimeToMinutes(lastTanda.endTime);
-    }
-    const endM = startM + 45;
-    const newTandas = [
-      ...callTandas,
-      {
-        id: `tanda_${nextNum}_${Date.now()}`,
-        blockName: `Tanda ${nextNum}`,
-        startTime: minutesToFormattedTime(startM),
-        endTime: minutesToFormattedTime(endM),
-        studentIds: []
-      }
-    ];
-    setCallTandas(newTandas);
-    persistTandasEvent(newTandas);
-  };
+
 
   // Eliminar una tanda y resincronizar
   const handleRemoveTanda = (tandaId) => {
@@ -4052,14 +4034,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleAddNewTanda}
-                        className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Agregar Tanda</span>
-                      </button>
+
                     </div>
 
                     {callTandas.length === 0 ? (
