@@ -214,6 +214,7 @@ export default function StudentsRosterView({
   // Abrir Modal Editar
   const handleOpenEditStudent = (student) => {
     setEditingStudent(student);
+    const hasSpecial = Boolean(student.hasSpecialCondition || (student.specialCondition && student.specialCondition.trim().length > 0));
     setStudentFormData({
       name: student.name || '',
       birthDate: formatDate(student.birthDate),
@@ -221,7 +222,7 @@ export default function StudentsRosterView({
       notes: student.notes || '',
       photo: student.photo || '',
       positiveAspects: student.positiveAspects || '',
-      hasSpecialCondition: Boolean(student.hasSpecialCondition),
+      hasSpecialCondition: hasSpecial,
       specialCondition: student.specialCondition || ''
     });
     setIsStudentModalOpen(true);
@@ -262,7 +263,7 @@ export default function StudentsRosterView({
       if (editingStudent) {
         const res = await updateStudent(editingStudent._id || editingStudent.id, payload);
         if (res.success) {
-          setStudents(prev => prev.map(s => (s._id === res.student._id || s.id === res.student.id) ? res.student : s));
+          setStudents(prev => prev.map(s => String(s._id || s.id) === String(res.student._id || res.student.id) ? res.student : s));
           setIsStudentModalOpen(false);
           showAlert(`Estudiante "${res.student.name}" actualizado con éxito.`, 'Actualizado');
         } else {
@@ -655,14 +656,14 @@ export default function StudentsRosterView({
                               <span className="font-black text-gray-900 leading-tight">
                                 {student.name}
                               </span>
-                              {student.hasSpecialCondition && (
+                              {(student.hasSpecialCondition || (student.specialCondition && student.specialCondition.trim().length > 0)) && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300" title={student.specialCondition}>
                                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                                   Condición Especial
                                 </span>
                               )}
                             </div>
-                            {student.hasSpecialCondition && (
+                            {(student.hasSpecialCondition || (student.specialCondition && student.specialCondition.trim().length > 0)) && (
                               <div className="text-[11px] text-amber-900 font-medium mt-0.5 line-clamp-1">
                                 <span className="font-bold text-amber-800">Condición:</span> {student.specialCondition || 'En observación'}
                               </div>

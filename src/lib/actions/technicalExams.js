@@ -2587,7 +2587,7 @@ export async function getTribunalProgressForCall(params) {
 
     // Cargar información de los estudiantes para complementar datos de aspirantes (targetRank, positiveAspects)
     const dbStudents = studentObjIds.length > 0
-      ? await Student.find({ _id: { $in: studentObjIds } }).select('name currentRank targetRank positiveAspects birthDate').lean()
+      ? await Student.find({ _id: { $in: studentObjIds } }).select('name currentRank targetRank positiveAspects birthDate hasSpecialCondition specialCondition').lean()
       : [];
     const dbStudentsMap = new Map();
     dbStudents.forEach(st => {
@@ -2611,6 +2611,8 @@ export async function getTribunalProgressForCall(params) {
         currentRank,
         targetRank,
         positiveAspects,
+        hasSpecialCondition: Boolean(dbSt?.hasSpecialCondition || (dbSt?.specialCondition && dbSt.specialCondition.trim().length > 0)),
+        specialCondition: dbSt?.specialCondition || '',
         birthDate: dbSt?.birthDate ? dbSt.birthDate.toISOString() : null,
         scheduleBlock: a.scheduleBlock
       };

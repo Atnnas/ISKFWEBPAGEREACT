@@ -376,6 +376,7 @@ export default function TechnicalExamEvaluatorCore({
     const sId = String(student._id || student.id);
     const freshStudent = liveStudents.find(s => String(s._id || s.id) === sId) || student;
     setEditingStudentModal(freshStudent);
+    const hasSpecial = Boolean(freshStudent.hasSpecialCondition || (freshStudent.specialCondition && freshStudent.specialCondition.trim().length > 0));
     setEditStudentForm({
       name: freshStudent.name || '',
       birthDate: formatDateDDMMAAAA(freshStudent.birthDate),
@@ -383,7 +384,7 @@ export default function TechnicalExamEvaluatorCore({
       photo: freshStudent.photo || '',
       notes: freshStudent.notes || '',
       positiveAspects: freshStudent.positiveAspects || '',
-      hasSpecialCondition: Boolean(freshStudent.hasSpecialCondition),
+      hasSpecialCondition: hasSpecial,
       specialCondition: freshStudent.specialCondition || ''
     });
   };
@@ -445,6 +446,7 @@ export default function TechnicalExamEvaluatorCore({
 
       if (res.success && res.student) {
         setLiveStudents(prev => prev.map(s => (String(s._id || s.id) === String(sId) ? res.student : s)));
+        setSelectedStudentForAspects(prev => (prev && String(prev._id || prev.id) === String(sId)) ? res.student : prev);
         setEditingStudentModal(null);
       } else {
         alert(res.error || 'No se pudo actualizar el estudiante.');

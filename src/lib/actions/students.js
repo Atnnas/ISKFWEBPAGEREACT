@@ -306,7 +306,11 @@ export async function updateStudent(id, data) {
           {
             $set: {
               'aspirants.$[elem].studentName': updated.name,
-              'aspirants.$[elem].currentRank': updated.currentRank
+              'aspirants.$[elem].currentRank': updated.currentRank,
+              'aspirants.$[elem].hasSpecialCondition': updated.hasSpecialCondition,
+              'aspirants.$[elem].specialCondition': updated.specialCondition,
+              'aspirants.$[elem].positiveAspects': updated.positiveAspects,
+              'aspirants.$[elem].birthDate': updated.birthDate
             }
           },
           { arrayFilters: [{ 'elem.studentId': new mongoose.Types.ObjectId(id) }] }
@@ -334,7 +338,7 @@ export async function updateStudent(id, data) {
         status: updated.status,
         notes: updated.notes,
         positiveAspects: updated.positiveAspects,
-        hasSpecialCondition: updated.hasSpecialCondition,
+        hasSpecialCondition: Boolean(updated.hasSpecialCondition || (updated.specialCondition && updated.specialCondition.trim().length > 0)),
         specialCondition: updated.specialCondition,
         isPromotedForExam: Boolean(updated.isPromotedForExam),
         promotedAt: updated.promotedAt ? updated.promotedAt.toISOString() : null
