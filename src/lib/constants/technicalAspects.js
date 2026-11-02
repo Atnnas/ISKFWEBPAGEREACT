@@ -3,10 +3,10 @@ export const DEFAULT_TECHNICAL_ASPECTS = [
     id: 'aspect-tsuki',
     category: 'tsuki',
     categoryLabel: '1. Aspectos Técnicos',
-    title: 'TZUKI WAZA (Ataques de Puño)',
+    title: 'TSUKI WAZA (Ataques de Puño)',
     subtitle: 'Enfoque, punto focal y trayectoria',
     points: [
-      'Golpes dirigidos la zona específica (Yodan, Chudan, Gedan).',
+      'Golpes dirigidos a la zona específica (Jodan, Chudan, Gedan).',
       'Brazos de Hikite, con puño hacia arriba al costado del cuerpo.',
       'Tronco recto, hombros atrás, vista al frente. (Chakugan)'
     ],
@@ -19,7 +19,7 @@ export const DEFAULT_TECHNICAL_ASPECTS = [
     title: 'UKE WAZA (Bloqueos y Defensas)',
     subtitle: 'Mecánica de bloqueo y preparación',
     points: [
-      'Mecánica de cada bloqueo, (preparación, ejecución de la técnica)'
+      'Mecánica de cada bloqueo (preparación y ejecución de la técnica).'
     ],
     order: 2
   },
@@ -30,10 +30,10 @@ export const DEFAULT_TECHNICAL_ASPECTS = [
     title: 'DACHI WAZA (Posturas y Desplazamientos)',
     subtitle: 'Bases, flexión y media luna',
     points: [
-      'Conocimiento de la mecánica de postura (teoría)',
-      'Posición, (pies separados, paso largo al frente, rodilla con flexión (sin importar el ángulo.)',
+      'Conocimiento de la mecánica de postura (teoría).',
+      'Posición (pies separados, paso largo al frente, rodilla con flexión correcta).',
       'Desplazamientos de Media Luna.',
-      'Mecánica de las vueltas (Mawate)'
+      'Mecánica de las vueltas (Mawatte).'
     ],
     order: 3
   },
@@ -52,19 +52,20 @@ export const DEFAULT_TECHNICAL_ASPECTS = [
     id: 'aspect-kata',
     category: 'kata',
     categoryLabel: '1. Aspectos Técnicos',
-    title: 'KATA (Heian Shodan)',
-    subtitle: '10 Criterios Técnicos Oficiales de Evaluación',
+    title: 'KATA',
+    subtitle: '11 Criterios Técnicos Oficiales de Evaluación',
     points: [
       'Posturas (Dachi Waza): Firmeza, alineación y transición clara en las posturas oficiales (Zenkutsu, Kokutsu).',
       'Técnicas (Waza): Precisión mecánica, trayectoria y correcta aplicación técnica en cada movimiento.',
-      'Movimientos de Transición: Desplazamientos fluidos, giros limpios (Mawate) y estabilidad.',
+      'Movimientos de Transición: Desplazamientos fluidos, giros limpios (Mawatte) y estabilidad.',
       'Tiempo y Sincronización: Ritmo marcial adecuado y coordinación simultánea de extremidades.',
       'Respiración Correcta: Inhalación controlada y exhalación potente sincronizada con el Kiai.',
       'Enfoque y Kime: Contracción al término del impacto y concentración mental (Chakugan).',
       'Conformidad (Kihon): Fidelidad y consistencia en la ejecución con el estándar oficial de Kihon.',
       'Fuerza: Potencia generada desde la postura y rotación de cadera.',
       'Velocidad: Rapidez en la aceleración de ataque y defensas.',
-      'Equilibrio: Estabilidad corporal constante sin balanceos ni pérdida de balance.'
+      'Equilibrio: Estabilidad corporal constante sin balanceos ni pérdida de balance.',
+      'Respeta el embusen: Cumplimiento riguroso del diagrama de desplazamiento, regreso exacto al punto de origen y orientación espacial oficial del kata.'
     ],
     order: 5
   },
@@ -103,7 +104,7 @@ export const DEFAULT_TECHNICAL_ASPECTS = [
     points: [
       'Concentración general dentro de la clase o prueba.',
       'Enfoque cuando se aplica la técnica. (Chakugan)',
-      'Aplicación de del grito KIAI pronunciación y sonido correcto.'
+      'Aplicación del grito KIAI con pronunciación y sonido correcto.'
     ],
     order: 8
   },

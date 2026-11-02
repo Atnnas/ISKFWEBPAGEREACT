@@ -660,7 +660,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     return syllabi.filter(item => {
       const matchesRank = selectedRankFilter === 'all' || 
         isSameRank(item.currentRank, selectedRankFilter) || 
-        isSameRank(item.targetRank, selectedRankFilter);
+        (!item.currentRank && isSameRank(item.targetRank, selectedRankFilter));
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch = !term || 
         item.name.toLowerCase().includes(term) || 
