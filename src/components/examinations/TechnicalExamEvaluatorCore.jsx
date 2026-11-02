@@ -343,6 +343,10 @@ export default function TechnicalExamEvaluatorCore({
   // Modal para ver el monitor del tribunal (supervisar a los demás senseis)
   const [showTribunalMonitorModal, setShowTribunalMonitorModal] = useState(false);
 
+  // Modal intersticial de verificación y ajuste de fin de tanda por fase (Kihon, Kata, Kumite)
+  const [showPhaseReviewModal, setShowPhaseReviewModal] = useState(false);
+  const [phaseToReview, setPhaseToReview] = useState('kihon');
+
   // Detección de Sensei Roy (Director de Evaluación ISKF / Admin)
   const isDirectorRoy = useMemo(() => {
     return Boolean(
@@ -1331,6 +1335,100 @@ export default function TechnicalExamEvaluatorCore({
     }
   };
 
+  // Resumen numérico de la fase para un karateca (nota base de estrellas, ajuste ▲/▼ y nota final)
+  const getStudentPhaseSummary = useCallback((student, phase = effectivePhase) => {
+    if (!student) return { baseScore: 80, adjustment: 0, finalScore: 80, isEvaluated: false };
+    const sId = String(student._id || student.id);
+    const ev = evaluationsByStudent[sId] || {};
+    const techAverages = ev.techniqueAverages || {};
+
+    const resolvePhaseForTech = (tKey) => {
+      if (!tKey) return 'kihon';
+      const tk = String(tKey).toLowerCase();
+      if (tk.includes('-ka') || tk.includes('kata') || tk.includes('heian') || tk.includes('tekki') || tk.includes('bassai')) return 'kata';
+      if (tk.includes('-ku') || tk.includes('kumite') || tk.includes('sambon') || tk.includes('gohon')) return 'kumite';
+      if (tk.startsWith('aspect')) return 'aspectos';
+      for (const syl of syllabi || []) {
+        const found = (syl.techniques || []).find(t => t.id === tKey || getCanonicalTechKey(t.name) === getCanonicalTechKey(tKey));
+        if (found) return (found.group || found.phase || 'kihon').toLowerCase();
+      }
+      return 'kihon';
+    };
+
+    let sum = 0;
+    let count = 0;
+    Object.entries(techAverages).forEach(([tKey, avgVal]) => {
+      if (typeof avgVal !== 'number' || avgVal <= 0) return;
+      if (resolvePhaseForTech(tKey) === phase.toLowerCase()) {
+        const normalized = avgVal <= 10 ? avgVal * 10 : avgVal;
+        sum += normalized;
+        count++;
+      }
+    });
+
+    const isEvaluated = count > 0;
+    const savedBase = ev.phaseAverages?.[phase];
+    const baseScore = isEvaluated
+      ? Math.round(sum / count)
+      : (typeof savedBase === 'number' ? savedBase : 80);
+
+    const adjustment = Number(ev.phaseAdjustments?.[phase] || 0);
+    const finalScore = Math.min(100, Math.max(0, baseScore + adjustment));
+
+    return { baseScore, adjustment, finalScore, isEvaluated, count };
+  }, [evaluationsByStudent, effectivePhase, syllabi]);
+
+  // Manejador de incremento / decremento con flechas (▲ / ▼) para un karateca en la fase
+  const handleAdjustStudentPhase = useCallback((student, phase, delta) => {
+    const sId = String(student._id || student.id);
+    const prevEval = evaluationsByStudent[sId] || {};
+    const { baseScore, adjustment } = getStudentPhaseSummary(student, phase);
+
+    const nextAdjustedScore = Math.min(100, Math.max(0, baseScore + adjustment + delta));
+    const nextAdjustment = nextAdjustedScore - baseScore;
+
+    const updatedPhaseAdjustments = {
+      ...(prevEval.phaseAdjustments || {}),
+      [phase]: nextAdjustment
+    };
+
+    const updatedPhaseScores = {
+      ...(prevEval.phaseScores || {}),
+      [phase]: nextAdjustedScore
+    };
+
+    const updatedPhaseAverages = {
+      ...(prevEval.phaseAverages || {}),
+      [phase]: baseScore
+    };
+
+    // Recalcular promedio general equilibrado entre las 3 fases
+    const phases = ['kihon', 'kata', 'kumite'];
+    const activeScores = [];
+    phases.forEach(p => {
+      const pSummary = getStudentPhaseSummary(student, p);
+      const adj = p === phase ? nextAdjustment : Number(prevEval.phaseAdjustments?.[p] || 0);
+      if (pSummary.isEvaluated || p === phase) {
+        activeScores.push(Math.min(100, Math.max(0, pSummary.baseScore + adj)));
+      }
+    });
+
+    const newPercentage = activeScores.length > 0
+      ? Math.round(activeScores.reduce((a, b) => a + b, 0) / activeScores.length)
+      : (prevEval.percentage || 80);
+
+    const updatedData = {
+      ...prevEval,
+      phaseAverages: updatedPhaseAverages,
+      phaseAdjustments: updatedPhaseAdjustments,
+      phaseScores: updatedPhaseScores,
+      percentage: newPercentage,
+      isPassed: newPercentage >= 70
+    };
+
+    persistStudentGrade(sId, updatedData, student);
+  }, [evaluationsByStudent, getStudentPhaseSummary, persistStudentGrade]);
+
   const handleNextTechnique = () => {
     // Validar técnica actual antes de avanzar
     const { isValid, missing } = validateCurrentTechniqueComplete();
@@ -1354,15 +1452,24 @@ export default function TechnicalExamEvaluatorCore({
       return;
     }
 
-    // 2. Si es el último paso de la fase pero faltan fases en esta tanda (Kihon -> Kata -> Kumite...)
+    // 2. Es el último paso de la fase: ABRIR MODAL INTERSTICIAL DE FIN DE FASE
+    setPhaseToReview(effectivePhase);
+    setShowPhaseReviewModal(true);
+  };
+
+  const handleConfirmPhaseReview = () => {
+    setShowPhaseReviewModal(false);
+
+    // 1. Si faltan fases en esta tanda (Kihon -> Kumite -> Kata...)
     if (!isLastPhaseInTanda) {
       setSelectedPhase(availablePhaseKeys[currentPhaseIndex + 1]);
       setSelectedTechniqueIndex(0);
       setStudentTechOverrides({});
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    // 3. ¡Llegó a lo último de las evaluaciones de la tanda actual!
+    // 2. Concluyó la última fase de esta tanda, ¿hay siguiente tanda?
     if (hasNextTanda) {
       const nextTIdx = selectedTandaIndex + 1;
       setSelectedTandaIndex(nextTIdx);
@@ -1377,7 +1484,7 @@ export default function TechnicalExamEvaluatorCore({
       return;
     }
 
-    // 4. Último paso de la última tanda del examen: abrir el monitor del tribunal
+    // 3. Último paso de la última tanda del examen completo: abrir el monitor del tribunal
     setShowTribunalMonitorModal(true);
   };
 
@@ -2025,6 +2132,9 @@ export default function TechnicalExamEvaluatorCore({
       )}
 
       {/* 6. BARRA FIJA INFERIOR PARA AVANCE RÁPIDO */}
+      {/* ========================================================================= */}
+      {/* BARRA INFERIOR FIJA DE NAVEGACIÓN Y CIERRE DE FASE (OPTIMIZADA PARA TABLET) */}
+      {/* ========================================================================= */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 p-2.5 sm:p-3 shadow-2xl">
         <div className="w-full px-2 sm:px-4 md:px-6 flex items-center justify-between gap-2 sm:gap-3">
           {/* BOTÓN ANTERIOR */}
@@ -2032,7 +2142,7 @@ export default function TechnicalExamEvaluatorCore({
             <button
               type="button"
               onClick={handlePrevTechnique}
-              className="px-3.5 sm:px-4 py-2 bg-indigo-950 hover:bg-indigo-900 text-amber-300 border border-amber-400/40 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
+              className="h-11 sm:h-12 px-3.5 sm:px-4 bg-indigo-950 hover:bg-indigo-900 text-amber-300 border border-amber-400/40 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
               title={`Volver a ${tandas[selectedTandaIndex - 1]?.blockName || `Tanda ${selectedTandaIndex}`}`}
             >
               <ChevronLeft className="w-4 h-4 text-amber-400 stroke-[3]" />
@@ -2043,7 +2153,7 @@ export default function TechnicalExamEvaluatorCore({
               type="button"
               onClick={handlePrevTechnique}
               disabled={isFirstStepInTanda && !hasPrevTanda}
-              className="px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer shrink-0"
+              className="h-11 sm:h-12 px-3.5 sm:px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer shrink-0"
               title="Retroceder al paso anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -2053,7 +2163,7 @@ export default function TechnicalExamEvaluatorCore({
 
           {/* INDICADOR CENTRAL DE TANDA Y PASO */}
           <div className="text-center text-xs font-bold text-slate-400 flex items-center justify-center gap-2 truncate px-1 min-w-0">
-            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-amber-300 text-[11px] font-mono shrink-0 border border-slate-700">
+            <span className="px-2.5 py-1 rounded-full bg-slate-800 text-amber-300 text-[11px] font-mono shrink-0 border border-slate-700">
               Tanda {selectedTandaIndex + 1} de {tandas.length}
             </span>
             <span className="text-white font-mono truncate hidden sm:inline">
@@ -2062,37 +2172,50 @@ export default function TechnicalExamEvaluatorCore({
             <span className="text-slate-500 text-[11px] hidden md:inline">({tandaStudents.length} karatecas)</span>
           </div>
 
-          {/* BOTÓN SIGUIENTE */}
-          {isLastStepInTanda && hasNextTanda ? (
+          {/* BOTÓN REVISIÓN DE FIN DE FASE Y SIGUIENTE (TAMAÑO CÓMODO PARA TABLET) */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleNextTechnique}
-              className="px-4 sm:px-5 py-2 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-300 active:scale-95 shrink-0"
-              title={`Avanzar a ${tandas[selectedTandaIndex + 1]?.blockName || `Tanda ${selectedTandaIndex + 2}`}`}
+              onClick={() => {
+                setPhaseToReview(effectivePhase);
+                setShowPhaseReviewModal(true);
+              }}
+              className="h-11 sm:h-12 px-3.5 sm:px-4 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-amber-400/30 shrink-0"
+              title="Verificar y afinar notas de la tanda para esta fase"
             >
-              <span>Siguiente Tanda</span>
-              <ChevronRight className="w-4 h-4 stroke-[3]" />
+              <span>Revisar {effectivePhase.toUpperCase()}</span>
             </button>
-          ) : isLastStepInTanda && !hasNextTanda ? (
-            <button
-              type="button"
-              onClick={handleNextTechnique}
-              className="px-4 sm:px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
-              title="Has concluido la última tanda del examen"
-            >
-              <Check className="w-4 h-4 stroke-[3]" />
-              <span>Concluir Examen</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleNextTechnique}
-              className="px-4 sm:px-5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
-            >
-              <span>{selectedTechniqueIndex < maxTechniquesInPhase - 1 ? 'Siguiente Paso' : 'Siguiente Fase'}</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
+
+            {isLastStepInTanda && hasNextTanda ? (
+              <button
+                type="button"
+                onClick={handleNextTechnique}
+                className="h-11 sm:h-12 px-4 sm:px-6 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-300 active:scale-95 shrink-0"
+                title={`Verificar fin de fase y avanzar a ${tandas[selectedTandaIndex + 1]?.blockName || `Tanda ${selectedTandaIndex + 2}`}`}
+              >
+                <span>Fin de Fase ►</span>
+              </button>
+            ) : isLastStepInTanda && !hasNextTanda ? (
+              <button
+                type="button"
+                onClick={handleNextTechnique}
+                className="h-11 sm:h-12 px-4 sm:px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
+                title="Has concluido la última tanda del examen"
+              >
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>Fin de Fase ►</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNextTechnique}
+                className="h-11 sm:h-12 px-4 sm:px-6 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
+              >
+                <span>{selectedTechniqueIndex < maxTechniquesInPhase - 1 ? 'Siguiente Paso' : 'Fin de Fase ►'}</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2256,6 +2379,141 @@ export default function TechnicalExamEvaluatorCore({
           </div>
         );
       })()}
+
+      {/* ========================================================================= */}
+      {/* MODAL INTERSTICIAL DE FIN DE FASE (REVISIÓN Y AJUSTE DE TANDA) */}
+      {/* ========================================================================= */}
+      {showPhaseReviewModal && (
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-200 my-auto text-slate-900">
+            {/* Cabecera Sobria y Minimalista */}
+            <div className="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-xl bg-[#2D2E83] text-white flex items-center justify-center text-lg shadow-xs shrink-0">
+                  🥋
+                </span>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                    <span>Revisión de Fin de Tanda</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase">
+                      {phaseToReview}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    {tandas[selectedTandaIndex]?.blockName || `Tanda ${selectedTandaIndex + 1}`} • Verifique y afine calificaciones con ▲ / ▼
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPhaseReviewModal(false)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
+                title="Volver a la evaluación"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Lista de Atletas de la Tanda con controles táctiles para Tablet */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-3">
+              {tandaStudents.map(student => {
+                const sId = String(student._id || student.id);
+                const summary = getStudentPhaseSummary(student, phaseToReview);
+                const beltBadge = getBeltBadge(student.currentRank);
+
+                return (
+                  <div
+                    key={sId}
+                    className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3 shadow-2xs"
+                  >
+                    {/* Atleta */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-800 font-bold text-sm shrink-0 overflow-hidden">
+                        {student.photoUrl ? (
+                          <img src={student.photoUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          student.name?.charAt(0) || 'K'
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-black text-slate-900 truncate">
+                          {student.name}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${beltBadge.className}`}>
+                            {student.currentRank || 'Cinta Blanca'}
+                          </span>
+                          <span className="text-[11px] text-slate-500 font-medium font-mono">
+                            {summary.adjustment !== 0 ? (
+                              <span className="text-indigo-700 font-bold">
+                                Base: {summary.baseScore}% ({summary.adjustment > 0 ? `+${summary.adjustment}%` : `${summary.adjustment}%`})
+                              </span>
+                            ) : (
+                              `Nota técnica: ${summary.baseScore}%`
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stepper Táctil (Botones amplios de 48px para Tablet) */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustStudentPhase(student, phaseToReview, -1)}
+                        disabled={summary.finalScore <= 0}
+                        className="w-12 h-12 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 active:bg-slate-200 text-slate-800 text-xl font-black flex items-center justify-center cursor-pointer shadow-xs disabled:opacity-30 transition-all select-none"
+                        title="Disminuir calificación (-1%)"
+                      >
+                        ▼
+                      </button>
+
+                      <div className="w-16 text-center font-mono text-2xl font-black text-[#2D2E83] select-none">
+                        {summary.finalScore}%
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustStudentPhase(student, phaseToReview, 1)}
+                        disabled={summary.finalScore >= 100}
+                        className="w-12 h-12 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 active:bg-slate-200 text-slate-800 text-xl font-black flex items-center justify-center cursor-pointer shadow-xs disabled:opacity-30 transition-all select-none"
+                        title="Aumentar calificación (+1%)"
+                      >
+                        ▲
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pie del Modal con Botones Cómodos para Tablet */}
+            <div className="px-5 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowPhaseReviewModal(false)}
+                className="h-12 px-5 rounded-xl font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 text-xs sm:text-sm cursor-pointer transition-colors"
+              >
+                ◄ Volver a Técnicas
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmPhaseReview}
+                className="h-12 px-6 rounded-xl font-bold bg-[#2D2E83] hover:bg-[#232468] text-white text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
+                <span>
+                  {!isLastPhaseInTanda
+                    ? `Aprobar y Pasar a ${availablePhaseKeys[currentPhaseIndex + 1]?.toUpperCase()} ►`
+                    : hasNextTanda
+                    ? `Aprobar y Pasar a Siguiente Tanda ►`
+                    : `Concluir Examen y Ver Dictamen ►`}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL: MONITOR DEL TRIBUNAL (SUPERVISIÓN TANDA POR TANDA DE COLEGAS) */}

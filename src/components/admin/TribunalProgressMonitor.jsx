@@ -458,25 +458,25 @@ function StudentMonitorDrawer({
                       </span>
                     )}
                   </div>
-                  {/* Flechitas arriba / abajo */}
-                  <div className="flex items-center gap-0.5 bg-white border border-blue-200 rounded-lg p-0.5 shadow-2xs">
+                  {/* Flechitas arriba / abajo (tamaño óptimo para tablet) */}
+                  <div className="flex items-center gap-1 bg-white border border-blue-200 rounded-xl p-1 shadow-2xs">
                     <button
                       type="button"
                       onClick={() => handleAdjustPhase('kihon', -1)}
                       disabled={finalKihon <= 0}
-                      className="w-6 h-6 flex items-center justify-center rounded text-blue-700 hover:bg-blue-100 active:bg-blue-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-blue-700 hover:bg-blue-100 active:bg-blue-200 disabled:opacity-25 cursor-pointer transition-colors"
                       title="Disminuir calificación de Kihon (-1%)"
                     >
-                      <ChevronDown className="w-3.5 h-3.5" />
+                      <ChevronDown className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleAdjustPhase('kihon', 1)}
                       disabled={finalKihon >= 100}
-                      className="w-6 h-6 flex items-center justify-center rounded text-blue-700 hover:bg-blue-100 active:bg-blue-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-blue-700 hover:bg-blue-100 active:bg-blue-200 disabled:opacity-25 cursor-pointer transition-colors"
                       title="Aumentar calificación de Kihon (+1%)"
                     >
-                      <ChevronUp className="w-3.5 h-3.5" />
+                      <ChevronUp className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -511,25 +511,25 @@ function StudentMonitorDrawer({
                       </span>
                     )}
                   </div>
-                  {/* Flechitas arriba / abajo */}
-                  <div className="flex items-center gap-0.5 bg-white border border-purple-200 rounded-lg p-0.5 shadow-2xs">
+                  {/* Flechitas arriba / abajo (tamaño óptimo para tablet) */}
+                  <div className="flex items-center gap-1 bg-white border border-purple-200 rounded-xl p-1 shadow-2xs">
                     <button
                       type="button"
                       onClick={() => handleAdjustPhase('kata', -1)}
                       disabled={finalKata <= 0}
-                      className="w-6 h-6 flex items-center justify-center rounded text-purple-700 hover:bg-purple-100 active:bg-purple-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-purple-700 hover:bg-purple-100 active:bg-purple-200 disabled:opacity-25 cursor-pointer transition-colors"
                       title="Disminuir calificación de Kata (-1%)"
                     >
-                      <ChevronDown className="w-3.5 h-3.5" />
+                      <ChevronDown className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleAdjustPhase('kata', 1)}
                       disabled={finalKata >= 100}
-                      className="w-6 h-6 flex items-center justify-center rounded text-purple-700 hover:bg-purple-100 active:bg-purple-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-purple-700 hover:bg-purple-100 active:bg-purple-200 disabled:opacity-25 cursor-pointer transition-colors"
                       title="Aumentar calificación de Kata (+1%)"
                     >
-                      <ChevronUp className="w-3.5 h-3.5" />
+                      <ChevronUp className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -564,25 +564,25 @@ function StudentMonitorDrawer({
                       </span>
                     )}
                   </div>
-                  {/* Flechitas arriba / abajo */}
-                  <div className="flex items-center gap-0.5 bg-white border border-amber-200 rounded-lg p-0.5 shadow-2xs">
+                  {/* Flechitas arriba / abajo (tamaño óptimo para tablet) */}
+                  <div className="flex items-center gap-1 bg-white border border-amber-200 rounded-xl p-1 shadow-2xs">
                     <button
                       type="button"
                       onClick={() => handleAdjustPhase('kumite', -1)}
                       disabled={finalKumite <= 0}
-                      className="w-6 h-6 flex items-center justify-center rounded text-amber-700 hover:bg-amber-100 active:bg-amber-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-amber-700 hover:bg-amber-100 active:bg-amber-200 disabled:opacity-25 cursor-pointer transition-colors"
                       title="Disminuir calificación de Kumite (-1%)"
                     >
-                      <ChevronDown className="w-3.5 h-3.5" />
+                      <ChevronDown className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleAdjustPhase('kumite', 1)}
                       disabled={finalKumite >= 100}
-                      className="w-6 h-6 flex items-center justify-center rounded text-amber-700 hover:bg-amber-100 active:bg-amber-200 disabled:opacity-25 cursor-pointer transition-colors"
+                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-amber-700 hover:bg-amber-100 active:bg-amber-200 disabled:opacity-25 cursor-pointer transition-colors"
                       title="Aumentar calificación de Kumite (+1%)"
                     >
-                      <ChevronUp className="w-3.5 h-3.5" />
+                      <ChevronUp className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -622,28 +622,22 @@ function StudentMonitorDrawer({
             </div>
           </div>
 
-          {/* Barra de Justificación y Oficialización del Dictamen */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs space-y-2.5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-[#2D2E83] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+          {/* Barra Sobria de Oficialización del Dictamen */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/90 shadow-2xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-xl bg-[#2D2E83] text-white flex items-center justify-center text-sm shadow-xs shrink-0">
                   🥋
                 </span>
                 <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                    <span>Dictamen Oficial del Tribunal</span>
-                    {hasAnyAdjustment ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                        Ajuste Neto: {netAdjustment >= 0 ? `+${netAdjustment}%` : `${netAdjustment}%`}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-800">
-                        Promedio Técnico Directo
-                      </span>
-                    )}
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <span>Dictamen Oficial</span>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${calculatedIsPassed ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-red-100 text-red-800 border border-red-300'}`}>
+                      {calculatedFinalScore}% — {calculatedIsPassed ? 'Aprobado' : 'Pendiente'}
+                    </span>
                   </h4>
-                  <p className="text-[11px] text-slate-600 font-medium">
-                    Ajuste individual por Kihon, Kata o Kumite con flechas ▲/▼. El promedio general se recalcula solo.
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Promedio automático de las 3 fases ({finalKihon}% Kihon, {finalKata}% Kata, {finalKumite}% Kumite).
                   </p>
                 </div>
               </div>
@@ -654,67 +648,35 @@ function StudentMonitorDrawer({
                   <button
                     type="button"
                     onClick={() => setPhaseAdjustments({ kihon: 0, kata: 0, kumite: 0 })}
-                    className="px-2.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-200/60 rounded-xl transition-all cursor-pointer"
+                    className="h-10 px-3.5 text-xs text-slate-600 hover:text-slate-900 font-bold hover:bg-slate-200/70 rounded-xl transition-all cursor-pointer"
                   >
-                    Restablecer Fases
+                    Restablecer
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={handleSaveConsolidatedWithAdjustment}
                   disabled={isSavingVerdict}
-                  className="px-4 py-2 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="h-10 px-5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
                 >
                   {isSavingVerdict ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-4 h-4" />
                   )}
-                  <span>Oficializar y Guardar Dictamen</span>
+                  <span>Oficializar Dictamen</span>
                 </button>
               </div>
             </div>
 
-            {/* Justificación obligatoria si hay ajuste */}
-            <div className="space-y-1.5 pt-1 border-t border-slate-200">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <span>Justificación {hasAnyAdjustment ? 'Obligatoria' : 'Opcional'} de Ajuste / Espíritu y Actitud:</span>
-                  {hasAnyAdjustment && (!martialAdjustmentReason || !martialAdjustmentReason.trim()) && (
-                    <span className="text-rose-600 text-[10px] font-bold">(Requerida para guardar)</span>
-                  )}
-                </label>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  Kihon: {finalKihon}% | Kata: {finalKata}% | Kumite: {finalKumite}% → Total: {calculatedFinalScore}%
-                </span>
-              </div>
-
-              {/* Chips rápidos de motivos */}
-              <div className="flex flex-wrap gap-1">
-                {[
-                  '🥋 Espíritu sobresaliente / Zanshin y Kiai',
-                  '🥋 Superación y coraje ante la dificultad',
-                  '🥋 Disciplina, marcialidad y etiqueta intachable',
-                  '⚠️ Falta de Kiai, energía o desinterés',
-                  '⚠️ Actitud displicente / falta de etiqueta en tatami',
-                ].map((preset, pIdx) => (
-                  <button
-                    key={pIdx}
-                    type="button"
-                    onClick={() => setMartialAdjustmentReason(preset)}
-                    className="px-2 py-0.5 rounded-md bg-white hover:bg-slate-200/80 text-slate-800 border border-slate-300 text-[10px] font-medium transition-all cursor-pointer shadow-2xs"
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
-
+            {/* Observación / nota institucional opcional */}
+            <div className="pt-2 border-t border-slate-200/80">
               <input
                 type="text"
                 value={martialAdjustmentReason}
                 onChange={(e) => setMartialAdjustmentReason(e.target.value)}
-                placeholder="Ej: Muestra excelente Zanshin y Kiai durante todo el examen..."
-                className="w-full px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-[#2D2E83] outline-hidden font-medium"
+                placeholder="Observación o nota institucional del dictamen (opcional)..."
+                className="w-full h-10 px-3.5 rounded-xl border border-slate-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-[#2D2E83] outline-hidden font-medium"
               />
             </div>
 

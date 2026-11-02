@@ -99,6 +99,14 @@ const TechnicalExamEvaluationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {},
   },
+  phaseAverages: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
+  phaseAdjustments: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
   callId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'TechnicalExamCall',

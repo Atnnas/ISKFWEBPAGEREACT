@@ -2037,6 +2037,9 @@ export async function saveEvaluatorAtomicGrade({
   techniqueAverages = {},
   observations = {},
   phaseNotes = {},
+  phaseAverages = {},
+  phaseAdjustments = {},
+  phaseScores = {},
   percentage = 0,
   pointsEarned = 0,
   pointsPossible = 0,
@@ -2234,10 +2237,29 @@ export async function saveEvaluatorAtomicGrade({
         }
       });
 
+      const calculatedPhaseAverages = {
+        kihon: phaseCounts.kihon > 0 ? Math.round(phaseSums.kihon / phaseCounts.kihon) : (phaseAverages?.kihon ?? existing?.phaseAverages?.kihon ?? null),
+        kata: phaseCounts.kata > 0 ? Math.round(phaseSums.kata / phaseCounts.kata) : (phaseAverages?.kata ?? existing?.phaseAverages?.kata ?? null),
+        kumite: phaseCounts.kumite > 0 ? Math.round(phaseSums.kumite / phaseCounts.kumite) : (phaseAverages?.kumite ?? existing?.phaseAverages?.kumite ?? null),
+        aspectos: phaseCounts.aspectos > 0 ? Math.round(phaseSums.aspectos / phaseCounts.aspectos) : (phaseAverages?.aspectos ?? existing?.phaseAverages?.aspectos ?? null)
+      };
+
+      const safePhaseAdjustments = {
+        kihon: Number(phaseAdjustments?.kihon !== undefined ? phaseAdjustments.kihon : (existing?.phaseAdjustments?.kihon || 0)),
+        kata: Number(phaseAdjustments?.kata !== undefined ? phaseAdjustments.kata : (existing?.phaseAdjustments?.kata || 0)),
+        kumite: Number(phaseAdjustments?.kumite !== undefined ? phaseAdjustments.kumite : (existing?.phaseAdjustments?.kumite || 0))
+      };
+
+      const calculatedPhaseScores = {
+        kihon: calculatedPhaseAverages.kihon !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kihon + (safePhaseAdjustments.kihon || 0))) : null,
+        kata: calculatedPhaseAverages.kata !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kata + (safePhaseAdjustments.kata || 0))) : null,
+        kumite: calculatedPhaseAverages.kumite !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kumite + (safePhaseAdjustments.kumite || 0))) : null,
+      };
+
       const evaluatedPhases = [
-        phaseCounts.kihon > 0 ? (phaseSums.kihon / phaseCounts.kihon) : null,
-        phaseCounts.kata > 0 ? (phaseSums.kata / phaseCounts.kata) : null,
-        phaseCounts.kumite > 0 ? (phaseSums.kumite / phaseCounts.kumite) : null,
+        calculatedPhaseScores.kihon,
+        calculatedPhaseScores.kata,
+        calculatedPhaseScores.kumite
       ].filter(v => v !== null);
 
       if (evaluatedPhases.length > 0) {
@@ -2258,6 +2280,9 @@ export async function saveEvaluatorAtomicGrade({
       techniqueAverages: mergedTechniqueAverages,
       observations: mergedObservations,
       phaseNotes: mergedPhaseNotes,
+      phaseAverages: phaseAverages || existing?.phaseAverages || {},
+      phaseAdjustments: phaseAdjustments || existing?.phaseAdjustments || { kihon: 0, kata: 0, kumite: 0 },
+      phaseScores: phaseScores || existing?.phaseScores || {},
       percentage: Math.max(0, Math.min(100, Math.round(Number(calculatedPercentage) || 0))),
       pointsEarned: Math.max(0, Math.min(5000, Number(pointsEarned) || 0)),
       pointsPossible: Math.max(0, Math.min(5000, Number(pointsPossible) || 0)),
@@ -2325,6 +2350,9 @@ export async function getEvaluatorGradesForCall({ callId, evaluatorEmail }) {
         percentage: ev.percentage || 0,
         isPassed: Boolean(ev.isPassed),
         phaseNotes: ev.phaseNotes || {},
+        phaseAverages: ev.phaseAverages || {},
+        phaseAdjustments: ev.phaseAdjustments || { kihon: 0, kata: 0, kumite: 0 },
+        phaseScores: ev.phaseScores || {},
         notes: ev.notes || '',
         evaluatedAt: ev.evaluatedAt ? ev.evaluatedAt.toISOString() : null
       }))
@@ -2537,6 +2565,8 @@ export async function getTribunalProgressForCall(params) {
           techniquesCount: Object.keys(item.techniqueAverages || {}).length,
           phaseNotes: item.phaseNotes || {},
           phaseAverages,
+          phaseAdjustments: item.phaseAdjustments || { kihon: 0, kata: 0, kumite: 0 },
+          phaseScores: item.phaseScores || {},
           grades: item.grades || [],
           evaluatorName: ev.name,
           evaluatorRole: ev.role || 'Sinodal',
