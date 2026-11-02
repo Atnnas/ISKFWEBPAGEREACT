@@ -729,6 +729,93 @@ function StudentMonitorDrawer({
             )}
           </div>
 
+          {/* Tabla Comparativa de Votación por Técnica (Estrellas de cada Sensei) */}
+          {syllabusTechniques.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Votación de Estrellas por Técnica (Tribunal Evaluador)</span>
+                </h4>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  {evalItems.length} Senseis evaluando
+                </span>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-[10px] uppercase font-black text-slate-500 bg-slate-100/70">
+                      <th className="py-2 px-3">Fase</th>
+                      <th className="py-2 px-3">Técnica Evaluada</th>
+                      {evalItems.map(e => (
+                        <th key={e.key} className="py-2 px-3 text-center">
+                          🥋 {e.evaluator.name.split(' ')[0]}
+                        </th>
+                      ))}
+                      <th className="py-2 px-3 text-right">Promedio</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {syllabusTechniques.map(t => {
+                      const grp = (t.group || t.phase || 'kihon').toUpperCase();
+                      const vals = evalItems
+                        .map(e => e.evalRecord?.techniqueAverages?.[t.id])
+                        .filter(v => typeof v === 'number');
+                      const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+
+                      return (
+                        <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-2 px-3">
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                              grp === 'KIHON' ? 'bg-blue-100 text-blue-800' :
+                              grp === 'KATA' ? 'bg-purple-100 text-purple-800' :
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {grp}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 font-bold text-slate-800">
+                            {t.name}
+                          </td>
+                          {evalItems.map(e => {
+                            const score = e.evalRecord?.techniqueAverages?.[t.id];
+                            const stars = score !== undefined && score !== null ? Math.max(1, Math.min(5, Math.round((score / 100) * 5))) : null;
+
+                            return (
+                              <td key={e.key} className="py-2 px-3 text-center">
+                                {stars !== null ? (
+                                  <div className="inline-flex items-center gap-1.5">
+                                    <span className="text-amber-500 font-bold tracking-tight text-xs">
+                                      {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
+                                    </span>
+                                    <span className="font-mono font-bold text-slate-700 text-[11px]">
+                                      {score}%
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-300 font-mono text-xs">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-3 text-right">
+                            {avg !== null ? (
+                              <span className={`font-mono font-black text-xs ${avg >= 70 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                {avg}%
+                              </span>
+                            ) : (
+                              <span className="text-slate-300 font-mono text-xs">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* 2. Sección Detallada: Puntos a Mejorar Desglosados en Viñetas (Kihon, Kata y Kumite) */}
           <div className="space-y-3 pt-1">
             <div className="flex items-center justify-between">
@@ -985,23 +1072,35 @@ function StudentMonitorDrawer({
                   const score = selectedEvalItem.evalRecord?.techniqueAverages?.[t.id] ??
                     selectedEvalItem.evalRecord?.grades?.find(g => g.techniqueId === t.id)?.average;
                   const grp = (t.group || t.phase || 'kihon').toUpperCase();
+                  const stars = score !== undefined && score !== null ? Math.max(1, Math.min(5, Math.round((score / 100) * 5))) : null;
 
                   return (
                     <div
                       key={t.id}
-                      className="p-2 rounded-lg bg-white border border-gray-200 flex items-center justify-between gap-2 shadow-2xs"
+                      className="p-2.5 rounded-lg bg-white border border-gray-200 flex items-center justify-between gap-2 shadow-2xs"
                     >
-                      <div className="truncate">
+                      <div className="truncate flex-1">
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 mr-1.5">
                           {grp}
                         </span>
                         <span className="text-[11px] font-bold text-gray-800">{t.name}</span>
                       </div>
-                      <span className={`text-xs font-mono font-black ${
-                        score !== undefined && score >= 70 ? 'text-emerald-700' : 'text-gray-400'
-                      }`}>
-                        {score !== undefined ? `${score}%` : '—'}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {stars !== null ? (
+                          <>
+                            <span className="text-amber-500 font-bold tracking-tight text-xs" title={`${stars} de 5 estrellas`}>
+                              {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
+                            </span>
+                            <span className={`text-xs font-mono font-black ${
+                              score >= 70 ? 'text-emerald-700' : 'text-rose-700'
+                            }`}>
+                              {score}%
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400 font-mono">—</span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
