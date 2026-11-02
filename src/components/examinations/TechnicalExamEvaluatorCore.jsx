@@ -28,7 +28,7 @@ import {
   Sparkles,
   ChevronDown
 } from 'lucide-react';
-import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall } from '../../lib/actions/technicalExams';
+import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall, getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { updateStudent } from '../../lib/actions/students';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
 import { KYU_OPTIONS, getBeltBadgeClass, compareStudentsForExam, getRankSortOrder } from '../../lib/constants/kyuRanks';
@@ -346,6 +346,8 @@ export default function TechnicalExamEvaluatorCore({
   // Modal intersticial de verificación y ajuste de fin de tanda por fase (Kihon, Kata, Kumite)
   const [showPhaseReviewModal, setShowPhaseReviewModal] = useState(false);
   const [phaseToReview, setPhaseToReview] = useState('kihon');
+  const [tribunalProgress, setTribunalProgress] = useState(null);
+  const [isLoadingTribunal, setIsLoadingTribunal] = useState(false);
 
   // Detección de Sensei Roy (Director de Evaluación ISKF / Admin)
   const isDirectorRoy = useMemo(() => {
@@ -357,6 +359,24 @@ export default function TechnicalExamEvaluatorCore({
       (evaluator?.email && /roygatjens/i.test(evaluator.email))
     );
   }, [isAdmin, evaluator]);
+
+  // Cargar progreso del tribunal en vivo al abrir la revisión de fase para detectar discrepancias
+  useEffect(() => {
+    if (!showPhaseReviewModal || !callId) return;
+    let isMounted = true;
+    setIsLoadingTribunal(true);
+    getTribunalProgressForCall({ callId })
+      .then(res => {
+        if (isMounted && res?.success) {
+          setTribunalProgress(res);
+        }
+      })
+      .catch(err => console.debug('Error al obtener progreso colegiado para alertas:', err))
+      .finally(() => {
+        if (isMounted) setIsLoadingTribunal(false);
+      });
+    return () => { isMounted = false; };
+  }, [showPhaseReviewModal, callId]);
 
   // Modal para consultar "Aspectos a Considerar"
   const [selectedStudentForAspects, setSelectedStudentForAspects] = useState(null);
@@ -1429,6 +1449,121 @@ export default function TechnicalExamEvaluatorCore({
     persistStudentGrade(sId, updatedData, student);
   }, [evaluationsByStudent, getStudentPhaseSummary, persistStudentGrade]);
 
+  // Comparativa colegiada para alertas de discrepancia en fin de fase (Sensei Roy / Tribunal)
+  const collegiatePhaseComparison = useMemo(() => {
+    if (!tribunalProgress?.progressByEvaluator || !tandaStudents.length) return null;
+
+    const progressByEv = tribunalProgress.progressByEvaluator || [];
+    const currentEvEmail = (evaluatorEmail || '').trim().toLowerCase();
+
+    // Recopilar evaluadores con notas en esta tanda
+    const evaluatorsData = progressByEv.map(evItem => {
+      const isCurrent = (evItem.evaluator?.email || '').trim().toLowerCase() === currentEvEmail;
+      const evName = isCurrent
+        ? (evaluator?.name || 'Mi Evaluación')
+        : (evItem.evaluator?.name || 'Sinodal');
+
+      // Calificaciones por estudiante en esta tanda para phaseToReview
+      const scoresByStudent = {};
+      tandaStudents.forEach(st => {
+        const sId = String(st._id || st.id);
+        if (isCurrent) {
+          const currentSummary = getStudentPhaseSummary(st, phaseToReview);
+          scoresByStudent[sId] = currentSummary.finalScore;
+        } else {
+          const stRecord = evItem.evaluationsByStudent?.[sId];
+          const val = stRecord?.phaseScores?.[phaseToReview] ?? stRecord?.phaseAverages?.[phaseToReview] ?? null;
+          if (typeof val === 'number') {
+            scoresByStudent[sId] = val <= 10 ? Math.round(val * 10) : val;
+          }
+        }
+      });
+
+      return {
+        evaluator: evItem.evaluator,
+        name: evName,
+        isCurrent,
+        scoresByStudent
+      };
+    });
+
+    // Solo considerar evaluadores que tengan al menos una nota en la tanda para esta fase
+    const activeEvaluators = evaluatorsData.filter(ev => 
+      Object.values(ev.scoresByStudent).some(s => typeof s === 'number' && s > 0)
+    );
+
+    // Si hay menos de 2 evaluadores, no puede haber discrepancia entre senseis
+    if (activeEvaluators.length < 2) return null;
+
+    // 1. Alerta por estudiante: ¿Diferencia >= 5% en la nota final de la fase entre evaluadores?
+    const studentAlerts = {};
+    tandaStudents.forEach(st => {
+      const sId = String(st._id || st.id);
+      const studentScores = activeEvaluators
+        .map(ev => ({ name: ev.name, score: ev.scoresByStudent[sId] }))
+        .filter(item => typeof item.score === 'number' && item.score > 0);
+
+      if (studentScores.length >= 2) {
+        const scoreVals = studentScores.map(s => s.score);
+        const min = Math.min(...scoreVals);
+        const max = Math.max(...scoreVals);
+        const gap = max - min;
+        studentAlerts[sId] = {
+          hasGapAlert: gap >= 5,
+          gap,
+          scores: studentScores,
+          scoresText: studentScores.map(s => `${s.name.split(' ')[0]}: ${s.score}%`).join(' • ')
+        };
+      } else {
+        studentAlerts[sId] = { hasGapAlert: false, gap: 0, scores: studentScores, scoresText: '' };
+      }
+    });
+
+    // 2. Alerta de Divergencia en Mejor Atleta de la Tanda (Top Performer)
+    const topPerformerByEvaluator = [];
+    const topPerformerStudents = new Set();
+    const studentTopFor = {};
+
+    activeEvaluators.forEach(ev => {
+      let maxScore = -1;
+      let topStudent = null;
+
+      tandaStudents.forEach(st => {
+        const sId = String(st._id || st.id);
+        const sc = ev.scoresByStudent[sId];
+        if (typeof sc === 'number' && sc > maxScore) {
+          maxScore = sc;
+          topStudent = st;
+        }
+      });
+
+      if (topStudent && maxScore > 0) {
+        const sId = String(topStudent._id || topStudent.id);
+        topPerformerStudents.add(sId);
+        topPerformerByEvaluator.push({
+          evaluatorName: ev.name.split(' ')[0],
+          studentId: sId,
+          studentName: topStudent.name,
+          score: maxScore
+        });
+
+        if (!studentTopFor[sId]) studentTopFor[sId] = [];
+        studentTopFor[sId].push(ev.name.split(' ')[0]);
+      }
+    });
+
+    // Hay división en el mejor de la tanda si hay más de 1 atleta distinto catalogado como el mejor
+    const hasSplitTop = tandaStudents.length > 1 && topPerformerStudents.size > 1;
+
+    return {
+      activeEvaluatorsCount: activeEvaluators.length,
+      studentAlerts,
+      hasSplitTop,
+      topPerformerByEvaluator,
+      studentTopFor
+    };
+  }, [tribunalProgress, tandaStudents, phaseToReview, evaluatorEmail, evaluator, getStudentPhaseSummary]);
+
   const handleNextTechnique = () => {
     // Validar técnica actual antes de avanzar
     const { isValid, missing } = validateCurrentTechniqueComplete();
@@ -2419,17 +2554,46 @@ export default function TechnicalExamEvaluatorCore({
               </div>
             </div>
 
+            {/* Banner Minimalista de Mejor Atleta Dividido (Sensei Roy / Tribunal) */}
+            {collegiatePhaseComparison?.hasSplitTop && (
+              <div className="px-5 py-2.5 bg-amber-500/10 border-b border-amber-400/30 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-[10px] uppercase shadow-2xs">
+                    ⚡ Criterio Dividido
+                  </span>
+                  <span className="text-slate-700 font-bold text-[11px]">
+                    Mejor de tanda:
+                  </span>
+                  <span className="font-semibold text-slate-900 text-[11px]">
+                    {collegiatePhaseComparison.topPerformerByEvaluator.map((item, i) => (
+                      <span key={i}>
+                        {i > 0 && <span className="text-slate-400 mx-1.5">•</span>}
+                        <strong className="text-[#2D2E83]">{item.evaluatorName}:</strong> {item.studentName} ({item.score}%)
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Lista de Atletas de la Tanda con controles táctiles para Tablet */}
             <div className="p-4 sm:p-5 overflow-y-auto space-y-3">
               {tandaStudents.map(student => {
                 const sId = String(student._id || student.id);
                 const summary = getStudentPhaseSummary(student, phaseToReview);
                 const beltBadge = getBeltBadge(student.currentRank);
+                const alertInfo = collegiatePhaseComparison?.studentAlerts?.[sId];
+                const hasGap = Boolean(alertInfo?.hasGapAlert);
+                const topForSenseis = collegiatePhaseComparison?.studentTopFor?.[sId] || [];
 
                 return (
                   <div
                     key={sId}
-                    className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3 shadow-2xs"
+                    className={`p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-3 shadow-2xs ${
+                      hasGap
+                        ? 'bg-amber-50/80 border-2 border-amber-400 shadow-md shadow-amber-500/20 ring-1 ring-amber-300'
+                        : 'bg-slate-50 border border-slate-200/90'
+                    }`}
                   >
                     {/* Atleta */}
                     <div className="flex items-center gap-3 min-w-0">
@@ -2448,13 +2612,29 @@ export default function TechnicalExamEvaluatorCore({
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${beltBadge.className}`}>
                             {student.currentRank || 'Cinta Blanca'}
                           </span>
+
+                          {/* Píldora de Alerta Discrepancia >= 5% */}
+                          {hasGap && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs flex items-center gap-1">
+                              <span>⚠️ Dif. {alertInfo.gap}%</span>
+                              <span className="text-amber-900 font-semibold hidden sm:inline">({alertInfo.scoresText})</span>
+                            </span>
+                          )}
+
+                          {/* Píldora de Mejor Atleta #1 */}
+                          {topForSenseis.length > 0 && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-indigo-100 text-[#2D2E83] border border-indigo-200 shadow-2xs flex items-center gap-1">
+                              <span>👑 #1 para {topForSenseis.join(', ')}</span>
+                            </span>
+                          )}
+
                           <span className="text-[11px] text-slate-500 font-medium font-mono">
                             {summary.adjustment !== 0 ? (
                               <span className="text-indigo-700 font-bold">
                                 Base: {summary.baseScore}% ({summary.adjustment > 0 ? `+${summary.adjustment}%` : `${summary.adjustment}%`})
                               </span>
                             ) : (
-                              `Nota técnica: ${summary.baseScore}%`
+                              `Nota: ${summary.baseScore}%`
                             )}
                           </span>
                         </div>
