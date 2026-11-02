@@ -1758,14 +1758,26 @@ const DEFAULT_INITIAL_SYLLABI = [
       {
         id: 'tech-4-3-ka1',
         group: 'kata',
-        name: 'Bassai Dai y Kanku Dai',
+        name: 'Bassai Dai',
         stance: 'Zenkutsu / Kokutsu / Kiba Dachi / Kosa Dachi',
         direction: 'Embusen Oficial',
         repetitions: 1,
         tripType: 'solo_ida',
         order: 13,
         embusen: 'Embusen Oficial',
-        notes: 'Bassai Dai y Kanku Dai. (Incluye I Parte Examen Escrito).'
+        notes: 'Bassai Dai Oficial.'
+      },
+      {
+        id: 'tech-4-3-ka2',
+        group: 'kata',
+        name: 'Kanku Dai',
+        stance: 'Zenkutsu / Kokutsu / Kiba Dachi / Kosa Dachi',
+        direction: 'Embusen Oficial',
+        repetitions: 1,
+        tripType: 'solo_ida',
+        order: 14,
+        embusen: 'Embusen Oficial',
+        notes: 'Kanku Dai Oficial. (Incluye I Parte Examen Escrito).'
       }
     ]
   },
@@ -2023,14 +2035,26 @@ const DEFAULT_INITIAL_SYLLABI = [
       {
         id: 'tech-3-2-ka1',
         group: 'kata',
-        name: 'Empi y Tekki Nidan',
-        stance: 'Zenkutsu / Kokutsu / Kiba Dachi',
+        name: 'Empi',
+        stance: 'Zenkutsu / Kokutsu / Kiba Dachi / Kosa Dachi',
         direction: 'Embusen Oficial',
         repetitions: 1,
         tripType: 'solo_ida',
         order: 12,
         embusen: 'Embusen Oficial',
-        notes: 'Empi y Tekki Nidan. (Incluye II Parte Examen Escrito).'
+        notes: 'Empi Oficial.'
+      },
+      {
+        id: 'tech-3-2-ka2',
+        group: 'kata',
+        name: 'Tekki Nidan',
+        stance: 'Kiba Dachi',
+        direction: 'Embusen Oficial',
+        repetitions: 1,
+        tripType: 'solo_ida',
+        order: 13,
+        embusen: 'Embusen Oficial',
+        notes: 'Tekki Nidan Oficial. (Incluye II Parte Examen Escrito).'
       }
     ]
   },
@@ -2300,14 +2324,26 @@ const DEFAULT_INITIAL_SYLLABI = [
       {
         id: 'tech-2-1-ka1',
         group: 'kata',
-        name: 'Jion y Hangetsu',
-        stance: 'Zenkutsu / Kiba / Hangetsu Dachi',
+        name: 'Jion',
+        stance: 'Zenkutsu / Kiba / Kokutsu Dachi',
         direction: 'Embusen Oficial',
         repetitions: 1,
         tripType: 'solo_ida',
         order: 13,
         embusen: 'Embusen Oficial',
-        notes: 'Jion y Hangetsu. (Incluye III Parte Examen Escrito).'
+        notes: 'Jion Oficial.'
+      },
+      {
+        id: 'tech-2-1-ka2',
+        group: 'kata',
+        name: 'Hangetsu',
+        stance: 'Hangetsu Dachi / Zenkutsu Dachi',
+        direction: 'Embusen Oficial',
+        repetitions: 1,
+        tripType: 'solo_ida',
+        order: 14,
+        embusen: 'Embusen Oficial',
+        notes: 'Hangetsu Oficial. (Incluye III Parte Examen Escrito).'
       },
       {
         id: 'tech-2-1-ku1',
@@ -2317,7 +2353,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         direction: 'Libre',
         repetitions: 1,
         tripType: 'solo_ida',
-        order: 14,
+        order: 15,
         embusen: 'Dojo Shiai-jo',
         notes: 'Kumite libre sin puntos (mayores de 45 años pueden hacer defensa personal).'
       }
