@@ -2918,9 +2918,74 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         return notes.join('. ');
       };
 
+      const kataTechs = examTechniques.filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+      const hasMultipleKatas = kataTechs.length > 1;
+
+      const calcTechScore = (techId) => {
+        let total = 0;
+        let count = 0;
+        evals.forEach(ev => {
+          const score = ev.techniqueAverages?.[techId];
+          if (typeof score === 'number' && score > 0) {
+            total += (score <= 10 ? score * 10 : score);
+            count++;
+          }
+        });
+        return count > 0 ? Math.round(total / count) : null;
+      };
+
       const kihonText = getGroupObservations('kihon');
-      const kataText = getGroupObservations('kata');
       const kumiteText = getGroupObservations('kumite');
+
+      let katasPayload = [];
+      let resolvedKataText = '';
+
+      if (hasMultipleKatas) {
+        const k1 = kataTechs[0];
+        const k1Score = calcTechScore(k1.id) || kataScore;
+        const k1Notes = [];
+        evals.forEach(ev => {
+          const obs = ev.observations?.[k1.id];
+          if (obs && String(obs).trim().length > 0) {
+            const trimmed = obs.trim();
+            if (!k1Notes.includes(trimmed)) k1Notes.push(trimmed);
+          }
+          const pNote = ev.phaseNotes?.kata || ev.phaseNotes?.kata_1;
+          if (pNote && String(pNote).trim().length > 0) {
+            const trimmed = pNote.trim();
+            if (!k1Notes.includes(trimmed)) k1Notes.push(trimmed);
+          }
+        });
+        const k1Text = k1Notes.join('\n');
+
+        const k2 = kataTechs[1];
+        const k2Score = calcTechScore(k2.id) || kataScore;
+        const k2Notes = [];
+        evals.forEach(ev => {
+          const obs = ev.observations?.[k2.id];
+          if (obs && String(obs).trim().length > 0) {
+            const trimmed = obs.trim();
+            if (!k2Notes.includes(trimmed)) k2Notes.push(trimmed);
+          }
+          const pNote = ev.phaseNotes?.kata_2;
+          if (pNote && String(pNote).trim().length > 0) {
+            const trimmed = pNote.trim();
+            if (!k2Notes.includes(trimmed)) k2Notes.push(trimmed);
+          }
+        });
+        const k2Text = k2Notes.join('\n');
+
+        katasPayload = [
+          { name: k1.name, score: k1Score, text: k1Text },
+          { name: k2.name, score: k2Score, text: k2Text }
+        ];
+        resolvedKataText = `${k1Text}\n\n${k2Text}`;
+      } else {
+        resolvedKataText = getGroupObservations('kata');
+        katasPayload = [
+          { name: kataTechs[0]?.name || 'Kata Oficial', score: kataScore, text: resolvedKataText }
+        ];
+      }
 
       // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
       const positiveText = (item.student?.positiveAspects || '').trim();
@@ -2940,8 +3005,15 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         finalScore,
         isPassed: item.isPassed,
         kihonText,
-        kataText,
+        kataText: resolvedKataText,
         kumiteText,
+        katas: katasPayload,
+        kata1Name: katasPayload[0]?.name,
+        kata1Score: katasPayload[0]?.score,
+        kata1Text: katasPayload[0]?.text,
+        kata2Name: katasPayload[1]?.name,
+        kata2Score: katasPayload[1]?.score,
+        kata2Text: katasPayload[1]?.text,
         positiveText,
         generalComment,
         evaluators: tribunalSenseis

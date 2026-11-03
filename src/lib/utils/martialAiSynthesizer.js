@@ -264,9 +264,13 @@ export function synthesizePhaseBulletsWithAI({
   notesList = [],
   techniqueScores = [],
   phaseAverage = 75,
-  targetRank = '9° Kyu (Cinta Amarilla)'
+  targetRank = '9° Kyu (Cinta Amarilla)',
+  specificKataName = ''
 }) {
-  const kataName = getKataForRank(targetRank);
+  const resolvedKataFromTech = (phase === 'kata' && techniqueScores.length === 1 && techniqueScores[0]?.name)
+    ? techniqueScores[0].name
+    : '';
+  const kataName = specificKataName || resolvedKataFromTech || getKataForRank(targetRank);
   const kumiteName = getKumiteForRank(targetRank);
   const primaryStance = getPrimaryStance(targetRank);
 
@@ -419,10 +423,11 @@ export function synthesizePhaseBulletsWithAI({
           }
         } else if (tNorm.includes('kata') || tNorm.includes('shodan') || tNorm.includes('heian') || tNorm.includes('bassai') || tNorm.includes('kanku') || tNorm.includes('jion') || tNorm.includes('empi')) {
           aspectHeader = 'Aspecto Técnico - Kata (Forma y Embusen)';
+          const activeKataTitle = tName || kataName;
           if (tScore < 75) {
-            flawDirective = `En Kata ${kataName} (${Math.round(tScore)}%): No fija las posturas bajas ni mantiene el ritmo continuo, debe repasar el embusen y sostener la vista al frente sin tocarse la vestimenta.`;
+            flawDirective = `En Kata ${activeKataTitle} (${Math.round(tScore)}%): No fija las posturas bajas ni mantiene el ritmo continuo, debe repasar el embusen y sostener la vista al frente sin tocarse la vestimenta.`;
           } else {
-            flawDirective = `En Kata ${kataName} (${Math.round(tScore)}%): Para alcanzar el 100%, falta sostener la mirada fija (Chakugan) al frente tras cada giro y no realizar el más mínimo micro-reajuste al karategui.`;
+            flawDirective = `En Kata ${activeKataTitle} (${Math.round(tScore)}%): Para alcanzar el 100%, falta sostener la mirada fija (Chakugan) al frente tras cada giro y no realizar el más mínimo micro-reajuste al karategui.`;
           }
         } else if (tNorm.includes('kumite') || tNorm.includes('gohon') || tNorm.includes('sanbon') || tNorm.includes('ippon')) {
           aspectHeader = 'Aspecto Técnico - Combate (Kumite)';

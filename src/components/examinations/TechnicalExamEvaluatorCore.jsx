@@ -1187,7 +1187,15 @@ export default function TechnicalExamEvaluatorCore({
   // Abrir modal de observaciones configurando la fase activa por defecto
   const handleOpenObsModal = (student) => {
     setActiveObsStudent(student);
-    setObsModalPhase(effectivePhase);
+    const sSyl = getStudentSyllabus(student);
+    const studentKatas = (sSyl?.techniques || []).filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+    if (effectivePhase === 'kata' && studentKatas.length > 1) {
+      const sId = String(student._id || student.id);
+      const activeIdx = studentTechOverrides[sId] !== undefined ? studentTechOverrides[sId] : selectedTechniqueIndex;
+      setObsModalPhase(activeIdx === 1 ? 'kata_2' : 'kata');
+    } else {
+      setObsModalPhase(effectivePhase);
+    }
   };
 
   // Actualizar notas de texto para un estudiante por fase (Kihon, Kata, Kumite, etc.)
@@ -1211,7 +1219,8 @@ export default function TechnicalExamEvaluatorCore({
     // Sincronizar un resumen combinado para notes general
     const parts = [];
     if (updatedPhaseNotes.kihon?.trim()) parts.push(`• [Kihon]:\n${updatedPhaseNotes.kihon.trim()}`);
-    if (updatedPhaseNotes.kata?.trim()) parts.push(`• [Kata]:\n${updatedPhaseNotes.kata.trim()}`);
+    if (updatedPhaseNotes.kata?.trim()) parts.push(`• [Kata 1]:\n${updatedPhaseNotes.kata.trim()}`);
+    if (updatedPhaseNotes.kata_2?.trim()) parts.push(`• [Kata 2]:\n${updatedPhaseNotes.kata_2.trim()}`);
     if (updatedPhaseNotes.kumite?.trim()) parts.push(`• [Kumite]:\n${updatedPhaseNotes.kumite.trim()}`);
     if (updatedPhaseNotes.aspectos?.trim()) parts.push(`• [Aspectos]:\n${updatedPhaseNotes.aspectos.trim()}`);
     const combinedNotes = parts.join('\n\n');
@@ -2056,9 +2065,14 @@ export default function TechnicalExamEvaluatorCore({
                             ? (aspectScores.reduce((acc, v) => acc + v, 0) / aspectScores.length)
                             : null;
 
-                          const studentPhaseNotes = ev.phaseNotes?.[effectivePhase] !== undefined
-                            ? ev.phaseNotes[effectivePhase]
-                            : (effectivePhase === 'kihon' ? (ev.notes || '') : '');
+                          const studentKatas = (studentSyllabus?.techniques || []).filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+                          const activeKataKey = (effectivePhase === 'kata' && studentKatas.length > 1)
+                            ? ((studentTechOverrides[sId] !== undefined ? studentTechOverrides[sId] : selectedTechniqueIndex) === 1 ? 'kata_2' : 'kata')
+                            : effectivePhase;
+
+                          const studentPhaseNotes = ev.phaseNotes?.[activeKataKey] !== undefined
+                            ? ev.phaseNotes[activeKataKey]
+                            : (activeKataKey === 'kihon' ? (ev.notes || '') : '');
                           const hasPhaseNotes = Boolean(studentPhaseNotes && studentPhaseNotes.trim().length > 0);
 
                           const hasAspects = Boolean(
@@ -2397,10 +2411,22 @@ export default function TechnicalExamEvaluatorCore({
           ? phaseNotesMap[currentActivePhase]
           : (currentActivePhase === 'kihon' ? (studentEval.notes || '') : '');
 
+        const sSyl = getStudentSyllabus(activeObsStudent);
+        const studentKatas = (sSyl?.techniques || []).filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+        const hasMultipleKatas = studentKatas.length > 1;
+
+        const kataPhaseItems = hasMultipleKatas
+          ? studentKatas.map((kt, idx) => ({
+              key: idx === 0 ? 'kata' : `kata_${idx + 1}`,
+              label: `Kata ${idx + 1}`,
+              desc: kt.name
+            }))
+          : [{ key: 'kata', label: 'Kata', desc: studentKatas[0]?.name || 'Formas' }];
+
         const phaseList = [
           { key: 'kihon', label: 'Kihon', desc: 'Técnicas Básicas' },
+          ...kataPhaseItems,
           { key: 'kumite', label: 'Kumite', desc: 'Combate' },
-          { key: 'kata', label: 'Kata', desc: 'Formas' },
           ...(hasEvaluableAspects ? [{ key: 'aspectos', label: 'Aspectos', desc: 'Generales' }] : [])
         ];
 
@@ -2408,8 +2434,8 @@ export default function TechnicalExamEvaluatorCore({
 
         const phasePlaceholder = currentActivePhase === 'kihon'
           ? '• Observaciones técnicas de Kihon (posiciones, kime, postura)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Corregir rotación de cadera en Gyaku Zuki.'
-          : currentActivePhase === 'kata'
-          ? '• Observaciones técnicas de Kata (ritmo, embusen, postura, kime)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Buen ritmo y fijación de postura en Heian Shodan.'
+          : currentActivePhase.startsWith('kata')
+          ? `• Observaciones técnicas de ${activePhaseObj.desc || activePhaseObj.label} (ritmo, embusen, postura, kime)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Corregir posturas y vista al frente en ${activePhaseObj.desc || 'Kata'}.`
           : currentActivePhase === 'kumite'
           ? '• Observaciones técnicas de Kumite (distancia maai, reflejos, control)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Buena distancia y guardia firme, mantener kime en ataque.'
           : '• Observaciones de aspectos técnicos generales...\n• Cada línea comienza con viñeta automáticamente.';

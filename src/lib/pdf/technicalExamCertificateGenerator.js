@@ -33,6 +33,14 @@ export async function generateTechnicalExamCertificatePDF({
   kihonText = '',
   kataText = '',
   kumiteText = '',
+  // Soporte para dos o más katas en un examen
+  katas = [],
+  kata1Name = '',
+  kata1Score = null,
+  kata1Text = '',
+  kata2Name = '',
+  kata2Score = null,
+  kata2Text = '',
   positiveText = '',
   generalComment = '',
   _generalComment = '',
@@ -348,41 +356,115 @@ export async function generateTechnicalExamCertificatePDF({
   const beltKata = getKataForRank(targetRank);
   const beltKumite = getKumiteForRank(targetRank);
 
-  // Tarjeta 1: Kihon (Técnicas Básicas)
+  // Textos por defecto en caso de no haber observaciones personalizadas
   const defaultKihon = 'En la posición adelantada (Zenkutsu Dachi), estirar bien la pierna de atrás con el talón apoyado en el suelo.\nLlevar la mano que no golpea bien pegada a la cintura (Hikite).\nNo subir el cuerpo al avanzar y recoger rápido la pierna al patear.';
-  const defaultKata = `Durante ${beltKata}, no tocarse ni acomodarse el uniforme (karategui). Debe mantenerse firme, quieto y con la mirada atenta al frente.\nMantener la vista fija hacia adelante después de cada giro y después del grito (kiai).\nBajar bien las posiciones y no balancear el cuerpo.`;
   const defaultKumite = `En ${beltKumite}, calcular bien la distancia con su compañero para no quedar muy cerca ni muy lejos.\nNo bajar las manos de defensa después de bloquear.\nGirar la cadera y golpear con fuerza, buena dirección y un kiai fuerte.`;
+  const getDefaultKata = (kName) => `Durante ${kName || beltKata}, no tocarse ni acomodarse el uniforme (karategui). Debe mantenerse firme, quieto y con la mirada atenta al frente.\nMantener la vista fija hacia adelante después de cada giro y después del grito (kiai).\nBajar bien las posiciones y no balancear el cuerpo.`;
 
+  // Resolver si hay dos katas en el examen (ej: 9° Kyu: Heian Shodan y Heian Nidan)
+  let resolvedKatas = [];
+  if (Array.isArray(katas) && katas.length > 0) {
+    resolvedKatas = katas.filter(k => k && (k.name || k.text));
+  } else if (kata1Name || kata2Name || kata2Text) {
+    if (kata1Name || kata1Text) {
+      resolvedKatas.push({
+        name: kata1Name || beltKata,
+        score: typeof kata1Score === 'number' ? kata1Score : kataScore,
+        text: kata1Text || kataText
+      });
+    }
+    if (kata2Name || kata2Text) {
+      resolvedKatas.push({
+        name: kata2Name || 'Segundo Kata',
+        score: typeof kata2Score === 'number' ? kata2Score : kataScore,
+        text: kata2Text
+      });
+    }
+  }
+
+  if (resolvedKatas.length === 0) {
+    resolvedKatas = [{
+      name: beltKata,
+      score: kataScore,
+      text: kataText
+    }];
+  }
+
+  const cards = [];
+
+  // Tarjeta 1: Kihon
   const kihonBullets = parsePhaseBullets(kihonText || defaultKihon);
-  const kataBullets = parsePhaseBullets(kataText || defaultKata);
-  const kumiteBullets = parsePhaseBullets(kumiteText || defaultKumite);
+  cards.push({
+    title: '1. TÉCNICAS BÁSICAS (KIHON) — Indicaciones correctivas para alcanzar el 100%',
+    badgeScore: Math.round(kihonScore || 80),
+    bullets: kihonBullets,
+    height: measurePhaseBulletsHeight(kihonBullets)
+  });
 
-  let hKihon = measurePhaseBulletsHeight(kihonBullets);
-  let hKata = measurePhaseBulletsHeight(kataBullets);
-  let hKumite = measurePhaseBulletsHeight(kumiteBullets);
+  // Tarjeta(s): Kata(s)
+  if (resolvedKatas.length > 1) {
+    resolvedKatas.forEach((k, idx) => {
+      const kBullets = parsePhaseBullets(k.text || getDefaultKata(k.name));
+      cards.push({
+        title: `${idx + 2}. FORMA (KATA ${idx + 1}) — ${k.name}: correcciones de embusen y postura`,
+        badgeScore: Math.round(k.score || kataScore || 80),
+        bullets: kBullets,
+        height: measurePhaseBulletsHeight(kBullets)
+      });
+    });
 
-  // Espacio vertical total disponible en Hoja 1 entre Y=117.0 y Y=272.0 (155mm)
+    // Tarjeta Combate
+    const kumiteBullets = parsePhaseBullets(kumiteText || defaultKumite);
+    cards.push({
+      title: `${resolvedKatas.length + 2}. COMBATE (KUMITE) — ${beltKumite}: correcciones de distancia y guardia`,
+      badgeScore: Math.round(kumiteScore || 80),
+      bullets: kumiteBullets,
+      height: measurePhaseBulletsHeight(kumiteBullets)
+    });
+  } else {
+    const k = resolvedKatas[0];
+    const kataBullets = parsePhaseBullets(k.text || getDefaultKata(k.name));
+    cards.push({
+      title: `2. FORMA (KATA) — ${k.name}: correcciones de embusen y postura`,
+      badgeScore: Math.round(k.score || kataScore || 80),
+      bullets: kataBullets,
+      height: measurePhaseBulletsHeight(kataBullets)
+    });
+
+    const kumiteBullets = parsePhaseBullets(kumiteText || defaultKumite);
+    cards.push({
+      title: `3. COMBATE (KUMITE) — ${beltKumite}: correcciones de distancia y guardia`,
+      badgeScore: Math.round(kumiteScore || 80),
+      bullets: kumiteBullets,
+      height: measurePhaseBulletsHeight(kumiteBullets)
+    });
+  }
+
+  // Medir alturas y escalar dinámicamente si el total excede el espacio vertical en Hoja 1 (155mm)
   const maxAvailableY = 272.0;
   const startCardsY = 117.0;
-  const cardGap = 4.0;
-  const totalAvailableH = maxAvailableY - startCardsY - (2 * cardGap);
+  const cardGap = cards.length > 3 ? 3.0 : 4.0;
+  const totalAvailableH = maxAvailableY - startCardsY - ((cards.length - 1) * cardGap);
 
-  const totalRequestedH = hKihon + hKata + hKumite;
+  const totalRequestedH = cards.reduce((sum, c) => sum + c.height, 0);
   if (totalRequestedH > totalAvailableH) {
     const scale = totalAvailableH / totalRequestedH;
-    hKihon = Math.max(18.0, Math.floor(hKihon * scale));
-    hKata = Math.max(18.0, Math.floor(hKata * scale));
-    hKumite = Math.max(18.0, totalAvailableH - hKihon - hKata);
+    let accumulatedH = 0;
+    cards.forEach((c, idx) => {
+      if (idx === cards.length - 1) {
+        c.height = Math.max(16.0, totalAvailableH - accumulatedH);
+      } else {
+        c.height = Math.max(16.0, Math.floor(c.height * scale));
+        accumulatedH += c.height;
+      }
+    });
   }
 
   let curCardY = startCardsY;
-  drawPhaseCard(curCardY, hKihon, '1. TÉCNICAS BÁSICAS (KIHON) — Indicaciones correctivas para alcanzar el 100%', Math.round(kihonScore || 80), kihonBullets);
-  curCardY += hKihon + cardGap;
-
-  drawPhaseCard(curCardY, hKata, `2. FORMA (KATA) — ${beltKata}: correcciones de embusen y postura`, Math.round(kataScore || 80), kataBullets);
-  curCardY += hKata + cardGap;
-
-  drawPhaseCard(curCardY, hKumite, `3. COMBATE (KUMITE) — ${beltKumite}: correcciones de distancia y guardia`, Math.round(kumiteScore || 80), kumiteBullets);
+  cards.forEach(c => {
+    drawPhaseCard(curCardY, c.height, c.title, c.badgeScore, c.bullets);
+    curCardY += c.height + cardGap;
+  });
 
   // Indicador de Hoja 1
   doc.setFont('helvetica', 'italic');

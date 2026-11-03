@@ -257,11 +257,24 @@ function StudentMonitorDrawer({
     .filter(item => item.note && item.note.trim().length > 0);
 
   const kataNotesList = evalItems
-    .map(e => ({
-      evaluatorName: e.evaluator.name,
-      evaluatorRole: e.evaluator.role,
-      note: e.evalRecord?.phaseNotes?.kata || ''
-    }))
+    .flatMap(e => {
+      const items = [];
+      if (e.evalRecord?.phaseNotes?.kata) {
+        items.push({
+          evaluatorName: e.evaluator.name,
+          evaluatorRole: e.evaluator.role,
+          note: e.evalRecord.phaseNotes.kata
+        });
+      }
+      if (e.evalRecord?.phaseNotes?.kata_2) {
+        items.push({
+          evaluatorName: e.evaluator.name,
+          evaluatorRole: e.evaluator.role,
+          note: e.evalRecord.phaseNotes.kata_2
+        });
+      }
+      return items;
+    })
     .filter(item => item.note && item.note.trim().length > 0);
 
   const kumiteNotesList = evalItems
@@ -1184,7 +1197,6 @@ export default function TribunalProgressMonitor({
         });
 
       const kihonRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kihon })).filter(i => i.note);
-      const kataRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kata })).filter(i => i.note);
       const kumiteRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kumite })).filter(i => i.note);
 
       const resolvedKihonNotes = synthesizePhaseBulletsWithAI({
@@ -1195,13 +1207,58 @@ export default function TribunalProgressMonitor({
         targetRank
       }).map(b => b.text).join('\n');
 
-      const resolvedKataNotes = synthesizePhaseBulletsWithAI({
-        phase: 'kata',
-        notesList: kataRawList,
-        techniqueScores: kataTechScores,
-        phaseAverage: kaScore,
-        targetRank
-      }).map(b => b.text).join('\n');
+      let katasPayload = [];
+      let resolvedKataNotes = '';
+
+      if (kataTechScores.length > 1) {
+        // Kata 1
+        const k1 = kataTechScores[0];
+        const k1RawList = evalItems.map(e => {
+          const note = e.evalRecord?.phaseNotes?.kata || e.evalRecord?.phaseNotes?.kata_1 || e.evalRecord?.observations?.[k1.id];
+          return { evaluatorName: e.evaluator.name, note };
+        }).filter(i => i.note);
+        const k1Bullets = synthesizePhaseBulletsWithAI({
+          phase: 'kata',
+          notesList: k1RawList,
+          techniqueScores: [k1],
+          phaseAverage: k1.score || kaScore,
+          targetRank,
+          specificKataName: k1.name
+        }).map(b => b.text).join('\n');
+
+        // Kata 2
+        const k2 = kataTechScores[1];
+        const k2RawList = evalItems.map(e => {
+          const note = e.evalRecord?.phaseNotes?.kata_2 || e.evalRecord?.observations?.[k2.id];
+          return { evaluatorName: e.evaluator.name, note };
+        }).filter(i => i.note);
+        const k2Bullets = synthesizePhaseBulletsWithAI({
+          phase: 'kata',
+          notesList: k2RawList,
+          techniqueScores: [k2],
+          phaseAverage: k2.score || kaScore,
+          targetRank,
+          specificKataName: k2.name
+        }).map(b => b.text).join('\n');
+
+        katasPayload = [
+          { name: k1.name, score: k1.score || kaScore, text: k1Bullets },
+          { name: k2.name, score: k2.score || kaScore, text: k2Bullets }
+        ];
+        resolvedKataNotes = `${k1Bullets}\n\n${k2Bullets}`;
+      } else {
+        const kataRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kata })).filter(i => i.note);
+        resolvedKataNotes = synthesizePhaseBulletsWithAI({
+          phase: 'kata',
+          notesList: kataRawList,
+          techniqueScores: kataTechScores,
+          phaseAverage: kaScore,
+          targetRank
+        }).map(b => b.text).join('\n');
+        katasPayload = [
+          { name: kataTechScores[0]?.name || getKataForRank(targetRank), score: kaScore, text: resolvedKataNotes }
+        ];
+      }
 
       const resolvedKumiteNotes = synthesizePhaseBulletsWithAI({
         phase: 'kumite',
@@ -1238,6 +1295,13 @@ export default function TribunalProgressMonitor({
         kihonText: resolvedKihonNotes,
         kataText: resolvedKataNotes,
         kumiteText: resolvedKumiteNotes,
+        katas: katasPayload,
+        kata1Name: katasPayload[0]?.name,
+        kata1Score: katasPayload[0]?.score,
+        kata1Text: katasPayload[0]?.text,
+        kata2Name: katasPayload[1]?.name,
+        kata2Score: katasPayload[1]?.score,
+        kata2Text: katasPayload[1]?.text,
         positiveText,
         _generalComment: cons?.observations || 'Tomar las recomendaciones para continuar puliendo su técnica hacia el siguiente grado.',
         evaluators: evaluatorsProgress.map(e => ({ name: e.evaluator.name, role: e.evaluator.role }))

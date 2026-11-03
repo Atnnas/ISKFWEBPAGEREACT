@@ -24,6 +24,15 @@ export function getKataForRank(rank = '', techniques = []) {
 }
 
 /**
+ * Resuelve la lista de Katas oficiales (1 o múltiples) según las técnicas del temario o el grado objetivo
+ */
+export function getKatasForRank(rank = '', techniques = []) {
+  const kataTechs = (techniques || []).filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+  if (kataTechs.length > 0) return kataTechs.map(t => ({ id: t.id, name: t.name }));
+  return [{ id: 'kata-1', name: getKataForRank(rank, techniques) }];
+}
+
+/**
  * Resuelve la modalidad de Kumite oficial según las técnicas del temario o el grado objetivo
  */
 export function getKumiteForRank(rank = '', techniques = []) {
