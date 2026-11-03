@@ -4,6 +4,7 @@ import dbConnect from "./lib/mongodb"
 import User from "./models/User"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -87,7 +88,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }
   },
   session: { strategy: 'jwt' },
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   pages: {
     // signIn: '/login', // Si tuviéramos una página personalizada
   }

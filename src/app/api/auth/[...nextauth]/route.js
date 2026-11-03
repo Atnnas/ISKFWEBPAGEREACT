@@ -1,3 +1,4 @@
-import { handlers } from "../../../../auth" // Ruta relativa al auth.js que está en src/
+import { handlers } from "../../../../auth";
 
 export const { GET, POST } = handlers;
+export const runtime = "nodejs";
