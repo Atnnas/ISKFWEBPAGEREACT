@@ -26,7 +26,8 @@ import {
   Save,
   Loader2,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  RefreshCw
 } from 'lucide-react';
 import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall, getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { updateStudent } from '../../lib/actions/students';
@@ -360,23 +361,34 @@ export default function TechnicalExamEvaluatorCore({
     );
   }, [isAdmin, evaluator]);
 
-  // Cargar progreso del tribunal en vivo al abrir la revisión de fase para detectar discrepancias
+  // Función para refrescar el progreso del tribunal (manual y automático en segundo plano)
+  const fetchTribunalProgress = useCallback(async (isSilent = false) => {
+    if (!callId) return;
+    if (!isSilent) setIsLoadingTribunal(true);
+    try {
+      const res = await getTribunalProgressForCall({ callId });
+      if (res?.success) {
+        setTribunalProgress(res);
+      }
+    } catch (err) {
+      console.debug('Error al sincronizar progreso del tribunal:', err);
+    } finally {
+      if (!isSilent) setIsLoadingTribunal(false);
+    }
+  }, [callId]);
+
+  // Cargar progreso del tribunal al abrir la revisión de fase y auto-refrescar cada 8s
   useEffect(() => {
     if (!showPhaseReviewModal || !callId) return;
-    let isMounted = true;
-    setIsLoadingTribunal(true);
-    getTribunalProgressForCall({ callId })
-      .then(res => {
-        if (isMounted && res?.success) {
-          setTribunalProgress(res);
-        }
-      })
-      .catch(err => console.debug('Error al obtener progreso colegiado para alertas:', err))
-      .finally(() => {
-        if (isMounted) setIsLoadingTribunal(false);
-      });
-    return () => { isMounted = false; };
-  }, [showPhaseReviewModal, callId]);
+    fetchTribunalProgress(false);
+
+    // Sondeo periódico cada 8 segundos mientras el modal de revisión esté abierto
+    const interval = setInterval(() => {
+      fetchTribunalProgress(true);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [showPhaseReviewModal, callId, fetchTribunalProgress]);
 
   // Modal para consultar "Aspectos a Considerar"
   const [selectedStudentForAspects, setSelectedStudentForAspects] = useState(null);
@@ -1534,30 +1546,36 @@ export default function TechnicalExamEvaluatorCore({
 
     activeEvaluators.forEach(ev => {
       let maxScore = -1;
-      let topStudent = null;
+      let topStudents = [];
 
       tandaStudents.forEach(st => {
         const sId = String(st._id || st.id);
         const sc = ev.scoresByStudent[sId];
-        if (typeof sc === 'number' && sc > maxScore) {
-          maxScore = sc;
-          topStudent = st;
+        if (typeof sc === 'number' && sc > 0) {
+          if (sc > maxScore) {
+            maxScore = sc;
+            topStudents = [st];
+          } else if (sc === maxScore) {
+            topStudents.push(st);
+          }
         }
       });
 
-      if (topStudent && maxScore > 0) {
-        const sId = String(topStudent._id || topStudent.id);
-        topPerformerStudents.add(sId);
-        topPerformerByEvaluator.push({
-          evaluatorName: ev.name,
-          studentId: sId,
-          studentName: topStudent.name,
-          phaseName: currentPhaseUpper,
-          score: maxScore
-        });
+      if (topStudents.length > 0 && maxScore > 0) {
+        topStudents.forEach(topStudent => {
+          const sId = String(topStudent._id || topStudent.id);
+          topPerformerStudents.add(sId);
+          topPerformerByEvaluator.push({
+            evaluatorName: ev.name,
+            studentId: sId,
+            studentName: topStudent.name,
+            phaseName: currentPhaseUpper,
+            score: maxScore
+          });
 
-        if (!studentTopFor[sId]) studentTopFor[sId] = [];
-        studentTopFor[sId].push(ev.name);
+          if (!studentTopFor[sId]) studentTopFor[sId] = [];
+          studentTopFor[sId].push(ev.name);
+        });
       }
     });
 
@@ -2530,54 +2548,70 @@ export default function TechnicalExamEvaluatorCore({
       {/* ========================================================================= */}
       {showPhaseReviewModal && (
         <div className="fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-200 my-auto text-slate-900">
-            {/* Cabecera Vistosa y Grande con la Fase Activa */}
-            <div className="px-5 py-4 bg-slate-950 text-white border-b border-slate-800 shrink-0">
+          <div className="bg-white rounded-3xl w-full max-w-3xl sm:max-w-4xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-200 my-auto text-slate-900">
+            {/* Cabecera Vistosa y Grande con la Fase Activa y Botón de Refrescar Tribunal */}
+            <div className="px-5 sm:px-6 py-4 bg-slate-950 text-white border-b border-slate-800 shrink-0">
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-[#2D2E83] text-white flex items-center justify-center text-2xl shadow-lg border border-indigo-400/40 shrink-0">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-2xl bg-[#2D2E83] text-white flex items-center justify-center text-2xl sm:text-3xl shadow-lg border border-indigo-400/40 shrink-0">
                     {phaseToReview === 'kihon' ? '👊' : phaseToReview === 'kata' ? '🥋' : phaseToReview === 'kumite' ? '⚔️' : '📋'}
                   </div>
-                  <div>
-                    <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                  <div className="min-w-0">
+                    <div className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400">
                       Revisión de Fin de Tanda • {tandas[selectedTandaIndex]?.blockName || `Tanda ${selectedTandaIndex + 1}`}
                     </div>
-                    <div className="flex items-center gap-2.5 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs sm:text-sm font-black text-slate-300 uppercase tracking-wider">
                         Evaluando:
                       </span>
-                      <span className="text-xl sm:text-2xl font-black text-amber-400 tracking-wide uppercase drop-shadow-xs">
+                      <span className="text-xl sm:text-2xl lg:text-3xl font-black text-amber-400 tracking-wide uppercase drop-shadow-xs">
                         {phaseToReview === 'kihon' ? '👊 FASE DE KIHON' : phaseToReview === 'kata' ? '🥋 FASE DE KATA' : phaseToReview === 'kumite' ? '⚔️ FASE DE KUMITE' : `📋 FASE DE ${phaseToReview.toUpperCase()}`}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowPhaseReviewModal(false)}
-                  className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
-                  title="Volver a la evaluación"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  {/* Botón Táctil de Refresco del Tribunal en Tiempo Real */}
+                  <button
+                    type="button"
+                    onClick={() => fetchTribunalProgress(false)}
+                    disabled={isLoadingTribunal}
+                    className="h-11 sm:h-12 px-3.5 sm:px-4 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-white border border-slate-700 flex items-center gap-2 text-xs sm:text-sm font-black transition-all cursor-pointer shadow-xs disabled:opacity-50 select-none"
+                    title="Consultar y actualizar calificaciones de los demás Senseis en tiempo real"
+                  >
+                    <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 text-amber-400 ${isLoadingTribunal ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">
+                      {isLoadingTribunal ? 'Actualizando...' : 'Refrescar Tribunal'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPhaseReviewModal(false)}
+                    className="w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+                    title="Volver a la evaluación"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Banner Minimalista de Mejor Atleta Dividido EXCLUSIVO DE ESTA FASE */}
+            {/* Banner de Mejor Atleta Dividido EXCLUSIVO DE ESTA FASE con Fuentes Grandes */}
             {collegiatePhaseComparison?.hasSplitTop && (
-              <div className="px-5 py-2.5 bg-amber-500/10 border-b border-amber-400/30 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-[10px] uppercase shadow-2xs">
+              <div className="px-5 sm:px-6 py-3 bg-amber-500/10 border-b border-amber-400/30 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="px-2.5 py-1 rounded-md bg-amber-400 text-slate-950 font-black text-xs uppercase shadow-2xs">
                     ⚡ Criterio Dividido en {phaseToReview.toUpperCase()}
                   </span>
-                  <span className="text-slate-700 font-bold text-[11px]">
+                  <span className="text-slate-700 font-bold text-xs sm:text-sm">
                     Mejor nota de {phaseToReview.toUpperCase()}:
                   </span>
-                  <span className="font-semibold text-slate-900 text-[11px]">
+                  <span className="font-semibold text-slate-900 text-xs sm:text-sm">
                     {collegiatePhaseComparison.topPerformerByEvaluator.map((item, i) => (
                       <span key={i}>
-                        {i > 0 && <span className="text-slate-400 mx-1.5">•</span>}
+                        {i > 0 && <span className="text-slate-400 mx-2">•</span>}
                         <strong className="text-[#2D2E83]">{item.evaluatorName}:</strong> {item.studentName} ({item.score}% en {phaseToReview.toUpperCase()})
                       </span>
                     ))}
@@ -2586,8 +2620,8 @@ export default function TechnicalExamEvaluatorCore({
               </div>
             )}
 
-            {/* Lista de Atletas de la Tanda con controles táctiles para Tablet */}
-            <div className="p-4 sm:p-5 overflow-y-auto space-y-3">
+            {/* Lista de Atletas de la Tanda con fuentes ampliadas y controles táctiles para Tablet */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
               {tandaStudents.map(student => {
                 const sId = String(student._id || student.id);
                 const summary = getStudentPhaseSummary(student, phaseToReview);
@@ -2599,71 +2633,80 @@ export default function TechnicalExamEvaluatorCore({
                 return (
                   <div
                     key={sId}
-                    className={`p-3.5 sm:p-4 rounded-2xl transition-all flex items-center justify-between gap-3 shadow-2xs ${
+                    className={`p-4 sm:p-5 rounded-2xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm ${
                       hasGap
-                        ? 'bg-amber-50/80 border-2 border-amber-400 shadow-md shadow-amber-500/20 ring-1 ring-amber-300'
-                        : 'bg-slate-50 border border-slate-200/90'
+                        ? 'bg-amber-50/90 border-2 border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-300/60'
+                        : 'bg-slate-50 border border-slate-200/90 hover:border-slate-300'
                     }`}
                   >
-                    {/* Atleta */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-11 h-11 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center text-slate-800 font-bold text-sm shrink-0 overflow-hidden">
+                    {/* Atleta y Alertas */}
+                    <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+                      <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center text-slate-800 font-black text-xl sm:text-2xl shrink-0 overflow-hidden shadow-xs">
                         {student.photoUrl ? (
                           <img src={student.photoUrl} alt="" className="w-full h-full object-cover" />
                         ) : (
                           student.name?.charAt(0) || 'K'
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <h4 className="text-sm font-black text-slate-900 truncate">
-                          {student.name}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${beltBadge.className}`}>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                            {student.name}
+                          </h4>
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${beltBadge.className}`}>
                             {student.currentRank || 'Cinta Blanca'}
                           </span>
+                        </div>
 
-                          {/* Píldora de Alerta Discrepancia >= 5% en esta fase específica */}
-                          {hasGap && (
-                            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-md bg-amber-200 text-amber-950 border border-amber-300 shadow-2xs flex items-center gap-1.5 flex-wrap">
-                              <span>⚠️ Dif. {alertInfo.gap}% en {phaseToReview.toUpperCase()}:</span>
-                              <span className="text-amber-950 font-bold">{alertInfo.scoresText}</span>
+                        {/* Píldora de Alerta Discrepancia >= 5% en esta fase específica (Fuente Grande) */}
+                        {hasGap && (
+                          <div className="mt-2 text-xs sm:text-sm font-black p-2.5 rounded-xl bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs flex items-center gap-2 flex-wrap">
+                            <span className="px-2 py-0.5 bg-amber-400 text-slate-950 rounded-md text-xs font-black uppercase shadow-2xs">
+                              ⚠️ Dif. {alertInfo.gap}% en {phaseToReview.toUpperCase()}
+                            </span>
+                            <span className="text-amber-950 font-bold text-xs sm:text-sm">
+                              {alertInfo.scoresText}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Píldora de Mejor Atleta #1 en esta fase específica (Fuente Grande) */}
+                        {topForSenseis.length > 0 && (
+                          <div className="mt-2 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs sm:text-sm font-black px-2.5 py-1 rounded-lg bg-indigo-100 text-[#2D2E83] border border-indigo-200 shadow-2xs flex items-center gap-1.5">
+                              <span>👑</span>
+                              <span>#1 en {phaseToReview.toUpperCase()} para {topForSenseis.join(', ')}</span>
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="mt-2 text-xs sm:text-sm text-slate-600 font-semibold font-mono">
+                          {summary.adjustment !== 0 ? (
+                            <span className="text-indigo-700 font-black">
+                              Base {phaseToReview.toUpperCase()}: {summary.baseScore}% • Ajuste: {summary.adjustment > 0 ? `+${summary.adjustment}%` : `${summary.adjustment}%`}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 font-medium">
+                              Base {phaseToReview.toUpperCase()}: {summary.baseScore}% (sin ajuste previo)
                             </span>
                           )}
-
-                          {/* Píldora de Mejor Atleta #1 en esta fase específica */}
-                          {topForSenseis.length > 0 && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-indigo-100 text-[#2D2E83] border border-indigo-200 shadow-2xs flex items-center gap-1">
-                              <span>👑 #1 en {phaseToReview.toUpperCase()} para {topForSenseis.join(', ')}</span>
-                            </span>
-                          )}
-
-                          <span className="text-[11px] text-slate-500 font-medium font-mono">
-                            {summary.adjustment !== 0 ? (
-                              <span className="text-indigo-700 font-bold">
-                                {phaseToReview.toUpperCase()}: {summary.baseScore}% ({summary.adjustment > 0 ? `+${summary.adjustment}%` : `${summary.adjustment}%`})
-                              </span>
-                            ) : (
-                              `${phaseToReview.toUpperCase()}: ${summary.baseScore}%`
-                            )}
-                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Stepper Táctil (Botones amplios de 48px para Tablet) */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    {/* Stepper Táctil Grande para Tablet (Botones de 54px y números en 30px) */}
+                    <div className="flex items-center justify-end gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200">
                       <button
                         type="button"
                         onClick={() => handleAdjustStudentPhase(student, phaseToReview, -1)}
                         disabled={summary.finalScore <= 0}
-                        className="w-12 h-12 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 active:bg-slate-200 text-slate-800 text-xl font-black flex items-center justify-center cursor-pointer shadow-xs disabled:opacity-30 transition-all select-none"
+                        className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white border-2 border-slate-300 hover:bg-slate-100 active:bg-slate-200 text-slate-800 text-2xl font-black flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-30 transition-all select-none"
                         title="Disminuir calificación (-1%)"
                       >
                         ▼
                       </button>
 
-                      <div className="w-16 text-center font-mono text-2xl font-black text-[#2D2E83] select-none">
+                      <div className="w-20 sm:w-22 text-center font-mono text-2xl sm:text-3xl font-black text-[#2D2E83] select-none tracking-tight">
                         {summary.finalScore}%
                       </div>
 
@@ -2671,7 +2714,7 @@ export default function TechnicalExamEvaluatorCore({
                         type="button"
                         onClick={() => handleAdjustStudentPhase(student, phaseToReview, 1)}
                         disabled={summary.finalScore >= 100}
-                        className="w-12 h-12 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 active:bg-slate-200 text-slate-800 text-xl font-black flex items-center justify-center cursor-pointer shadow-xs disabled:opacity-30 transition-all select-none"
+                        className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white border-2 border-slate-300 hover:bg-slate-100 active:bg-slate-200 text-slate-800 text-2xl font-black flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-30 transition-all select-none"
                         title="Aumentar calificación (+1%)"
                       >
                         ▲
@@ -2682,12 +2725,12 @@ export default function TechnicalExamEvaluatorCore({
               })}
             </div>
 
-            {/* Pie del Modal con Botones Cómodos para Tablet */}
-            <div className="px-5 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+            {/* Pie del Modal con Botones Grandes Cómodos para Tablet */}
+            <div className="px-5 sm:px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowPhaseReviewModal(false)}
-                className="h-12 px-5 rounded-xl font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 text-xs sm:text-sm cursor-pointer transition-colors"
+                className="h-13 sm:h-14 px-5 sm:px-6 rounded-xl font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 text-xs sm:text-sm cursor-pointer transition-colors"
               >
                 ◄ Volver a Técnicas
               </button>
@@ -2695,7 +2738,7 @@ export default function TechnicalExamEvaluatorCore({
               <button
                 type="button"
                 onClick={handleConfirmPhaseReview}
-                className="h-12 px-6 rounded-xl font-bold bg-[#2D2E83] hover:bg-[#232468] text-white text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                className="h-13 sm:h-14 px-6 sm:px-7 rounded-xl font-bold bg-[#2D2E83] hover:bg-[#232468] text-white text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
               >
                 <span>
                   {!isLastPhaseInTanda ? (
