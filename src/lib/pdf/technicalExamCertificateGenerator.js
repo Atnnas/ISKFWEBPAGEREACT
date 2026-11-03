@@ -13,6 +13,7 @@ import {
   ISKF_CERT_BACKGROUND_BASE64
 } from './certificateAssets.js';
 import { getKataForRank, getKumiteForRank } from '../utils/shotokanCriteriaFeedback.js';
+import { isKyuExemptFromWrittenExam } from '../constants/kyuRanks.js';
 
 export async function generateTechnicalExamCertificatePDF({
   studentName = 'Estudiante',
@@ -212,12 +213,15 @@ export async function generateTechnicalExamCertificatePDF({
   doc.setTextColor(...COLOR_MUTED);
   doc.text('Puntaje', cols[0].x + cols[0].w / 2, dataRowY + 5.0, { align: 'center' });
 
+  const isWrittenExempt = isKyuExemptFromWrittenExam(targetRank);
+  const writtenDisplay = isWrittenExempt ? '-' : (writtenScore !== null && writtenScore !== undefined ? String(Math.round(writtenScore)) : '-');
+
   doc.setFontSize(10.5);
   doc.setTextColor(...COLOR_DARK);
   doc.text(String(Math.round(kihonScore || 80)), cols[1].x + cols[1].w / 2, dataRowY + 5.2, { align: 'center' });
   doc.text(String(Math.round(kataScore || 80)), cols[2].x + cols[2].w / 2, dataRowY + 5.2, { align: 'center' });
   doc.text(String(Math.round(kumiteScore || 80)), cols[3].x + cols[3].w / 2, dataRowY + 5.2, { align: 'center' });
-  doc.text(String(Math.round(writtenScore || 95)), cols[4].x + cols[4].w / 2, dataRowY + 5.2, { align: 'center' });
+  doc.text(writtenDisplay, cols[4].x + cols[4].w / 2, dataRowY + 5.2, { align: 'center' });
 
   doc.setFontSize(11.5);
   doc.text(String(Math.round(resolvedFinalScore)), cols[5].x + cols[5].w / 2, dataRowY + 5.3, { align: 'center' });

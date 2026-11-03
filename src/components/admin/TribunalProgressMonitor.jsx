@@ -25,7 +25,7 @@ import {
 import { getTribunalProgressForCall, saveConsolidatedVerdict } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
-import { getNextRank } from '../../lib/constants/kyuRanks';
+import { getNextRank, isKyuExemptFromWrittenExam } from '../../lib/constants/kyuRanks';
 
 // Helper para formatear tiempo relativo transcurrido
 function formatTimeAgo(dateStr) {
@@ -1217,6 +1217,8 @@ export default function TribunalProgressMonitor({
       const baseTechnical = finalScore;
       const adj = Number(cons?.martialAdjustment) || 0;
       const adjustedFinalScore = Math.min(100, Math.max(0, Math.round(baseTechnical + adj)));
+      const isWrittenExempt = isKyuExemptFromWrittenExam(targetRank || st?.currentRank);
+      const writtenScore = isWrittenExempt ? null : 95;
 
       await generateTechnicalExamCertificatePDF({
         studentName,
@@ -1227,7 +1229,7 @@ export default function TribunalProgressMonitor({
         kihonScore: kScore,
         kataScore: kaScore,
         kumiteScore: kuScore,
-        writtenScore: 95,
+        writtenScore,
         technicalScore: baseTechnical,
         finalScore: adjustedFinalScore,
         martialAdjustment: adj,

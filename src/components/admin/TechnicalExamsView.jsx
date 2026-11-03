@@ -95,7 +95,7 @@ import TechnicalExamEvaluatorCore from '../examinations/TechnicalExamEvaluatorCo
 import TribunalProgressMonitor from './TribunalProgressMonitor';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
-import { getNextRank, compareStudentsForExam, getRankSortOrder } from '../../lib/constants/kyuRanks';
+import { getNextRank, compareStudentsForExam, getRankSortOrder, isKyuExemptFromWrittenExam } from '../../lib/constants/kyuRanks';
 
 function pointToRubric(pointStr, idx, category, defaultIcon = '🎯') {
   let text = '';
@@ -2891,7 +2891,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       const kihonScore = calcGroupScore('kihon');
       const kataScore = calcGroupScore('kata');
       const kumiteScore = calcGroupScore('kumite');
-      const writtenScore = 95; // Nota teórica oficial
+      const targetRankForCert = activeSyllabus?.targetRank || getNextRank(item.student?.currentRank) || item.student?.currentRank || '8° Kyu (Cinta Naranja)';
+      const isWrittenExempt = isKyuExemptFromWrittenExam(targetRankForCert);
+      const writtenScore = isWrittenExempt ? null : 95;
       // El promedio colegiado técnico es estrictamente entre las tres fases finales: Kihon, Kata y Kumite
       const activePhaseScores = [kihonScore, kataScore, kumiteScore].filter(v => typeof v === 'number' && v > 0);
       const finalScore = activePhaseScores.length > 0
@@ -2929,7 +2931,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         studentName: item.student.name,
         dojoName: selectedDojo?.name || 'Kuma',
         dojoSensei: selectedDojo?.sensei || 'David Artavia Rodríguez',
-        targetRank: activeSyllabus?.targetRank || getNextRank(item.student?.currentRank) || item.student?.currentRank || '8° Kyu (Cinta Naranja)',
+        targetRank: targetRankForCert,
         examDate: new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }),
         kihonScore,
         kataScore,

@@ -95,6 +95,17 @@ export function isSameRank(rankA, rankB) {
 }
 
 /**
+ * Determina si un grado pertenece al rango de 10° Kyu a 5° Kyu.
+ * Por directiva oficial ISKF: De 10° Kyu a 5° Kyu no aplican examen escrito,
+ * la casilla muestra un guión '-' y no se computa en el promedio.
+ */
+export function isKyuExemptFromWrittenExam(rankStr = '') {
+  if (!rankStr) return false;
+  const key = normalizeRankKey(rankStr);
+  return ['10-kyu', '9-kyu', '8-kyu', '7-kyu', '6-kyu', '5-kyu'].includes(key);
+}
+
+/**
  * Obtiene el siguiente grado promocionado a partir de un grado Kyu o Dan actual.
  * Por ejemplo: "9° Kyu (Cinta Amarilla)" -> "8° Kyu (Cinta Naranja)"
  */
