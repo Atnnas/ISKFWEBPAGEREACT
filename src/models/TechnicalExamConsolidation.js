@@ -21,6 +21,11 @@ const TechnicalExamConsolidationSchema = new mongoose.Schema({
     default: '10° Kyu (Cinta Blanca)',
     trim: true,
   },
+  callId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TechnicalExamCall',
+    default: null,
+  },
   dojoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Dojo',
