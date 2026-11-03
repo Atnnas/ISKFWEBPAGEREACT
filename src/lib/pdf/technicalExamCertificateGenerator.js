@@ -531,41 +531,9 @@ export async function generateTechnicalExamCertificatePDF({
     curDictY += 5.5;
   });
 
-  let curPage2Y = dictamenY + 6.5 + dictamenBoxH;
-
-  // 2b. Sección Opcional: Dictamen y Recomendaciones Generales (si existen notas adicionales del tribunal)
-  const resolvedGeneralComment = String(generalComment || _generalComment || '').trim();
-  if (resolvedGeneralComment && resolvedGeneralComment.length > 5) {
-    const genSecY = curPage2Y + 6.0;
-    doc.setFillColor(...COLOR_DARK);
-    doc.rect(15, genSecY, 180, 6.0, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.0);
-    doc.setTextColor(255, 255, 255);
-    doc.text('DICTAMEN Y RECOMENDACIONES GENERALES DEL TRIBUNAL', 105, genSecY + 4.2, { align: 'center' });
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.2);
-    const genLines = doc.splitTextToSize(resolvedGeneralComment, 172);
-    const genBoxH = Math.max(14.0, Math.min(48.0, genLines.length * 3.5 + 5.0));
-
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(...COLOR_GRAY_BORDER);
-    doc.rect(15, genSecY + 6.0, 180, genBoxH, 'FD');
-
-    doc.setTextColor(...COLOR_DARK);
-    const maxVisibleLines = Math.floor((genBoxH - 4.0) / 3.5);
-    doc.text(genLines.slice(0, maxVisibleLines), 19, genSecY + 10.0);
-
-    curPage2Y = genSecY + 6.0 + genBoxH;
-  }
-
   // 3. Firmas y Examinadores Invitados
-  // Se posiciona de manera fluida y armónica tras el contenido, sin colisionar con el pie de página
-  const signHeight = 51.5;
-  const maxSignSecY = 236.0 - signHeight; // 184.5mm
-  const idealSignSecY = curPage2Y + 8.0;
-  const signSecY = Math.min(maxSignSecY, Math.max(idealSignSecY, 138.0));
+  // Se posiciona armónicamente tras Aspectos Positivos, dejando márgenes limpios y equilibrados
+  const signSecY = Math.max(145.0, dictamenY + 6.5 + dictamenBoxH + 15.0);
 
   // Lado Izquierdo: Dirección Técnica Nacional (Firma Oficial Sensei Roy Gatjens)
   const leftSignW = 86;
