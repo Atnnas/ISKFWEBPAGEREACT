@@ -34,6 +34,7 @@ export async function generateTechnicalExamCertificatePDF({
   kataText = '',
   kumiteText = '',
   positiveText = '',
+  generalComment = '',
   _generalComment = '',
   evaluators = []
 }) {
@@ -261,29 +262,8 @@ export async function generateTechnicalExamCertificatePDF({
   doc.setTextColor(255, 255, 255);
   doc.text('PUNTOS A MEJORAR POR FASE', 105, secTitleY + 4.5, { align: 'center' });
 
-  // Función auxiliar para dibujar tarjetas de fase con fondo blanco garantizado
-  function drawPhaseCard(yPos, height, title, badgeScore, notesText) {
-    // Encabezado de la tarjeta
-    doc.setFillColor(...COLOR_GRAY_HEADER);
-    doc.setDrawColor(...COLOR_GRAY_BORDER);
-    doc.setLineWidth(0.3);
-    doc.rect(15, yPos, 180, 5.5, 'FD');
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.0);
-    doc.setTextColor(...COLOR_DARK);
-    doc.text(title, 18, yPos + 4.0);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...COLOR_ORANGE_TITLE);
-    doc.text(`Nota de Fase: ${badgeScore}%`, 192, yPos + 4.0, { align: 'right' });
-
-    // Contenedor de contenido SIEMPRE BLANCO (elimina por completo el bloque negro)
-    doc.setFillColor(255, 255, 255);
-    doc.rect(15, yPos + 5.5, 180, height - 5.5, 'FD');
-
-    // Parsear notas en viñetas limpias
+  // Parsear notas en viñetas limpias para cada fase
+  function parsePhaseBullets(notesText) {
     const rawLines = String(notesText || '')
       .split('\n')
       .map(l => l.trim())
@@ -303,6 +283,42 @@ export async function generateTechnicalExamCertificatePDF({
     if (bulletPoints.length === 0) {
       bulletPoints.push('Para alcanzar el 100%, debe corregir la fijación de las posturas, el anclaje del Hikite y la concentración marcial.');
     }
+    return bulletPoints;
+  }
+
+  // Medir la altura requerida por las viñetas de una fase para que la tarjeta ajuste su tamaño dinámicamente
+  function measurePhaseBulletsHeight(bulletPoints) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.0);
+    let totalTextH = 0;
+    bulletPoints.forEach(bp => {
+      const bpLines = doc.splitTextToSize(`•  ${bp}`, 174);
+      totalTextH += bpLines.length * 3.3 + 0.8;
+    });
+    return Math.max(20.0, 5.5 + 3.7 + totalTextH + 2.5);
+  }
+
+  // Función auxiliar para dibujar tarjetas de fase con fondo blanco garantizado y altura ajustada al contenido
+  function drawPhaseCard(yPos, height, title, badgeScore, bulletPoints) {
+    // Encabezado de la tarjeta
+    doc.setFillColor(...COLOR_GRAY_HEADER);
+    doc.setDrawColor(...COLOR_GRAY_BORDER);
+    doc.setLineWidth(0.3);
+    doc.rect(15, yPos, 180, 5.5, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.0);
+    doc.setTextColor(...COLOR_DARK);
+    doc.text(title, 18, yPos + 4.0);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...COLOR_ORANGE_TITLE);
+    doc.text(`Nota de Fase: ${badgeScore}%`, 192, yPos + 4.0, { align: 'right' });
+
+    // Contenedor de contenido blanco ajustable al contenido exacto
+    doc.setFillColor(255, 255, 255);
+    doc.rect(15, yPos + 5.5, 180, height - 5.5, 'FD');
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.0);
@@ -334,15 +350,39 @@ export async function generateTechnicalExamCertificatePDF({
 
   // Tarjeta 1: Kihon (Técnicas Básicas)
   const defaultKihon = 'En la posición adelantada (Zenkutsu Dachi), estirar bien la pierna de atrás con el talón apoyado en el suelo.\nLlevar la mano que no golpea bien pegada a la cintura (Hikite).\nNo subir el cuerpo al avanzar y recoger rápido la pierna al patear.';
-  drawPhaseCard(117, 50, '1. TÉCNICAS BÁSICAS (KIHON) — Indicaciones correctivas para alcanzar el 100%', Math.round(kihonScore || 80), kihonText || defaultKihon);
-
-  // Tarjeta 2: Kata (Forma)
   const defaultKata = `Durante ${beltKata}, no tocarse ni acomodarse el uniforme (karategui). Debe mantenerse firme, quieto y con la mirada atenta al frente.\nMantener la vista fija hacia adelante después de cada giro y después del grito (kiai).\nBajar bien las posiciones y no balancear el cuerpo.`;
-  drawPhaseCard(169, 52, `2. FORMA (KATA) — ${beltKata}: correcciones de embusen y postura`, Math.round(kataScore || 80), kataText || defaultKata);
-
-  // Tarjeta 3: Kumite (Combate Básico)
   const defaultKumite = `En ${beltKumite}, calcular bien la distancia con su compañero para no quedar muy cerca ni muy lejos.\nNo bajar las manos de defensa después de bloquear.\nGirar la cadera y golpear con fuerza, buena dirección y un kiai fuerte.`;
-  drawPhaseCard(223, 49, `3. COMBATE (KUMITE) — ${beltKumite}: correcciones de distancia y guardia`, Math.round(kumiteScore || 80), kumiteText || defaultKumite);
+
+  const kihonBullets = parsePhaseBullets(kihonText || defaultKihon);
+  const kataBullets = parsePhaseBullets(kataText || defaultKata);
+  const kumiteBullets = parsePhaseBullets(kumiteText || defaultKumite);
+
+  let hKihon = measurePhaseBulletsHeight(kihonBullets);
+  let hKata = measurePhaseBulletsHeight(kataBullets);
+  let hKumite = measurePhaseBulletsHeight(kumiteBullets);
+
+  // Espacio vertical total disponible en Hoja 1 entre Y=117.0 y Y=272.0 (155mm)
+  const maxAvailableY = 272.0;
+  const startCardsY = 117.0;
+  const cardGap = 4.0;
+  const totalAvailableH = maxAvailableY - startCardsY - (2 * cardGap);
+
+  const totalRequestedH = hKihon + hKata + hKumite;
+  if (totalRequestedH > totalAvailableH) {
+    const scale = totalAvailableH / totalRequestedH;
+    hKihon = Math.max(18.0, Math.floor(hKihon * scale));
+    hKata = Math.max(18.0, Math.floor(hKata * scale));
+    hKumite = Math.max(18.0, totalAvailableH - hKihon - hKata);
+  }
+
+  let curCardY = startCardsY;
+  drawPhaseCard(curCardY, hKihon, '1. TÉCNICAS BÁSICAS (KIHON) — Indicaciones correctivas para alcanzar el 100%', Math.round(kihonScore || 80), kihonBullets);
+  curCardY += hKihon + cardGap;
+
+  drawPhaseCard(curCardY, hKata, `2. FORMA (KATA) — ${beltKata}: correcciones de embusen y postura`, Math.round(kataScore || 80), kataBullets);
+  curCardY += hKata + cardGap;
+
+  drawPhaseCard(curCardY, hKumite, `3. COMBATE (KUMITE) — ${beltKumite}: correcciones de distancia y guardia`, Math.round(kumiteScore || 80), kumiteBullets);
 
   // Indicador de Hoja 1
   doc.setFont('helvetica', 'italic');
@@ -405,12 +445,6 @@ export async function generateTechnicalExamCertificatePDF({
   doc.setTextColor(255, 255, 255);
   doc.text('ASPECTOS POSITIVOS', 105, dictamenY + 4.5, { align: 'center' });
 
-  // Caja de contenido con fondo blanco garantizado
-  const dictamenBoxH = 116.0;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(...COLOR_GRAY_BORDER);
-  doc.rect(15, dictamenY + 6.5, 180, dictamenBoxH, 'FD');
-
   // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
   const cleanPositiveText = (positiveText || '').trim();
   const rawBullets = cleanPositiveText
@@ -430,12 +464,11 @@ export async function generateTechnicalExamCertificatePDF({
         'Demuestra disciplina, respeto y actitud positiva constante dentro del dojo.'
       ];
 
-  let curDictY = dictamenY + 12.0;
+  // Medir altura requerida para que el contenedor de Aspectos Positivos ajuste dinámicamente al contenido
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.setTextColor(...COLOR_DARK);
 
-  rawBullets.forEach(bullet => {
+  const processedBullets = rawBullets.map(bullet => {
     const isBulletWithColon = bullet.includes(':');
     let titlePart = '';
     let bodyPart = bullet;
@@ -448,44 +481,91 @@ export async function generateTechnicalExamCertificatePDF({
       bodyPart = bullet.replace(/^[•\s*-]+/, '').trim();
     }
 
-    if (curDictY < dictamenY + dictamenBoxH + 3) {
-      doc.setFillColor(...COLOR_ORANGE_TITLE);
-      doc.circle(18.5, curDictY - 1.0, 0.8, 'F');
-
-      let xOffset = 21.5;
-      if (titlePart) {
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...COLOR_DARK);
-        doc.text(titlePart, xOffset, curDictY);
-        xOffset += doc.getTextWidth(titlePart) + 1.0;
-      }
-
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...COLOR_DARK);
-      const remainingWidth = 191 - xOffset;
-
-      const restWords = bodyPart.split(' ');
-      let lineAccum = '';
-
-      while (restWords.length > 0 && doc.getTextWidth(lineAccum + restWords[0] + ' ') < remainingWidth) {
-        lineAccum += restWords.shift() + ' ';
-      }
-      doc.text(lineAccum, xOffset, curDictY);
-
-      if (restWords.length > 0) {
-        const remainingText = restWords.join(' ');
-        const wrappedLines = doc.splitTextToSize(remainingText, 170);
-        curDictY += 3.7;
-        doc.text(wrappedLines, 21.5, curDictY);
-        curDictY += (wrappedLines.length - 1) * 3.7;
-      }
-
-      curDictY += 5.5;
-    }
+    const fullStr = (titlePart ? titlePart + ' ' : '') + bodyPart;
+    const lines = doc.splitTextToSize(fullStr, 168);
+    const itemH = lines.length * 3.8 + 2.0;
+    return { titlePart, bodyPart, lines, itemH };
   });
 
+  const totalPositiveTextH = processedBullets.reduce((sum, b) => sum + b.itemH, 0);
+  // Altura autoajustable al contenido exacto (sin dejar espacios muertos ni cajas gigantes fijas)
+  const dictamenBoxH = Math.max(18.0, totalPositiveTextH + 5.0);
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...COLOR_GRAY_BORDER);
+  doc.rect(15, dictamenY + 6.5, 180, dictamenBoxH, 'FD');
+
+  let curDictY = dictamenY + 11.5;
+  processedBullets.forEach(item => {
+    doc.setFillColor(...COLOR_ORANGE_TITLE);
+    doc.circle(18.5, curDictY - 1.0, 0.8, 'F');
+
+    let xOffset = 21.5;
+    if (item.titlePart) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...COLOR_DARK);
+      doc.text(item.titlePart, xOffset, curDictY);
+      xOffset += doc.getTextWidth(item.titlePart) + 1.0;
+    }
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...COLOR_DARK);
+    const remainingWidth = 191 - xOffset;
+
+    const restWords = item.bodyPart.split(' ');
+    let lineAccum = '';
+
+    while (restWords.length > 0 && doc.getTextWidth(lineAccum + restWords[0] + ' ') < remainingWidth) {
+      lineAccum += restWords.shift() + ' ';
+    }
+    doc.text(lineAccum, xOffset, curDictY);
+
+    if (restWords.length > 0) {
+      const remainingText = restWords.join(' ');
+      const wrappedLines = doc.splitTextToSize(remainingText, 170);
+      curDictY += 3.7;
+      doc.text(wrappedLines, 21.5, curDictY);
+      curDictY += (wrappedLines.length - 1) * 3.7;
+    }
+
+    curDictY += 5.5;
+  });
+
+  let curPage2Y = dictamenY + 6.5 + dictamenBoxH;
+
+  // 2b. Sección Opcional: Dictamen y Recomendaciones Generales (si existen notas adicionales del tribunal)
+  const resolvedGeneralComment = String(generalComment || _generalComment || '').trim();
+  if (resolvedGeneralComment && resolvedGeneralComment.length > 5) {
+    const genSecY = curPage2Y + 6.0;
+    doc.setFillColor(...COLOR_DARK);
+    doc.rect(15, genSecY, 180, 6.0, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.0);
+    doc.setTextColor(255, 255, 255);
+    doc.text('DICTAMEN Y RECOMENDACIONES GENERALES DEL TRIBUNAL', 105, genSecY + 4.2, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.2);
+    const genLines = doc.splitTextToSize(resolvedGeneralComment, 172);
+    const genBoxH = Math.max(14.0, Math.min(48.0, genLines.length * 3.5 + 5.0));
+
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...COLOR_GRAY_BORDER);
+    doc.rect(15, genSecY + 6.0, 180, genBoxH, 'FD');
+
+    doc.setTextColor(...COLOR_DARK);
+    const maxVisibleLines = Math.floor((genBoxH - 4.0) / 3.5);
+    doc.text(genLines.slice(0, maxVisibleLines), 19, genSecY + 10.0);
+
+    curPage2Y = genSecY + 6.0 + genBoxH;
+  }
+
   // 3. Firmas y Examinadores Invitados
-  const signSecY = 162.0;
+  // Se posiciona de manera fluida y armónica tras el contenido, sin colisionar con el pie de página
+  const signHeight = 51.5;
+  const maxSignSecY = 236.0 - signHeight; // 184.5mm
+  const idealSignSecY = curPage2Y + 8.0;
+  const signSecY = Math.min(maxSignSecY, Math.max(idealSignSecY, 138.0));
 
   // Lado Izquierdo: Dirección Técnica Nacional (Firma Oficial Sensei Roy Gatjens)
   const leftSignW = 86;
