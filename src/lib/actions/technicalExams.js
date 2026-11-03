@@ -308,10 +308,13 @@ OBSERVACIONES REGISTRADAS POR EVALUADORES:
 ${notesSummaryText}
 
 TU TAREA OBLIGATORIA:
-1. REGLA ESTRICTA DE ENFOQUE (SIN NOMBRES NI ATRIBUCIÓN):
+1. REGLA 100% CORRECTIVA (PROHIBIDAS FELICITACIONES O ADULACIONES):
+   - Queda terminantemente PROHIBIDO incluir comentarios de felicitación, adulación o complacencia (como "excelente", "sobresaliente", "gran actitud", "actitud ejemplar", "felicitaciones", "muy buen desempeño").
+   - El examen de grado es una instancia marcial estricta: todo comentario, nota y viñeta debe ser 100% CORRECTIVO, señalando con precisión qué aspecto biomecánico o técnico debe corregir el aspirante para su progreso marcial.
+2. REGLA ESTRICTA DE ENFOQUE (SIN NOMBRES NI ATRIBUCIÓN):
    - NUNCA menciones nombres de evaluadores, ni frases como "según el tribunal", "el tribunal indica", "los profesores observaron".
    - Al karateca le interesan ÚNICAMENTE las correcciones técnicas directas y biomecánicas de su examen.
-2. REGLA DE SEVERIDAD Y CORRELACIÓN CON LOS ASPECTOS TÉCNICOS:
+3. REGLA DE SEVERIDAD Y CORRELACIÓN CON LOS ASPECTOS TÉCNICOS:
    - SI LA NOTA ES BAJA (< 70% o 1-2 estrellas):
      El dictamen debe ser SEVERO, FIRME Y EXIGENTE. Señala con precisión las falencias de Shotokan que provocaron la reprobación:
      * En Kihon (Posturas/Dachi): pierna posterior doblada en vez de estirada, talón despegado al avanzar, pasos en falso o reajustar los pies.
@@ -321,20 +324,20 @@ TU TAREA OBLIGATORIA:
      * En Kata (${kataName}): olvidar pasos, detenerse, o la falta grave de tocarse o acomodarse el karategui rompiendo la inmovilidad en tatami.
      * En Kumite (${kumiteName}): perder la distancia Ma-ai, retroceder con miedo o desarmar la guardia Kamae tras bloquear.
    - SI LA NOTA ES ALTA (>= 85% o 4-5 estrellas):
-     Tono de alta precisión técnica. Enfocado EXCLUSIVAMENTE en el detalle fino que le faltó para corregir y ganar 100% (10 de 10) (ej: descender medio puño más el centro de gravedad sin oscilar la altura, máxima aceleración en el Hikite en el impacto final, cero movimientos tras el kiai en ${kataName}).
+     Tono de alta precisión técnica. Enfocado EXCLUSIVAMENTE en el detalle fino que le faltó corregir para ganar 100% (10 de 10) (ej: descender medio puño más el centro de gravedad sin oscilar la altura, máxima aceleración en el Hikite en el impacto final, cero movimientos tras el kiai en ${kataName}).
    - SI LA NOTA ES MEDIA (70% - 84% o 3 estrellas):
      Correcciones constructivas directas para afianzar la fijación de posturas y kime.
-3. COMPARACIÓN Y SÍNTESIS INTELIGENTE DE COMENTARIOS:
+4. COMPARACIÓN Y SÍNTESIS INTELIGENTE DE COMENTARIOS:
    - Compara las observaciones de los evaluadores por cada fase (Kihon, Kata, Kumite).
    - Si dos o más Senseis coinciden o se parecen en un rubro (por ejemplo: la salida con la punta del pie antes de avanzar, acomodarse el cabello o uniforme, los codos en un bloqueo, la respiración o la distancia), sintétizalos y unifícalos en una sola viñeta concisa de consenso.
    - Si las observaciones de los Senseis coinciden con las técnicas de baja calificación de estrellas, intégralas directamente en la corrección de esa técnica.
    - Si una técnica recibió estrellas bajas y no fue mencionada en texto, añade la corrección técnica correspondiente.
-4. Formato OBLIGATORIO: Lista con viñetas (*), una por línea.
+5. Formato OBLIGATORIO: Lista con viñetas (*), una por línea, 100% correctivas:
 * [Corrección en Kata (${kataName})]
 * [Corrección en Kihon / Posturas]
 * [Corrección en Kumite (${kumiteName})]
-* [Detalle para 100% (si es alta) O Motivo severo de no aprobación (si es baja)]
-* [Aspectos positivos: ÚNICAMENTE lo que se haya demostrado o elogiado explícitamente]`;
+* [Detalle correctivo específico para alcanzar 100% O Falencia crítica de no aprobación]
+* [Corrección biomecánica prioritaria de guardia, respiración o foco]`;
 
     // 4. Intentar Gemini API si está configurada
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
