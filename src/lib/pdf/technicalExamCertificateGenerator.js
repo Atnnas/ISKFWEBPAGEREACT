@@ -42,6 +42,7 @@ export async function generateTechnicalExamCertificatePDF({
   kata2Score = null,
   kata2Text = '',
   positiveText = '',
+  finalComments = '',
   generalComment = '',
   _generalComment = '',
   evaluators = []
@@ -613,9 +614,55 @@ export async function generateTechnicalExamCertificatePDF({
     curDictY += 5.5;
   });
 
+  // 2.5 Sección: Dictamen y Observaciones del Promedio Final (Exclusivo Shihan Roy Gatjens)
+  let finalCommentsBoxH = 0;
+  const cleanFinalComments = (finalComments || '').trim();
+  const finalCommentsSecY = dictamenY + 6.5 + dictamenBoxH + 6.0;
+
+  if (cleanFinalComments) {
+    doc.setFillColor(...COLOR_DARK);
+    doc.rect(15, finalCommentsSecY, 180, 6.0, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.0);
+    doc.setTextColor(255, 255, 255);
+    doc.text('DICTAMEN DEL PROMEDIO FINAL — DIRECCIÓN TÉCNICA NACIONAL (SHIHAN ROY GATJENS)', 105, finalCommentsSecY + 4.2, { align: 'center' });
+
+    const royBullets = parsePhaseBullets(cleanFinalComments);
+    const measuredRoyH = measurePhaseBulletsHeight(royBullets);
+    finalCommentsBoxH = Math.min(65.0, Math.max(16.0, measuredRoyH));
+
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...COLOR_GRAY_BORDER);
+    doc.rect(15, finalCommentsSecY + 6.0, 180, finalCommentsBoxH, 'FD');
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.2);
+    doc.setTextColor(...COLOR_DARK);
+
+    let royTextY = finalCommentsSecY + 10.2;
+    const maxRoyY = finalCommentsSecY + 6.0 + finalCommentsBoxH - 2.5;
+
+    for (let i = 0; i < royBullets.length; i++) {
+      if (royTextY >= maxRoyY) break;
+      const bp = royBullets[i];
+      const bpLines = doc.splitTextToSize(`•  ${bp}`, 174);
+      if (royTextY + (bpLines.length * 3.4) > maxRoyY + 1) {
+        const remaining = Math.floor((maxRoyY - royTextY) / 3.4);
+        if (remaining > 0) doc.text(bpLines.slice(0, remaining), 18, royTextY);
+        break;
+      }
+      doc.text(bpLines, 18, royTextY);
+      royTextY += bpLines.length * 3.4 + 0.8;
+    }
+  }
+
   // 3. Firmas y Examinadores Invitados
-  // Se posiciona armónicamente tras Aspectos Positivos, dejando márgenes limpios y equilibrados
-  const signSecY = Math.max(145.0, dictamenY + 6.5 + dictamenBoxH + 15.0);
+  // Se posiciona armónicamente tras Aspectos Positivos o Dictamen del Promedio Final
+  const contentBottomY = cleanFinalComments
+    ? (finalCommentsSecY + 6.0 + finalCommentsBoxH)
+    : (dictamenY + 6.5 + dictamenBoxH);
+  const signSecY = Math.max(150.0, contentBottomY + 12.0);
 
   // Lado Izquierdo: Dirección Técnica Nacional (Firma Oficial Sensei Roy Gatjens)
   const leftSignW = 86;

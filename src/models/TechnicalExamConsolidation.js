@@ -121,6 +121,12 @@ const TechnicalExamConsolidationSchema = new mongoose.Schema({
     default: '',
     trim: true,
   },
+  // Comentarios exclusivos del Sensei Roy Gatjens sobre el promedio final
+  finalComments: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   // Snapshot of the criteria (technicalAspects, techniques) used for this exam
   criteriaSnapshot: {
     type: mongoose.Schema.Types.Mixed,

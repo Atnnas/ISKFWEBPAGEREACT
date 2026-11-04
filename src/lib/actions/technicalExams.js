@@ -523,6 +523,7 @@ export async function saveConsolidatedVerdict({
   technicalPercentage,
   martialAdjustment = 0,
   martialAdjustmentReason = '',
+  finalComments = '',
   overallPercentage = 0,
   isPassed,
   rawObservationsByTechnique = {},
@@ -596,6 +597,7 @@ export async function saveConsolidatedVerdict({
       technicalPercentage: baseTechnicalScore,
       martialAdjustment: computedAdjustment,
       martialAdjustmentReason: String(martialAdjustmentReason || '').trim(),
+      finalComments: String(finalComments || '').trim(),
       overallPercentage: finalOverall,
       finalGrade: finalOverall,
       officialVerdict: passed ? 'Aprobado' : 'Reprobado',
@@ -2047,6 +2049,7 @@ export async function saveEvaluatorAtomicGrade({
   pointsEarned = 0,
   pointsPossible = 0,
   isPassed = false,
+  finalComments = '',
   notes = ''
 }) {
   try {
@@ -2292,6 +2295,7 @@ export async function saveEvaluatorAtomicGrade({
       isPassed: calculatedPercentage > 0 ? (calculatedPercentage >= 70) : Boolean(isPassed),
       evaluatorName: safeEvaluatorName,
       evaluatorEmail: safeEmail,
+      finalComments: typeof finalComments === 'string' && finalComments.trim() ? finalComments.trim().substring(0, 3000) : (existing?.finalComments || ''),
       notes: effectiveNotes,
       evaluatedAt: new Date()
     };

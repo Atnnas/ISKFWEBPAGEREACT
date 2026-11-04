@@ -2989,6 +2989,15 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
       // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
       const positiveText = (item.student?.positiveAspects || '').trim();
+      let resolvedFinalComments = (item.consolidation?.finalComments || item.finalComments || '').trim();
+      if (!resolvedFinalComments) {
+        const royEval = evals.find(ev => (ev.evaluatorName && /roy/i.test(ev.evaluatorName)) || (ev.evaluatorEmail && /roy/i.test(ev.evaluatorEmail)));
+        if (royEval?.finalComments) {
+          resolvedFinalComments = royEval.finalComments.trim();
+        } else if (royEval?.phaseNotes?.promedio_final) {
+          resolvedFinalComments = royEval.phaseNotes.promedio_final.trim();
+        }
+      }
 
       const generalComment = 'Tomar las notas y recomendaciones anteriores para corregir y asi mejorar su nivel';
 
@@ -3015,6 +3024,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         kata2Score: katasPayload[1]?.score,
         kata2Text: katasPayload[1]?.text,
         positiveText,
+        finalComments: resolvedFinalComments,
         generalComment,
         evaluators: tribunalSenseis
       });

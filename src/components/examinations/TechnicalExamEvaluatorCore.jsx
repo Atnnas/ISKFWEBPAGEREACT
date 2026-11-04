@@ -1002,6 +1002,7 @@ export default function TechnicalExamEvaluatorCore({
           pointsPossible: Number(latestStudentEval.pointsPossible) || 0,
           isPassed: Boolean(latestStudentEval.isPassed),
           phaseNotes: latestStudentEval.phaseNotes || {},
+          finalComments: latestStudentEval.finalComments || latestStudentEval.phaseNotes?.promedio_final || '',
           notes: String(latestStudentEval.notes || '')
         });
 
@@ -1228,6 +1229,7 @@ export default function TechnicalExamEvaluatorCore({
     const updatedEval = {
       ...prevEval,
       phaseNotes: updatedPhaseNotes,
+      finalComments: updatedPhaseNotes.promedio_final !== undefined ? updatedPhaseNotes.promedio_final : (prevEval.finalComments || ''),
       notes: combinedNotes
     };
 
@@ -2427,7 +2429,8 @@ export default function TechnicalExamEvaluatorCore({
           { key: 'kihon', label: 'Kihon', desc: 'Técnicas Básicas' },
           ...kataPhaseItems,
           { key: 'kumite', label: 'Kumite', desc: 'Combate' },
-          ...(hasEvaluableAspects ? [{ key: 'aspectos', label: 'Aspectos', desc: 'Generales' }] : [])
+          ...(hasEvaluableAspects ? [{ key: 'aspectos', label: 'Aspectos', desc: 'Generales' }] : []),
+          { key: 'promedio_final', label: 'Promedio Final', desc: 'Exclusivo Sensei Roy', isRoyOnly: true }
         ];
 
         const activePhaseObj = phaseList.find(p => p.key === currentActivePhase) || phaseList[0];
@@ -2438,6 +2441,8 @@ export default function TechnicalExamEvaluatorCore({
           ? `• Observaciones técnicas de ${activePhaseObj.desc || activePhaseObj.label} (ritmo, embusen, postura, kime)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Corregir posturas y vista al frente en ${activePhaseObj.desc || 'Kata'}.`
           : currentActivePhase === 'kumite'
           ? '• Observaciones técnicas de Kumite (distancia maai, reflejos, control)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Buena distancia y guardia firme, mantener kime en ataque.'
+          : currentActivePhase === 'promedio_final'
+          ? '• Dictamen y observaciones sobre el promedio final (exclusivo Shihan Roy Gatjens)...\n• Cada línea comienza con viñeta automáticamente.\n• Enfoque 100% correctivo para pulir técnica hacia el siguiente grado.'
           : '• Observaciones de aspectos técnicos generales...\n• Cada línea comienza con viñeta automáticamente.';
 
         return (
@@ -2506,6 +2511,22 @@ export default function TechnicalExamEvaluatorCore({
 
               {/* Contenido: Área de Texto Grande con soporte de Viñetas */}
               <div className="p-4 sm:p-5 space-y-3">
+                {currentActivePhase === 'promedio_final' && !isDirectorRoy ? (
+                  <div className="py-8 px-5 bg-slate-950/70 border border-slate-800 rounded-xl text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-xs">
+                      🔒
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-amber-400">
+                        Exclusivo Dirección Técnica Nacional
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                        El dictamen y comentarios sobre el promedio final están reservados únicamente para el <strong>Shihan Roy Gatjens</strong>. Los demás miembros del tribunal evaluador no pueden editar este apartado.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
                 {/* Barra superior de herramientas de viñetas */}
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
@@ -2549,6 +2570,8 @@ export default function TechnicalExamEvaluatorCore({
                   <Info className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
                   <span>Presiona <strong>Enter</strong> para agregar una nueva viñeta automática en {activePhaseObj.label}.</span>
                 </p>
+                  </>
+                )}
               </div>
 
               {/* Pie del modal */}

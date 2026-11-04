@@ -95,6 +95,12 @@ const TechnicalExamEvaluationSchema = new mongoose.Schema({
     default: '',
     trim: true,
   },
+  // Comentarios exclusivos del Sensei Roy Gatjens sobre el promedio final
+  finalComments: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   phaseNotes: {
     type: mongoose.Schema.Types.Mixed,
     default: {},

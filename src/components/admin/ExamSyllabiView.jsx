@@ -564,6 +564,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   const handleOpenEditTechModal = (syllabus, tech) => {
     setEditingTechModal({
       isOpen: true,
+      isNew: false,
       syllabus,
       tech,
       name: tech.name,
@@ -576,25 +577,62 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     });
   };
 
+  const handleOpenAddTechModal = (syllabus, group = 'kihon') => {
+    setEditingTechModal({
+      isOpen: true,
+      isNew: true,
+      syllabus,
+      tech: { group },
+      name: '',
+      stance: group === 'kumite' ? 'Kamae' : (group === 'kata' ? 'Zenkutsu Dachi' : COMMON_STANCES[0]),
+      direction: 'Adelante (Mae)',
+      repetitions: group === 'kihon' ? 3 : 1,
+      tripType: 'ida_y_vuelta',
+      embusen: group === 'kata' ? 'Embusen Oficial ISKF' : '',
+      notes: '',
+    });
+  };
+
   const handleSaveIndividualTech = async () => {
     if (!editingTechModal.syllabus || !editingTechModal.tech) return;
-    const { syllabus, tech, name, stance, direction, repetitions, tripType, embusen, notes } = editingTechModal;
+    const { syllabus, tech, name, stance, direction, repetitions, tripType, embusen, notes, isNew } = editingTechModal;
 
-    const updatedTechniques = (syllabus.techniques || []).map(t => {
-      if (t.id === tech.id) {
-        return {
-          ...t,
-          name: name.trim() || t.name,
-          stance,
-          direction,
-          repetitions: Math.max(1, parseInt(repetitions, 10) || 1),
-          tripType,
-          embusen: (embusen || '').trim(),
-          notes: notes.trim(),
-        };
-      }
-      return t;
-    });
+    if (!name || !name.trim()) {
+      showAlert('Por favor ingrese el nombre de la técnica o ejercicio.', 'Campo Requerido', true);
+      return;
+    }
+
+    let updatedTechniques;
+    if (isNew) {
+      const newTech = {
+        id: `tech-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        group: tech.group || 'kihon',
+        name: name.trim(),
+        stance: stance || COMMON_STANCES[0],
+        direction: direction || COMMON_DIRECTIONS[0],
+        repetitions: Math.max(1, parseInt(repetitions, 10) || 1),
+        tripType: tripType || 'ida_y_vuelta',
+        embusen: (embusen || '').trim(),
+        notes: (notes || '').trim(),
+      };
+      updatedTechniques = [...(syllabus.techniques || []), newTech];
+    } else {
+      updatedTechniques = (syllabus.techniques || []).map(t => {
+        if (t.id === tech.id) {
+          return {
+            ...t,
+            name: name.trim() || t.name,
+            stance,
+            direction,
+            repetitions: Math.max(1, parseInt(repetitions, 10) || 1),
+            tripType,
+            embusen: (embusen || '').trim(),
+            notes: notes.trim(),
+          };
+        }
+        return t;
+      });
+    }
 
     const payload = {
       name: syllabus.name,
@@ -602,6 +640,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
       targetRank: syllabus.targetRank,
       description: syllabus.description,
       techniques: updatedTechniques,
+      technicalAspects: syllabus.technicalAspects || [],
     };
 
     const syllabusId = syllabus.id || syllabus._id;
@@ -610,7 +649,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
       if (res.success) {
         setSyllabi(prev => prev.map(s => (s.id === syllabusId || s._id === syllabusId) ? { ...s, ...payload } : s));
         setEditingTechModal(prev => ({ ...prev, isOpen: false }));
-        showAlert('Técnica modificada y guardada correctamente.', '¡Actualizado!');
+        showAlert(isNew ? 'Nueva técnica agregada al temario exitosamente.' : 'Técnica modificada y guardada correctamente.', '¡Actualizado!');
       } else {
         showAlert(res.error || 'No se pudo guardar la modificación.', 'Error', true);
       }
@@ -618,6 +657,38 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
       console.error(err);
       showAlert('Error al modificar la técnica.', 'Error', true);
     }
+  };
+
+  const handleDeleteIndividualTech = (syllabus, tech) => {
+    setConfirmModal({
+      isOpen: true,
+      title: '¿Eliminar técnica del temario?',
+      message: `¿Estás seguro de que deseas eliminar "${tech.name}" de este temario oficial? Esta acción se guardará de inmediato en la base de datos.`,
+      onConfirm: async () => {
+        const updatedTechniques = (syllabus.techniques || []).filter(t => t.id !== tech.id);
+        const payload = {
+          name: syllabus.name,
+          currentRank: syllabus.currentRank,
+          targetRank: syllabus.targetRank,
+          description: syllabus.description,
+          techniques: updatedTechniques,
+          technicalAspects: syllabus.technicalAspects || [],
+        };
+        const syllabusId = syllabus.id || syllabus._id;
+        try {
+          const res = await updateExamSyllabus(syllabusId, payload);
+          if (res.success) {
+            setSyllabi(prev => prev.map(s => (s.id === syllabusId || s._id === syllabusId) ? { ...s, ...payload } : s));
+            showAlert('Técnica eliminada del temario correctamente.', 'Eliminada');
+          } else {
+            showAlert(res.error || 'No se pudo eliminar la técnica.', 'Error', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showAlert('Error al eliminar la técnica.', 'Error', true);
+        }
+      }
+    });
   };
 
   const handleQuickToggleTripType = async (syllabus, techId) => {
@@ -637,6 +708,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
       targetRank: syllabus.targetRank,
       description: syllabus.description,
       techniques: updatedTechniques,
+      technicalAspects: syllabus.technicalAspects || [],
     };
 
     const syllabusId = syllabus.id || syllabus._id;
@@ -1154,6 +1226,14 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       >
                                         <Edit3 className="w-3.5 h-3.5" />
                                       </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteIndividualTech(syllabus, tech)}
+                                        className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                        title="Eliminar esta técnica del temario"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
                                     </div>
                                   </div>
 
@@ -1193,6 +1273,16 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                             </div>
                           )}
                         </div>
+
+                        {/* Botón Agregar Técnica de Kihon */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddTechModal(syllabus, 'kihon')}
+                          className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-[#2D2E83]/40 hover:border-[#2D2E83] bg-white hover:bg-[#2D2E83]/5 text-[#2D2E83] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Agregar Técnica de Kihon</span>
+                        </button>
                       </div>
 
                       {/* GRUPO 2: KUMITE */}
@@ -1238,6 +1328,14 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       >
                                         <Edit3 className="w-3.5 h-3.5" />
                                       </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteIndividualTech(syllabus, tech)}
+                                        className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                        title="Eliminar este ejercicio de Kumite del temario"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
                                     </div>
                                   </div>
 
@@ -1246,6 +1344,16 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                             </div>
                           )}
                         </div>
+
+                        {/* Botón Agregar Ejercicio de Kumite */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddTechModal(syllabus, 'kumite')}
+                          className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-[#BE1622]/40 hover:border-[#BE1622] bg-white hover:bg-[#BE1622]/5 text-[#BE1622] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Agregar Ejercicio de Kumite</span>
+                        </button>
                       </div>
 
                       {/* GRUPO 3: KATA */}
@@ -1291,6 +1399,14 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       >
                                         <Edit3 className="w-3.5 h-3.5" />
                                       </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteIndividualTech(syllabus, tech)}
+                                        className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                        title="Eliminar este Kata del temario"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
                                     </div>
                                   </div>
 
@@ -1308,6 +1424,16 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                             </div>
                           )}
                         </div>
+
+                        {/* Botón Agregar Kata */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddTechModal(syllabus, 'kata')}
+                          className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-slate-300 hover:border-slate-800 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Agregar Kata</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2391,11 +2517,23 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-slate-100 text-[#2D2E83] rounded-2xl border border-slate-200">
-                  <Edit3 className="w-5 h-5" />
+                  {editingTechModal.isNew ? (
+                    <Plus className="w-5 h-5 text-emerald-600" />
+                  ) : (
+                    <Edit3 className="w-5 h-5 text-[#2D2E83]" />
+                  )}
                 </div>
                 <div>
                   <h4 className="text-base font-bold text-slate-900 tracking-tight">
-                    Modificar Técnica Individual
+                    {editingTechModal.isNew
+                      ? `Agregar ${
+                          editingTechModal.tech?.group === 'kata'
+                            ? 'Kata'
+                            : editingTechModal.tech?.group === 'kumite'
+                            ? 'Ejercicio de Kumite'
+                            : 'Técnica de Kihon'
+                        }`
+                      : 'Modificar Técnica Individual'}
                   </h4>
                   <p className="text-xs text-slate-500 font-medium">
                     {editingTechModal.syllabus?.name}
@@ -2414,12 +2552,23 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-700 tracking-wider mb-1">
-                  Nombre de la Técnica
+                  {editingTechModal.tech?.group === 'kata'
+                    ? 'Nombre del Kata *'
+                    : editingTechModal.tech?.group === 'kumite'
+                    ? 'Nombre del Ejercicio de Kumite *'
+                    : 'Nombre de la Técnica de Kihon *'}
                 </label>
                 <input
                   type="text"
                   value={editingTechModal.name}
                   onChange={(e) => setEditingTechModal(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder={
+                    editingTechModal.tech?.group === 'kata'
+                      ? 'Ej: Heian Nidan'
+                      : editingTechModal.tech?.group === 'kumite'
+                      ? 'Ej: Gohon Kumite Jodan'
+                      : 'Ej: Oi Zuki Chudan'
+                  }
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2D2E83]/20"
                 />
               </div>
@@ -2555,8 +2704,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                 onClick={handleSaveIndividualTech}
                 className="px-5 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
-                <Save className="w-3.5 h-3.5" />
-                <span>Guardar Cambios</span>
+                {editingTechModal.isNew ? <Plus className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                <span>{editingTechModal.isNew ? 'Agregar al Temario' : 'Guardar Cambios'}</span>
               </button>
             </div>
           </div>

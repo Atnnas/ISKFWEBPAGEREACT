@@ -144,6 +144,7 @@ function StudentMonitorDrawer({
     kumite: consolidation?.phaseAdjustments?.kumite ?? 0
   });
   const [martialAdjustmentReason, setMartialAdjustmentReason] = useState(consolidation?.martialAdjustmentReason ?? '');
+  const [finalComments, setFinalComments] = useState(consolidation?.finalComments ?? '');
   const [isSavingVerdict, setIsSavingVerdict] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
 
@@ -163,6 +164,10 @@ function StudentMonitorDrawer({
         });
       }
       if (typeof consolidation.martialAdjustmentReason === 'string') {
+        setMartialAdjustmentReason(consolidation.martialAdjustmentReason);
+      }
+      if (typeof consolidation.finalComments === 'string') {
+        setFinalComments(consolidation.finalComments);
         setMartialAdjustmentReason(consolidation.martialAdjustmentReason);
       }
     }
@@ -363,6 +368,7 @@ function StudentMonitorDrawer({
         technicalPercentage: baseTechnicalScore,
         martialAdjustment: netAdjustment,
         martialAdjustmentReason: (martialAdjustmentReason || '').trim(),
+        finalComments: (finalComments || '').trim(),
         overallPercentage: calculatedFinalScore,
         isPassed: calculatedIsPassed,
         aiConsolidatedSummary: consolidation?.aiAnalysis || consolidation?.observations || 'Dictamen colegiado oficializado por el tribunal.',
@@ -693,6 +699,23 @@ function StudentMonitorDrawer({
               />
             </div>
 
+            {/* Comentarios del Promedio Final — Exclusivo Dirección Técnica (Shihan Roy Gatjens) */}
+            <div className="pt-2 border-t border-slate-200/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-black uppercase tracking-wider text-[#2D2E83] flex items-center gap-1.5">
+                  <span>🥋 Comentarios del Promedio Final (Exclusivo Shihan Roy Gatjens)</span>
+                </label>
+                <span className="text-[10px] text-slate-500 font-medium">Se incluirán en el Certificado Oficial PDF</span>
+              </div>
+              <textarea
+                rows={3}
+                value={finalComments}
+                onChange={(e) => setFinalComments(e.target.value)}
+                placeholder="Observaciones y directrices técnicas finales sobre el promedio general del aspirante (100% correctivas)..."
+                className="w-full p-3 rounded-xl border border-slate-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-[#2D2E83] outline-hidden font-medium resize-y"
+              />
+            </div>
+
             {/* Feedback al guardar */}
             {saveFeedback && (
               <div className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
@@ -703,93 +726,6 @@ function StudentMonitorDrawer({
               </div>
             )}
           </div>
-
-          {/* Tabla Comparativa de Votación por Técnica (Estrellas de cada Sensei) */}
-          {syllabusTechniques.length > 0 && (
-            <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200 shadow-2xs space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Votación de Estrellas por Técnica (Tribunal Evaluador)</span>
-                </h4>
-                <span className="text-[10px] text-slate-500 font-medium">
-                  {evalItems.length} Senseis evaluando
-                </span>
-              </div>
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-[10px] uppercase font-black text-slate-500 bg-slate-100/70">
-                      <th className="py-2 px-3">Fase</th>
-                      <th className="py-2 px-3">Técnica Evaluada</th>
-                      {evalItems.map(e => (
-                        <th key={e.key} className="py-2 px-3 text-center">
-                          🥋 {e.evaluator.name.split(' ')[0]}
-                        </th>
-                      ))}
-                      <th className="py-2 px-3 text-right">Promedio</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
-                    {syllabusTechniques.map(t => {
-                      const grp = (t.group || t.phase || 'kihon').toUpperCase();
-                      const vals = evalItems
-                        .map(e => e.evalRecord?.techniqueAverages?.[t.id])
-                        .filter(v => typeof v === 'number');
-                      const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
-
-                      return (
-                        <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="py-2 px-3">
-                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
-                              grp === 'KIHON' ? 'bg-blue-100 text-blue-800' :
-                              grp === 'KATA' ? 'bg-purple-100 text-purple-800' :
-                              'bg-amber-100 text-amber-800'
-                            }`}>
-                              {grp}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3 font-bold text-slate-800">
-                            {t.name}
-                          </td>
-                          {evalItems.map(e => {
-                            const score = e.evalRecord?.techniqueAverages?.[t.id];
-                            const stars = score !== undefined && score !== null ? Math.max(1, Math.min(5, Math.round((score / 100) * 5))) : null;
-
-                            return (
-                              <td key={e.key} className="py-2 px-3 text-center">
-                                {stars !== null ? (
-                                  <div className="inline-flex items-center gap-1.5">
-                                    <span className="text-amber-500 font-bold tracking-tight text-xs">
-                                      {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
-                                    </span>
-                                    <span className="font-mono font-bold text-slate-700 text-[11px]">
-                                      {score}%
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span className="text-slate-300 font-mono text-xs">—</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                          <td className="py-2 px-3 text-right">
-                            {avg !== null ? (
-                              <span className={`font-mono font-black text-xs ${avg >= 70 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                {avg}%
-                              </span>
-                            ) : (
-                              <span className="text-slate-300 font-mono text-xs">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
 
           {/* 2. Sección Detallada: Puntos a Mejorar Desglosados en Viñetas (Kihon, Kata y Kumite) */}
           <div className="space-y-3 pt-1">
@@ -984,6 +920,93 @@ function StudentMonitorDrawer({
                       </div>
                     );
                   })}
+              </div>
+            </div>
+          )}
+        
+          {/* Tabla Comparativa de Votación por Técnica (Estrellas de cada Sensei) */}
+          {syllabusTechniques.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Votación de Estrellas por Técnica (Tribunal Evaluador)</span>
+                </h4>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  {evalItems.length} Senseis evaluando
+                </span>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-[10px] uppercase font-black text-slate-500 bg-slate-100/70">
+                      <th className="py-2 px-3">Fase</th>
+                      <th className="py-2 px-3">Técnica Evaluada</th>
+                      {evalItems.map(e => (
+                        <th key={e.key} className="py-2 px-3 text-center">
+                          🥋 {e.evaluator.name.split(' ')[0]}
+                        </th>
+                      ))}
+                      <th className="py-2 px-3 text-right">Promedio</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {syllabusTechniques.map(t => {
+                      const grp = (t.group || t.phase || 'kihon').toUpperCase();
+                      const vals = evalItems
+                        .map(e => e.evalRecord?.techniqueAverages?.[t.id])
+                        .filter(v => typeof v === 'number');
+                      const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+
+                      return (
+                        <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-2 px-3">
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                              grp === 'KIHON' ? 'bg-blue-100 text-blue-800' :
+                              grp === 'KATA' ? 'bg-purple-100 text-purple-800' :
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {grp}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 font-bold text-slate-800">
+                            {t.name}
+                          </td>
+                          {evalItems.map(e => {
+                            const score = e.evalRecord?.techniqueAverages?.[t.id];
+                            const stars = score !== undefined && score !== null ? Math.max(1, Math.min(5, Math.round((score / 100) * 5))) : null;
+
+                            return (
+                              <td key={e.key} className="py-2 px-3 text-center">
+                                {stars !== null ? (
+                                  <div className="inline-flex items-center gap-1.5">
+                                    <span className="text-amber-500 font-bold tracking-tight text-xs">
+                                      {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
+                                    </span>
+                                    <span className="font-mono font-bold text-slate-700 text-[11px]">
+                                      {score}%
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-300 font-mono text-xs">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 px-3 text-right">
+                            {avg !== null ? (
+                              <span className={`font-mono font-black text-xs ${avg >= 70 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                {avg}%
+                              </span>
+                            ) : (
+                              <span className="text-slate-300 font-mono text-xs">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -1303,6 +1326,7 @@ export default function TribunalProgressMonitor({
         kata2Score: katasPayload[1]?.score,
         kata2Text: katasPayload[1]?.text,
         positiveText,
+        finalComments: cons?.finalComments || finalComments || '',
         _generalComment: cons?.observations || 'Tomar las recomendaciones para continuar puliendo su técnica hacia el siguiente grado.',
         evaluators: evaluatorsProgress.map(e => ({ name: e.evaluator.name, role: e.evaluator.role }))
       });
