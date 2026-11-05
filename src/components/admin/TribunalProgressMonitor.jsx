@@ -182,7 +182,14 @@ function StudentMonitorDrawer({
     kumite: consolidation?.phaseAdjustments?.kumite ?? 0
   });
   const [martialAdjustmentReason, setMartialAdjustmentReason] = useState(consolidation?.martialAdjustmentReason ?? '');
-  const [finalComments, setFinalComments] = useState(consolidation?.finalComments ?? '');
+  const royEvalFallback = evaluatorsProgress?.find(e =>
+    e.evaluator?.name?.toLowerCase().includes('roy') ||
+    e.evaluator?.email?.toLowerCase().includes('roy') ||
+    e.evalRecord?.finalComments ||
+    e.evalRecord?.phaseNotes?.promedio_final
+  );
+  const initialFinalComments = consolidation?.finalComments || royEvalFallback?.evalRecord?.finalComments || royEvalFallback?.evalRecord?.phaseNotes?.promedio_final || '';
+  const [finalComments, setFinalComments] = useState(initialFinalComments);
   const [isSavingVerdict, setIsSavingVerdict] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
 
@@ -204,12 +211,13 @@ function StudentMonitorDrawer({
       if (typeof consolidation.martialAdjustmentReason === 'string') {
         setMartialAdjustmentReason(consolidation.martialAdjustmentReason);
       }
-      if (typeof consolidation.finalComments === 'string') {
+      if (typeof consolidation.finalComments === 'string' && consolidation.finalComments.trim()) {
         setFinalComments(consolidation.finalComments);
-        setMartialAdjustmentReason(consolidation.martialAdjustmentReason);
+      } else if (royEvalFallback?.evalRecord?.finalComments || royEvalFallback?.evalRecord?.phaseNotes?.promedio_final) {
+        setFinalComments(royEvalFallback.evalRecord.finalComments || royEvalFallback.evalRecord.phaseNotes.promedio_final);
       }
     }
-  }, [consolidation]);
+  }, [consolidation, royEvalFallback]);
   const sId = String(student._id || student.id);
   const [activeTab, setActiveTab] = useState('colegiado');
 
@@ -499,6 +507,7 @@ function StudentMonitorDrawer({
             technicalPercentage: baseTechnicalScore,
             martialAdjustment: netAdjustment,
             martialAdjustmentReason: (martialAdjustmentReason || '').trim(),
+            finalComments: (finalComments || '').trim(),
             finalGrade: calculatedFinalScore,
             isPassed: calculatedIsPassed
           })}
@@ -758,20 +767,59 @@ function StudentMonitorDrawer({
             </div>
 
             {/* Comentarios del Promedio Final — Exclusivo Dirección Técnica (Shihan Roy Gatjens) */}
-            <div className="pt-2 border-t border-slate-200/80 space-y-1.5">
-              <div className="flex items-center justify-between">
+            <div className="pt-2 border-t border-slate-200/80 space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <label className="text-[11px] font-black uppercase tracking-wider text-[#2D2E83] flex items-center gap-1.5">
-                  <span>🥋 Comentarios del Promedio Final (Exclusivo Shihan Roy Gatjens)</span>
+                  <span>🥋 Dictamen y Correcciones del Promedio Final (Exclusivo Shihan Roy Gatjens)</span>
                 </label>
-                <span className="text-[10px] text-slate-500 font-medium">Se incluirán en el Certificado Oficial PDF</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prefix = finalComments && !finalComments.endsWith('\n') ? '\n' : '';
+                      setFinalComments(prev => `${prev || ''}${prefix}• `);
+                    }}
+                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    title="Insertar viñeta correctiva"
+                  >
+                    <span>+ Viñeta (•)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveConsolidatedWithAdjustment}
+                    disabled={isSavingVerdict}
+                    className="px-3 py-1 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-lg text-[10px] font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingVerdict ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                    <span>Guardar Dictamen</span>
+                  </button>
+                </div>
               </div>
               <textarea
-                rows={3}
+                rows={4}
                 value={finalComments}
                 onChange={(e) => setFinalComments(e.target.value)}
-                placeholder="Observaciones y directrices técnicas finales sobre el promedio general del aspirante (100% correctivas)..."
-                className="w-full p-3 rounded-xl border border-slate-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-[#2D2E83] outline-hidden font-medium resize-y"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const cursor = e.target.selectionStart;
+                    const val = e.target.value;
+                    const before = val.substring(0, cursor);
+                    const after = val.substring(cursor);
+                    const newVal = `${before}\n• ${after}`;
+                    setFinalComments(newVal);
+                    setTimeout(() => {
+                      e.target.selectionStart = cursor + 3;
+                      e.target.selectionEnd = cursor + 3;
+                    }, 0);
+                  }
+                }}
+                placeholder="• Escriba las observaciones, directrices y técnicas específicas a corregir por el aspirante (100% correctivo)...\n• Cada 'Enter' crea automáticamente una viñeta para el certificado PDF oficial..."
+                className="w-full p-3 rounded-xl border border-slate-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-[#2D2E83] outline-hidden font-medium resize-y leading-relaxed"
               />
+              <p className="text-[10px] text-slate-500 font-medium">
+                💡 Todo lo que el Shihan Roy agregue o modifique aquí se guarda en la base de datos y se imprime oficialmente en el <strong>recuadro de Dirección Técnica Nacional en la Página 2 del Certificado PDF</strong>.
+              </p>
             </div>
 
             {/* Feedback al guardar */}
@@ -1448,7 +1496,13 @@ export default function TribunalProgressMonitor({
         kata2Score: katasPayload[1]?.score,
         kata2Text: katasPayload[1]?.text,
         positiveText,
-        finalComments: cons?.finalComments || finalComments || '',
+        finalComments: (
+          cons?.finalComments ||
+          progressData?.consolidations?.[sId]?.finalComments ||
+          evalItems.find(e => e.evalRecord?.finalComments)?.evalRecord?.finalComments ||
+          evalItems.find(e => e.evalRecord?.phaseNotes?.promedio_final)?.evalRecord?.phaseNotes?.promedio_final ||
+          ''
+        ).trim(),
         _generalComment: cons?.observations || 'Tomar las recomendaciones para continuar puliendo su técnica hacia el siguiente grado.',
         evaluators: evaluatorsProgress.map(e => ({ name: e.evaluator.name, role: e.evaluator.role }))
       });

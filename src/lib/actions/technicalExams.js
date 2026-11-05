@@ -2306,6 +2306,14 @@ export async function saveEvaluatorAtomicGrade({
       { upsert: true, new: true, setDefaultsOnInsert: true, strict: false }
     );
 
+    // Si Shihan Roy o el evaluador envió finalComments, sincronizar también en TechnicalExamConsolidation
+    if (payload.finalComments && (safeEvaluatorName.toLowerCase().includes('roy') || safeEmail.toLowerCase().includes('roy') || Boolean(finalComments))) {
+      await TechnicalExamConsolidation.findOneAndUpdate(
+        { callId: callObjId, studentId: studentObjId },
+        { $set: { finalComments: payload.finalComments } }
+      );
+    }
+
     return {
       success: true,
       evaluation: {
@@ -2657,6 +2665,7 @@ export async function getTribunalProgressForCall(params) {
         phaseAdjustments: c.phaseAdjustments || null,
         martialAdjustment: c.martialAdjustment || 0,
         martialAdjustmentReason: c.martialAdjustmentReason || '',
+        finalComments: c.finalComments || '',
         officialVerdict: c.officialVerdict || (c.isPassed ? 'Aprobado' : 'Reprobado'),
         isPassed: Boolean(c.isPassed),
         promotedRank: c.promotedRank || c.targetRank,
