@@ -130,17 +130,34 @@ function getPhaseImprovementBullets(phase, notesList, techniqueScores = [], phas
 // Helper para clasificar el origen de una viñeta para la visualización del Director Técnico (Shihan Roy Gatjens)
 function getOriginBadgeData(itemOrText) {
   if (itemOrText && typeof itemOrText === 'object') {
-    const type = itemOrText.sourceType || 'sensei_only';
-    const icon = itemOrText.sourceIcon || (type === 'stars_only' ? '⭐' : type === 'hybrid' ? '⭐👤' : '👤');
-    const label = itemOrText.sourceLabel || (type === 'stars_only' ? 'Métrica de Estrellas (<100%)' : type === 'hybrid' ? 'Estrellas + Comentario de Sensei' : 'Comentario Directo de Sensei');
+    const type = itemOrText.sourceType || (itemOrText.coincidenceCount >= 2 ? 'sensei_consensus' : 'sensei_only');
+    const icon = itemOrText.sourceIcon || (
+      type === 'stars_only' ? '⭐' :
+      type === 'hybrid_consensus' ? '⭐👤👤' :
+      type === 'sensei_consensus' ? '👤👤' :
+      type === 'hybrid' ? '⭐👤' :
+      '👤'
+    );
+    const label = itemOrText.sourceLabel || (
+      type === 'stars_only' ? 'Métrica de Estrellas (<100%)' :
+      type === 'hybrid_consensus' ? 'Consenso de 2+ Senseis + Estrellas' :
+      type === 'sensei_consensus' ? 'Coincidencia de 2 o más Senseis' :
+      type === 'hybrid' ? 'Estrellas + Comentario de Sensei' :
+      'Comentario Directo de Sensei'
+    );
     return { type, icon, label };
   }
 
   const str = String(itemOrText || '').toLowerCase();
   const hasStarsPattern = /\(\d+%\)/.test(str) || str.includes('consenso de estrellas') || str.includes('para alcanzar el 100%');
+  const hasMultiSenseiKeywords = str.includes('consenso de') || str.includes('varios senseis') || str.includes('ambos senseis') || str.includes('tribunal unificado');
   const hasSenseiKeywords = str.includes('sensei') || str.includes('tribunal') || str.includes('evaluador');
 
-  if (hasStarsPattern && hasSenseiKeywords) {
+  if (hasStarsPattern && hasMultiSenseiKeywords) {
+    return { type: 'hybrid_consensus', icon: '⭐👤👤', label: 'Consenso de 2+ Senseis + Estrellas' };
+  } else if (hasMultiSenseiKeywords) {
+    return { type: 'sensei_consensus', icon: '👤👤', label: 'Coincidencia de 2 o más Senseis' };
+  } else if (hasStarsPattern && hasSenseiKeywords) {
     return { type: 'hybrid', icon: '⭐👤', label: 'Estrellas + Comentario de Sensei' };
   } else if (hasStarsPattern) {
     return { type: 'stars_only', icon: '⭐', label: 'Métrica de Estrellas (<100%)' };
@@ -790,12 +807,16 @@ function StudentMonitorDrawer({
                 <span className="font-semibold text-gray-700">Métrica de Estrellas (&lt;100%)</span>
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-amber-200 shadow-2xs">
-                <span className="text-xs">⭐👤</span>
-                <span className="font-semibold text-gray-700">Híbrido (Estrellas + Sensei)</span>
+                <span className="text-xs">👤</span>
+                <span className="font-semibold text-gray-700">Comentario de 1 Sensei</span>
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-amber-200 shadow-2xs">
-                <span className="text-xs">👤</span>
-                <span className="font-semibold text-gray-700">Comentario Directo de Sensei</span>
+                <span className="text-xs">👤👤</span>
+                <span className="font-semibold text-gray-700">Coincidencia de 2+ Senseis</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-amber-200 shadow-2xs">
+                <span className="text-xs">⭐👤</span>
+                <span className="font-semibold text-gray-700">Híbrido (Estrellas + Sensei)</span>
               </span>
               <span className="text-amber-800/80 text-[10px] ml-auto font-medium hidden sm:inline">
                 (Visualización exclusiva para Dirección Técnica y Tribunal)

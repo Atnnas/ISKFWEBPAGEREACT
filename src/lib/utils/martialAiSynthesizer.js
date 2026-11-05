@@ -388,9 +388,24 @@ export function synthesizePhaseBulletsWithAI({
              (firstWord && firstWord.length > 3 && rawCombined.includes(firstWord));
     });
 
-    const sourceType = hasLowStarsCoincidence ? 'hybrid' : 'sensei_only';
-    const sourceIcon = hasLowStarsCoincidence ? '⭐👤' : '👤';
-    const sourceLabel = hasLowStarsCoincidence ? 'Estrellas + Comentario de Sensei' : 'Comentario Directo de Sensei';
+    const isMultiSensei = coincidenceCount >= 2;
+    let sourceType = 'sensei_only';
+    let sourceIcon = '👤';
+    let sourceLabel = `Comentario Directo de Sensei (${evalList.join(', ')})`;
+
+    if (hasLowStarsCoincidence && isMultiSensei) {
+      sourceType = 'hybrid_consensus';
+      sourceIcon = '⭐👤👤';
+      sourceLabel = `Consenso de ${coincidenceCount} Senseis (${evalList.join(', ')}) + Métrica de Estrellas`;
+    } else if (isMultiSensei) {
+      sourceType = 'sensei_consensus';
+      sourceIcon = '👤👤';
+      sourceLabel = `Coincidencia de ${coincidenceCount} Senseis (${evalList.join(', ')})`;
+    } else if (hasLowStarsCoincidence) {
+      sourceType = 'hybrid';
+      sourceIcon = '⭐👤';
+      sourceLabel = `Estrellas + Comentario de Sensei (${evalList[0] || 'Sensei'})`;
+    }
 
     synthesizedBullets.push({
       text: lineText,
