@@ -127,6 +127,27 @@ function getPhaseImprovementBullets(phase, notesList, techniqueScores = [], phas
   });
 }
 
+// Helper para clasificar el origen de una viñeta para la visualización del Director Técnico (Shihan Roy Gatjens)
+function getOriginBadgeData(itemOrText) {
+  if (itemOrText && typeof itemOrText === 'object') {
+    const type = itemOrText.sourceType || 'sensei_only';
+    const icon = itemOrText.sourceIcon || (type === 'stars_only' ? '⭐' : type === 'hybrid' ? '⭐👤' : '👤');
+    const label = itemOrText.sourceLabel || (type === 'stars_only' ? 'Métrica de Estrellas (<100%)' : type === 'hybrid' ? 'Estrellas + Comentario de Sensei' : 'Comentario Directo de Sensei');
+    return { type, icon, label };
+  }
+
+  const str = String(itemOrText || '').toLowerCase();
+  const hasStarsPattern = /\(\d+%\)/.test(str) || str.includes('consenso de estrellas') || str.includes('para alcanzar el 100%');
+  const hasSenseiKeywords = str.includes('sensei') || str.includes('tribunal') || str.includes('evaluador');
+
+  if (hasStarsPattern && hasSenseiKeywords) {
+    return { type: 'hybrid', icon: '⭐👤', label: 'Estrellas + Comentario de Sensei' };
+  } else if (hasStarsPattern) {
+    return { type: 'stars_only', icon: '⭐', label: 'Métrica de Estrellas (<100%)' };
+  }
+  return { type: 'sensei_only', icon: '👤', label: 'Comentario Directo de Sensei' };
+}
+
 // Drawer interactivo con pestañas de Promedios Colegiados y pestañas por cada Sensei Evaluador
 function StudentMonitorDrawer({
   call,
@@ -328,6 +349,26 @@ function StudentMonitorDrawer({
       const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
       return { id: t.id, name: t.name, score: avg };
     });
+
+  const kihonBullets = useMemo(() => {
+    return getPhaseImprovementBullets('kihon', kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr);
+  }, [kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr]);
+
+  const kataBullets = useMemo(() => {
+    return getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, colegiadoKata, targetRankStr);
+  }, [kataNotesList, kataTechScores, colegiadoKata, targetRankStr]);
+
+  const kumiteBullets = useMemo(() => {
+    return getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr);
+  }, [kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr]);
+
+  const aspectosBullets = useMemo(() => {
+    return getPhaseImprovementBullets('aspectos', aspectosNotesList, [], colegiadoAspectos, targetRankStr);
+  }, [aspectosNotesList, colegiadoAspectos, targetRankStr]);
+
+  const allPhaseBullets = useMemo(() => {
+    return [...kihonBullets, ...kataBullets, ...kumiteBullets, ...aspectosBullets];
+  }, [kihonBullets, kataBullets, kumiteBullets, aspectosBullets]);
 
   const handleSaveConsolidatedWithAdjustment = async () => {
     if (hasAnyAdjustment && (!martialAdjustmentReason || !martialAdjustmentReason.trim())) {
@@ -739,6 +780,28 @@ function StudentMonitorDrawer({
               </span>
             </div>
 
+            {/* Leyenda de Origen de Observaciones (Exclusivo Shihan Roy / Dirección Técnica) */}
+            <div className="flex flex-wrap items-center gap-2 p-2.5 px-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-[11px] text-amber-950 font-medium shadow-2xs">
+              <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                <span>🥋 Origen del Criterio:</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-amber-200 shadow-2xs">
+                <span className="text-xs">⭐</span>
+                <span className="font-semibold text-gray-700">Métrica de Estrellas (&lt;100%)</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-amber-200 shadow-2xs">
+                <span className="text-xs">⭐👤</span>
+                <span className="font-semibold text-gray-700">Híbrido (Estrellas + Sensei)</span>
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-amber-200 shadow-2xs">
+                <span className="text-xs">👤</span>
+                <span className="font-semibold text-gray-700">Comentario Directo de Sensei</span>
+              </span>
+              <span className="text-amber-800/80 text-[10px] ml-auto font-medium hidden sm:inline">
+                (Visualización exclusiva para Dirección Técnica y Tribunal)
+              </span>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Viñetas Colegiadas: KIHON */}
               <div className="rounded-xl border border-blue-200/90 bg-blue-50/20 p-4 space-y-2 flex flex-col justify-between shadow-2xs">
@@ -754,11 +817,17 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-2 bg-white p-3 rounded-lg border border-blue-100 shadow-2xs">
-                    {getPhaseImprovementBullets('kihon', kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr).map((bItem, bIdx) => {
+                    {kihonBullets.map((bItem, bIdx) => {
                       const text = typeof bItem === 'string' ? bItem : bItem.text;
+                      const badge = getOriginBadgeData(bItem);
                       return (
                         <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
-                          <span className="text-blue-600 font-black mt-0.5 select-none">•</span>
+                          <span
+                            title={badge.label}
+                            className="inline-flex items-center justify-center shrink-0 text-xs px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 shadow-2xs font-normal cursor-help select-none mt-0.5"
+                          >
+                            {badge.icon}
+                          </span>
                           <span className="flex-1">{text}</span>
                         </div>
                       );
@@ -784,9 +853,10 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-1.5 bg-white p-3 rounded-lg border border-purple-100 shadow-2xs">
-                    {getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, colegiadoKata, targetRankStr).map((bItem, bIdx) => {
+                    {kataBullets.map((bItem, bIdx) => {
                       const text = typeof bItem === 'string' ? bItem : bItem.text;
                       const isKarategui = text.toLowerCase().includes('karategui') || text.toLowerCase().includes('cabello') || text.toLowerCase().includes('uniforme');
+                      const badge = getOriginBadgeData(bItem);
                       return (
                         <div
                           key={bIdx}
@@ -794,7 +864,12 @@ function StudentMonitorDrawer({
                             isKarategui ? 'bg-amber-50 text-amber-950 font-bold border border-amber-200/70' : 'text-gray-800 font-medium'
                           }`}
                         >
-                          <span className={`font-black mt-0.5 select-none ${isKarategui ? 'text-amber-700' : 'text-purple-600'}`}>•</span>
+                          <span
+                            title={badge.label}
+                            className="inline-flex items-center justify-center shrink-0 text-xs px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 shadow-2xs font-normal cursor-help select-none mt-0.5"
+                          >
+                            {badge.icon}
+                          </span>
                           <span className="flex-1">{text}</span>
                         </div>
                       );
@@ -820,11 +895,17 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-2 bg-white p-3 rounded-lg border border-amber-100 shadow-2xs">
-                    {getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr).map((bItem, bIdx) => {
+                    {kumiteBullets.map((bItem, bIdx) => {
                       const text = typeof bItem === 'string' ? bItem : bItem.text;
+                      const badge = getOriginBadgeData(bItem);
                       return (
                         <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
-                          <span className="text-amber-600 font-black mt-0.5 select-none">•</span>
+                          <span
+                            title={badge.label}
+                            className="inline-flex items-center justify-center shrink-0 text-xs px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 shadow-2xs font-normal cursor-help select-none mt-0.5"
+                          >
+                            {badge.icon}
+                          </span>
                           <span className="flex-1">{text}</span>
                         </div>
                       );
@@ -854,12 +935,18 @@ function StudentMonitorDrawer({
                   )}
                 </div>
                 <div className="mt-2 space-y-1.5 bg-white p-3 rounded-lg border border-emerald-100 shadow-2xs">
-                  {getPhaseImprovementBullets('aspectos', aspectosNotesList, [], colegiadoAspectos, targetRankStr).map((bItem, bIdx) => {
+                  {aspectosBullets.map((bItem, bIdx) => {
                     const text = typeof bItem === 'string' ? bItem : bItem.text;
+                    const badge = getOriginBadgeData(bItem);
                     return (
                       <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
-                        <span className="text-emerald-600 font-black mt-0.5 select-none">•</span>
-                        <span>{text}</span>
+                        <span
+                          title={badge.label}
+                          className="inline-flex items-center justify-center shrink-0 text-xs px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 shadow-2xs font-normal cursor-help select-none mt-0.5"
+                        >
+                          {badge.icon}
+                        </span>
+                        <span className="flex-1">{text}</span>
                       </div>
                     );
                   })}
@@ -885,7 +972,7 @@ function StudentMonitorDrawer({
                 </span>
               </div>
 
-              {/* Renderizar cada viñeta/enunciado de manera ejecutiva sin nombres de evaluadores */}
+              {/* Renderizar cada viñeta/enunciado de manera ejecutiva con su respectivo badge de origen */}
               <div className="space-y-1.5 pt-1">
                 {(consolidation.aiAnalysis || consolidation.observations || 'Evaluación técnica completada.')
                   .split('\n')
@@ -904,6 +991,15 @@ function StudentMonitorDrawer({
 
                     const isWarning = cleanLine.toLowerCase().includes('karategui') || cleanLine.toLowerCase().includes('corrección') || cleanLine.toLowerCase().includes('falla grave') || cleanLine.toLowerCase().includes('deficiencia crítica');
                     const isMissing = cleanLine.toLowerCase().includes('carencias') || cleanLine.toLowerCase().includes('10/10') || cleanLine.toLowerCase().includes('100%') || cleanLine.toLowerCase().includes('no aprobación');
+
+                    // Buscar coincidencia en allPhaseBullets para obtener la clasificación exacta
+                    const lineNorm = cleanLine.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const matchingBullet = allPhaseBullets.find(b => {
+                      const bNorm = (b.text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                      return bNorm.includes(lineNorm.slice(0, 25)) || lineNorm.includes(bNorm.slice(0, 25));
+                    });
+                    const badgeInfo = matchingBullet ? getOriginBadgeData(matchingBullet) : getOriginBadgeData(cleanLine);
+
                     return (
                       <div
                         key={lIdx}
@@ -915,8 +1011,13 @@ function StudentMonitorDrawer({
                             : 'bg-white/80 border-indigo-100 text-gray-800'
                         }`}
                       >
-                        <span className="mt-0.5 font-bold select-none">•</span>
-                        <span>{cleanLine}</span>
+                        <span
+                          title={badgeInfo.label}
+                          className="inline-flex items-center justify-center shrink-0 text-xs px-1.5 py-0.5 rounded-md bg-white border border-slate-200 shadow-2xs font-normal cursor-help select-none mt-0.5"
+                        >
+                          {badgeInfo.icon}
+                        </span>
+                        <span className="flex-1">{cleanLine}</span>
                       </div>
                     );
                   })}

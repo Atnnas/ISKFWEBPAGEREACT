@@ -375,12 +375,32 @@ export function synthesizePhaseBulletsWithAI({
       .replace(/^correcci[oó]n:?\s*/i, '')
       .trim();
 
+    // Determinar si este comentario de Sensei coincide con una técnica puntuada < 100% (Origen Híbrido ⭐👤 vs 👤)
+    const rawCombined = cluster.rawTexts.join(' ').toLowerCase();
+    const hasLowStarsCoincidence = (techniqueScores || []).some(t => {
+      const rawScore = typeof t.score === 'number' ? t.score : null;
+      const tScore = rawScore !== null ? (rawScore <= 5 ? rawScore * 20 : (rawScore <= 10 ? rawScore * 10 : rawScore)) : null;
+      if (tScore === null || tScore >= 100) return false;
+      const tNorm = normalizeText(t.name || t.id);
+      const firstWord = tNorm.split(' ')[0];
+      return rawCombined.includes(tNorm) || 
+             (cluster.topicKey && normalizeText(cluster.topicKey).includes(tNorm)) ||
+             (firstWord && firstWord.length > 3 && rawCombined.includes(firstWord));
+    });
+
+    const sourceType = hasLowStarsCoincidence ? 'hybrid' : 'sensei_only';
+    const sourceIcon = hasLowStarsCoincidence ? '⭐👤' : '👤';
+    const sourceLabel = hasLowStarsCoincidence ? 'Estrellas + Comentario de Sensei' : 'Comentario Directo de Sensei';
+
     synthesizedBullets.push({
       text: lineText,
       coincidenceCount,
       isCoincidence: coincidenceCount > 1,
       evaluators: evalList,
-      phase
+      phase,
+      sourceType,
+      sourceIcon,
+      sourceLabel
     });
   });
 
@@ -458,7 +478,10 @@ export function synthesizePhaseBulletsWithAI({
           coincidenceCount: 1,
           isCoincidence: false,
           evaluators: ['Consenso de estrellas'],
-          phase
+          phase,
+          sourceType: 'stars_only',
+          sourceIcon: '⭐',
+          sourceLabel: 'Métrica de Estrellas (Técnica < 100%)'
         });
       }
     }
@@ -489,14 +512,22 @@ export function synthesizePhaseBulletsWithAI({
           text: `Aspecto Técnico - Posturas (Dachi Waza): En ${primaryStance}, flexiona la pierna de atrás y despega el talón del suelo al avanzar. Debe corregir estirando completamente la pierna posterior y anclar el Hikite firme sobre el cinturón para no anular el Kime.`,
           coincidenceCount: 0,
           isCoincidence: false,
-          evaluators: []
+          evaluators: [],
+          phase,
+          sourceType: 'stars_only',
+          sourceIcon: '⭐',
+          sourceLabel: 'Rúbrica Oficial ISKF'
         });
       } else {
         uniqueBullets.push({
           text: `Aspecto Técnico - Posturas y Kime (Dachi Waza): Para alcanzar el 100%, en ${primaryStance} falta descender medio puño más el centro de gravedad sin oscilar la cadera, y sincronizar el tirón máximo del Hikite en el instante exacto del impacto.`,
           coincidenceCount: 0,
           isCoincidence: false,
-          evaluators: []
+          evaluators: [],
+          phase,
+          sourceType: 'stars_only',
+          sourceIcon: '⭐',
+          sourceLabel: 'Rúbrica Oficial ISKF'
         });
       }
     } else if (phase === 'kata') {
@@ -505,14 +536,22 @@ export function synthesizePhaseBulletsWithAI({
           text: `Aspecto Técnico - Kata (Forma y Embusen): Duda en las secuencias del kata ${kataName} y pierde la dirección de la mirada al girar. Debe corregir repasando el embusen oficial y sostener la vista al frente (Chakugan) sin tocarse la vestimenta.`,
           coincidenceCount: 0,
           isCoincidence: false,
-          evaluators: []
+          evaluators: [],
+          phase,
+          sourceType: 'stars_only',
+          sourceIcon: '⭐',
+          sourceLabel: 'Rúbrica Oficial ISKF'
         });
       } else {
         uniqueBullets.push({
           text: `Aspecto Técnico - Kata (Chakugan y Enfoque): Para alcanzar el 100%, en ${kataName} falta fijar la mirada (Chakugan) al frente en cada pausa sin desviar los ojos, sostener la profundidad de las posturas y mantener absoluta inmovilidad tras el Kiai.`,
           coincidenceCount: 0,
           isCoincidence: false,
-          evaluators: []
+          evaluators: [],
+          phase,
+          sourceType: 'stars_only',
+          sourceIcon: '⭐',
+          sourceLabel: 'Rúbrica Oficial ISKF'
         });
       }
     } else if (phase === 'kumite') {
@@ -521,14 +560,22 @@ export function synthesizePhaseBulletsWithAI({
           text: `Aspecto Técnico - Combate (Distancia y Guardia): En ${kumiteName}, pierde la distancia reglamentaria (Ma-ai) y desarma la guardia (Kamae) tras bloquear. Debe corregir calculando el alcance y no bajar los brazos tras la defensa.`,
           coincidenceCount: 0,
           isCoincidence: false,
-          evaluators: []
+          evaluators: [],
+          phase,
+          sourceType: 'stars_only',
+          sourceIcon: '⭐',
+          sourceLabel: 'Rúbrica Oficial ISKF'
         });
       } else {
         uniqueBullets.push({
           text: `Aspecto Técnico - Combate (Kumite): Para alcanzar el 100%, en ${kumiteName} falta mayor rotación explosiva de cadera en la respuesta de contraataque inmediatamente tras el bloqueo y sostener el espíritu alerta (Zanshin).`,
           coincidenceCount: 0,
           isCoincidence: false,
-          evaluators: []
+          evaluators: [],
+          phase,
+          sourceType: 'stars_only',
+          sourceIcon: '⭐',
+          sourceLabel: 'Rúbrica Oficial ISKF'
         });
       }
     } else {
@@ -536,7 +583,11 @@ export function synthesizePhaseBulletsWithAI({
         text: 'Aspecto Técnico - Etiqueta y DO: Falta mayor energía y marcialidad en el saludo; para alcanzar el 100% debe mantener la postura firme, concentración y etiqueta intachable en tatami.',
         coincidenceCount: 0,
         isCoincidence: false,
-        evaluators: []
+        evaluators: [],
+        phase,
+        sourceType: 'stars_only',
+        sourceIcon: '⭐',
+        sourceLabel: 'Rúbrica Oficial ISKF'
       });
     }
   }
