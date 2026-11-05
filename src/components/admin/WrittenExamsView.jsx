@@ -91,7 +91,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
     isOpen: false,
     title: '¿Estás seguro?',
     message: '',
-    confirmText: 'Confirmar',
+    confirmText: 'Sí, Confirmar',
+    cancelText: 'No, Cancelar',
     isDanger: true,
     onConfirm: () => {}
   });
@@ -112,12 +113,13 @@ export default function WrittenExamsView({ initialExams = [] }) {
     });
   };
 
-  const showConfirm = ({ title = '¿Estás seguro?', message, onConfirm, confirmText = 'Confirmar', isDanger = true }) => {
+  const showConfirm = ({ title = '¿Estás seguro?', message, onConfirm, confirmText = 'Sí, Confirmar', cancelText = 'No, Cancelar', isDanger = true }) => {
     setConfirmModal({
       isOpen: true,
       title,
       message,
       confirmText,
+      cancelText,
       isDanger,
       onConfirm
     });
@@ -244,7 +246,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
     showConfirm({
       title: "Eliminar Examen",
       message: "¿Estás seguro de que deseas eliminar este examen de la base de datos? Esta acción no se puede deshacer.",
-      confirmText: "Eliminar",
+      confirmText: "Sí, Eliminar",
+      cancelText: "No, Cancelar",
       isDanger: true,
       onConfirm: async () => {
         setIsSaving(true);
@@ -426,7 +429,8 @@ export default function WrittenExamsView({ initialExams = [] }) {
     showConfirm({
       title: "Quitar Pregunta",
       message: "¿Deseas quitar esta pregunta del examen?",
-      confirmText: "Quitar",
+      confirmText: "Sí, Quitar",
+      cancelText: "No, Mantener",
       isDanger: true,
       onConfirm: async () => {
         let targetExam = exams.find(e => e.id === selectedExamId || e._id === selectedExamId);
@@ -1742,6 +1746,7 @@ export default function WrittenExamsView({ initialExams = [] }) {
         title={confirmModal.title}
         message={confirmModal.message}
         confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
         isDanger={confirmModal.isDanger}
       />
 

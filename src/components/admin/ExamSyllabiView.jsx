@@ -233,6 +233,37 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
 
   const [editingTechInModalId, setEditingTechInModalId] = useState(null);
 
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', isError: false });
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '¿Confirmar acción?',
+    message: '',
+    confirmText: 'Sí, Eliminar',
+    cancelText: 'No, Cancelar',
+    onConfirm: () => {}
+  });
+
+  const showAlert = (message, title = 'Atención', isError = false) => {
+    setAlertModal({ isOpen: true, title, message, isError });
+  };
+
+  const showConfirm = ({
+    title = '¿Confirmar acción?',
+    message,
+    confirmText = 'Sí, Eliminar',
+    cancelText = 'No, Cancelar',
+    onConfirm
+  }) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      onConfirm
+    });
+  };
+
   // =========================================================================
   // ESTADO DE LA PESTAÑA: ASPECTOS TÉCNICOS Y RÚBRICA (PERSISTIDA EN BD)
   // =========================================================================
@@ -378,16 +409,24 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     }));
   };
 
-  const handleRemovePointFromAspect = (aspectId, pointIndex) => {
-    setAspectsState(prev => prev.map(a => {
-      if (a.id === aspectId) {
-        return {
-          ...a,
-          points: (a.points || []).filter((_, idx) => idx !== pointIndex)
-        };
+  const handleRemovePointFromAspect = (aspectId, pointIndex, pointText = '') => {
+    showConfirm({
+      title: '¿Eliminar criterio técnico?',
+      message: `¿Estás seguro de que deseas eliminar este criterio${pointText ? `: "${pointText}"` : ''}? Recuerda presionar "Guardar en Base de Datos" para confirmar el cambio.`,
+      confirmText: 'Sí, Eliminar',
+      cancelText: 'No, Cancelar',
+      onConfirm: () => {
+        setAspectsState(prev => prev.map(a => {
+          if (a.id === aspectId) {
+            return {
+              ...a,
+              points: (a.points || []).filter((_, idx) => idx !== pointIndex)
+            };
+          }
+          return a;
+        }));
       }
-      return a;
-    }));
+    });
   };
 
   // Drag and drop para reordenar criterios dentro de cada tarjeta
@@ -493,22 +532,32 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   };
 
   // Restablecer un bloque/aspecto a sus criterios oficiales de fábrica
-  const handleResetAspectToDefault = (aspectId) => {
-    const defaultAspect = DEFAULT_TECHNICAL_ASPECTS.find(d => d.id === aspectId || d.category === aspectId);
-    if (!defaultAspect) return;
-    setAspectsState(prev => prev.map(a => {
-      if (a.id === aspectId || a.category === defaultAspect.category) {
-        return JSON.parse(JSON.stringify(defaultAspect));
+  const handleResetAspectToDefault = (aspectId, aspectTitle = '') => {
+    showConfirm({
+      title: `¿Restablecer criterios de ${aspectTitle || 'la categoría'}?`,
+      message: '¿Estás seguro de que deseas restablecer los criterios a los valores oficiales de fábrica? Esto reemplazará los criterios personalizados actuales.',
+      confirmText: 'Sí, Restablecer',
+      cancelText: 'No, Cancelar',
+      onConfirm: () => {
+        const defaultAspect = DEFAULT_TECHNICAL_ASPECTS.find(d => d.id === aspectId || d.category === aspectId);
+        if (!defaultAspect) return;
+        setAspectsState(prev => prev.map(a => {
+          if (a.id === aspectId || a.category === defaultAspect.category) {
+            return JSON.parse(JSON.stringify(defaultAspect));
+          }
+          return a;
+        }));
       }
-      return a;
-    }));
+    });
   };
 
   // Vaciar todos los criterios de un bloque/aspecto específico
   const handleClearAspectPoints = (aspectId, aspectTitle) => {
     showConfirm({
-      title: `Vaciar ${aspectTitle}`,
+      title: `¿Vaciar todos los criterios de ${aspectTitle}?`,
       message: `¿Estás seguro de que deseas borrar todos los criterios dentro de "${aspectTitle}" para este cinturón? Recuerda presionar "Guardar en Base de Datos" para confirmar el cambio.`,
+      confirmText: 'Sí, Borrar todos',
+      cancelText: 'No, Cancelar',
       onConfirm: () => {
         setAspectsState(prev => prev.map(a => {
           if (a.id === aspectId) {
@@ -660,10 +709,11 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   };
 
   const handleDeleteIndividualTech = (syllabus, tech) => {
-    setConfirmModal({
-      isOpen: true,
+    showConfirm({
       title: '¿Eliminar técnica del temario?',
       message: `¿Estás seguro de que deseas eliminar "${tech.name}" de este temario oficial? Esta acción se guardará de inmediato en la base de datos.`,
+      confirmText: 'Sí, Eliminar',
+      cancelText: 'No, Cancelar',
       onConfirm: async () => {
         const updatedTechniques = (syllabus.techniques || []).filter(t => t.id !== tech.id);
         const payload = {
@@ -716,16 +766,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     await updateExamSyllabus(syllabusId, payload);
   };
 
-  const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', isError: false });
-  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-
-  const showAlert = (message, title = 'Atención', isError = false) => {
-    setAlertModal({ isOpen: true, title, message, isError });
-  };
-
-  const showConfirm = ({ title, message, onConfirm }) => {
-    setConfirmModal({ isOpen: true, title, message, onConfirm });
-  };
+// Modales declarados al inicio del componente
 
   // Filtrado de temarios
   const filteredSyllabi = useMemo(() => {
@@ -858,8 +899,16 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     resetTechniqueInputs();
   };
 
-  const handleRemoveTechnique = (techId) => {
-    setFormTechniques(prev => prev.filter(t => t.id !== techId));
+  const handleRemoveTechnique = (techId, techName = '') => {
+    showConfirm({
+      title: '¿Quitar técnica del temario?',
+      message: `¿Estás seguro de que deseas quitar ${techName ? `"${techName}"` : 'esta técnica'} del temario?`,
+      confirmText: 'Sí, Quitar',
+      cancelText: 'No, Cancelar',
+      onConfirm: () => {
+        setFormTechniques(prev => prev.filter(t => t.id !== techId));
+      }
+    });
   };
 
   const handleMoveTechnique = (techId, direction) => {
@@ -927,8 +976,10 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
 
   const handleDeleteSyllabus = (syllabus) => {
     showConfirm({
-      title: 'Eliminar Temario de Examen',
-      message: `¿Estás seguro de que deseas eliminar el temario "${syllabus.name}"? Esta acción no se puede deshacer.`,
+      title: '¿Eliminar Temario de Examen?',
+      message: `¿Estás seguro de que deseas eliminar permanentemente el temario "${syllabus.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, Eliminar',
+      cancelText: 'No, Cancelar',
       onConfirm: async () => {
         const syllabusId = syllabus.id || syllabus._id;
         try {
@@ -1589,7 +1640,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                   )}
                                   <button
                                     type="button"
-                                    onClick={() => handleResetAspectToDefault(aspect.id)}
+                                    onClick={() => handleResetAspectToDefault(aspect.id, aspect.title)}
                                     className="text-[11px] font-semibold text-slate-500 hover:text-[#2D2E83] flex items-center gap-1 hover:underline cursor-pointer transition-colors"
                                     title="Restablecer a los criterios oficiales por defecto de este aspecto"
                                   >
@@ -1715,7 +1766,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                               </button>
                                               <button
                                                 type="button"
-                                                onClick={() => handleRemovePointFromAspect(aspect.id, pIdx)}
+                                                onClick={() => handleRemovePointFromAspect(aspect.id, pIdx, pointData.text)}
                                                 className="text-slate-400 hover:text-red-600 p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-red-50"
                                                 title="Remover parámetro"
                                               >
@@ -1863,7 +1914,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                   )}
                                   <button
                                     type="button"
-                                    onClick={() => handleResetAspectToDefault(aspect.id)}
+                                    onClick={() => handleResetAspectToDefault(aspect.id, aspect.title)}
                                     className="text-[11px] font-semibold text-slate-500 hover:text-[#2D2E83] flex items-center gap-1 hover:underline cursor-pointer transition-colors"
                                     title="Restablecer a los criterios oficiales por defecto de este aspecto"
                                   >
@@ -2011,7 +2062,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                               </button>
                                               <button
                                                 type="button"
-                                                onClick={() => handleRemovePointFromAspect(aspect.id, pIdx)}
+                                                onClick={() => handleRemovePointFromAspect(aspect.id, pIdx, pointData.text)}
                                                 className="text-slate-400 hover:text-red-600 p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer shrink-0 hover:bg-red-50"
                                                 title="Remover parámetro"
                                               >
@@ -2471,7 +2522,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleRemoveTechnique(tech.id)}
+                                onClick={() => handleRemoveTechnique(tech.id, tech.name)}
                                 className="p-1 text-red-500 hover:bg-red-50 rounded cursor-pointer"
                                 title="Eliminar técnica"
                               >
@@ -2736,7 +2787,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
         </div>
       )}
 
-      {/* Modal de Confirmación */}
+      {/* Modal de Confirmación con advertencia y Sí / No explícito */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-2xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100">
@@ -2745,25 +2796,27 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
             </div>
             <div className="space-y-1">
               <h4 className="text-base font-black text-slate-900">{confirmModal.title}</h4>
-              <p className="text-xs text-slate-600">{confirmModal.message}</p>
+              <p className="text-xs text-slate-600 leading-relaxed">{confirmModal.message}</p>
             </div>
             <div className="flex items-center gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
                 className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all cursor-pointer"
               >
-                Cancelar
+                {confirmModal.cancelText || 'No, Cancelar'}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  confirmModal.onConfirm();
-                  setConfirmModal({ ...confirmModal, isOpen: false });
+                  if (typeof confirmModal.onConfirm === 'function') {
+                    confirmModal.onConfirm();
+                  }
+                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 }}
                 className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition-all shadow-md shadow-red-600/20 cursor-pointer"
               >
-                Eliminar
+                {confirmModal.confirmText || 'Sí, Eliminar'}
               </button>
             </div>
           </div>

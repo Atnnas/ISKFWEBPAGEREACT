@@ -7,8 +7,8 @@ export default function ConfirmModal({
   onConfirm, 
   title, 
   message, 
-  confirmText = "Confirmar", 
-  cancelText = "Cancelar", 
+  confirmText = "Sí, Confirmar", 
+  cancelText = "No, Cancelar", 
   isDanger = false 
 }) {
   if (!isOpen) return null;
