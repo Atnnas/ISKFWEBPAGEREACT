@@ -127,6 +127,11 @@ const TechnicalExamConsolidationSchema = new mongoose.Schema({
     default: '',
     trim: true,
   },
+  // Viñetas oficiales editadas, agregadas o quitadas por Dirección Técnica (Shihan Roy) por fase
+  customPhaseBullets: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null,
+  },
   // Snapshot of the criteria (technicalAspects, techniques) used for this exam
   criteriaSnapshot: {
     type: mongoose.Schema.Types.Mixed,

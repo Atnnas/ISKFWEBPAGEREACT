@@ -20,7 +20,13 @@ import {
   ChevronRight,
   ChevronUp,
   Sparkles,
-  UserCheck
+  UserCheck,
+  Edit3,
+  Trash2,
+  Plus,
+  RotateCcw,
+  X,
+  Save
 } from 'lucide-react';
 import { getTribunalProgressForCall, saveConsolidatedVerdict } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
@@ -182,14 +188,6 @@ function StudentMonitorDrawer({
     kumite: consolidation?.phaseAdjustments?.kumite ?? 0
   });
   const [martialAdjustmentReason, setMartialAdjustmentReason] = useState(consolidation?.martialAdjustmentReason ?? '');
-  const royEvalFallback = evaluatorsProgress?.find(e =>
-    e.evaluator?.name?.toLowerCase().includes('roy') ||
-    e.evaluator?.email?.toLowerCase().includes('roy') ||
-    e.evalRecord?.finalComments ||
-    e.evalRecord?.phaseNotes?.promedio_final
-  );
-  const initialFinalComments = consolidation?.finalComments || royEvalFallback?.evalRecord?.finalComments || royEvalFallback?.evalRecord?.phaseNotes?.promedio_final || '';
-  const [finalComments, setFinalComments] = useState(initialFinalComments);
   const [isSavingVerdict, setIsSavingVerdict] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
 
@@ -211,13 +209,8 @@ function StudentMonitorDrawer({
       if (typeof consolidation.martialAdjustmentReason === 'string') {
         setMartialAdjustmentReason(consolidation.martialAdjustmentReason);
       }
-      if (typeof consolidation.finalComments === 'string' && consolidation.finalComments.trim()) {
-        setFinalComments(consolidation.finalComments);
-      } else if (royEvalFallback?.evalRecord?.finalComments || royEvalFallback?.evalRecord?.phaseNotes?.promedio_final) {
-        setFinalComments(royEvalFallback.evalRecord.finalComments || royEvalFallback.evalRecord.phaseNotes.promedio_final);
-      }
     }
-  }, [consolidation, royEvalFallback]);
+  }, [consolidation]);
   const sId = String(student._id || student.id);
   const [activeTab, setActiveTab] = useState('colegiado');
 
@@ -375,25 +368,93 @@ function StudentMonitorDrawer({
       return { id: t.id, name: t.name, score: avg };
     });
 
-  const kihonBullets = useMemo(() => {
+  const defaultKihonBullets = useMemo(() => {
     return getPhaseImprovementBullets('kihon', kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr);
   }, [kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr]);
 
-  const kataBullets = useMemo(() => {
+  const defaultKataBullets = useMemo(() => {
     return getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, colegiadoKata, targetRankStr);
   }, [kataNotesList, kataTechScores, colegiadoKata, targetRankStr]);
 
-  const kumiteBullets = useMemo(() => {
+  const defaultKumiteBullets = useMemo(() => {
     return getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr);
   }, [kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr]);
 
-  const aspectosBullets = useMemo(() => {
+  const defaultAspectosBullets = useMemo(() => {
     return getPhaseImprovementBullets('aspectos', aspectosNotesList, [], colegiadoAspectos, targetRankStr);
   }, [aspectosNotesList, colegiadoAspectos, targetRankStr]);
 
+  // Viñetas oficiales editables directamente por Shihan Roy para cada fase
+  const [phaseBullets, setPhaseBullets] = useState({
+    kihon: consolidation?.customPhaseBullets?.kihon || null,
+    kata: consolidation?.customPhaseBullets?.kata || null,
+    kumite: consolidation?.customPhaseBullets?.kumite || null,
+    aspectos: consolidation?.customPhaseBullets?.aspectos || null
+  });
+
+  useEffect(() => {
+    if (consolidation?.customPhaseBullets) {
+      setPhaseBullets({
+        kihon: consolidation.customPhaseBullets.kihon || null,
+        kata: consolidation.customPhaseBullets.kata || null,
+        kumite: consolidation.customPhaseBullets.kumite || null,
+        aspectos: consolidation.customPhaseBullets.aspectos || null
+      });
+    }
+  }, [consolidation]);
+
+  const currentKihonBullets = phaseBullets.kihon || defaultKihonBullets;
+  const currentKataBullets = phaseBullets.kata || defaultKataBullets;
+  const currentKumiteBullets = phaseBullets.kumite || defaultKumiteBullets;
+  const currentAspectosBullets = phaseBullets.aspectos || defaultAspectosBullets;
+
   const allPhaseBullets = useMemo(() => {
-    return [...kihonBullets, ...kataBullets, ...kumiteBullets, ...aspectosBullets];
-  }, [kihonBullets, kataBullets, kumiteBullets, aspectosBullets]);
+    return [...currentKihonBullets, ...currentKataBullets, ...currentKumiteBullets, ...currentAspectosBullets];
+  }, [currentKihonBullets, currentKataBullets, currentKumiteBullets, currentAspectosBullets]);
+
+  // Estados de edición para Shihan Roy
+  const [editingBullet, setEditingBullet] = useState(null); // { phase, index, text }
+  const [addingBulletPhase, setAddingBulletPhase] = useState(null); // 'kihon' | 'kata' | 'kumite' | 'aspectos'
+  const [newBulletText, setNewBulletText] = useState('');
+
+  const handleUpdateBullet = (phase, index, newText) => {
+    if (!newText || !newText.trim()) return;
+    const currentList = phase === 'kihon' ? currentKihonBullets : phase === 'kata' ? currentKataBullets : phase === 'kumite' ? currentKumiteBullets : currentAspectosBullets;
+    const list = [...currentList];
+    const oldItem = list[index];
+    const updated = typeof oldItem === 'object'
+      ? { ...oldItem, text: newText.trim() }
+      : { text: newText.trim(), sourceType: 'sensei_only', sourceIcon: '👤', sourceLabel: 'Editado por Shihan Roy' };
+    list[index] = updated;
+    setPhaseBullets(prev => ({ ...prev, [phase]: list }));
+    setEditingBullet(null);
+  };
+
+  const handleDeleteBullet = (phase, index) => {
+    const currentList = phase === 'kihon' ? currentKihonBullets : phase === 'kata' ? currentKataBullets : phase === 'kumite' ? currentKumiteBullets : currentAspectosBullets;
+    const list = [...currentList];
+    list.splice(index, 1);
+    setPhaseBullets(prev => ({ ...prev, [phase]: list }));
+  };
+
+  const handleAddBullet = (phase, text) => {
+    if (!text || !text.trim()) return;
+    const currentList = phase === 'kihon' ? currentKihonBullets : phase === 'kata' ? currentKataBullets : phase === 'kumite' ? currentKumiteBullets : currentAspectosBullets;
+    const list = [...currentList];
+    list.push({
+      text: text.trim(),
+      sourceType: 'sensei_only',
+      sourceIcon: '👤',
+      sourceLabel: 'Agregado por Shihan Roy Gatjens'
+    });
+    setPhaseBullets(prev => ({ ...prev, [phase]: list }));
+    setAddingBulletPhase(null);
+    setNewBulletText('');
+  };
+
+  const handleResetPhaseBullets = (phase) => {
+    setPhaseBullets(prev => ({ ...prev, [phase]: null }));
+  };
 
   const handleSaveConsolidatedWithAdjustment = async () => {
     if (hasAnyAdjustment && (!martialAdjustmentReason || !martialAdjustmentReason.trim())) {
@@ -434,7 +495,12 @@ function StudentMonitorDrawer({
         technicalPercentage: baseTechnicalScore,
         martialAdjustment: netAdjustment,
         martialAdjustmentReason: (martialAdjustmentReason || '').trim(),
-        finalComments: (finalComments || '').trim(),
+        customPhaseBullets: {
+          kihon: currentKihonBullets,
+          kata: currentKataBullets,
+          kumite: currentKumiteBullets,
+          ...(aspectosNotesList.length > 0 ? { aspectos: currentAspectosBullets } : {})
+        },
         overallPercentage: calculatedFinalScore,
         isPassed: calculatedIsPassed,
         aiConsolidatedSummary: consolidation?.aiAnalysis || consolidation?.observations || 'Dictamen colegiado oficializado por el tribunal.',
@@ -507,7 +573,12 @@ function StudentMonitorDrawer({
             technicalPercentage: baseTechnicalScore,
             martialAdjustment: netAdjustment,
             martialAdjustmentReason: (martialAdjustmentReason || '').trim(),
-            finalComments: (finalComments || '').trim(),
+            customPhaseBullets: {
+              kihon: currentKihonBullets,
+              kata: currentKataBullets,
+              kumite: currentKumiteBullets,
+              aspectos: currentAspectosBullets
+            },
             finalGrade: calculatedFinalScore,
             isPassed: calculatedIsPassed
           })}
@@ -766,62 +837,6 @@ function StudentMonitorDrawer({
               />
             </div>
 
-            {/* Comentarios del Promedio Final — Exclusivo Dirección Técnica (Shihan Roy Gatjens) */}
-            <div className="pt-2 border-t border-slate-200/80 space-y-2">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <label className="text-[11px] font-black uppercase tracking-wider text-[#2D2E83] flex items-center gap-1.5">
-                  <span>🥋 Dictamen y Correcciones del Promedio Final (Exclusivo Shihan Roy Gatjens)</span>
-                </label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const prefix = finalComments && !finalComments.endsWith('\n') ? '\n' : '';
-                      setFinalComments(prev => `${prev || ''}${prefix}• `);
-                    }}
-                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
-                    title="Insertar viñeta correctiva"
-                  >
-                    <span>+ Viñeta (•)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveConsolidatedWithAdjustment}
-                    disabled={isSavingVerdict}
-                    className="px-3 py-1 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-lg text-[10px] font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                  >
-                    {isSavingVerdict ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                    <span>Guardar Dictamen</span>
-                  </button>
-                </div>
-              </div>
-              <textarea
-                rows={4}
-                value={finalComments}
-                onChange={(e) => setFinalComments(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const cursor = e.target.selectionStart;
-                    const val = e.target.value;
-                    const before = val.substring(0, cursor);
-                    const after = val.substring(cursor);
-                    const newVal = `${before}\n• ${after}`;
-                    setFinalComments(newVal);
-                    setTimeout(() => {
-                      e.target.selectionStart = cursor + 3;
-                      e.target.selectionEnd = cursor + 3;
-                    }, 0);
-                  }
-                }}
-                placeholder="• Escriba las observaciones, directrices y técnicas específicas a corregir por el aspirante (100% correctivo)...\n• Cada 'Enter' crea automáticamente una viñeta para el certificado PDF oficial..."
-                className="w-full p-3 rounded-xl border border-slate-300 bg-white text-xs text-gray-900 placeholder:text-gray-400 focus:ring-1 focus:ring-[#2D2E83] outline-hidden font-medium resize-y leading-relaxed"
-              />
-              <p className="text-[10px] text-slate-500 font-medium">
-                💡 Todo lo que el Shihan Roy agregue o modifique aquí se guarda en la base de datos y se imprime oficialmente en el <strong>recuadro de Dirección Técnica Nacional en la Página 2 del Certificado PDF</strong>.
-              </p>
-            </div>
-
             {/* Feedback al guardar */}
             {saveFeedback && (
               <div className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
@@ -833,16 +848,28 @@ function StudentMonitorDrawer({
             )}
           </div>
 
-          {/* 2. Sección Detallada: Puntos a Mejorar Desglosados en Viñetas (Kihon, Kata y Kumite) */}
+          {/* 2. Sección Detallada: Puntos a Mejorar Desglosados en Viñetas (Kihon, Kata y Kumite) — Totalmente Editables para Shihan Roy */}
           <div className="space-y-3 pt-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h4 className="text-xs font-black uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Puntos Técnicos a Mejorar por Fase (Consenso del Tribunal)</span>
               </h4>
-              <span className="text-[10px] text-gray-500 font-medium">
-                Consenso unificado de los {evalItems.length} Senseis evaluadores
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full font-bold">
+                  ✏️ Shihan Roy: puedes editar, añadir o quitar correcciones directamente aquí
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveConsolidatedWithAdjustment}
+                  disabled={isSavingVerdict}
+                  className="px-3.5 py-1.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Guardar las correcciones modificadas en el dictamen oficial"
+                >
+                  {isSavingVerdict ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  <span>Guardar Dictamen</span>
+                </button>
+              </div>
             </div>
 
             {/* Leyenda de Origen de Observaciones (Exclusivo Shihan Roy / Dirección Técnica) */}
@@ -867,7 +894,7 @@ function StudentMonitorDrawer({
                 <span className="font-semibold text-gray-700">Híbrido (Estrellas + Sensei)</span>
               </span>
               <span className="text-amber-800/80 text-[10px] ml-auto font-medium hidden sm:inline">
-                (Visualización exclusiva para Dirección Técnica y Tribunal)
+                (Las viñetas editadas se imprimirán exactamente así en el Certificado PDF)
               </span>
             </div>
 
@@ -886,11 +913,43 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-2 bg-white p-3 rounded-lg border border-blue-100 shadow-2xs">
-                    {kihonBullets.map((bItem, bIdx) => {
+                    {currentKihonBullets.map((bItem, bIdx) => {
                       const text = typeof bItem === 'string' ? bItem : bItem.text;
                       const badge = getOriginBadgeData(bItem);
+                      const isEditingThis = editingBullet?.phase === 'kihon' && editingBullet?.index === bIdx;
+
+                      if (isEditingThis) {
+                        return (
+                          <div key={bIdx} className="p-2 rounded-lg bg-blue-50 border border-blue-300 space-y-2">
+                            <textarea
+                              rows={3}
+                              value={editingBullet.text}
+                              onChange={(e) => setEditingBullet(prev => ({ ...prev, text: e.target.value }))}
+                              className="w-full p-2 bg-white rounded border border-blue-200 text-xs text-gray-900 focus:outline-hidden focus:ring-1 focus:ring-blue-500 font-medium leading-relaxed"
+                              autoFocus
+                            />
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingBullet(null)}
+                                className="px-2 py-0.5 rounded text-[10px] text-gray-600 hover:bg-gray-200 font-semibold cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBullet('kihon', bIdx, editingBullet.text)}
+                                className="px-2.5 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold cursor-pointer"
+                              >
+                                Guardar
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
-                        <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
+                        <div key={bIdx} className="group relative flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium p-1 rounded-md hover:bg-blue-50/50 transition-colors">
                           <span
                             title={badge.label}
                             className="inline-flex items-center justify-center shrink-0 text-xs px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 shadow-2xs font-normal cursor-help select-none mt-0.5"
@@ -898,13 +957,81 @@ function StudentMonitorDrawer({
                             {badge.icon}
                           </span>
                           <span className="flex-1">{text}</span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0 mt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setEditingBullet({ phase: 'kihon', index: bIdx, text })}
+                              className="p-1 rounded text-slate-500 hover:text-blue-700 hover:bg-blue-100 cursor-pointer"
+                              title="Editar corrección"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBullet('kihon', bIdx)}
+                              className="p-1 rounded text-slate-400 hover:text-red-700 hover:bg-red-100 cursor-pointer"
+                              title="Eliminar esta viñeta"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
+
+                    {/* Formulario para agregar nueva viñeta a Kihon */}
+                    {addingBulletPhase === 'kihon' && (
+                      <div className="p-2 rounded-lg bg-blue-50 border border-blue-300 space-y-2">
+                        <textarea
+                          rows={2}
+                          value={newBulletText}
+                          onChange={(e) => setNewBulletText(e.target.value)}
+                          placeholder="Aspecto Técnico - ... : Escriba la corrección para Kihon..."
+                          className="w-full p-2 bg-white rounded border border-blue-200 text-xs text-gray-900 focus:outline-hidden focus:ring-1 focus:ring-blue-500 font-medium leading-relaxed"
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => { setAddingBulletPhase(null); setNewBulletText(''); }}
+                            className="px-2 py-0.5 rounded text-[10px] text-gray-600 hover:bg-gray-200 font-semibold cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddBullet('kihon', newBulletText)}
+                            className="px-2.5 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold cursor-pointer"
+                          >
+                            + Agregar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="text-[9px] text-blue-700/80 font-bold pt-1">
-                  🥋 Indicaciones técnicas de Kihon
+
+                {/* Acciones de pie de tarjeta de Kihon */}
+                <div className="flex items-center justify-between pt-1 border-t border-blue-100 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => { setAddingBulletPhase('kihon'); setNewBulletText(''); }}
+                    className="text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Agregar corrección</span>
+                  </button>
+                  {phaseBullets.kihon && (
+                    <button
+                      type="button"
+                      onClick={() => handleResetPhaseBullets('kihon')}
+                      className="text-gray-400 hover:text-gray-600 font-medium flex items-center gap-1 cursor-pointer"
+                      title="Restablecer a sugerencias automáticas"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Restablecer</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -922,15 +1049,47 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-1.5 bg-white p-3 rounded-lg border border-purple-100 shadow-2xs">
-                    {kataBullets.map((bItem, bIdx) => {
+                    {currentKataBullets.map((bItem, bIdx) => {
                       const text = typeof bItem === 'string' ? bItem : bItem.text;
                       const isKarategui = text.toLowerCase().includes('karategui') || text.toLowerCase().includes('cabello') || text.toLowerCase().includes('uniforme');
                       const badge = getOriginBadgeData(bItem);
+                      const isEditingThis = editingBullet?.phase === 'kata' && editingBullet?.index === bIdx;
+
+                      if (isEditingThis) {
+                        return (
+                          <div key={bIdx} className="p-2 rounded-lg bg-purple-50 border border-purple-300 space-y-2">
+                            <textarea
+                              rows={3}
+                              value={editingBullet.text}
+                              onChange={(e) => setEditingBullet(prev => ({ ...prev, text: e.target.value }))}
+                              className="w-full p-2 bg-white rounded border border-purple-200 text-xs text-gray-900 focus:outline-hidden focus:ring-1 focus:ring-purple-500 font-medium leading-relaxed"
+                              autoFocus
+                            />
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingBullet(null)}
+                                className="px-2 py-0.5 rounded text-[10px] text-gray-600 hover:bg-gray-200 font-semibold cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBullet('kata', bIdx, editingBullet.text)}
+                                className="px-2.5 py-0.5 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold cursor-pointer"
+                              >
+                                Guardar
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div
                           key={bIdx}
-                          className={`flex items-start gap-2 text-[11px] leading-relaxed p-1.5 rounded-md ${
-                            isKarategui ? 'bg-amber-50 text-amber-950 font-bold border border-amber-200/70' : 'text-gray-800 font-medium'
+                          className={`group relative flex items-start gap-2 text-[11px] leading-relaxed p-1 rounded-md transition-colors ${
+                            isKarategui ? 'bg-amber-50 text-amber-950 font-bold border border-amber-200/70' : 'text-gray-800 font-medium hover:bg-purple-50/50'
                           }`}
                         >
                           <span
@@ -940,13 +1099,81 @@ function StudentMonitorDrawer({
                             {badge.icon}
                           </span>
                           <span className="flex-1">{text}</span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0 mt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setEditingBullet({ phase: 'kata', index: bIdx, text })}
+                              className="p-1 rounded text-slate-500 hover:text-purple-700 hover:bg-purple-100 cursor-pointer"
+                              title="Editar corrección"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBullet('kata', bIdx)}
+                              className="p-1 rounded text-slate-400 hover:text-red-700 hover:bg-red-100 cursor-pointer"
+                              title="Eliminar esta viñeta"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
+
+                    {/* Formulario para agregar nueva viñeta a Kata */}
+                    {addingBulletPhase === 'kata' && (
+                      <div className="p-2 rounded-lg bg-purple-50 border border-purple-300 space-y-2">
+                        <textarea
+                          rows={2}
+                          value={newBulletText}
+                          onChange={(e) => setNewBulletText(e.target.value)}
+                          placeholder="Aspecto Técnico - Kata ... : Escriba la corrección para Kata..."
+                          className="w-full p-2 bg-white rounded border border-purple-200 text-xs text-gray-900 focus:outline-hidden focus:ring-1 focus:ring-purple-500 font-medium leading-relaxed"
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => { setAddingBulletPhase(null); setNewBulletText(''); }}
+                            className="px-2 py-0.5 rounded text-[10px] text-gray-600 hover:bg-gray-200 font-semibold cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddBullet('kata', newBulletText)}
+                            className="px-2.5 py-0.5 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold cursor-pointer"
+                          >
+                            + Agregar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="text-[9px] text-purple-700/80 font-bold pt-1">
-                  🥋 Indicaciones técnicas de Kata
+
+                {/* Acciones de pie de tarjeta de Kata */}
+                <div className="flex items-center justify-between pt-1 border-t border-purple-100 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => { setAddingBulletPhase('kata'); setNewBulletText(''); }}
+                    className="text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Agregar corrección</span>
+                  </button>
+                  {phaseBullets.kata && (
+                    <button
+                      type="button"
+                      onClick={() => handleResetPhaseBullets('kata')}
+                      className="text-gray-400 hover:text-gray-600 font-medium flex items-center gap-1 cursor-pointer"
+                      title="Restablecer a sugerencias automáticas"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Restablecer</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -964,11 +1191,43 @@ function StudentMonitorDrawer({
                   </div>
 
                   <div className="mt-2.5 space-y-2 bg-white p-3 rounded-lg border border-amber-100 shadow-2xs">
-                    {kumiteBullets.map((bItem, bIdx) => {
+                    {currentKumiteBullets.map((bItem, bIdx) => {
                       const text = typeof bItem === 'string' ? bItem : bItem.text;
                       const badge = getOriginBadgeData(bItem);
+                      const isEditingThis = editingBullet?.phase === 'kumite' && editingBullet?.index === bIdx;
+
+                      if (isEditingThis) {
+                        return (
+                          <div key={bIdx} className="p-2 rounded-lg bg-amber-50 border border-amber-300 space-y-2">
+                            <textarea
+                              rows={3}
+                              value={editingBullet.text}
+                              onChange={(e) => setEditingBullet(prev => ({ ...prev, text: e.target.value }))}
+                              className="w-full p-2 bg-white rounded border border-amber-200 text-xs text-gray-900 focus:outline-hidden focus:ring-1 focus:ring-amber-500 font-medium leading-relaxed"
+                              autoFocus
+                            />
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingBullet(null)}
+                                className="px-2 py-0.5 rounded text-[10px] text-gray-600 hover:bg-gray-200 font-semibold cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBullet('kumite', bIdx, editingBullet.text)}
+                                className="px-2.5 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold cursor-pointer"
+                              >
+                                Guardar
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
-                        <div key={bIdx} className="flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium">
+                        <div key={bIdx} className="group relative flex items-start gap-2 text-[11px] text-gray-800 leading-relaxed font-medium p-1 rounded-md hover:bg-amber-50/50 transition-colors">
                           <span
                             title={badge.label}
                             className="inline-flex items-center justify-center shrink-0 text-xs px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 shadow-2xs font-normal cursor-help select-none mt-0.5"
@@ -976,13 +1235,81 @@ function StudentMonitorDrawer({
                             {badge.icon}
                           </span>
                           <span className="flex-1">{text}</span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0 mt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => setEditingBullet({ phase: 'kumite', index: bIdx, text })}
+                              className="p-1 rounded text-slate-500 hover:text-amber-800 hover:bg-amber-100 cursor-pointer"
+                              title="Editar corrección"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBullet('kumite', bIdx)}
+                              className="p-1 rounded text-slate-400 hover:text-red-700 hover:bg-red-100 cursor-pointer"
+                              title="Eliminar esta viñeta"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
+
+                    {/* Formulario para agregar nueva viñeta a Kumite */}
+                    {addingBulletPhase === 'kumite' && (
+                      <div className="p-2 rounded-lg bg-amber-50 border border-amber-300 space-y-2">
+                        <textarea
+                          rows={2}
+                          value={newBulletText}
+                          onChange={(e) => setNewBulletText(e.target.value)}
+                          placeholder="Aspecto Técnico - Combate ... : Escriba la corrección para Kumite..."
+                          className="w-full p-2 bg-white rounded border border-amber-200 text-xs text-gray-900 focus:outline-hidden focus:ring-1 focus:ring-amber-500 font-medium leading-relaxed"
+                          autoFocus
+                        />
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => { setAddingBulletPhase(null); setNewBulletText(''); }}
+                            className="px-2 py-0.5 rounded text-[10px] text-gray-600 hover:bg-gray-200 font-semibold cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddBullet('kumite', newBulletText)}
+                            className="px-2.5 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold cursor-pointer"
+                          >
+                            + Agregar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="text-[9px] text-amber-700/80 font-bold pt-1">
-                  🥋 Indicaciones técnicas de Kumite
+
+                {/* Acciones de pie de tarjeta de Kumite */}
+                <div className="flex items-center justify-between pt-1 border-t border-amber-100 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => { setAddingBulletPhase('kumite'); setNewBulletText(''); }}
+                    className="text-amber-700 hover:text-amber-900 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Agregar corrección</span>
+                  </button>
+                  {phaseBullets.kumite && (
+                    <button
+                      type="button"
+                      onClick={() => handleResetPhaseBullets('kumite')}
+                      className="text-gray-400 hover:text-gray-600 font-medium flex items-center gap-1 cursor-pointer"
+                      title="Restablecer a sugerencias automáticas"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Restablecer</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1004,7 +1331,7 @@ function StudentMonitorDrawer({
                   )}
                 </div>
                 <div className="mt-2 space-y-1.5 bg-white p-3 rounded-lg border border-emerald-100 shadow-2xs">
-                  {aspectosBullets.map((bItem, bIdx) => {
+                  {currentAspectosBullets.map((bItem, bIdx) => {
                     const text = typeof bItem === 'string' ? bItem : bItem.text;
                     const badge = getOriginBadgeData(bItem);
                     return (
@@ -1392,18 +1719,30 @@ export default function TribunalProgressMonitor({
       const kihonRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kihon })).filter(i => i.note);
       const kumiteRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kumite })).filter(i => i.note);
 
-      const resolvedKihonNotes = synthesizePhaseBulletsWithAI({
-        phase: 'kihon',
-        notesList: kihonRawList,
-        techniqueScores: kihonTechScores,
-        phaseAverage: kScore,
-        targetRank
-      }).map(b => b.text).join('\n');
+      // Priorizar viñetas personalizadas/editadas por Shihan Roy si existen
+      const customKihon = cons?.customPhaseBullets?.kihon || progressData?.consolidationsByStudent?.[sId]?.customPhaseBullets?.kihon;
+      const customKata = cons?.customPhaseBullets?.kata || progressData?.consolidationsByStudent?.[sId]?.customPhaseBullets?.kata;
+      const customKumite = cons?.customPhaseBullets?.kumite || progressData?.consolidationsByStudent?.[sId]?.customPhaseBullets?.kumite;
+
+      const resolvedKihonNotes = (customKihon && customKihon.length > 0)
+        ? customKihon.map(b => (typeof b === 'string' ? b : b.text)).join('\n')
+        : synthesizePhaseBulletsWithAI({
+            phase: 'kihon',
+            notesList: kihonRawList,
+            techniqueScores: kihonTechScores,
+            phaseAverage: kScore,
+            targetRank
+          }).map(b => b.text).join('\n');
 
       let katasPayload = [];
       let resolvedKataNotes = '';
 
-      if (kataTechScores.length > 1) {
+      if (customKata && customKata.length > 0) {
+        resolvedKataNotes = customKata.map(b => (typeof b === 'string' ? b : b.text)).join('\n');
+        katasPayload = [
+          { name: kataTechScores[0]?.name || getKataForRank(targetRank), score: kaScore, text: resolvedKataNotes }
+        ];
+      } else if (kataTechScores.length > 1) {
         // Kata 1
         const k1 = kataTechScores[0];
         const k1RawList = evalItems.map(e => {
@@ -1453,13 +1792,15 @@ export default function TribunalProgressMonitor({
         ];
       }
 
-      const resolvedKumiteNotes = synthesizePhaseBulletsWithAI({
-        phase: 'kumite',
-        notesList: kumiteRawList,
-        techniqueScores: kumiteTechScores,
-        phaseAverage: kuScore,
-        targetRank
-      }).map(b => b.text).join('\n');
+      const resolvedKumiteNotes = (customKumite && customKumite.length > 0)
+        ? customKumite.map(b => (typeof b === 'string' ? b : b.text)).join('\n')
+        : synthesizePhaseBulletsWithAI({
+            phase: 'kumite',
+            notesList: kumiteRawList,
+            techniqueScores: kumiteTechScores,
+            phaseAverage: kuScore,
+            targetRank
+          }).map(b => b.text).join('\n');
 
       // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
       const positiveText = (st?.positiveAspects || '').trim();
