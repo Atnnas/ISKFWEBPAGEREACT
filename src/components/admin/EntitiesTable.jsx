@@ -86,6 +86,10 @@ export default function EntitiesTable({ initialEntities }) {
                       src={entity.logoUrl || '/images/dojos/default_logo.jpg'} 
                       alt={entity.name} 
                       className="w-11 h-11 rounded-xl bg-white border border-gray-200 object-contain p-1 shadow-xs" 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/images/dojos/default_logo.jpg';
+                      }} 
                     />
                     <div>
                       <div className="text-gray-900 font-bold text-sm sm:text-base">{entity.name}</div>
