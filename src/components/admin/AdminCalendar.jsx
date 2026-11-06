@@ -1,22 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Calendar as CalendarIcon, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar as CalendarIcon, MapPin, Search, ChevronDown, Check, Globe } from 'lucide-react';
 import { createEvent, updateEvent, deleteEvent } from '../../lib/actions/events';
 import CustomSelect from '../ui/CustomSelect';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
-
-const countries = [
-    { name: 'Costa Rica', flagName: 'costaRicaFlag', emoji: '🇨🇷', isNational: true },
-    { name: 'México', flagName: 'mexicoFlag', emoji: '🇲🇽', isNational: false },
-    { name: 'Nicaragua', flagName: 'nicaraguaFlag', emoji: '🇳🇮', isNational: false },
-    { name: 'Brasil', flagName: 'brazilFlag', emoji: '🇧🇷', isNational: false },
-    { name: 'República Dominicana', flagName: 'dominicanaFlag', emoji: '🇩🇴', isNational: false },
-    { name: 'Italia', flagName: 'italiaFlag', emoji: '🇮🇹', isNational: false },
-    { name: 'Polonia', flagName: 'polandFlag', emoji: '🇵🇱', isNational: false }
-];
+import { COUNTRIES, findCountryByFlagName, getEventFlagUrl } from '../../lib/constants/countries';
 
 export default function AdminCalendar({ initialEvents, organizers = [], isAdmin = true }) {
     const events = initialEvents || [];
@@ -28,6 +19,36 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
     
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, eventId: null });
     const [alertModal, setAlertModal] = useState({ isOpen: false, message: '', isError: false });
+
+    // Selector de Países y Banderas Internacionales
+    const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+    const [countrySearch, setCountrySearch] = useState('');
+    const countryDropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target)) {
+                setCountryDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const currentCountryObj = useMemo(() => {
+        return findCountryByFlagName(selectedCountry);
+    }, [selectedCountry]);
+
+    const isCurrentNational = currentCountryObj?.isNational ?? false;
+
+    const filteredCountries = useMemo(() => {
+        const q = countrySearch.trim().toLowerCase();
+        if (!q) return COUNTRIES;
+        return COUNTRIES.filter(c => 
+            c.name.toLowerCase().includes(q) || 
+            c.code.toLowerCase().includes(q)
+        );
+    }, [countrySearch]);
 
     // Handle Form Submission
     const handleSubmit = async (e) => {
@@ -77,6 +98,8 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
         e.stopPropagation();
         setSelectedEvent(event);
         setSelectedCountry(event.flagName || 'costaRicaFlag');
+        setCountrySearch('');
+        setCountryDropdownOpen(false);
         setSelectedDate(null);
         setIsModalOpen(true);
     };
@@ -98,6 +121,8 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                             setSelectedDate(today);
                             setSelectedEvent(null);
                             setSelectedCountry('costaRicaFlag');
+                            setCountrySearch('');
+                            setCountryDropdownOpen(false);
                             setIsModalOpen(true);
                         }}
                         className="flex items-center gap-2 bg-iskf-dark text-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-iskf-red transition-colors shadow-md"
@@ -171,9 +196,13 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-sm text-gray-600">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-base">{countries.find(c => c.flagName === ev.flagName)?.emoji || '🇨🇷'}</span>
-                                                        <span>{ev.location || <span className="text-gray-400 italic">No especificada</span>}</span>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <img 
+                                                            src={getEventFlagUrl(ev.flagName)?.src || getEventFlagUrl(ev.flagName)} 
+                                                            alt="" 
+                                                            className="w-5 h-5 rounded-full object-cover border border-gray-200 shadow-2xs shrink-0" 
+                                                        />
+                                                        <span className="font-medium text-gray-800">{ev.location || <span className="text-gray-400 italic">No especificada</span>}</span>
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
@@ -264,32 +293,104 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">País del Evento</label>
-                                                        <select 
-                                                            name="flagName" 
-                                                            value={selectedCountry}
-                                                            onChange={(e) => setSelectedCountry(e.target.value)}
-                                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-iskf-red/50 focus:border-iskf-red transition-all"
+                                                    {/* Selector Buscable de Países y Banderas del Mundo */}
+                                                    <div className="relative" ref={countryDropdownRef}>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center justify-between">
+                                                            <span>País del Evento</span>
+                                                            <span className="text-[10px] text-gray-400 font-semibold">140+ países</span>
+                                                        </label>
+                                                        
+                                                        <input type="hidden" name="flagName" value={selectedCountry} />
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 flex items-center justify-between hover:bg-gray-100 transition-all text-left focus:outline-none focus:ring-2 focus:ring-iskf-red/50 focus:border-iskf-red cursor-pointer"
                                                         >
-                                                            {countries.map((c) => (
-                                                                <option key={c.flagName} value={c.flagName}>
-                                                                    {c.emoji} {c.name}
-                                                                </option>
-                                                            ))}
-                                                        </select>
+                                                            <div className="flex items-center gap-2.5 truncate">
+                                                                <img 
+                                                                    src={getEventFlagUrl(selectedCountry)?.src || getEventFlagUrl(selectedCountry)} 
+                                                                    alt="" 
+                                                                    className="w-5 h-5 rounded-full object-cover shrink-0 border border-gray-200 shadow-2xs" 
+                                                                />
+                                                                <span className="truncate">{currentCountryObj.name}</span>
+                                                            </div>
+                                                            <ChevronDown size={16} className={`text-gray-400 transition-transform shrink-0 ${countryDropdownOpen ? 'rotate-180' : ''}`} />
+                                                        </button>
+
+                                                        {countryDropdownOpen && (
+                                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                                                                <div className="p-2 border-b border-gray-100 bg-gray-50/80">
+                                                                    <div className="relative">
+                                                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                                                        <input
+                                                                            type="text"
+                                                                            value={countrySearch}
+                                                                            onChange={(e) => setCountrySearch(e.target.value)}
+                                                                            placeholder="Buscar país (ej: Estados Unidos, Japón)..."
+                                                                            className="w-full bg-white border border-gray-200 rounded-lg pl-8 pr-3 py-1.5 text-xs font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:border-iskf-red"
+                                                                            autoFocus
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="max-h-56 overflow-y-auto divide-y divide-gray-50">
+                                                                    {filteredCountries.length === 0 ? (
+                                                                        <div className="p-4 text-center text-xs text-gray-400">
+                                                                            No se encontraron países
+                                                                        </div>
+                                                                    ) : (
+                                                                        filteredCountries.map((c) => {
+                                                                            const isSelected = selectedCountry === c.flagName || selectedCountry === c.code;
+                                                                            const flagSrc = getEventFlagUrl(c.flagName);
+                                                                            return (
+                                                                                <button
+                                                                                    key={c.code + c.flagName}
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setSelectedCountry(c.flagName);
+                                                                                        setCountryDropdownOpen(false);
+                                                                                        setCountrySearch('');
+                                                                                    }}
+                                                                                    className={`w-full px-3 py-2 text-left flex items-center justify-between text-xs transition-colors hover:bg-red-50 cursor-pointer ${
+                                                                                        isSelected ? 'bg-red-50 font-bold text-iskf-red' : 'text-gray-700 font-medium'
+                                                                                    }`}
+                                                                                >
+                                                                                    <div className="flex items-center gap-2.5 truncate">
+                                                                                        <img 
+                                                                                            src={flagSrc?.src || flagSrc} 
+                                                                                            alt="" 
+                                                                                            className="w-4 h-4 rounded-full object-cover shrink-0 border border-gray-200 shadow-2xs" 
+                                                                                            loading="lazy"
+                                                                                        />
+                                                                                        <span className="truncate">{c.name}</span>
+                                                                                        <span className="text-[10px] text-gray-400 font-mono">({c.code})</span>
+                                                                                    </div>
+                                                                                    {isSelected && <Check size={14} className="text-iskf-red shrink-0 ml-1" />}
+                                                                                </button>
+                                                                            );
+                                                                        })
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
+
+                                                    {/* Alcance Auto-determinado */}
                                                     <div>
                                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Alcance (Auto-determinado)</label>
-                                                        <input type="hidden" name="locationScope" value={countries.find(c => c.flagName === selectedCountry)?.isNational ? 'Nacional' : 'Internacional'} />
-                                                        <select 
-                                                            disabled
-                                                            value={countries.find(c => c.flagName === selectedCountry)?.isNational ? 'Nacional' : 'Internacional'}
-                                                            className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-500 cursor-not-allowed"
-                                                        >
-                                                            <option value="Nacional">Nacional</option>
-                                                            <option value="Internacional">Internacional</option>
-                                                        </select>
+                                                        <input type="hidden" name="locationScope" value={isCurrentNational ? 'Nacional' : 'Internacional'} />
+                                                        <div className={`w-full border rounded-xl px-4 py-3 font-bold text-sm flex items-center justify-between ${
+                                                            isCurrentNational ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-blue-50 border-blue-200 text-blue-800'
+                                                        }`}>
+                                                            <div className="flex items-center gap-2 truncate">
+                                                                <span>{isCurrentNational ? '🇨🇷' : '🌐'}</span>
+                                                                <span className="truncate">{isCurrentNational ? 'Nacional (Costa Rica)' : 'Internacional'}</span>
+                                                            </div>
+                                                            <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-white border border-current shrink-0">
+                                                                {isCurrentNational ? 'Nacional' : 'Internacional'}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
 

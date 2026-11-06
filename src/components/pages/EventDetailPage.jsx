@@ -20,6 +20,7 @@ import polandFlag from '../../assets/images/poland.jpg';
 import italiaFlag from '../../assets/images/italia.jpg';
 import dominicanaFlag from '../../assets/images/dominicana.jpg';
 import zanshinLogo from '../../assets/images/zanshinLogo.jpg';
+import { getEventFlagUrl } from '../../lib/constants/countries';
 
 const imageMap = {
     kumaLogo,
@@ -59,7 +60,7 @@ const EventDetailPage = ({ eventData }) => {
         name: eventData.title,
         date: eventData.startDate,
         logo: imageMap[eventData.logoName] || eventData.logoName || iskfLogo,
-        flag: imageMap[eventData.flagName] || eventData.flagName || costaRicaFlag,
+        flag: getEventFlagUrl(eventData.flagName),
     };
 
     const getYear = (isoString) => new Date(isoString).getUTCFullYear();
@@ -145,7 +146,7 @@ const EventDetailPage = ({ eventData }) => {
                             <div className="bg-white/5 backdrop-blur-sm rounded-[2rem] p-8 border border-white/10 flex flex-col justify-between h-full hover:bg-white/10 transition-colors group">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-gray-400 text-xs font-bold uppercase tracking-widest group-hover:text-white transition-colors">Sede</span>
-                                    <img src={event.flag?.src || event.flag} className="w-6 h-6 rounded-full shadow-sm" alt="flag" />
+                                    <img src={event.flag?.src || event.flag} className="w-6 h-6 rounded-full object-cover shadow-sm" alt="flag" />
                                 </div>
                                 <div>
                                     <div className="text-2xl font-bold text-white leading-tight mb-2">{event.location}</div>

@@ -21,6 +21,7 @@ import polandFlag from '../../assets/images/poland.jpg';
 import italiaFlag from '../../assets/images/italia.jpg';
 import dominicanaFlag from '../../assets/images/dominicana.jpg';
 import zanshinLogo from '../../assets/images/zanshinLogo.jpg';
+import { getEventFlagUrl } from '../../lib/constants/countries';
 
 const imageMap = {
     kumaLogo,
@@ -66,7 +67,7 @@ const EventsRoadmap = ({ events = [] }) => {
         locationScope: e.locationScope,
         location: e.location || 'Costa Rica',
         logo: imageMap[e.logoName] || e.logoName || iskfLogo,
-        flag: imageMap[e.flagName] || e.flagName || costaRicaFlag,
+        flag: getEventFlagUrl(e.flagName),
         description: e.description,
     })).sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -392,7 +393,7 @@ const EventsRoadmap = ({ events = [] }) => {
                                             </div>
                                             <h4 className={`font-bold text-base leading-tight mb-2 transition-colors ${isActive || isExpanded ? 'text-iskf-red' : 'text-[#2D2E83] group-hover:text-iskf-red'}`}>{event.name}</h4>
                                             <div className={`flex items-center justify-center gap-2 text-xs font-mono transition-colors ${isActive || isExpanded ? 'text-black' : 'text-gray-500 group-hover:text-black'}`}>
-                                                <img src={event.flag?.src || event.flag} className="w-4 h-4 rounded-full" alt="flag" />
+                                                <img src={event.flag?.src || event.flag} className="w-4 h-4 rounded-full object-cover shadow-2xs" alt="flag" />
                                                 <span>{event.location.split(',')[0]}</span>
                                             </div>
                                         </div>
@@ -466,9 +467,9 @@ const EventsRoadmap = ({ events = [] }) => {
                                             </div>
                                             <h4 className={`font-bold text-xs leading-tight mb-1 transition-colors ${isActive ? 'text-iskf-red' : 'text-[#2D2E83]'}`}>{event.name}</h4>
                                             <div className={`flex items-center gap-1 text-xs ${isActive ? 'text-black' : 'text-gray-500'} ${isNational ? 'justify-end' : 'justify-start'}`}>
-                                                {isNational ? <img src={event.flag?.src || event.flag} className="w-3 h-3 rounded-full" alt="flag" /> : null}
+                                                {isNational ? <img src={event.flag?.src || event.flag} className="w-3.5 h-3.5 rounded-full object-cover shadow-2xs" alt="flag" /> : null}
                                                 <span>{event.location.split(',')[0]}</span>
-                                                {!isNational ? <img src={event.flag?.src || event.flag} className="w-3 h-3 rounded-full" alt="flag" /> : null}
+                                                {!isNational ? <img src={event.flag?.src || event.flag} className="w-3.5 h-3.5 rounded-full object-cover shadow-2xs" alt="flag" /> : null}
                                             </div>
                                         </div>
                                     </div>
