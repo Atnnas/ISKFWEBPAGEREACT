@@ -899,12 +899,21 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     }
   }, [activeTab, selectedDojoId]);
 
+  // Helper para normalizar nombres eliminando tildes, prefijo "Sensei " y espacios
+  const cleanNormName = (v) =>
+    String(v || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/^sensei\s+/, '')
+      .trim();
+
   // Senseis disponibles registrados en la base de datos de los Dojos + Sensei Roy Gatjens como Director Nacional
   const availableSenseis = useMemo(() => {
     const map = new Map();
 
     // 1. Sensei Roy Gatjens (padre) como Director Nacional de la ISKF (convocado permanente)
-    map.set('sensei roy gatjens', {
+    map.set('roy gatjens', {
       id: 'sensei-roy-gatjens',
       name: 'Sensei Roy Gatjens',
       email: 'roygatjens@iskf.cr',
@@ -919,7 +928,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       const rawSensei = String(d.sensei || '').trim();
       if (!rawSensei) return;
       const cleanName = rawSensei.startsWith('Sensei ') ? rawSensei : `Sensei ${rawSensei}`;
-      const key = cleanName.toLowerCase();
+      const key = cleanNormName(cleanName);
       
       // Omitir solo a Sensei Roy Gatjens padre para no duplicarlo, pero conservar a Sensei Roy Lee
       if (key.includes('gatjens') && !key.includes('lee')) return;
@@ -927,7 +936,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       if (!map.has(key)) {
         const email = (d.email && d.email.includes('@'))
           ? d.email.trim().toLowerCase()
-          : `sensei.${cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '.')}@iskf.cr`;
+          : `sensei.${key.replace(/[^a-z0-9]+/g, '.')}@iskf.cr`;
         map.set(key, {
           id: d._id || d.id,
           dojoId: (d._id || d.id)?.toString(),
@@ -940,11 +949,15 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       }
     });
 
-    // Garantizar que Sensei Luis Román Navarro (Dojo SEK) esté siempre disponible en la lista oficial de Senseis
-    const luisRomanKey = 'sensei luis roman navarro';
-    if (!map.has(luisRomanKey) && !map.has('sensei luis roman')) {
+    // Garantizar que Sensei Luis Román Navarro (Dojo SEK) esté siempre disponible sin duplicados
+    const hasLuisRoman = Array.from(map.values()).some(s => {
+      const n = cleanNormName(s.name);
+      return n.includes('luis roman') || (s.email && s.email.includes('luis.roman'));
+    });
+
+    if (!hasLuisRoman) {
       const sekDojo = dojos.find(d => (d.name || '').toLowerCase().includes('sek') || (d.idName || '').toLowerCase() === 'sek');
-      map.set(luisRomanKey, {
+      map.set('luis roman navarro', {
         id: sekDojo ? `${sekDojo._id || sekDojo.id}-roman` : 'sensei-luis-roman-sek',
         dojoId: (sekDojo?._id || sekDojo?.id)?.toString(),
         name: 'Sensei Luis Román Navarro',
@@ -955,11 +968,15 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       });
     }
 
-    // Garantizar que Sensei Andrea Maroto (Dojo SEK) esté también disponible
-    const andreaMarotoKey = 'sensei andrea maroto';
-    if (!map.has(andreaMarotoKey)) {
+    // Garantizar que Sensei Andrea Maroto (Dojo SEK) esté también disponible sin duplicados
+    const hasAndreaMaroto = Array.from(map.values()).some(s => {
+      const n = cleanNormName(s.name);
+      return n.includes('andrea maroto') || (s.email && s.email.includes('andrea.maroto'));
+    });
+
+    if (!hasAndreaMaroto) {
       const sekDojo = dojos.find(d => (d.name || '').toLowerCase().includes('sek') || (d.idName || '').toLowerCase() === 'sek');
-      map.set(andreaMarotoKey, {
+      map.set('andrea maroto', {
         id: sekDojo ? `${sekDojo._id || sekDojo.id}-maroto` : 'sensei-andrea-maroto-sek',
         dojoId: (sekDojo?._id || sekDojo?.id)?.toString(),
         name: 'Sensei Andrea Maroto',
@@ -1167,14 +1184,31 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   const [newCallCustomSenseiName, setNewCallCustomSenseiName] = useState('');
   const [newCallCustomSenseiEmail, setNewCallCustomSenseiEmail] = useState('');
 
+  // Comparador robusto e inteligente para evitar duplicaciones entre Senseis registrados y manuales
+  const isSameSensei = useCallback((a, b) => {
+    if (!a || !b) return false;
+    const emA = String(a.email || '').trim().toLowerCase();
+    const emB = String(b.email || '').trim().toLowerCase();
+    if (emA && emB && emA === emB) return true;
+
+    const nA = cleanNormName(a.name);
+    const nB = cleanNormName(b.name);
+    if (!nA || !nB) return false;
+    if (nA === nB) return true;
+
+    // Si ambos comparten al menos 2 palabras clave significativas (ej. "luis" y "roman")
+    const wordsA = nA.split(/\s+/).filter(w => w.length > 2);
+    const wordsB = nB.split(/\s+/).filter(w => w.length > 2);
+    const common = wordsA.filter(w => wordsB.includes(w));
+    if (common.length >= 2) return true;
+    return false;
+  }, []);
+
   // Lista unificada para la edición del tribunal (incluye disponibles + cualquier sensei manual/invitado convocado)
   const allSenseisForEdit = useMemo(() => {
     const list = [...availableSenseis];
     (editingSenseisList || []).forEach(custom => {
-      const exists = list.some(s => 
-        (s.email && custom.email && s.email.toLowerCase() === custom.email.toLowerCase()) ||
-        (s.name && custom.name && s.name.toLowerCase() === custom.name.toLowerCase())
-      );
+      const exists = list.some(s => isSameSensei(s, custom));
       if (!exists) {
         list.push({
           ...custom,
@@ -1183,16 +1217,13 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       }
     });
     return list;
-  }, [availableSenseis, editingSenseisList]);
+  }, [availableSenseis, editingSenseisList, isSameSensei]);
 
   // Lista unificada para la creación de convocatoria (incluye disponibles + cualquier sensei manual agregado)
   const allSenseisForNewCall = useMemo(() => {
     const list = [...availableSenseis];
     (selectedSenseisForCall || []).forEach(custom => {
-      const exists = list.some(s => 
-        (s.email && custom.email && s.email.toLowerCase() === custom.email.toLowerCase()) ||
-        (s.name && custom.name && s.name.toLowerCase() === custom.name.toLowerCase())
-      );
+      const exists = list.some(s => isSameSensei(s, custom));
       if (!exists) {
         list.push({
           ...custom,
@@ -1201,7 +1232,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       }
     });
     return list;
-  }, [availableSenseis, selectedSenseisForCall]);
+  }, [availableSenseis, selectedSenseisForCall, isSameSensei]);
 
   const adminEvaluator = useMemo(() => {
     if (selectedCallForDetail && Array.isArray(selectedCallForDetail.evaluators)) {
@@ -2126,10 +2157,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     
     // Normalizar lista de senseis actuales mapeándolos con availableSenseis si existe coincidencia
     let currentList = existing.map((ev, idx) => {
-      const match = availableSenseis.find(s => 
-        (s.email && ev.email && s.email.toLowerCase() === ev.email.toLowerCase()) ||
-        (s.name && ev.name && s.name.toLowerCase() === ev.name.toLowerCase())
-      );
+      const match = availableSenseis.find(s => isSameSensei(s, ev));
       return match || {
         name: ev.name || `Sensei ${idx + 1}`,
         email: ev.email || `sensei_${idx + 1}@iskf.cr`,
@@ -2169,20 +2197,14 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       return;
     }
 
-    const isAlready = editingSenseisList.some(s => 
-      (s.email && sensei.email && s.email.toLowerCase() === sensei.email.toLowerCase()) ||
-      (s.name && sensei.name && s.name.toLowerCase() === sensei.name.toLowerCase())
-    );
+    const isAlready = editingSenseisList.some(s => isSameSensei(s, sensei));
 
     if (isAlready) {
       if (editingSenseisList.length <= 1) {
         showAlert('El tribunal debe contar con al menos 1 Sensei evaluador.', 'Atención', true);
         return;
       }
-      setEditingSenseisList(prev => prev.filter(s => 
-        (s.email && sensei.email ? s.email.toLowerCase() !== sensei.email.toLowerCase() : true) &&
-        (s.name && sensei.name ? s.name.toLowerCase() !== sensei.name.toLowerCase() : true)
-      ));
+      setEditingSenseisList(prev => prev.filter(s => !isSameSensei(s, sensei)));
     } else {
       if (editingSenseisList.length >= 5) {
         showAlert('El tribunal colegiado permite un máximo de 5 Senseis evaluadores.', 'Límite Máximo', true);
@@ -7512,7 +7534,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                         const currentModalDojo = dojos.find(d => (d._id || d.id) === newCallForm.dojoId) || selectedDojo;
                         const isDirector = Boolean(sensei.isPermanent || (sensei.name.toLowerCase().includes('gatjens') && !sensei.name.toLowerCase().includes('lee')));
                         const isDojoOwner = isDojoOwnerSensei(sensei, currentModalDojo);
-                        const isSelected = !isDojoOwner && (isDirector || selectedSenseisForCall.some(s => s.email === sensei.email));
+                        const isSelected = !isDojoOwner && (isDirector || selectedSenseisForCall.some(s => isSameSensei(s, sensei)));
 
                         return (
                           <label
@@ -7543,7 +7565,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       showAlert('Debe convocar al menos 1 Sensei para el Tribunal.', 'Atención', true);
                                       return;
                                     }
-                                    setSelectedSenseisForCall(prev => prev.filter(s => s.email !== sensei.email));
+                                    setSelectedSenseisForCall(prev => prev.filter(s => !isSameSensei(s, sensei)));
                                   } else {
                                     if (selectedSenseisForCall.length >= 5) {
                                       showAlert('El tribunal colegiado permite un máximo de 5 Senseis convocados.', 'Límite Máximo', true);
@@ -7794,10 +7816,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                   const callDojo = dojos.find(d => (d._id || d.id)?.toString() === (editingTribunalCall?.dojoId?._id || editingTribunalCall?.dojoId)?.toString()) || selectedDojo;
                   const isDojoOwner = isDojoOwnerSensei(sensei, callDojo);
                   const isDirector = Boolean(sensei.isPermanent || (sensei.name.toLowerCase().includes('gatjens') && !sensei.name.toLowerCase().includes('lee')));
-                  const isSelected = !isDojoOwner && (isDirector || editingSenseisList.some(s => 
-                    (s.email && sensei.email && s.email.toLowerCase() === sensei.email.toLowerCase()) ||
-                    (s.name && sensei.name && s.name.toLowerCase() === sensei.name.toLowerCase())
-                  ));
+                  const isSelected = !isDojoOwner && (isDirector || editingSenseisList.some(s => isSameSensei(s, sensei)));
 
                   return (
                     <label
