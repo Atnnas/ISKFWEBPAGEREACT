@@ -315,28 +315,6 @@ const KYU_OPTIONS = [
   '1° Kyu (Cinta Marrón 1)',
 ];
 
-function getRankWeight(rank) {
-  if (!rank) return 999;
-  const r = rank.toLowerCase();
-  if (r.includes('blanca') || r.includes('10')) return 10;
-  if (r.includes('amarilla') || r.includes('9')) return 9;
-  if (r.includes('naranja') || r.includes('8')) return 8;
-  if (r.includes('verde') && !r.includes('azul')) return 7;
-  if (r.includes('azul')) return 6;
-  if (r.includes('morada') && !r.includes('línea') && !r.includes('linea')) return 5;
-  if (r.includes('morada') && (r.includes('línea') || r.includes('linea'))) return 4;
-  if (r.includes('marrón') || r.includes('marron')) {
-    if (r.includes('3') || r.includes('iii')) return 3;
-    if (r.includes('2') || r.includes('ii')) return 2;
-    if (r.includes('1') || r.includes('i')) return 1;
-    return 3;
-  }
-  if (r.includes('dan') || r.includes('negra')) return 0;
-  const match = rank.match(/(\d+)/);
-  if (match) return parseInt(match[1], 10);
-  return 999;
-}
-
 function parseCustomDate(val) {
   if (!val) return null;
   if (val instanceof Date) return isNaN(val.getTime()) ? null : val;

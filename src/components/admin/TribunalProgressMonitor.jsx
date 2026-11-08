@@ -32,6 +32,7 @@ import { getTribunalProgressForCall, saveConsolidatedVerdict } from '../../lib/a
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
 import { getNextRank, isKyuExemptFromWrittenExam } from '../../lib/constants/kyuRanks';
+import { getKataForRank } from '../../lib/utils/shotokanCriteriaFeedback';
 
 // Helper para formatear tiempo relativo transcurrido
 function formatTimeAgo(dateStr) {
@@ -245,8 +246,6 @@ function StudentMonitorDrawer({
     if (typeof val !== 'number') return null;
     return val <= 10 ? val * 10 : val;
   }).filter(v => v !== null);
-
-  const totalVals = evalItems.map(e => e.evalRecord?.percentage).filter(v => typeof v === 'number' && v > 0);
 
   const colegiadoKihon = kihonVals.length ? Math.round(kihonVals.reduce((a, b) => a + b, 0) / kihonVals.length) : null;
   const colegiadoKata = kataVals.length ? Math.round(kataVals.reduce((a, b) => a + b, 0) / kataVals.length) : null;
@@ -1364,7 +1363,7 @@ function StudentMonitorDrawer({
                   <span>Correcciones Técnicas Oficiales por Mejorar</span>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
-                  Promedio Final: {consolidation.finalGrade || colegiadoTotal || '—'}%
+                  Promedio Final: {consolidation.finalGrade || calculatedFinalScore || '—'}%
                 </span>
               </div>
 

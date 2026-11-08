@@ -842,22 +842,6 @@ export default function TechnicalExamEvaluatorCore({
     return criteria.filter(Boolean);
   }, [getStudentSyllabus]);
 
-  // Detectar si la tanda actual tiene karatecas de distintos cinturones / temarios
-  const isMixedTanda = useMemo(() => {
-    if (!tandaStudents || tandaStudents.length <= 1) return false;
-    const ranks = new Set(
-      tandaStudents.map(st => (st.currentRank || '').toLowerCase().trim()).filter(Boolean)
-    );
-    if (ranks.size > 1) return true;
-    const syllabiIds = new Set(
-      tandaStudents.map(st => {
-        const syl = getStudentSyllabus(st);
-        return String(syl?._id || syl?.id || '');
-      }).filter(Boolean)
-    );
-    return syllabiIds.size > 1;
-  }, [tandaStudents, getStudentSyllabus]);
-
   // Agrupar los estudiantes de la tanda activa por su respectivo cinturón / temario oficial
   const beltGroups = useMemo(() => {
     if (!tandaStudents || tandaStudents.length === 0) return [];

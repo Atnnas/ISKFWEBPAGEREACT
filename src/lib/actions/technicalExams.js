@@ -18,7 +18,7 @@ import {
   generateShotokanFeedbackBullets
 } from '../utils/shotokanCriteriaFeedback';
 import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
-import { getNextRank, compareStudentsForExam, getRankSortOrder } from '../constants/kyuRanks';
+import { getNextRank, compareStudentsForExam } from '../constants/kyuRanks';
 
 /**
  * Obtener evaluaciones técnicas de un dojo específico (para Padrón y Tatami)
@@ -2315,9 +2315,9 @@ export async function saveEvaluatorAtomicGrade({
     );
 
     // Si Shihan Roy o el evaluador envió finalComments, sincronizar también en TechnicalExamConsolidation
-    if (payload.finalComments && (safeEvaluatorName.toLowerCase().includes('roy') || safeEmail.toLowerCase().includes('roy') || Boolean(finalComments))) {
+    if (safeCallId && payload.finalComments && (safeEvaluatorName.toLowerCase().includes('roy') || safeEmail.toLowerCase().includes('roy') || Boolean(finalComments))) {
       await TechnicalExamConsolidation.findOneAndUpdate(
-        { callId: callObjId, studentId: studentObjId },
+        { callId: safeCallId, studentId: student._id },
         { $set: { finalComments: payload.finalComments } }
       );
     }

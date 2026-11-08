@@ -43,7 +43,6 @@ export async function generateTechnicalExamCertificatePDF({
   kata2Text = '',
   positiveText = '',
   finalComments = '',
-  generalComment = '',
   _generalComment = '',
   evaluators = []
 }) {
@@ -249,7 +248,7 @@ export async function generateTechnicalExamCertificatePDF({
   const rankMatch = rawRankStr.match(/(\d+[\s°º]*(?:kyu|dan))/i);
   const cleanRank = rankMatch
     ? rankMatch[1].replace(/\s+/g, ' ').toUpperCase()
-    : rawRankStr.split(/[\(\-\:]/)[0].trim().toUpperCase();
+    : rawRankStr.split(/[()\-:]/)[0].trim().toUpperCase();
   doc.text(cleanRank, cols[7].x + cols[7].w / 2, dataRowY + 5.1, { align: 'center' });
 
   // Nota de Ajuste Marcial (si aplica)
