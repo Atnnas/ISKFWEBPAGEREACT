@@ -15,7 +15,8 @@ import {
   Save,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  ShieldAlert
 } from 'lucide-react';
 import { 
   getStudentsByDojo, 
@@ -416,12 +417,24 @@ export default function StudentsRosterView({
         <button
           type="button"
           onClick={handleOpenCreateStudent}
-          className="px-4 py-2.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md shadow-[#2D2E83]/20 flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 self-end sm:self-auto"
+          disabled={isSensei && (!selectedDojoId || !selectedDojo)}
+          className="px-4 py-2.5 bg-gradient-to-r from-[#2D2E83] to-[#be1322] hover:from-[#232468] hover:to-[#9c0f1b] text-white rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md shadow-[#2D2E83]/20 flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 self-end sm:self-auto disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
           <span>Inscribir</span>
         </button>
       </div>
+
+      {/* Alerta de cuenta Sensei sin dojo asignado */}
+      {isSensei && (!selectedDojoId || !selectedDojo || initialDojos.length === 0) && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs">
+            <span className="font-bold block text-sm mb-0.5">Sensei sin Dojo Oficial Asignado</span>
+            Tu cuenta tiene el rol de Sensei pero aún no ha sido vinculada a un Dojo oficial en la base de datos. Por seguridad institucional, la lista de estudiantes se mantiene restringida. Por favor contacta a la administración de ISKF Costa Rica para asociar tu usuario a tu Dojo.
+          </div>
+        </div>
+      )}
 
       {/* Barra de Filtros y Búsqueda */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/90 border border-gray-200/80 rounded-2xl p-3.5 shadow-xs relative z-10">

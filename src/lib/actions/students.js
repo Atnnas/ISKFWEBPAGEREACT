@@ -48,13 +48,49 @@ export async function getDojosForSelector() {
 }
 
 /**
+ * Determina el dojoId autorizado para la sesión actual.
+ * Si el usuario es administrador general o editor, devuelve 'ALL_ALLOWED'.
+ * Si el usuario es Sensei (admin de dojo), devuelve estrictamente el ID de su dojo asignado.
+ * Si no está asignado a un dojo, devuelve null (bloqueo estricto de seguridad).
+ */
+async function getAuthorizedSenseiDojoId(session) {
+  if (!session?.user) return null;
+  if (session.user.role !== 'sensei') return 'ALL_ALLOWED';
+
+  // 1. DojoId asignado explícitamente en el usuario
+  if (session.user.dojoId && mongoose.Types.ObjectId.isValid(session.user.dojoId)) {
+    return session.user.dojoId.toString();
+  }
+
+  // 2. Fallback buscando por email del Sensei en la colección Dojo
+  if (session.user.email) {
+    const dojo = await Dojo.findOne({
+      email: { $regex: new RegExp(`^${session.user.email.trim()}$`, 'i') }
+    }).lean();
+    if (dojo) return dojo._id.toString();
+  }
+
+  return null;
+}
+
+/**
  * Obtiene todos los estudiantes registrados para un Dojo específico.
+ * Si quien consulta es un Sensei, se verifica estrictamente que el dojoId solicitado coincida con su propio dojo.
  */
 export async function getStudentsByDojo(dojoId) {
   try {
     await dbConnect();
     if (!dojoId || !mongoose.Types.ObjectId.isValid(dojoId)) {
       return [];
+    }
+
+    const session = await auth();
+    if (session?.user && session.user.role === 'sensei') {
+      const authorizedDojoId = await getAuthorizedSenseiDojoId(session);
+      if (!authorizedDojoId || authorizedDojoId !== String(dojoId)) {
+        console.warn(`[Seguridad ISKF] Bloqueado acceso a estudiantes del dojo ${dojoId} para Sensei: ${session.user.email}`);
+        return [];
+      }
     }
 
     const students = await Student.find({ dojoId: new mongoose.Types.ObjectId(dojoId) }).lean();
@@ -157,11 +193,20 @@ export async function createStudent(data) {
       }
     }
 
-    if (!dojoId || !mongoose.Types.ObjectId.isValid(dojoId)) {
+    let effectiveDojoId = dojoId;
+    if (session.user.role === 'sensei') {
+      const authorizedDojoId = await getAuthorizedSenseiDojoId(session);
+      if (!authorizedDojoId || authorizedDojoId === 'ALL_ALLOWED') {
+        return { success: false, error: 'Tu usuario de Sensei no tiene un dojo oficial asignado para registrar alumnos.' };
+      }
+      effectiveDojoId = authorizedDojoId;
+    }
+
+    if (!effectiveDojoId || !mongoose.Types.ObjectId.isValid(effectiveDojoId)) {
       return { success: false, error: 'Debe especificar un dojo válido.' };
     }
 
-    const dojo = await Dojo.findById(dojoId).lean();
+    const dojo = await Dojo.findById(effectiveDojoId).lean();
     if (!dojo) {
       return { success: false, error: 'El dojo seleccionado no existe.' };
     }
@@ -173,7 +218,7 @@ export async function createStudent(data) {
       name: name.trim(),
       birthDate: parsedBirthDate,
       currentRank: currentRank || '10° Kyu (Cinta Blanca)',
-      dojoId: new mongoose.Types.ObjectId(dojoId),
+      dojoId: new mongoose.Types.ObjectId(effectiveDojoId),
       dojoName: dojo.name,
       photo: photo ? photo.trim() : '',
       notes: notes ? notes.trim() : '',
@@ -253,6 +298,14 @@ export async function updateStudent(id, data) {
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return { success: false, error: 'Identificador de estudiante inválido.' };
+    }
+
+    if (session?.user?.role === 'sensei') {
+      const authorizedDojoId = await getAuthorizedSenseiDojoId(session);
+      const student = await Student.findById(id).lean();
+      if (!student || student.dojoId?.toString() !== authorizedDojoId) {
+        return { success: false, error: 'No tienes autorización para modificar estudiantes de otro dojo.' };
+      }
     }
 
     const updateFields = {};
@@ -366,6 +419,14 @@ export async function deleteStudent(id) {
       return { success: false, error: 'Identificador inválido.' };
     }
 
+    if (session.user.role === 'sensei') {
+      const authorizedDojoId = await getAuthorizedSenseiDojoId(session);
+      const student = await Student.findById(id).lean();
+      if (!student || student.dojoId?.toString() !== authorizedDojoId) {
+        return { success: false, error: 'No tienes autorización para eliminar estudiantes de otro dojo.' };
+      }
+    }
+
     await Student.findByIdAndDelete(id);
 
     revalidatePath('/admin/examinations/technical');
@@ -390,6 +451,14 @@ export async function toggleStudentExamPromotion(studentId, isPromoted) {
 
     if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
       return { success: false, error: 'Identificador de estudiante inválido.' };
+    }
+
+    if (session.user.role === 'sensei') {
+      const authorizedDojoId = await getAuthorizedSenseiDojoId(session);
+      const student = await Student.findById(studentId).lean();
+      if (!student || student.dojoId?.toString() !== authorizedDojoId) {
+        return { success: false, error: 'No tienes autorización para postular estudiantes de otro dojo.' };
+      }
     }
 
     const updated = await Student.findByIdAndUpdate(
