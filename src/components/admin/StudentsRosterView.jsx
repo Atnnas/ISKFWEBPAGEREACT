@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, 
   Plus, 
@@ -16,14 +16,16 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  ShieldAlert
+  ShieldAlert,
+  Calendar
 } from 'lucide-react';
 import { 
   getStudentsByDojo, 
   createStudent, 
   updateStudent, 
   deleteStudent,
-  toggleStudentExamPromotion 
+  toggleStudentExamPromotion,
+  toggleAllStudentsExamPromotion
 } from '../../lib/actions/students';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 import ConfirmModal from '../ui/ConfirmModal';
@@ -62,38 +64,101 @@ function getKyuBadge(rank) {
   return { bg: 'bg-blue-50 text-[#2D2E83] border-blue-200', dot: 'bg-[#2D2E83]' };
 }
 
+function toIsoDate(val) {
+  if (!val || val === 'No registrada' || val === 'No indicada') return '';
+  const str = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (str.includes('T')) {
+    return str.split('T')[0];
+  }
+  const match = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (match) {
+    const day = match[1].padStart(2, '0');
+    const month = match[2].padStart(2, '0');
+    const year = match[3];
+    return `${year}-${month}-${day}`;
+  }
+  return '';
+}
+
+function toCostaRicaDate(val) {
+  if (!val || val === 'No registrada' || val === 'No indicada') return '';
+  const str = String(val).trim();
+  const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymd) {
+    return `${ymd[3]}/${ymd[2]}/${ymd[1]}`;
+  }
+  const dmy = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmy) {
+    return `${dmy[1].padStart(2, '0')}/${dmy[2].padStart(2, '0')}/${dmy[3]}`;
+  }
+  return str;
+}
+
+function parseCustomDate(str) {
+  if (!str) return null;
+  const s = String(str).trim();
+
+  // DD/MM/AAAA o DD-MM-AAAA
+  const dmyMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const d = new Date(year, month, day);
+    return (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) ? d : null;
+  }
+
+  // YYYY-MM-DD
+  const ymdMatch = s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = parseInt(ymdMatch[1], 10);
+    const month = parseInt(ymdMatch[2], 10) - 1;
+    const day = parseInt(ymdMatch[3], 10);
+    const d = new Date(year, month, day);
+    return (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) ? d : null;
+  }
+
+  return null;
+}
+
 function calculateAge(birthDate) {
   if (!birthDate) return null;
-  const birth = new Date(birthDate);
-  if (isNaN(birth.getTime())) return null;
+  let birth = null;
+  if (birthDate instanceof Date) {
+    birth = birthDate;
+  } else {
+    birth = parseCustomDate(birthDate);
+    if (!birth) {
+      const d = new Date(birthDate);
+      if (!isNaN(d.getTime())) birth = d;
+    }
+  }
+  if (!birth || isNaN(birth.getTime())) return null;
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
   const m = today.getMonth() - birth.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
     age--;
   }
-  return age;
+  return age >= 0 ? age : null;
 }
 
 function formatDate(isoDate) {
-  if (!isoDate) return 'No registrada';
+  if (!isoDate || isoDate === 'No registrada' || isoDate === 'No indicada') return 'No registrada';
+  const cr = toCostaRicaDate(isoDate);
+  if (cr) return cr;
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return 'No registrada';
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const year = d.getUTCFullYear();
   return `${day}/${month}/${year}`;
 }
 
-function parseCustomDate(str) {
-  if (!str) return null;
-  const dmyMatch = String(str).trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (!dmyMatch) return null;
-  const day = parseInt(dmyMatch[1], 10);
-  const month = parseInt(dmyMatch[2], 10) - 1;
-  const year = parseInt(dmyMatch[3], 10);
-  const d = new Date(year, month, day);
-  return (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) ? d : null;
+function formatDateForInput(isoDate) {
+  if (!isoDate || isoDate === 'No registrada' || isoDate === 'No indicada') return '';
+  return toCostaRicaDate(isoDate);
 }
 
 export default function StudentsRosterView({ 
@@ -142,6 +207,8 @@ export default function StudentsRosterView({
   const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', isError: false });
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [togglingPromotionId, setTogglingPromotionId] = useState(null);
+  const [isBatchUpdating, setIsBatchUpdating] = useState(false);
+  const birthDatePickerRef = useRef(null);
 
   const selectedDojo = isSensei && userDojo
     ? userDojo
@@ -196,7 +263,7 @@ export default function StudentsRosterView({
     const hasSpecial = Boolean(student.hasSpecialCondition || (student.specialCondition && student.specialCondition.trim().length > 0));
     setStudentFormData({
       name: student.name || '',
-      birthDate: formatDate(student.birthDate),
+      birthDate: formatDateForInput(student.birthDate),
       currentRank: student.currentRank || '10° Kyu (Cinta Blanca)',
       notes: student.notes || '',
       photo: student.photo || '',
@@ -205,6 +272,30 @@ export default function StudentsRosterView({
       specialCondition: student.specialCondition || ''
     });
     setIsStudentModalOpen(true);
+  };
+
+  const handleOpenDatePicker = () => {
+    if (birthDatePickerRef.current) {
+      if (typeof birthDatePickerRef.current.showPicker === 'function') {
+        try {
+          birthDatePickerRef.current.showPicker();
+        } catch {
+          birthDatePickerRef.current.focus();
+        }
+      } else {
+        birthDatePickerRef.current.focus();
+      }
+    }
+  };
+
+  const handleNativeDateChange = (e) => {
+    const val = e.target.value;
+    if (!val) {
+      setStudentFormData(prev => ({ ...prev, birthDate: '' }));
+      return;
+    }
+    const cr = toCostaRicaDate(val);
+    setStudentFormData(prev => ({ ...prev, birthDate: cr }));
   };
 
   // Guardar Estudiante
@@ -340,6 +431,53 @@ export default function StudentsRosterView({
   });
 
   const promotedCount = students.filter(s => s.isPromotedForExam).length;
+
+  const areAllFilteredPromoted = filteredStudents.length > 0 && filteredStudents.every(s => Boolean(s.isPromotedForExam));
+
+  const handleToggleAllPromotion = async (forceState = null) => {
+    if (filteredStudents.length === 0) return;
+    const shouldPromote = forceState !== null ? forceState : !areAllFilteredPromoted;
+    const targetIds = filteredStudents.map(s => s._id || s.id);
+    const count = targetIds.length;
+    const actionLabel = shouldPromote ? 'marcar como listos para examen' : 'desmarcar del examen';
+
+    showConfirm({
+      title: shouldPromote ? '¿Marcar todos para examen?' : '¿Desmarcar todos del examen?',
+      message: `Se van a ${actionLabel} a ${count} estudiante(s) ${searchQuery || rankFilter !== 'all' || promotionFilter !== 'all' ? 'que coinciden con los filtros actuales' : `de ${selectedDojo?.name}`}. ¿Deseas continuar?`,
+      onConfirm: async () => {
+        setIsBatchUpdating(true);
+        const previousStudents = [...students];
+        setStudents(prev => prev.map(s => {
+          const sid = s._id || s.id;
+          if (targetIds.includes(sid)) {
+            return { ...s, isPromotedForExam: shouldPromote };
+          }
+          return s;
+        }));
+
+        try {
+          const res = await toggleAllStudentsExamPromotion(selectedDojoId, shouldPromote, targetIds);
+          if (res.success) {
+            showAlert(
+              shouldPromote 
+                ? `Se han marcado ${res.modifiedCount || count} estudiante(s) listos para la examinación.` 
+                : `Se han desmarcado ${res.modifiedCount || count} estudiante(s) de la examinación.`,
+              'Actualización Exitosa'
+            );
+          } else {
+            setStudents(previousStudents);
+            showAlert(res.error || 'Error al actualizar a los estudiantes.', 'Error', true);
+          }
+        } catch (err) {
+          setStudents(previousStudents);
+          console.error(err);
+          showAlert('Error de conexión al actualizar a los estudiantes.', 'Error', true);
+        } finally {
+          setIsBatchUpdating(false);
+        }
+      }
+    });
+  };
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -499,6 +637,30 @@ export default function StudentsRosterView({
               ))}
             </select>
           </div>
+
+          {/* Botón Acción Masiva: Marcar Todos */}
+          {filteredStudents.length > 0 && (
+            <button
+              type="button"
+              disabled={isBatchUpdating}
+              onClick={() => handleToggleAllPromotion()}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all shadow-xs shrink-0 cursor-pointer ${
+                areAllFilteredPromoted
+                  ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 shadow-emerald-700/20'
+              }`}
+              title={areAllFilteredPromoted ? 'Desmarcar a todos los alumnos listados' : 'Marcar a todos los alumnos listados como listos para examen'}
+            >
+              {isBatchUpdating ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : areAllFilteredPromoted ? (
+                <X className="w-3.5 h-3.5 text-amber-700" />
+              ) : (
+                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+              )}
+              <span>{areAllFilteredPromoted ? 'Desmarcar todos' : 'Marcar todos'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -594,16 +756,48 @@ export default function StudentsRosterView({
                     </div>
                   </th>
                   <th 
-                    onClick={() => handleSort('status')}
-                    className="py-3.5 px-4 md:px-6 font-bold text-center cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                    title="Ordenar por estado para examen"
+                    className="py-3 px-4 md:px-6 font-bold text-center"
                   >
-                    <div className="flex items-center justify-center gap-1.5">
-                      <span>Estado para Examen</span>
-                      {sortField === 'status' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-[#2D2E83]" /> : <ArrowDown className="w-3.5 h-3.5 text-[#2D2E83]" />
-                      ) : (
-                        <ArrowUpDown className="w-3 h-3 opacity-30" />
+                    <div className="flex flex-col items-center justify-center gap-1.5">
+                      <div 
+                        onClick={() => handleSort('status')}
+                        className="flex items-center justify-center gap-1.5 cursor-pointer hover:text-gray-900 transition-colors select-none"
+                        title="Ordenar por estado para examen"
+                      >
+                        <span>Estado para Examen</span>
+                        {sortField === 'status' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-[#2D2E83]" /> : <ArrowDown className="w-3.5 h-3.5 text-[#2D2E83]" />
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 opacity-30" />
+                        )}
+                      </div>
+                      {filteredStudents.length > 0 && (
+                        <button
+                          type="button"
+                          disabled={isBatchUpdating}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleAllPromotion();
+                          }}
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-normal transition-all cursor-pointer shadow-2xs ${
+                            areAllFilteredPromoted
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200'
+                              : 'bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200'
+                          }`}
+                          title={areAllFilteredPromoted ? "Desmarcar a todos" : "Marcar a todos"}
+                        >
+                          {areAllFilteredPromoted ? (
+                            <>
+                              <X className="w-2.5 h-2.5" />
+                              <span>Desmarcar todos</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-700" />
+                              <span>Marcar todos</span>
+                            </>
+                          )}
+                        </button>
                       )}
                     </div>
                   </th>
@@ -790,16 +984,57 @@ export default function StudentsRosterView({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Fecha de Nacimiento (Opcional)
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-[#2D2E83]" />
+                      Nacimiento (dd/mm/aaaa)
+                    </span>
+                    {calculateAge(studentFormData.birthDate) !== null && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        {calculateAge(studentFormData.birthDate)} años
+                      </span>
+                    )}
                   </label>
-                  <input
-                    type="text"
-                    value={studentFormData.birthDate}
-                    onChange={(e) => setStudentFormData(prev => ({ ...prev, birthDate: e.target.value }))}
-                    placeholder="DD/MM/AAAA"
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs md:text-sm font-mono font-bold text-gray-900 focus:bg-white focus:border-[#2D2E83] focus:outline-none"
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      maxLength={10}
+                      value={studentFormData.birthDate}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, '');
+                        let formatted = raw;
+                        if (raw.length > 4) {
+                          formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}/${raw.slice(4, 8)}`;
+                        } else if (raw.length > 2) {
+                          formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
+                        }
+                        setStudentFormData(prev => ({ ...prev, birthDate: formatted }));
+                      }}
+                      placeholder="DD/MM/AAAA (ej: 15/04/2012)"
+                      className="w-full pl-3 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs md:text-sm font-mono font-bold text-gray-900 focus:bg-white focus:border-[#2D2E83] focus:outline-none transition-colors placeholder:text-gray-400 placeholder:font-sans"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleOpenDatePicker}
+                      title="Abrir selector de fecha (date picker)"
+                      className="absolute right-2 p-1.5 text-gray-500 hover:text-[#2D2E83] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Calendar className="w-4 h-4 text-[#2D2E83]" />
+                    </button>
+                    {/* Input date nativo para el popup interactivo del date picker */}
+                    <input
+                      ref={birthDatePickerRef}
+                      type="date"
+                      tabIndex={-1}
+                      value={toIsoDate(studentFormData.birthDate)}
+                      onChange={handleNativeDateChange}
+                      className="sr-only pointer-events-none"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Formato costarricense: día/mes/año o elija del calendario.
+                  </p>
                 </div>
 
                 <div>

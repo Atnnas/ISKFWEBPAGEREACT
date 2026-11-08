@@ -66,7 +66,8 @@ import {
   updateStudent, 
   deleteStudent,
   getDojosForSelector,
-  toggleStudentExamPromotion
+  toggleStudentExamPromotion,
+  toggleAllStudentsExamPromotion
 } from '../../lib/actions/students';
 import { getExamSyllabi } from '../../lib/actions/syllabi';
 import { 
@@ -382,6 +383,21 @@ function formatDateDDMMAAAA(birthDateInput) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
+}
+
+function toIsoDate(val) {
+  if (!val || val === 'No registrada' || val === 'No indicada') return '';
+  const str = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (str.includes('T')) return str.split('T')[0];
+  const match = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (match) {
+    const day = match[1].padStart(2, '0');
+    const month = match[2].padStart(2, '0');
+    const year = match[3];
+    return `${year}-${month}-${day}`;
+  }
+  return '';
 }
 
 function normalizeSearchText(text) {
@@ -1470,6 +1486,56 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     } finally {
       setTogglingPromotionId(null);
     }
+  };
+
+  const areAllFilteredStudentsPromoted = filteredStudents.length > 0 && filteredStudents.every(s => Boolean(s.isPromotedForExam));
+
+  const handleToggleAllPromotion = async (forceState = null) => {
+    if (filteredStudents.length === 0) return;
+    const shouldPromote = forceState !== null ? forceState : !areAllFilteredStudentsPromoted;
+    const targetIds = filteredStudents.map(s => s._id || s.id);
+    const count = targetIds.length;
+    const actionLabel = shouldPromote ? 'marcar como listos para examen' : 'desmarcar del examen';
+
+    setConfirmModal({
+      isOpen: true,
+      title: shouldPromote ? '¿Marcar todos para examen?' : '¿Desmarcar todos del examen?',
+      message: `Se van a ${actionLabel} a ${count} estudiante(s) ${searchQuery || rankFilter !== 'all' || promotionFilter !== 'all' ? 'que coinciden con los filtros actuales' : `de ${selectedDojo?.name}`}. ¿Deseas continuar?`,
+      confirmText: shouldPromote ? 'Marcar Todos' : 'Desmarcar Todos',
+      isDanger: !shouldPromote,
+      onConfirm: async () => {
+        setIsBatchUpdatingStudents(true);
+        const previousStudents = [...students];
+        setStudents(prev => prev.map(s => {
+          const sid = s._id || s.id;
+          if (targetIds.includes(sid)) {
+            return { ...s, isPromotedForExam: shouldPromote };
+          }
+          return s;
+        }));
+
+        try {
+          const res = await toggleAllStudentsExamPromotion(selectedDojoId, shouldPromote, targetIds);
+          if (res.success) {
+            showAlert(
+              shouldPromote 
+                ? `Se han marcado ${res.modifiedCount || count} estudiante(s) listos para la examinación.` 
+                : `Se han desmarcado ${res.modifiedCount || count} estudiante(s) de la examinación.`,
+              'Actualización Exitosa'
+            );
+          } else {
+            setStudents(previousStudents);
+            showAlert(res.error || 'Error al actualizar a los estudiantes.', 'Error', true);
+          }
+        } catch (err) {
+          setStudents(previousStudents);
+          console.error(err);
+          showAlert('Error de conexión al actualizar a los estudiantes.', 'Error', true);
+        } finally {
+          setIsBatchUpdatingStudents(false);
+        }
+      }
+    });
   };
 
   // ==========================================
@@ -3262,6 +3328,22 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   const [studentSpecialCondition, setStudentSpecialCondition] = useState('');
   const [isSavingStudent, setIsSavingStudent] = useState(false);
   const photoInputRef = useRef(null);
+  const birthDatePickerRef = useRef(null);
+  const [isBatchUpdatingStudents, setIsBatchUpdatingStudents] = useState(false);
+
+  const handleOpenDatePicker = () => {
+    if (birthDatePickerRef.current) {
+      if (typeof birthDatePickerRef.current.showPicker === 'function') {
+        try {
+          birthDatePickerRef.current.showPicker();
+        } catch {
+          birthDatePickerRef.current.focus();
+        }
+      } else {
+        birthDatePickerRef.current.focus();
+      }
+    }
+  };
 
   // Modales de Alerta y Confirmación
   const [confirmModal, setConfirmModal] = useState({
@@ -5282,6 +5364,30 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                   ))}
                 </select>
               </div>
+
+              {/* Botón Acción Masiva: Marcar Todos */}
+              {filteredStudents.length > 0 && (
+                <button
+                  type="button"
+                  disabled={isBatchUpdatingStudents}
+                  onClick={() => handleToggleAllPromotion()}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black transition-all shadow-xs shrink-0 cursor-pointer ${
+                    areAllFilteredStudentsPromoted
+                      ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 shadow-emerald-700/20'
+                  }`}
+                  title={areAllFilteredStudentsPromoted ? 'Desmarcar a todos los alumnos listados' : 'Marcar a todos los alumnos listados como listos para examen'}
+                >
+                  {isBatchUpdatingStudents ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : areAllFilteredStudentsPromoted ? (
+                    <X className="w-3.5 h-3.5 text-amber-700" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                  )}
+                  <span>{areAllFilteredStudentsPromoted ? 'Desmarcar todos' : 'Marcar todos'}</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -5381,16 +5487,48 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                         </div>
                       </th>
                       <th 
-                        onClick={() => handleStudentSort('status')}
-                        className="py-3.5 px-4 md:px-6 text-center cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                        title="Ordenar por matrícula para examen"
+                        className="py-3 px-4 md:px-6 text-center"
                       >
-                        <div className="flex items-center justify-center gap-1.5">
-                          <span>Matrícula a Examen</span>
-                          {studentSortField === 'status' ? (
-                            studentSortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-[#2D2E83]" /> : <ArrowDown className="w-3.5 h-3.5 text-[#2D2E83]" />
-                          ) : (
-                            <ArrowUpDown className="w-3 h-3 opacity-30" />
+                        <div className="flex flex-col items-center justify-center gap-1.5">
+                          <div 
+                            onClick={() => handleStudentSort('status')}
+                            className="flex items-center justify-center gap-1.5 cursor-pointer hover:text-gray-900 transition-colors select-none"
+                            title="Ordenar por matrícula para examen"
+                          >
+                            <span>Matrícula a Examen</span>
+                            {studentSortField === 'status' ? (
+                              studentSortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-[#2D2E83]" /> : <ArrowDown className="w-3.5 h-3.5 text-[#2D2E83]" />
+                            ) : (
+                              <ArrowUpDown className="w-3 h-3 opacity-30" />
+                            )}
+                          </div>
+                          {filteredStudents.length > 0 && (
+                            <button
+                              type="button"
+                              disabled={isBatchUpdatingStudents}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleAllPromotion();
+                              }}
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-normal transition-all cursor-pointer shadow-2xs ${
+                                areAllFilteredStudentsPromoted
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200'
+                                  : 'bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200'
+                              }`}
+                              title={areAllFilteredStudentsPromoted ? "Desmarcar a todos" : "Marcar a todos"}
+                            >
+                              {areAllFilteredStudentsPromoted ? (
+                                <>
+                                  <X className="w-2.5 h-2.5" />
+                                  <span>Desmarcar todos</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="w-2.5 h-2.5 text-emerald-700" />
+                                  <span>Marcar todos</span>
+                                </>
+                              )}
+                            </button>
                           )}
                         </div>
                       </th>
@@ -6439,7 +6577,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                       Nacimiento (DD/MM/AAAA) (Opcional)
                     </span>
                   </label>
-                  <div className="relative">
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       maxLength={10}
@@ -6455,9 +6593,36 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                         setStudentBirthDate(formatted);
                       }}
                       placeholder="DD/MM/AAAA (ej. 20/02/1995)"
-                      className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-300 focus:border-[#2D2E83] focus:bg-white rounded-xl text-xs md:text-sm font-mono font-bold text-gray-900 transition-all placeholder:text-gray-400 placeholder:font-sans"
+                      className="w-full pl-4 pr-11 py-2.5 bg-gray-50 border border-gray-300 focus:border-[#2D2E83] focus:bg-white rounded-xl text-xs md:text-sm font-mono font-bold text-gray-900 transition-all placeholder:text-gray-400 placeholder:font-sans"
                     />
-                    <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <button
+                      type="button"
+                      onClick={handleOpenDatePicker}
+                      title="Abrir selector de fecha (date picker)"
+                      className="absolute right-2 p-1.5 text-gray-500 hover:text-[#2D2E83] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Calendar className="w-4 h-4 text-[#2D2E83]" />
+                    </button>
+                    {/* Input date nativo para el popup interactivo del date picker */}
+                    <input
+                      ref={birthDatePickerRef}
+                      type="date"
+                      tabIndex={-1}
+                      value={toIsoDate(studentBirthDate)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) {
+                          setStudentBirthDate('');
+                          return;
+                        }
+                        const parts = val.split('-');
+                        if (parts.length === 3) {
+                          setStudentBirthDate(`${parts[2]}/${parts[1]}/${parts[0]}`);
+                        }
+                      }}
+                      className="sr-only pointer-events-none"
+                      aria-hidden="true"
+                    />
                   </div>
                 </div>
 

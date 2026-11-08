@@ -477,6 +477,7 @@ export async function toggleStudentExamPromotion(studentId, isPromoted) {
     }
 
     revalidatePath('/admin/examinations/technical');
+    revalidatePath('/admin/students');
 
     return {
       success: true,
@@ -486,5 +487,70 @@ export async function toggleStudentExamPromotion(studentId, isPromoted) {
   } catch (error) {
     console.error('Error en toggleStudentExamPromotion:', error);
     return { success: false, error: error.message || 'Error al actualizar estado para examen.' };
+  }
+}
+
+/**
+ * Alterna el estado de postulación/matrícula a examen para todos o un subconjunto de estudiantes de un dojo.
+ * Permite al Sensei o Administrador enlistar/postular a todos los alumnos con un solo clic ("Marcar todos").
+ *
+ * @param {string} dojoId - Identificador del dojo objetivo
+ * @param {boolean} isPromoted - true para marcar todos, false para desmarcar todos
+ * @param {string[]} [studentIds] - Opcional: lista de IDs de estudiantes específicos a marcar (ej. filtrados)
+ */
+export async function toggleAllStudentsExamPromotion(dojoId, isPromoted, studentIds = null) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: 'No autorizado. Se requiere iniciar sesión.' };
+    }
+
+    await dbConnect();
+
+    if (!dojoId || !mongoose.Types.ObjectId.isValid(dojoId)) {
+      return { success: false, error: 'Identificador de dojo inválido.' };
+    }
+
+    if (session.user.role === 'sensei') {
+      const authorizedDojoId = await getAuthorizedSenseiDojoId(session);
+      if (!authorizedDojoId || authorizedDojoId !== String(dojoId)) {
+        return { success: false, error: 'No tienes autorización para modificar estudiantes de otro dojo.' };
+      }
+    }
+
+    const query = {
+      dojoId: new mongoose.Types.ObjectId(dojoId)
+    };
+
+    if (Array.isArray(studentIds) && studentIds.length > 0) {
+      const validIds = studentIds
+        .filter(id => mongoose.Types.ObjectId.isValid(id))
+        .map(id => new mongoose.Types.ObjectId(id));
+      if (validIds.length > 0) {
+        query._id = { $in: validIds };
+      }
+    }
+
+    const result = await Student.updateMany(
+      query,
+      {
+        $set: {
+          isPromotedForExam: Boolean(isPromoted),
+          promotedAt: isPromoted ? new Date() : null
+        }
+      }
+    );
+
+    revalidatePath('/admin/examinations/technical');
+    revalidatePath('/admin/students');
+
+    return {
+      success: true,
+      modifiedCount: result.modifiedCount || 0,
+      isPromoted: Boolean(isPromoted)
+    };
+  } catch (error) {
+    console.error('Error en toggleAllStudentsExamPromotion:', error);
+    return { success: false, error: error.message || 'Error al actualizar masivamente a los estudiantes.' };
   }
 }
