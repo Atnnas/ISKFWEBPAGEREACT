@@ -35,6 +35,10 @@ export default async function AdminDashboard() {
     redirect('/admin/examinations/technical');
   }
 
+  if (session.user.role === 'sensei') {
+    redirect('/admin/students');
+  }
+
   if (session.user.role !== 'admin') {
     redirect('/');
   }

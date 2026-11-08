@@ -86,14 +86,14 @@ const Navbar = () => {
                             <div className="flex flex-col items-end gap-1">
                                 <div className="flex items-center gap-4">
                                     <img src={session.user.image?.src || session.user.image} alt="Perfil" className="w-8 h-8 rounded-full border border-white/20" />
-                                    <button onClick={() => signOut()} className="text-xs text-white/70 hover:text-white uppercase tracking-widest transition-colors">Salir</button>
+                                    <button onClick={() => signOut()} className="text-xs text-white/70 hover:text-white uppercase tracking-widest transition-colors cursor-pointer">Salir</button>
                                 </div>
-                                {session?.user?.role === 'admin' && (
+                                {session?.user?.role && ['admin', 'sensei', 'editor'].includes(session.user.role) && (
                                     <button
-                                        onClick={() => router.push('/admin')}
-                                        className="bg-iskf-blue text-white text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full hover:bg-[#1a1b4d] shadow-[0_0_10px_rgba(45,46,131,0.5)] transition-all duration-300 uppercase"
+                                        onClick={() => router.push(session.user.role === 'sensei' ? '/admin/students' : session.user.role === 'editor' ? '/admin/examinations/technical' : '/admin')}
+                                        className="bg-iskf-blue text-white text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full hover:bg-[#1a1b4d] shadow-[0_0_10px_rgba(45,46,131,0.5)] transition-all duration-300 uppercase cursor-pointer"
                                     >
-                                        Panel Admin
+                                        {session.user.role === 'sensei' ? 'Panel Dojo' : session.user.role === 'editor' ? 'Panel Técnico' : 'Panel Admin'}
                                     </button>
                                 )}
                             </div>
@@ -152,14 +152,17 @@ const Navbar = () => {
                                 <>
                                     <div className="flex items-center gap-4">
                                         <img src={session.user.image?.src || session.user.image} alt="Perfil" className="w-12 h-12 rounded-full border border-white/20" />
-                                        <button onClick={() => { setIsMenuOpen(false); signOut(); }} className="text-lg text-white/70 hover:text-white uppercase tracking-widest transition-colors">Salir</button>
+                                        <button onClick={() => { setIsMenuOpen(false); signOut(); }} className="text-lg text-white/70 hover:text-white uppercase tracking-widest transition-colors cursor-pointer">Salir</button>
                                     </div>
-                                    {session?.user?.role === 'admin' && (
+                                    {session?.user?.role && ['admin', 'sensei', 'editor'].includes(session.user.role) && (
                                         <button
-                                            onClick={() => { setIsMenuOpen(false); router.push('/admin'); }}
-                                            className="bg-iskf-blue text-white text-xs font-bold tracking-widest px-6 py-3 rounded-full hover:bg-[#1a1b4d] shadow-[0_0_10px_rgba(45,46,131,0.5)] transition-all duration-300 uppercase"
+                                            onClick={() => { 
+                                                setIsMenuOpen(false); 
+                                                router.push(session.user.role === 'sensei' ? '/admin/students' : session.user.role === 'editor' ? '/admin/examinations/technical' : '/admin'); 
+                                            }}
+                                            className="bg-iskf-blue text-white text-xs font-bold tracking-widest px-6 py-3 rounded-full hover:bg-[#1a1b4d] shadow-[0_0_10px_rgba(45,46,131,0.5)] transition-all duration-300 uppercase cursor-pointer"
                                         >
-                                            Panel Admin
+                                            {session.user.role === 'sensei' ? 'Panel Dojo' : session.user.role === 'editor' ? 'Panel Técnico' : 'Panel Admin'}
                                         </button>
                                     )}
                                 </>

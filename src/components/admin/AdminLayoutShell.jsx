@@ -221,7 +221,7 @@ export default function AdminLayoutShell({ children, user }) {
               {isSensei ? (user?.dojoName ? `${user.dojoName} • Admin Dojo` : 'Admin Dojo') : isInstructor ? (user?.dojoName || 'Instructor ISKF') : 'ISKF Costa Rica'}
             </span>
             <span className="text-base font-black text-[#2D2E83] tracking-tight block leading-tight">
-              {isSensei ? 'Panel Sensei' : isInstructor ? 'Portal de Instructor' : 'Panel Administrativo'}
+              {isSensei ? 'Panel Dojo' : isInstructor ? 'Portal de Instructor' : 'Panel Administrativo'}
             </span>
           </div>
         </div>
@@ -406,7 +406,7 @@ export default function AdminLayoutShell({ children, user }) {
                 {isSensei ? (user?.dojoName ? `${user.dojoName} • Admin Dojo` : 'Admin Dojo') : isInstructor ? (user?.dojoName || 'Instructor ISKF') : 'ISKF Costa Rica'}
               </span>
               <h2 className="text-lg font-black text-[#2D2E83] tracking-tight leading-tight truncate">
-                {isSensei ? 'Mi Dojo' : isInstructor ? 'Mi Dojo' : 'Panel Admin'}
+                {isSensei ? 'Panel Dojo' : isInstructor ? 'Mi Dojo' : 'Panel Admin'}
               </h2>
             </div>
           </div>
