@@ -1013,7 +1013,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
   // Detalle de Convocatoria Activa y Configuración de Tandas
   const [selectedCallForDetail, setSelectedCallForDetail] = useState(null);
-  const [activeCallDayFilter, setActiveCallDayFilter] = useState('all'); // 'all' | 1 | 2
+  const [activeCallDayFilter, setActiveCallDayFilter] = useState(1); // 1 | 2 (Exclusión mutua estricta: nunca 'all')
   const [callReadyStudents, setCallReadyStudents] = useState([]);
   const [dojoAllStudents, setDojoAllStudents] = useState([]);
   const [isLoadingCallStudents, setIsLoadingCallStudents] = useState(false);
@@ -1218,10 +1218,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     return (dojoAllStudents || []).filter(s => !readyIds.has(s._id || s.id));
   }, [dojoAllStudents, callReadyStudents]);
 
-  // Filtro por búsqueda de nombre o rango y por día (en convocatorias multidía con exclusión mutua estricta)
+  // Filtro por búsqueda de nombre o rango y por día (en convocatorias multidía con exclusión mutua estricta: sólo el día activo)
   const filteredReadyStudents = useMemo(() => {
     let list = callReadyStudents;
-    if (selectedCallForDetail?.isMultiDay && activeCallDayFilter !== 'all') {
+    if (selectedCallForDetail?.isMultiDay) {
       const targetDay = Number(activeCallDayFilter) === 2 ? 2 : 1;
       list = list.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === targetDay);
     }
@@ -2300,7 +2300,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   // Abrir vista detallada de una convocatoria para gestionar examinandos y tandas
   const handleOpenCallDetail = async (call) => {
     setSelectedCallForDetail(call);
-    setActiveCallDayFilter(call.isMultiDay ? 1 : 'all');
+    setActiveCallDayFilter(1);
     setDetailMaxPerTanda(Number(call.maxPerTanda) || 6);
     setIsLoadingCallStudents(true);
     setStudentListFilterTab('promoted');
@@ -2542,9 +2542,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     return `${diff} min`;
   };
 
-  // Sincronización en cascada de tandas para evitar solapamientos y desfases
+  // Sincronización en cascada de tandas para evitar solapamientos y desfases (aislado por día)
   const syncTandasCascade = (tandas, tIdx, field, targetMinutes) => {
     const list = tandas.map(t => ({ ...t }));
+    const currentTandaDay = Number(list[tIdx]?.day) === 2 ? 2 : 1;
 
     if (field === 'endTime') {
       const startM = parseTimeToMinutes(list[tIdx].startTime);
@@ -2555,10 +2556,14 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       }
       list[tIdx].endTime = minutesToFormattedTime(endM);
 
-      // Sincronizar en cascada hacia la tanda siguiente y posteriores
+      // Sincronizar en cascada hacia la tanda siguiente y posteriores (del mismo día)
       if (tIdx < list.length - 1) {
         let currentHandover = endM;
         for (let nextIdx = tIdx + 1; nextIdx < list.length; nextIdx++) {
+          const nextDay = Number(list[nextIdx]?.day) === 2 ? 2 : 1;
+          if (list[nextIdx]?.day && nextDay !== currentTandaDay) {
+            break; // No desbordar hacia tandas de otro día
+          }
           const nextStartM = parseTimeToMinutes(list[nextIdx].startTime);
           const nextEndM = parseTimeToMinutes(list[nextIdx].endTime);
           const duration = Math.max(15, nextEndM - nextStartM);
@@ -2578,21 +2583,28 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         list[tIdx].endTime = minutesToFormattedTime(startM + 15);
       }
 
-      // Sincronizar hacia la tanda anterior (su fin es el inicio de la actual)
+      // Sincronizar hacia la tanda anterior (su fin es el inicio de la actual, del mismo día)
       if (tIdx > 0) {
         const prevIdx = tIdx - 1;
-        list[prevIdx].endTime = minutesToFormattedTime(startM);
-        const prevStartM = parseTimeToMinutes(list[prevIdx].startTime);
-        if (prevStartM >= startM) {
-          list[prevIdx].startTime = minutesToFormattedTime(Math.max(0, startM - 15));
+        const prevDay = Number(list[prevIdx]?.day) === 2 ? 2 : 1;
+        if (!list[prevIdx]?.day || prevDay === currentTandaDay) {
+          list[prevIdx].endTime = minutesToFormattedTime(startM);
+          const prevStartM = parseTimeToMinutes(list[prevIdx].startTime);
+          if (prevStartM >= startM) {
+            list[prevIdx].startTime = minutesToFormattedTime(Math.max(0, startM - 15));
+          }
         }
       }
 
-      // Asegurar que las tandas siguientes mantengan continuidad
+      // Asegurar que las tandas siguientes mantengan continuidad (del mismo día)
       const updatedEndM = parseTimeToMinutes(list[tIdx].endTime);
       if (tIdx < list.length - 1) {
         let currentHandover = updatedEndM;
         for (let nextIdx = tIdx + 1; nextIdx < list.length; nextIdx++) {
+          const nextDay = Number(list[nextIdx]?.day) === 2 ? 2 : 1;
+          if (list[nextIdx]?.day && nextDay !== currentTandaDay) {
+            break; // No desbordar hacia tandas de otro día
+          }
           const nextStartM = parseTimeToMinutes(list[nextIdx].startTime);
           const nextEndM = parseTimeToMinutes(list[nextIdx].endTime);
           const duration = Math.max(15, nextEndM - nextStartM);
@@ -2608,9 +2620,13 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     return list;
   };
 
-  // Ajustar hora de tanda mediante botones arriba/abajo (stepper de 15 min)
-  const handleStepTandaTime = (tIdx, field, deltaMinutes) => {
-    if (!callTandas || !callTandas[tIdx]) return;
+  // Ajustar hora de tanda mediante botones arriba/abajo (stepper de 15 min, acepta tandaId o index)
+  const handleStepTandaTime = (tandaIdOrIdx, field, deltaMinutes) => {
+    if (!callTandas) return;
+    const tIdx = typeof tandaIdOrIdx === 'string'
+      ? callTandas.findIndex(t => t.id === tandaIdOrIdx)
+      : tandaIdOrIdx;
+    if (tIdx < 0 || !callTandas[tIdx]) return;
     const currentM = parseTimeToMinutes(callTandas[tIdx][field]);
     const targetM = currentM + deltaMinutes;
     const updated = syncTandasCascade(callTandas, tIdx, field, targetM);
@@ -2618,9 +2634,13 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     persistTandasEvent(updated);
   };
 
-  // Ajustar hora de tanda mediante tipeo directo
-  const handleUpdateTandaTime = (tIdx, field, value) => {
-    if (!callTandas || !callTandas[tIdx]) return;
+  // Ajustar hora de tanda mediante tipeo directo (acepta tandaId o index)
+  const handleUpdateTandaTime = (tandaIdOrIdx, field, value) => {
+    if (!callTandas) return;
+    const tIdx = typeof tandaIdOrIdx === 'string'
+      ? callTandas.findIndex(t => t.id === tandaIdOrIdx)
+      : tandaIdOrIdx;
+    if (tIdx < 0 || !callTandas[tIdx]) return;
     const newTandas = callTandas.map(t => ({ ...t }));
     newTandas[tIdx][field] = value;
     const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
@@ -2969,7 +2989,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     setDragOverTandaReorderIndex(null);
   };
 
-  const handleDropReorderTanda = (e, targetIndex) => {
+  const handleDropReorderTanda = (e, targetTandaIdOrIdx) => {
     e.preventDefault();
     e.stopPropagation();
     setDragOverTandaReorderIndex(null);
@@ -2985,8 +3005,16 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     }
     if (!data || data.type !== 'tanda') return;
 
-    const sourceIndex = data.index;
-    if (sourceIndex === targetIndex) {
+    const sourceTandaId = data.tandaId;
+    const sourceIndex = typeof data.index === 'number' && data.index >= 0
+      ? data.index
+      : callTandas.findIndex(t => t.id === sourceTandaId);
+
+    const targetIndex = typeof targetTandaIdOrIdx === 'number'
+      ? targetTandaIdOrIdx
+      : callTandas.findIndex(t => t.id === targetTandaIdOrIdx);
+
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
       setDraggedTandaData(null);
       return;
     }
@@ -2995,23 +3023,27 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     const [movedTanda] = list.splice(sourceIndex, 1);
     list.splice(targetIndex, 0, movedTanda);
 
-    // Recalcular horarios continuos manteniendo la duración de cada bloque
-    if (list.length > 0) {
-      let currentM = parseTimeToMinutes(callTandas[0].startTime);
-      for (let i = 0; i < list.length; i++) {
-        const prevStart = parseTimeToMinutes(list[i].startTime);
-        const prevEnd = parseTimeToMinutes(list[i].endTime);
+    // Recalcular horarios continuos manteniendo la duración de cada bloque (aislado por día)
+    const recalculateDayTimes = (dayNumber, defaultStart) => {
+      const dayTandas = list.filter(t => (Number(t.day) === 2 ? 2 : 1) === dayNumber);
+      if (dayTandas.length === 0) return;
+      let currentM = parseTimeToMinutes(defaultStart || '09:00 AM');
+      dayTandas.forEach((t) => {
+        const prevStart = parseTimeToMinutes(t.startTime);
+        const prevEnd = parseTimeToMinutes(t.endTime);
         const duration = Math.max(15, prevEnd - prevStart);
 
-        list[i].startTime = minutesToFormattedTime(currentM);
+        t.startTime = minutesToFormattedTime(currentM);
         currentM += duration;
-        list[i].endTime = minutesToFormattedTime(currentM);
+        t.endTime = minutesToFormattedTime(currentM);
+      });
+    };
 
-        // Si el nombre sigue la numeración estándar 'Tanda X', sincronizar su número
-        if (/^Tanda\s+\d+$/i.test(list[i].blockName || '')) {
-          list[i].blockName = `Tanda ${i + 1}`;
-        }
-      }
+    if (selectedCallForDetail?.isMultiDay) {
+      recalculateDayTimes(1, selectedCallForDetail.startTime || '09:00 AM');
+      recalculateDayTimes(2, selectedCallForDetail.startTimeDay2 || '09:00 AM');
+    } else {
+      recalculateDayTimes(1, selectedCallForDetail?.startTime || '09:00 AM');
     }
 
     setCallTandas(list);
@@ -3019,30 +3051,50 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     setDraggedTandaData(null);
   };
 
-  // Mover tanda arriba o abajo con botones step
-  const handleMoveTandaStep = (index, delta) => {
-    const targetIndex = index + delta;
-    if (targetIndex < 0 || targetIndex >= callTandas.length) return;
-
+  // Mover tanda arriba o abajo con botones step (acepta tandaId o index)
+  const handleMoveTandaStep = (tandaIdOrIdx, delta) => {
     const list = [...callTandas];
-    const [moved] = list.splice(index, 1);
+    const sourceIndex = typeof tandaIdOrIdx === 'number'
+      ? tandaIdOrIdx
+      : list.findIndex(t => t.id === tandaIdOrIdx);
+    if (sourceIndex < 0 || !list[sourceIndex]) return;
+
+    const tanda = list[sourceIndex];
+    const currentDay = Number(tanda.day) === 2 ? 2 : 1;
+
+    // Encontrar índices de tandas del mismo día en la lista completa
+    const dayIndices = list
+      .map((t, idx) => ((Number(t.day) === 2 ? 2 : 1) === currentDay ? idx : -1))
+      .filter(idx => idx !== -1);
+    
+    const posInDay = dayIndices.indexOf(sourceIndex);
+    const targetPosInDay = posInDay + delta;
+    if (targetPosInDay < 0 || targetPosInDay >= dayIndices.length) return;
+
+    const targetIndex = dayIndices[targetPosInDay];
+    const [moved] = list.splice(sourceIndex, 1);
     list.splice(targetIndex, 0, moved);
 
-    if (list.length > 0) {
-      let currentM = parseTimeToMinutes(callTandas[0].startTime);
-      for (let i = 0; i < list.length; i++) {
-        const prevStart = parseTimeToMinutes(list[i].startTime);
-        const prevEnd = parseTimeToMinutes(list[i].endTime);
+    const recalculateDayTimes = (dayNumber, defaultStart) => {
+      const dayTandas = list.filter(t => (Number(t.day) === 2 ? 2 : 1) === dayNumber);
+      if (dayTandas.length === 0) return;
+      let currentM = parseTimeToMinutes(defaultStart || '09:00 AM');
+      dayTandas.forEach((t) => {
+        const prevStart = parseTimeToMinutes(t.startTime);
+        const prevEnd = parseTimeToMinutes(t.endTime);
         const duration = Math.max(15, prevEnd - prevStart);
 
-        list[i].startTime = minutesToFormattedTime(currentM);
+        t.startTime = minutesToFormattedTime(currentM);
         currentM += duration;
-        list[i].endTime = minutesToFormattedTime(currentM);
+        t.endTime = minutesToFormattedTime(currentM);
+      });
+    };
 
-        if (/^Tanda\s+\d+$/i.test(list[i].blockName || '')) {
-          list[i].blockName = `Tanda ${i + 1}`;
-        }
-      }
+    if (selectedCallForDetail?.isMultiDay) {
+      recalculateDayTimes(1, selectedCallForDetail.startTime || '09:00 AM');
+      recalculateDayTimes(2, selectedCallForDetail.startTimeDay2 || '09:00 AM');
+    } else {
+      recalculateDayTimes(1, selectedCallForDetail?.startTime || '09:00 AM');
     }
 
     setCallTandas(list);
@@ -3884,53 +3936,38 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 p-1 bg-white/95 border border-indigo-200/80 rounded-xl text-xs font-bold shadow-2xs">
-                        <button
-                          type="button"
-                          onClick={() => setActiveCallDayFilter('all')}
-                          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                            activeCallDayFilter === 'all'
-                              ? 'bg-gray-800 text-white shadow-2xs font-black'
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                        >
-                          <span>📋 Todos</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-gray-100 text-gray-800 font-mono">
-                            {callReadyStudents.length}
-                          </span>
-                        </button>
-
+                      <div className="flex items-center gap-2 p-1.5 bg-white/95 border border-indigo-200/80 rounded-xl text-xs font-bold shadow-2xs">
                         <button
                           type="button"
                           onClick={() => setActiveCallDayFilter(1)}
-                          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                            activeCallDayFilter === 1
-                              ? 'bg-[#2D2E83] text-white shadow-2xs font-black'
-                              : 'text-gray-600 hover:text-gray-900'
+                          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                            (Number(activeCallDayFilter) === 2 ? 2 : 1) === 1
+                              ? 'bg-[#2D2E83] text-white shadow-2xs font-black ring-2 ring-[#2D2E83]/20'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                           }`}
                         >
                           <span>🥋 Día 1: {formatDateDDMMAAAA(selectedCallForDetail.examDate) || 'Fecha 1'}</span>
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                            activeCallDayFilter === 1 ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#2D2E83]'
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                            (Number(activeCallDayFilter) === 2 ? 2 : 1) === 1 ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#2D2E83]'
                           }`}>
-                            {callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 1).length}
+                            {callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 1).length} atletas
                           </span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => setActiveCallDayFilter(2)}
-                          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                            activeCallDayFilter === 2
-                              ? 'bg-[#BE1622] text-white shadow-2xs font-black'
-                              : 'text-gray-600 hover:text-gray-900'
+                          className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                            (Number(activeCallDayFilter) === 2 ? 2 : 1) === 2
+                              ? 'bg-[#BE1622] text-white shadow-2xs font-black ring-2 ring-[#BE1622]/20'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                           }`}
                         >
                           <span>🥋 Día 2: {formatDateDDMMAAAA(selectedCallForDetail.examEndDate) || 'Fecha 2'}</span>
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                            activeCallDayFilter === 2 ? 'bg-white/20 text-white' : 'bg-red-100 text-[#BE1622]'
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                            (Number(activeCallDayFilter) === 2 ? 2 : 1) === 2 ? 'bg-white/20 text-white' : 'bg-red-100 text-[#BE1622]'
                           }`}>
-                            {callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 2).length}
+                            {callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 2).length} atletas
                           </span>
                         </button>
                       </div>
@@ -3994,7 +4031,11 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                     title={`Divide a los examinandos listos en tandas de máximo ${detailMaxPerTanda} karatecas`}
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>⚡ Agrupar en Tandas de {detailMaxPerTanda}</span>
+                    <span>
+                      {selectedCallForDetail?.isMultiDay
+                        ? `⚡ Agrupar Tandas Día ${Number(activeCallDayFilter) === 2 ? 2 : 1}`
+                        : `⚡ Agrupar en Tandas de ${detailMaxPerTanda}`}
+                    </span>
                   </button>
 
                   {/* Eliminar Convocatoria */}
@@ -4060,7 +4101,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                         }`}
                       >
                         <Users className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Postulados ({callReadyStudents.length})</span>
+                        <span>Postulados {selectedCallForDetail?.isMultiDay ? `Día ${Number(activeCallDayFilter) === 2 ? 2 : 1}` : ''} ({filteredReadyStudents.length})</span>
                       </button>
 
                       <button
@@ -4512,141 +4553,162 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
                     </div>
 
-                    {callTandas.length === 0 ? (
-                      <div className="py-12 text-center border-2 border-dashed border-gray-200 rounded-2xl p-6 mt-4">
-                        <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                        <h4 className="text-xs font-bold text-gray-800">No hay tandas configuradas aún</h4>
-                        <p className="text-[11px] text-gray-400 max-w-sm mx-auto mt-1 mb-4">
-                          Presione &ldquo;⚡ Agrupar en Tandas de {detailMaxPerTanda}&rdquo; para organizar automáticamente a los {callReadyStudents.length} examinandos en bloques de {detailMaxPerTanda}.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleAutoGroupTandas}
-                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black transition-all shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          <span>⚡ Organizar en Tandas de {detailMaxPerTanda}</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 mt-4">
-                        {callTandas
-                          .filter(tanda => !selectedCallForDetail?.isMultiDay || activeCallDayFilter === 'all' || (Number(tanda.day) === 2 ? 2 : 1) === Number(activeCallDayFilter))
-                          .map((tanda, tIdx) => {
-                          const assignedCount = (tanda.studentIds || []).length;
-                          const isFull = assignedCount >= detailMaxPerTanda;
-                          const isOver = assignedCount > detailMaxPerTanda;
-                          const tandaDay = Number(tanda.day) === 2 ? 2 : 1;
+                    {(() => {
+                      const currentActiveDay = Number(activeCallDayFilter) === 2 ? 2 : 1;
+                      const visibleTandas = callTandas.filter(tanda => 
+                        !selectedCallForDetail?.isMultiDay || (Number(tanda.day) === 2 ? 2 : 1) === currentActiveDay
+                      );
+                      const studentsForActiveDay = callReadyStudents.filter(s => 
+                        !selectedCallForDetail?.isMultiDay || (Number(s.examDay) === 2 ? 2 : 1) === currentActiveDay
+                      );
 
-                          // Alumnos disponibles que no están en esta tanda y pertenecen al mismo día (en multidía)
-                          const availableForThisTanda = callReadyStudents.filter(
-                            s => !(tanda.studentIds || []).includes(s._id || s.id) &&
-                                 (!selectedCallForDetail?.isMultiDay || (Number(s.examDay) === 2 ? 2 : 1) === tandaDay)
-                          );
+                      if (visibleTandas.length === 0) {
+                        return (
+                          <div className="py-12 text-center border-2 border-dashed border-gray-200 rounded-2xl p-6 mt-4">
+                            <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                            <h4 className="text-xs font-bold text-gray-800">
+                              {selectedCallForDetail?.isMultiDay
+                                ? `No hay tandas configuradas para el Día ${currentActiveDay} aún`
+                                : 'No hay tandas configuradas aún'}
+                            </h4>
+                            <p className="text-[11px] text-gray-400 max-w-sm mx-auto mt-1 mb-4">
+                              {selectedCallForDetail?.isMultiDay
+                                ? `Presione "⚡ Organizar Tandas Día ${currentActiveDay}" para estructurar a los ${studentsForActiveDay.length} examinandos del Día ${currentActiveDay}.`
+                                : `Presione "⚡ Organizar en Tandas de ${detailMaxPerTanda}" para organizar automáticamente a los ${callReadyStudents.length} examinandos en bloques de ${detailMaxPerTanda}.`}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleAutoGroupTandas}
+                              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black transition-all shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                              <span>
+                                {selectedCallForDetail?.isMultiDay
+                                  ? `⚡ Organizar Tandas Día ${currentActiveDay}`
+                                  : `⚡ Organizar en Tandas de ${detailMaxPerTanda}`}
+                              </span>
+                            </button>
+                          </div>
+                        );
+                      }
 
-                          return (
-                            <React.Fragment key={tanda.id || tIdx}>
-                              <div 
-                                onDragOver={(e) => {
-                                  if (draggedTandaData) {
-                                    e.preventDefault();
-                                    e.dataTransfer.dropEffect = 'move';
-                                    if (dragOverTandaReorderIndex !== tIdx) {
-                                      setDragOverTandaReorderIndex(tIdx);
+                      return (
+                        <div className="space-y-4 mt-4">
+                          {visibleTandas.map((tanda, tIdx) => {
+                            const assignedCount = (tanda.studentIds || []).length;
+                            const isFull = assignedCount >= detailMaxPerTanda;
+                            const isOver = assignedCount > detailMaxPerTanda;
+                            const tandaDay = Number(tanda.day) === 2 ? 2 : 1;
+
+                            // Alumnos disponibles que no están en esta tanda y pertenecen al mismo día (en multidía)
+                            const availableForThisTanda = callReadyStudents.filter(
+                              s => !(tanda.studentIds || []).includes(s._id || s.id) &&
+                                   (!selectedCallForDetail?.isMultiDay || (Number(s.examDay) === 2 ? 2 : 1) === tandaDay)
+                            );
+
+                            return (
+                              <React.Fragment key={tanda.id || tIdx}>
+                                <div 
+                                  onDragOver={(e) => {
+                                    if (draggedTandaData) {
+                                      e.preventDefault();
+                                      e.dataTransfer.dropEffect = 'move';
+                                      if (dragOverTandaReorderIndex !== tIdx) {
+                                        setDragOverTandaReorderIndex(tIdx);
+                                      }
+                                    } else {
+                                      handleTandaDragOver(e, tanda.id);
                                     }
-                                  } else {
-                                    handleTandaDragOver(e, tanda.id);
-                                  }
-                                }}
-                                onDragLeave={(e) => {
-                                  if (draggedTandaData) {
-                                    if (e.currentTarget.contains(e.relatedTarget)) return;
-                                    if (dragOverTandaReorderIndex === tIdx) {
-                                      setDragOverTandaReorderIndex(null);
+                                  }}
+                                  onDragLeave={(e) => {
+                                    if (draggedTandaData) {
+                                      if (e.currentTarget.contains(e.relatedTarget)) return;
+                                      if (dragOverTandaReorderIndex === tIdx) {
+                                        setDragOverTandaReorderIndex(null);
+                                      }
+                                    } else {
+                                      handleTandaDragLeave(e, tanda.id);
                                     }
-                                  } else {
-                                    handleTandaDragLeave(e, tanda.id);
-                                  }
-                                }}
-                                onDrop={(e) => {
-                                  if (draggedTandaData) {
-                                    handleDropReorderTanda(e, tIdx);
-                                  } else {
-                                    handleDropOnTanda(e, tanda.id);
-                                  }
-                                }}
-                                className={`p-4 rounded-2xl border transition-all space-y-3 ${
-                                  draggedTandaData?.index === tIdx
-                                    ? 'opacity-30 border-dashed border-indigo-400 bg-indigo-50/20 scale-[0.99]'
-                                    : dragOverTandaReorderIndex === tIdx
-                                    ? 'bg-indigo-50/90 border-indigo-400 ring-2 ring-indigo-500 scale-[1.01] shadow-md'
-                                    : dragOverTargetId === tanda.id
-                                    ? isFull && !tanda.studentIds?.includes(draggedStudentData?.studentId)
-                                      ? 'bg-rose-50/80 border-rose-300 ring-2 ring-rose-400 scale-[1.01]'
-                                      : 'bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-500 scale-[1.01]'
-                                    : 'bg-gray-50/60 border-gray-200/90 shadow-2xs'
-                                }`}
-                              >
-                                {/* Banner visual durante reordenamiento de tanda completa */}
-                                {dragOverTandaReorderIndex === tIdx && draggedTandaData?.index !== tIdx && (
-                                  <div className="py-2 px-3 rounded-xl bg-indigo-600 text-white text-center text-xs font-black shadow-sm flex items-center justify-center gap-2 animate-in fade-in duration-150">
-                                    <ArrowUpDown className="w-4 h-4 text-indigo-200 animate-bounce" />
-                                    <span>Soltar aquí para mover a la Posición #{tIdx + 1}</span>
-                                  </div>
-                                )}
-
-                                {/* Indicador visual durante Drag & Drop de karateca */}
-                                {dragOverTargetId === tanda.id && !draggedTandaData && (
-                                  <div className={`py-1.5 px-3 rounded-xl text-center text-xs font-bold border transition-all animate-pulse ${
-                                    isFull && !tanda.studentIds?.includes(draggedStudentData?.studentId)
-                                      ? 'bg-rose-100 text-rose-800 border-rose-300'
-                                      : 'bg-indigo-100 text-indigo-800 border-indigo-300'
-                                  }`}>
-                                    {isFull && !tanda.studentIds?.includes(draggedStudentData?.studentId)
-                                      ? `⚠️ Capacidad máxima alcanzada (${detailMaxPerTanda} karatecas)`
-                                      : `⬇️ Suelta al karateca aquí para asignarlo a ${tanda.blockName || `Tanda ${tIdx + 1}`}`}
-                                  </div>
-                                )}
-
-                                {/* Encabezado de la Tanda */}
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-gray-200/80">
-                                  <div className="flex items-center gap-2 flex-1 flex-wrap">
-                                    {/* Drag Handle para reordenar la tanda completa */}
-                                    <div
-                                      draggable={true}
-                                      onDragStart={(e) => handleTandaDragStart(e, tanda.id, tIdx)}
-                                      onDragEnd={handleTandaDragEnd}
-                                      className="p-1 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-100/70 cursor-grab active:cursor-grabbing shrink-0 transition-colors"
-                                      title="Arrastrar para mover y reordenar esta tanda completa"
-                                    >
-                                      <GripVertical className="w-4 h-4" />
+                                  }}
+                                  onDrop={(e) => {
+                                    if (draggedTandaData) {
+                                      handleDropReorderTanda(e, tanda.id);
+                                    } else {
+                                      handleDropOnTanda(e, tanda.id);
+                                    }
+                                  }}
+                                  className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                                    draggedTandaData?.tandaId === tanda.id
+                                      ? 'opacity-30 border-dashed border-indigo-400 bg-indigo-50/20 scale-[0.99]'
+                                      : dragOverTandaReorderIndex === tIdx
+                                      ? 'bg-indigo-50/90 border-indigo-400 ring-2 ring-indigo-500 scale-[1.01] shadow-md'
+                                      : dragOverTargetId === tanda.id
+                                      ? isFull && !tanda.studentIds?.includes(draggedStudentData?.studentId)
+                                        ? 'bg-rose-50/80 border-rose-300 ring-2 ring-rose-400 scale-[1.01]'
+                                        : 'bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-500 scale-[1.01]'
+                                      : 'bg-gray-50/60 border-gray-200/90 shadow-2xs'
+                                  }`}
+                                >
+                                  {/* Banner visual durante reordenamiento de tanda completa */}
+                                  {dragOverTandaReorderIndex === tIdx && draggedTandaData?.tandaId !== tanda.id && (
+                                    <div className="py-2 px-3 rounded-xl bg-indigo-600 text-white text-center text-xs font-black shadow-sm flex items-center justify-center gap-2 animate-in fade-in duration-150">
+                                      <ArrowUpDown className="w-4 h-4 text-indigo-200 animate-bounce" />
+                                      <span>Soltar aquí para mover a la Posición #{tIdx + 1}</span>
                                     </div>
+                                  )}
 
-                                    <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center shrink-0">
-                                      {tIdx + 1}
-                                    </span>
-
-                                    {/* Botones rápidos subir/bajar tanda de orden */}
-                                    <div className="flex items-center border border-gray-200 bg-white rounded-lg p-0.5 shadow-2xs">
-                                      <button
-                                        type="button"
-                                        disabled={tIdx === 0}
-                                        onClick={() => handleMoveTandaStep(tIdx, -1)}
-                                        className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none rounded hover:bg-indigo-50 transition-colors"
-                                        title="Subir tanda de posición"
-                                      >
-                                        <ChevronUp className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        disabled={tIdx === callTandas.length - 1}
-                                        onClick={() => handleMoveTandaStep(tIdx, 1)}
-                                        className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none rounded hover:bg-indigo-50 transition-colors"
-                                        title="Bajar tanda de posición"
-                                      >
-                                        <ChevronDown className="w-3.5 h-3.5" />
-                                      </button>
+                                  {/* Indicador visual durante Drag & Drop de karateca */}
+                                  {dragOverTargetId === tanda.id && !draggedTandaData && (
+                                    <div className={`py-1.5 px-3 rounded-xl text-center text-xs font-bold border transition-all animate-pulse ${
+                                      isFull && !tanda.studentIds?.includes(draggedStudentData?.studentId)
+                                        ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                        : 'bg-indigo-100 text-indigo-800 border-indigo-300'
+                                    }`}>
+                                      {isFull && !tanda.studentIds?.includes(draggedStudentData?.studentId)
+                                        ? `⚠️ Capacidad máxima alcanzada (${detailMaxPerTanda} karatecas)`
+                                        : `⬇️ Suelta al karateca aquí para asignarlo a ${tanda.blockName || `Tanda ${tIdx + 1}`}`}
                                     </div>
+                                  )}
+
+                                  {/* Encabezado de la Tanda */}
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-gray-200/80">
+                                    <div className="flex items-center gap-2 flex-1 flex-wrap">
+                                      {/* Drag Handle para reordenar la tanda completa */}
+                                      <div
+                                        draggable={true}
+                                        onDragStart={(e) => handleTandaDragStart(e, tanda.id, callTandas.findIndex(ct => ct.id === tanda.id))}
+                                        onDragEnd={handleTandaDragEnd}
+                                        className="p-1 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-100/70 cursor-grab active:cursor-grabbing shrink-0 transition-colors"
+                                        title="Arrastrar para mover y reordenar esta tanda completa"
+                                      >
+                                        <GripVertical className="w-4 h-4" />
+                                      </div>
+
+                                      <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center shrink-0">
+                                        {tIdx + 1}
+                                      </span>
+
+                                      {/* Botones rápidos subir/bajar tanda de orden */}
+                                      <div className="flex items-center border border-gray-200 bg-white rounded-lg p-0.5 shadow-2xs">
+                                        <button
+                                          type="button"
+                                          disabled={tIdx === 0}
+                                          onClick={() => handleMoveTandaStep(tanda.id, -1)}
+                                          className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none rounded hover:bg-indigo-50 transition-colors"
+                                          title="Subir tanda de posición"
+                                        >
+                                          <ChevronUp className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          disabled={tIdx === visibleTandas.length - 1}
+                                          onClick={() => handleMoveTandaStep(tanda.id, 1)}
+                                          className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none rounded hover:bg-indigo-50 transition-colors"
+                                          title="Bajar tanda de posición"
+                                        >
+                                          <ChevronDown className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
 
                                     <input
                                       type="text"
@@ -4712,7 +4774,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                         <input
                                           type="text"
                                           value={tanda.startTime || '09:00 AM'}
-                                          onChange={(e) => handleUpdateTandaTime(tIdx, 'startTime', e.target.value)}
+                                          onChange={(e) => handleUpdateTandaTime(tanda.id, 'startTime', e.target.value)}
                                           placeholder="09:00 AM"
                                           className="w-18 px-1.5 py-1 text-xs font-mono font-bold text-gray-800 text-center outline-hidden focus:bg-indigo-50/30"
                                           title="Hora de Inicio (sincroniza fin de tanda anterior)"
@@ -4720,7 +4782,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                         <div className="flex flex-col border-l border-gray-200 bg-gray-50/90">
                                           <button
                                             type="button"
-                                            onClick={() => handleStepTandaTime(tIdx, 'startTime', +15)}
+                                            onClick={() => handleStepTandaTime(tanda.id, 'startTime', +15)}
                                             className="px-1 py-0.5 hover:bg-indigo-100 text-gray-500 hover:text-indigo-700 transition-colors cursor-pointer border-b border-gray-200"
                                             title="+15 min (sincroniza tanda anterior)"
                                           >
@@ -4728,7 +4790,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                           </button>
                                           <button
                                             type="button"
-                                            onClick={() => handleStepTandaTime(tIdx, 'startTime', -15)}
+                                            onClick={() => handleStepTandaTime(tanda.id, 'startTime', -15)}
                                             className="px-1 py-0.5 hover:bg-indigo-100 text-gray-500 hover:text-indigo-700 transition-colors cursor-pointer"
                                             title="-15 min (sincroniza tanda anterior)"
                                           >
@@ -4744,7 +4806,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                         <input
                                           type="text"
                                           value={tanda.endTime || '09:45 AM'}
-                                          onChange={(e) => handleUpdateTandaTime(tIdx, 'endTime', e.target.value)}
+                                          onChange={(e) => handleUpdateTandaTime(tanda.id, 'endTime', e.target.value)}
                                           placeholder="09:45 AM"
                                           className="w-18 px-1.5 py-1 text-xs font-mono font-bold text-gray-800 text-center outline-hidden focus:bg-indigo-50/30"
                                           title="Hora de Fin (sincroniza inicio de tanda siguiente)"
@@ -4752,7 +4814,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                         <div className="flex flex-col border-l border-gray-200 bg-gray-50/90">
                                           <button
                                             type="button"
-                                            onClick={() => handleStepTandaTime(tIdx, 'endTime', +15)}
+                                            onClick={() => handleStepTandaTime(tanda.id, 'endTime', +15)}
                                             className="px-1 py-0.5 hover:bg-indigo-100 text-gray-500 hover:text-indigo-700 transition-colors cursor-pointer border-b border-gray-200"
                                             title="+15 min (sincroniza tanda siguiente)"
                                           >
@@ -4760,7 +4822,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                           </button>
                                           <button
                                             type="button"
-                                            onClick={() => handleStepTandaTime(tIdx, 'endTime', -15)}
+                                            onClick={() => handleStepTandaTime(tanda.id, 'endTime', -15)}
                                             className="px-1 py-0.5 hover:bg-indigo-100 text-gray-500 hover:text-indigo-700 transition-colors cursor-pointer"
                                             title="-15 min (sincroniza tanda siguiente)"
                                           >
@@ -5006,7 +5068,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                               </div>
 
                               {/* Controlador de Relevo entre tandas consecutivas */}
-                              {tIdx < callTandas.length - 1 && (
+                              {tIdx < visibleTandas.length - 1 && (
                                 <div className="flex items-center justify-center -my-1 py-1 relative z-10">
                                   <div className="bg-white border border-indigo-200/90 rounded-full px-3 py-1 shadow-2xs flex items-center gap-2 text-[11px] font-mono text-gray-700">
                                     <span className="text-[10px] uppercase font-bold text-gray-400">Pase Tanda {tIdx + 1} ➔ {tIdx + 2}:</span>
@@ -5014,7 +5076,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                     <div className="flex items-center gap-0.5 border-l border-gray-200 pl-1.5">
                                       <button
                                         type="button"
-                                        onClick={() => handleStepTandaTime(tIdx, 'endTime', +15)}
+                                        onClick={() => handleStepTandaTime(tanda.id, 'endTime', +15)}
                                         className="p-1 hover:bg-indigo-50 text-gray-500 hover:text-indigo-700 rounded-md cursor-pointer transition-colors"
                                         title="Avanzar relevo +15 min (sincroniza fin e inicio)"
                                       >
@@ -5022,7 +5084,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => handleStepTandaTime(tIdx, 'endTime', -15)}
+                                        onClick={() => handleStepTandaTime(tanda.id, 'endTime', -15)}
                                         className="p-1 hover:bg-indigo-50 text-gray-500 hover:text-indigo-700 rounded-md cursor-pointer transition-colors"
                                         title="Retroceder relevo -15 min (sincroniza fin e inicio)"
                                       >
@@ -5036,13 +5098,26 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                           );
                         })}
                       </div>
-                    )}
+                    );
+                  })()}
 
                     {/* Barra inferior informativa */}
                     {callTandas.length > 0 && (
                       <div className="pt-3 mt-4 border-t border-gray-100 flex items-center justify-between gap-3">
                         <span className="text-xs text-gray-500 font-bold">
-                          Total tandas configuradas: <strong className="text-gray-900">{callTandas.length}</strong>
+                          {selectedCallForDetail?.isMultiDay
+                            ? `Tandas Día ${Number(activeCallDayFilter) === 2 ? 2 : 1}: `
+                            : 'Total tandas configuradas: '}
+                          <strong className="text-gray-900">
+                            {selectedCallForDetail?.isMultiDay
+                              ? callTandas.filter(t => (Number(t.day) === 2 ? 2 : 1) === (Number(activeCallDayFilter) === 2 ? 2 : 1)).length
+                              : callTandas.length}
+                          </strong>
+                          {selectedCallForDetail?.isMultiDay && (
+                            <span className="text-gray-400 font-normal ml-1">
+                              ({callTandas.length} en total de ambos días)
+                            </span>
+                          )}
                         </span>
                       </div>
                     )}
