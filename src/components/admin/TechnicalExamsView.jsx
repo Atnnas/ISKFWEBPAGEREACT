@@ -93,6 +93,7 @@ import { getExamCostConfig } from '../../lib/actions/examCosts';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
+import TimePickerField from '../ui/TimePickerField';
 import TechnicalExamEvaluatorCore from '../examinations/TechnicalExamEvaluatorCore';
 import TribunalProgressMonitor from './TribunalProgressMonitor';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
@@ -8068,12 +8069,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                       <label className="text-xs font-bold text-gray-700 block mb-1">
                         Hora de Inicio General
                       </label>
-                      <input
-                        type="text"
+                      <TimePickerField
                         value={newCallForm.startTime}
-                        onChange={(e) => setNewCallForm(prev => ({ ...prev, startTime: e.target.value }))}
-                        placeholder="ej. 09:00 AM"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-medium focus:bg-white focus:border-[#2D2E83] outline-hidden"
+                        onChange={(val) => setNewCallForm(prev => ({ ...prev, startTime: val }))}
                       />
                     </div>
 
@@ -8139,12 +8137,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                           <label className="text-[11px] font-bold text-gray-700 block mb-1">
                             Hora Inicio Día 2
                           </label>
-                          <input
-                            type="text"
+                          <TimePickerField
                             value={newCallForm.startTimeDay2}
-                            onChange={(e) => setNewCallForm(prev => ({ ...prev, startTimeDay2: e.target.value }))}
-                            placeholder="ej. 09:00 AM"
-                            className="w-full px-3 py-2 bg-white border border-blue-300 rounded-xl text-xs font-medium focus:border-[#2D2E83] outline-hidden shadow-2xs"
+                            onChange={(val) => setNewCallForm(prev => ({ ...prev, startTimeDay2: val }))}
                           />
                         </div>
                       </div>

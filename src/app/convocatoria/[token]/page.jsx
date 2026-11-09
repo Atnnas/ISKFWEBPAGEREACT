@@ -33,6 +33,7 @@ import {
   transferStudentExamDay
 } from '../../../lib/actions/technicalExams';
 import { formatDateDDMMAAAA } from '../../../lib/utils/dateFormatter';
+import TimePickerField from '../../../components/ui/TimePickerField';
 
 const KYU_RANKS = [
   '10° Kyu (Cinta Blanca)',
@@ -875,16 +876,15 @@ export default function ConvocatoriaPublicPage({ params }) {
 
                         <div>
                           <label className="text-[10px] font-bold text-slate-400 uppercase">Hora de Inicio</label>
-                          <input
-                            type="text"
-                            value={block.startTime}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSchedulesList(prev => prev.map((b, i) => i === idx ? { ...b, startTime: val } : b));
-                            }}
-                            placeholder="ej. 09:30 AM"
-                            className="w-full mt-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium"
-                          />
+                          <div className="mt-1">
+                            <TimePickerField
+                              value={block.startTime}
+                              onChange={(val) => {
+                                setSchedulesList(prev => prev.map((b, i) => i === idx ? { ...b, startTime: val } : b));
+                              }}
+                              compact
+                            />
+                          </div>
                         </div>
 
                         <div>
