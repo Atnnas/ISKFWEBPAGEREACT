@@ -336,41 +336,43 @@ function normalizeSearchText(text) {
 }
 
 function getBeltBadge(kyuString) {
-  const kyu = (kyuString || '').toLowerCase();
-  if (kyu.includes('10') || (kyu.includes('blanco') || kyu.includes('blanca')) && !kyu.includes('amarill') && !kyu.includes('linea') && !kyu.includes('línea')) {
-    return { bg: 'bg-gray-100 text-gray-800 border-gray-300', dot: 'bg-gray-400', label: 'Cinta Blanca' };
+  const str = String(kyuString || '').trim();
+  const kyu = str.toLowerCase();
+  
+  if (kyu.includes('10') || ((kyu.includes('blanco') || kyu.includes('blanca')) && !kyu.includes('amarill') && !kyu.includes('linea') && !kyu.includes('línea'))) {
+    return { bg: 'bg-slate-100 text-slate-800 border-slate-300', dot: 'bg-slate-400', label: '10° Kyu (Blanca)' };
   }
   if (kyu.includes('9') || kyu.includes('amarill')) {
-    return { bg: 'bg-yellow-100 text-yellow-900 border-yellow-300', dot: 'bg-yellow-500', label: 'Cinta Amarilla' };
+    return { bg: 'bg-amber-100 text-amber-900 border-amber-300', dot: 'bg-amber-500', label: '9° Kyu (Amarilla)' };
   }
   if (kyu.includes('8') || kyu.includes('naranj')) {
-    return { bg: 'bg-orange-100 text-orange-900 border-orange-300', dot: 'bg-orange-500', label: 'Cinta Naranja' };
+    return { bg: 'bg-orange-100 text-orange-900 border-orange-300', dot: 'bg-orange-500', label: '8° Kyu (Naranja)' };
   }
   if (kyu.includes('7') || kyu.includes('verd')) {
-    return { bg: 'bg-emerald-100 text-emerald-900 border-emerald-300', dot: 'bg-emerald-500', label: 'Cinta Verde' };
+    return { bg: 'bg-emerald-100 text-emerald-900 border-emerald-300', dot: 'bg-emerald-500', label: '7° Kyu (Verde)' };
   }
   if (kyu.includes('6') || kyu.includes('azul')) {
-    return { bg: 'bg-blue-100 text-blue-900 border-blue-300', dot: 'bg-blue-500', label: 'Cinta Azul' };
+    return { bg: 'bg-blue-100 text-blue-900 border-blue-300', dot: 'bg-blue-500', label: '6° Kyu (Azul)' };
   }
   if (kyu.includes('4') || ((kyu.includes('linea') || kyu.includes('línea')) && kyu.includes('morad'))) {
-    return { bg: 'bg-purple-100 text-purple-900 border-purple-400 border-dashed', dot: 'bg-purple-600', label: 'Morada / Línea Blanca' };
+    return { bg: 'bg-purple-100 text-purple-900 border-purple-400 border-dashed', dot: 'bg-purple-600', label: '4° Kyu (Morada I)' };
   }
   if (kyu.includes('5') || kyu.includes('morad') || kyu.includes('púrpura') || kyu.includes('purpura')) {
-    return { bg: 'bg-purple-100 text-purple-900 border-purple-300', dot: 'bg-purple-600', label: 'Cinta Morada' };
+    return { bg: 'bg-purple-100 text-purple-900 border-purple-300', dot: 'bg-purple-600', label: '5° Kyu (Morada)' };
   }
   if (kyu.includes('3') || ((kyu.includes('marrón') || kyu.includes('marron') || kyu.includes('cafe') || kyu.includes('café')) && kyu.includes('3'))) {
-    return { bg: 'bg-amber-950/10 text-amber-950 border-amber-900/30', dot: 'bg-amber-800', label: 'Cinta Marrón 3' };
+    return { bg: 'bg-amber-950/10 text-amber-950 border-amber-900/30', dot: 'bg-amber-800', label: '3° Kyu (Marrón 3)' };
   }
   if (kyu.includes('2') || ((kyu.includes('marrón') || kyu.includes('marron') || kyu.includes('cafe') || kyu.includes('café')) && kyu.includes('2'))) {
-    return { bg: 'bg-amber-950/10 text-amber-950 border-amber-900/30', dot: 'bg-amber-800', label: 'Cinta Marrón 2' };
+    return { bg: 'bg-amber-950/10 text-amber-950 border-amber-900/30', dot: 'bg-amber-800', label: '2° Kyu (Marrón 2)' };
   }
   if (kyu.includes('1') || kyu.includes('marrón') || kyu.includes('marron') || kyu.includes('cafe') || kyu.includes('café')) {
-    return { bg: 'bg-amber-950/10 text-amber-950 border-amber-900/30', dot: 'bg-amber-800', label: 'Cinta Marrón 1' };
+    return { bg: 'bg-amber-950/10 text-amber-950 border-amber-900/30', dot: 'bg-amber-800', label: '1° Kyu (Marrón 1)' };
   }
   if (kyu.includes('dan') || kyu.includes('negr') || kyu.includes('shodan')) {
-    return { bg: 'bg-gray-900 text-white border-black', dot: 'bg-red-500', label: 'Cinta Negra' };
+    return { bg: 'bg-gray-900 text-white border-black', dot: 'bg-red-500', label: '1° Dan (Negra)' };
   }
-  return { bg: 'bg-gray-100 text-gray-800 border-gray-300', dot: 'bg-gray-400', label: 'Kyu' };
+  return { bg: 'bg-gray-100 text-gray-800 border-gray-300', dot: 'bg-gray-400', label: str || 'Kyu' };
 }
 
 function getEvaluatorPhaseDetails(ev, techniques = []) {
@@ -2422,6 +2424,55 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${p}`;
     };
 
+    /**
+     * Agrupa una lista de estudiantes en tandas priorizando que pertenezcan estrictamente
+     * al mismo Kyu (cinturón). Si hay 3 blancos y 3 amarillos, no se revuelven:
+     * crea 1 tanda exclusiva de blancos y 1 tanda exclusiva de amarillos
+     * (solo se mezclarán si el organizador decide moverlos manualmente).
+     */
+    const groupStudentsByKyuChunks = (studentsList, startBaseMinutes, dayNumber = 1) => {
+      // 1. Ordenar por rango (Kyu) y edad
+      const sorted = [...studentsList].sort(compareStudentsForExam);
+
+      // 2. Agrupar por Kyu (currentRank)
+      const rankGroups = new Map();
+      sorted.forEach(s => {
+        const rKey = s.currentRank || '10° Kyu (Cinta Blanca)';
+        if (!rankGroups.has(rKey)) {
+          rankGroups.set(rKey, []);
+        }
+        rankGroups.get(rKey).push(s);
+      });
+
+      // 3. Crear tandas respetando los grupos de Kyu (cada grupo se divide en tandas de chunkSize)
+      const chunks = [];
+      rankGroups.forEach((groupStudents, rankKey) => {
+        for (let i = 0; i < groupStudents.length; i += chunkSize) {
+          const chunk = groupStudents.slice(i, i + chunkSize);
+          chunks.push({
+            rankKey,
+            studentIds: chunk.map(s => s._id || s.id)
+          });
+        }
+      });
+
+      // 4. Asignar nombres, horarios continuos y metadatos
+      return chunks.map((item, idx) => {
+        const tandaNum = idx + 1;
+        const startM = startBaseMinutes + (idx * 45);
+        const endM = startM + 45;
+        const dayPrefix = selectedCallForDetail?.isMultiDay ? `Día ${dayNumber} - ` : '';
+        return {
+          id: `tanda_d${dayNumber}_${tandaNum}_${Date.now()}_${idx}`,
+          blockName: `${dayPrefix}Tanda ${tandaNum}`,
+          startTime: fmt(startM),
+          endTime: fmt(endM),
+          day: dayNumber,
+          studentIds: item.studentIds
+        };
+      });
+    };
+
     if (selectedCallForDetail?.isMultiDay) {
       // Si hay un día específico seleccionado en el filtro (1 o 2), agrupar solo ese día
       if (activeCallDayFilter === 1 || activeCallDayFilter === 2) {
@@ -2436,21 +2487,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           ? parseTimeToMinutes(selectedCallForDetail.startTimeDay2 || '09:00 AM')
           : parseTimeToMinutes(selectedCallForDetail.startTime || '09:00 AM');
 
-        const newChunksForDay = [];
-        for (let i = 0; i < studentsForDay.length; i += chunkSize) {
-          const chunk = studentsForDay.slice(i, i + chunkSize);
-          const tandaNum = Math.floor(i / chunkSize) + 1;
-          const startM = startBaseMinutes + (tandaNum - 1) * 45;
-          const endM = startM + 45;
-          newChunksForDay.push({
-            id: `tanda_d${targetDay}_${tandaNum}_${Date.now()}`,
-            blockName: `Día ${targetDay} - Tanda ${tandaNum}`,
-            startTime: fmt(startM),
-            endTime: fmt(endM),
-            day: targetDay,
-            studentIds: chunk.map(s => s._id || s.id)
-          });
-        }
+        const newChunksForDay = groupStudentsByKyuChunks(studentsForDay, startBaseMinutes, targetDay);
 
         // Mantener las tandas del otro día
         const otherDayTandas = callTandas.filter(t => (Number(t.day) === 2 ? 2 : 1) !== targetDay);
@@ -2460,7 +2497,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
         setCallTandas(combined);
         persistTandasEvent(combined);
-        showAlert(`Se organizaron ${studentsForDay.length} examinandos del Día ${targetDay} en ${newChunksForDay.length} tandas.`, `Tandas Día ${targetDay} Organizadas`);
+        showAlert(`Se organizaron ${studentsForDay.length} examinandos del Día ${targetDay} en ${newChunksForDay.length} tandas agrupadas por Kyu.`, `Tandas Día ${targetDay} Organizadas`);
         return;
       }
 
@@ -2468,64 +2505,24 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       const day1Students = callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 1);
       const day2Students = callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 2);
 
-      const allChunks = [];
       const startBaseDay1 = parseTimeToMinutes(selectedCallForDetail.startTime || '09:00 AM');
       const startBaseDay2 = parseTimeToMinutes(selectedCallForDetail.startTimeDay2 || '09:00 AM');
 
-      for (let i = 0; i < day1Students.length; i += chunkSize) {
-        const chunk = day1Students.slice(i, i + chunkSize);
-        const tandaNum = Math.floor(i / chunkSize) + 1;
-        const startM = startBaseDay1 + (tandaNum - 1) * 45;
-        const endM = startM + 45;
-        allChunks.push({
-          id: `tanda_d1_${tandaNum}_${Date.now()}`,
-          blockName: `Día 1 - Tanda ${tandaNum}`,
-          startTime: fmt(startM),
-          endTime: fmt(endM),
-          day: 1,
-          studentIds: chunk.map(s => s._id || s.id)
-        });
-      }
-
-      for (let i = 0; i < day2Students.length; i += chunkSize) {
-        const chunk = day2Students.slice(i, i + chunkSize);
-        const tandaNum = Math.floor(i / chunkSize) + 1;
-        const startM = startBaseDay2 + (tandaNum - 1) * 45;
-        const endM = startM + 45;
-        allChunks.push({
-          id: `tanda_d2_${tandaNum}_${Date.now()}`,
-          blockName: `Día 2 - Tanda ${tandaNum}`,
-          startTime: fmt(startM),
-          endTime: fmt(endM),
-          day: 2,
-          studentIds: chunk.map(s => s._id || s.id)
-        });
-      }
+      const day1Chunks = groupStudentsByKyuChunks(day1Students, startBaseDay1, 1);
+      const day2Chunks = groupStudentsByKyuChunks(day2Students, startBaseDay2, 2);
+      const allChunks = [...day1Chunks, ...day2Chunks];
 
       setCallTandas(allChunks);
       persistTandasEvent(allChunks);
-      showAlert(`Se organizaron ${callReadyStudents.length} examinandos (${day1Students.length} en Día 1 y ${day2Students.length} en Día 2) en ${allChunks.length} tandas.`, 'Tandas Multidía Organizadas');
+      showAlert(`Se organizaron ${callReadyStudents.length} examinandos (${day1Students.length} en Día 1 y ${day2Students.length} en Día 2) en ${allChunks.length} tandas agrupadas por Kyu.`, 'Tandas Multidía Organizadas');
       return;
     }
 
-    const chunks = [];
-    for (let i = 0; i < callReadyStudents.length; i += chunkSize) {
-      const chunk = callReadyStudents.slice(i, i + chunkSize);
-      const tandaNum = Math.floor(i / chunkSize) + 1;
-      const startM = (9 * 60) + (tandaNum - 1) * 45;
-      const endM = startM + 45;
-      chunks.push({
-        id: `tanda_${tandaNum}_${Date.now()}`,
-        blockName: `Tanda ${tandaNum}`,
-        startTime: fmt(startM),
-        endTime: fmt(endM),
-        day: 1,
-        studentIds: chunk.map(s => s._id || s.id)
-      });
-    }
+    const startBase = parseTimeToMinutes(selectedCallForDetail?.startTime || '09:00 AM');
+    const chunks = groupStudentsByKyuChunks(callReadyStudents, startBase, 1);
     setCallTandas(chunks);
     persistTandasEvent(chunks);
-    showAlert(`Se organizaron ${callReadyStudents.length} examinandos en ${chunks.length} tandas ordenadas por cinturón y edad.`, 'Tandas Organizadas');
+    showAlert(`Se organizaron ${callReadyStudents.length} examinandos en ${chunks.length} tandas agrupadas estrictamente por Kyu sin mezclarse.`, 'Tandas Organizadas');
   };
 
   const minutesToFormattedTime = (totalMinutes) => {
@@ -4231,8 +4228,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${belt.bg}`}>
-                                        {belt.label}
+                                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 shadow-2xs ${belt.bg}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${belt.dot}`} />
+                                        <span>{belt.label}</span>
                                       </span>
                                       {st.birthDate && (
                                         <span className="text-[10px] text-gray-500 font-mono" title={`Nacimiento: ${formatDateDDMMAAAA(st.birthDate)}`}>
@@ -4373,8 +4371,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${belt.bg}`}>
-                                        {belt.label}
+                                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 shadow-2xs ${belt.bg}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${belt.dot}`} />
+                                        <span>{belt.label}</span>
                                       </span>
                                       {st.birthDate && (
                                         <span className="text-[10px] text-gray-500 font-mono" title={`Nacimiento: ${formatDateDDMMAAAA(st.birthDate)}`}>
@@ -4680,6 +4679,32 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       </div>
                                     )}
 
+                                    {/* Etiquetas de Kyu / Grado presentes en esta tanda */}
+                                    {(() => {
+                                      const tandaStudents = (tanda.studentIds || [])
+                                        .map(stId => callReadyStudents.find(s => (s._id || s.id) === stId) || dojoAllStudents.find(s => (s._id || s.id) === stId))
+                                        .filter(Boolean);
+                                      const uniqueRanks = Array.from(new Set(tandaStudents.map(s => s.currentRank || 'Sin Grado')));
+                                      if (uniqueRanks.length === 0) return null;
+                                      return (
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                          {uniqueRanks.map(rank => {
+                                            const b = getBeltBadge(rank);
+                                            return (
+                                              <span
+                                                key={rank}
+                                                className={`px-2 py-0.5 rounded-lg text-[10px] font-black border flex items-center gap-1 shadow-2xs shrink-0 ${b.bg}`}
+                                                title={`Atletas en esta tanda: ${rank}`}
+                                              >
+                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${b.dot}`} />
+                                                <span>{b.label}</span>
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })()}
+
                                     {/* Horarios con controladores de Arriba / Abajo sincronizados */}
                                     <div className="flex items-center gap-1.5 text-xs">
                                       {/* Hora de Inicio */}
@@ -4854,31 +4879,47 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                             </span>
                                             <div className="min-w-0 flex-1">
                                                <div className="flex flex-col gap-1 min-w-0">
-                                                 {hasAspectsToConsider ? (
-                                                   <span
-                                                     className="text-xs font-black text-gray-950 whitespace-normal break-words leading-snug line-clamp-2 dark-radiance-glow"
-                                                     style={{
-                                                       textShadow: '0 1px 2px rgba(0, 0, 0, 0.45), 0 0 6px rgba(0, 0, 0, 0.25)'
-                                                     }}
-                                                     title={studentObj?.name || 'Estudiante'}
-                                                   >
-                                                     {studentObj?.name || 'Estudiante'}
-                                                   </span>
-                                                 ) : (
-                                                   <span
-                                                     className="text-xs font-bold text-gray-900 whitespace-normal break-words leading-snug line-clamp-2"
-                                                     title={studentObj?.name || 'Estudiante'}
-                                                   >
-                                                     {studentObj?.name || 'Estudiante'}
-                                                   </span>
-                                                 )}
-                                                 {studentObj?.birthDate && (
-                                                   <span className="text-[10px] text-gray-500 font-mono" title={`Nacimiento: ${formatDateDDMMAAAA(studentObj.birthDate)}`}>
-                                                     {calculateAge(studentObj.birthDate) !== null ? `${calculateAge(studentObj.birthDate)} años` : ''} ({formatDateDDMMAAAA(studentObj.birthDate)})
-                                                   </span>
-                                                 )}
-                                                 {hasAspectsToConsider && (
-                                                   <div>
+                                                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                                   {hasAspectsToConsider ? (
+                                                     <span
+                                                       className="text-xs font-black text-gray-950 whitespace-normal break-words leading-snug line-clamp-2 dark-radiance-glow"
+                                                       style={{
+                                                         textShadow: '0 1px 2px rgba(0, 0, 0, 0.45), 0 0 6px rgba(0, 0, 0, 0.25)'
+                                                       }}
+                                                       title={studentObj?.name || 'Estudiante'}
+                                                     >
+                                                       {studentObj?.name || 'Estudiante'}
+                                                     </span>
+                                                   ) : (
+                                                     <span
+                                                       className="text-xs font-bold text-gray-900 whitespace-normal break-words leading-snug line-clamp-2"
+                                                       title={studentObj?.name || 'Estudiante'}
+                                                     >
+                                                       {studentObj?.name || 'Estudiante'}
+                                                     </span>
+                                                   )}
+
+                                                   {(() => {
+                                                     const b = getBeltBadge(studentObj?.currentRank);
+                                                     return (
+                                                       <span
+                                                         className={`px-1.5 py-0.5 rounded text-[9px] font-black border flex items-center gap-1 shadow-2xs shrink-0 ${b.bg}`}
+                                                         title={`Cinturón actual: ${studentObj?.currentRank || 'Sin Grado'}`}
+                                                       >
+                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${b.dot}`} />
+                                                         <span>{b.label}</span>
+                                                       </span>
+                                                     );
+                                                   })()}
+                                                 </div>
+
+                                                 <div className="flex items-center gap-1.5 flex-wrap">
+                                                   {studentObj?.birthDate && (
+                                                     <span className="text-[10px] text-gray-500 font-mono" title={`Nacimiento: ${formatDateDDMMAAAA(studentObj.birthDate)}`}>
+                                                       {calculateAge(studentObj.birthDate) !== null ? `${calculateAge(studentObj.birthDate)} años` : ''} ({formatDateDDMMAAAA(studentObj.birthDate)})
+                                                     </span>
+                                                   )}
+                                                   {hasAspectsToConsider && (
                                                      <button
                                                        type="button"
                                                        onClick={(e) => {
@@ -4891,8 +4932,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                                        <AlertTriangle className="w-2.5 h-2.5 text-amber-600 animate-pulse shrink-0" />
                                                        <span>REVISAR</span>
                                                      </button>
-                                                   </div>
-                                                 )}
+                                                   )}
+                                                 </div>
                                                </div>
                                              </div>
                                           </div>

@@ -12,16 +12,38 @@ export {
 } from './dateFormatter';
 
 export function getBeltBadge(rankStr) {
-  if (!rankStr) return { bg: 'bg-gray-100 text-gray-700 border-gray-300', label: 'Sin Cinta' };
+  if (!rankStr) return { bg: 'bg-gray-100 text-gray-700 border-gray-300', dot: 'bg-gray-400', label: 'Sin Grado' };
   const r = rankStr.toLowerCase();
-  if (r.includes('blanca')) return { bg: 'bg-gray-100 text-gray-800 border-gray-300', label: 'Blanca' };
-  if (r.includes('amarilla')) return { bg: 'bg-yellow-100 text-yellow-800 border-yellow-300', label: 'Amarilla' };
-  if (r.includes('naranja')) return { bg: 'bg-orange-100 text-orange-800 border-orange-300', label: 'Naranja' };
-  if (r.includes('verde')) return { bg: 'bg-emerald-100 text-emerald-800 border-emerald-300', label: 'Verde' };
-  if (r.includes('morada') || r.includes('azul')) return { bg: 'bg-indigo-100 text-indigo-800 border-indigo-300', label: 'Morada' };
-  if (r.includes('café') || r.includes('cafe')) return { bg: 'bg-amber-100 text-amber-900 border-amber-400', label: 'Café' };
-  if (r.includes('negra') || r.includes('dan')) return { bg: 'bg-gray-900 text-white border-gray-950', label: 'Negra' };
-  return { bg: 'bg-blue-50 text-blue-700 border-blue-200', label: rankStr };
+  
+  // Extraer el Kyu o Dan si existe (ej. "10° Kyu", "9° Kyu", "1° Dan")
+  const kyuMatch = rankStr.match(/(\d+°\s*(?:Kyu|Dan))/i);
+  const kyuPrefix = kyuMatch ? `${kyuMatch[1]} ` : '';
+
+  if (r.includes('blanca')) {
+    return { bg: 'bg-slate-100 text-slate-800 border-slate-300', dot: 'bg-slate-400', label: `${kyuPrefix}(Blanca)` };
+  }
+  if (r.includes('amarilla')) {
+    return { bg: 'bg-amber-100 text-amber-900 border-amber-300', dot: 'bg-amber-500', label: `${kyuPrefix}(Amarilla)` };
+  }
+  if (r.includes('naranja')) {
+    return { bg: 'bg-orange-100 text-orange-900 border-orange-300', dot: 'bg-orange-500', label: `${kyuPrefix}(Naranja)` };
+  }
+  if (r.includes('verde')) {
+    return { bg: 'bg-emerald-100 text-emerald-900 border-emerald-300', dot: 'bg-emerald-600', label: `${kyuPrefix}(Verde)` };
+  }
+  if (r.includes('azul')) {
+    return { bg: 'bg-blue-100 text-blue-900 border-blue-300', dot: 'bg-blue-600', label: `${kyuPrefix}(Azul)` };
+  }
+  if (r.includes('morada')) {
+    return { bg: 'bg-purple-100 text-purple-900 border-purple-300', dot: 'bg-purple-600', label: `${kyuPrefix}(Morada)` };
+  }
+  if (r.includes('café') || r.includes('cafe') || r.includes('marrón') || r.includes('marron')) {
+    return { bg: 'bg-amber-950/10 text-amber-950 border-amber-800/30', dot: 'bg-amber-800', label: `${kyuPrefix}(Marrón)` };
+  }
+  if (r.includes('negra') || r.includes('dan')) {
+    return { bg: 'bg-gray-900 text-white border-black', dot: 'bg-red-500', label: `${kyuPrefix}(Negra)` };
+  }
+  return { bg: 'bg-blue-50 text-[#2D2E83] border-blue-200', dot: 'bg-[#2D2E83]', label: rankStr };
 }
 
 export function getTandasRosterSignature(schedules) {
