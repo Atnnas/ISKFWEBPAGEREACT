@@ -32,6 +32,7 @@ import {
   updateExamCallSchedulesAndEvaluators,
   transferStudentExamDay
 } from '../../../lib/actions/technicalExams';
+import { formatDateDDMMAAAA } from '../../../lib/utils/dateFormatter';
 
 const KYU_RANKS = [
   '10° Kyu (Cinta Blanca)',
@@ -435,7 +436,7 @@ export default function ConvocatoriaPublicPage({ params }) {
                   {callData.isMultiDay ? 'Fechas del Examen (2 Días)' : 'Fecha del Examen'}
                 </div>
                 <div className="text-sm font-bold text-slate-800">
-                  {callData.isMultiDay ? `${callData.examDate} y ${callData.examEndDate || 'Día 2'}` : callData.examDate}
+                  {callData.isMultiDay ? `${formatDateDDMMAAAA(callData.examDate)} y ${formatDateDDMMAAAA(callData.examEndDate) || 'Día 2'}` : formatDateDDMMAAAA(callData.examDate)}
                 </div>
                 <div className="text-xs text-slate-500">
                   {callData.isMultiDay
@@ -566,7 +567,7 @@ export default function ConvocatoriaPublicPage({ params }) {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <span>🥋 Día 1: {callData.examDate}</span>
+                    <span>🥋 Día 1: {formatDateDDMMAAAA(callData.examDate)}</span>
                     <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-100 text-[#2D2E83] font-mono">
                       {(callData.aspirants || []).filter(a => (Number(a.examDay) === 2 ? 2 : 1) === 1).length}
                     </span>
@@ -580,7 +581,7 @@ export default function ConvocatoriaPublicPage({ params }) {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <span>🥋 Día 2: {callData.examEndDate || 'Día 2'}</span>
+                    <span>🥋 Día 2: {callData.examEndDate ? formatDateDDMMAAAA(callData.examEndDate) : 'Día 2'}</span>
                     <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-red-100 text-[#BE1622] font-mono">
                       {(callData.aspirants || []).filter(a => (Number(a.examDay) === 2 ? 2 : 1) === 2).length}
                     </span>

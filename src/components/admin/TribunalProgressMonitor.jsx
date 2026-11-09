@@ -33,6 +33,7 @@ import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExam
 import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
 import { getNextRank, isKyuExemptFromWrittenExam } from '../../lib/constants/kyuRanks';
 import { getKataForRank } from '../../lib/utils/shotokanCriteriaFeedback';
+import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
 
 // Helper para formatear tiempo relativo transcurrido
 function formatTimeAgo(dateStr) {
@@ -1666,9 +1667,10 @@ export default function TribunalProgressMonitor({
         || '8° Kyu (Cinta Naranja)';
 
       const isDay2 = (Number(aspirantInfo?.examDay) === 2);
-      const examDate = (call?.isMultiDay && isDay2 && call?.examEndDate)
+      const rawExamDate = (call?.isMultiDay && isDay2 && call?.examEndDate)
         ? call.examEndDate
-        : (call?.examDate || new Date().toLocaleDateString('es-CR'));
+        : (call?.examDate || new Date());
+      const examDate = formatDateDDMMAAAA(rawExamDate);
 
       const kihonVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kihon).filter(v => typeof v === 'number');
       const kataVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kata).filter(v => typeof v === 'number');

@@ -5,6 +5,7 @@ import { updateUserRole, updateUserStatus } from '../../app/admin/actions';
 import AlertModal from '../ui/AlertModal';
 import UserEditModal from './UserEditModal';
 import { UserPlus, Shield, UserCheck, UserX } from 'lucide-react';
+import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
 
 export default function UsersTable({ initialUsers }) {
   const [users, setUsers] = useState(initialUsers);
@@ -124,7 +125,7 @@ export default function UsersTable({ initialUsers }) {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono text-right">
-                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-CR') : '—'}
+                  {user.createdAt ? formatDateDDMMAAAA(user.createdAt) : '—'}
                 </td>
               </tr>
             ))}

@@ -3,6 +3,8 @@
  * @param {Object} session - Datos de la convocatoria de examinación
  * @param {Array} submissions - Lista de entregas de aspirantes en la convocatoria
  */
+import { formatDateTimeDDMMAAAA } from '../utils/dateFormatter.js';
+
 export async function generateExaminationActaPDF(session, submissions = []) {
   const { default: jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
@@ -64,13 +66,7 @@ export async function generateExaminationActaPDF(session, submissions = []) {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
 
-  const fechaEmision = new Date().toLocaleDateString('es-CR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const fechaEmision = formatDateTimeDDMMAAAA(new Date());
 
   const dojosNombres = (session?.assignedDojos || []).map(d => d.name).join(', ') || 'Todos los afiliados';
 

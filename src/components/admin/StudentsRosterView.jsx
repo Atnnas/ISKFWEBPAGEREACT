@@ -31,6 +31,13 @@ import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bu
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import { compareStudentsForExam, getRankSortOrder } from '../../lib/constants/kyuRanks';
+import { 
+  formatDateDDMMAAAA, 
+  toCostaRicaDate, 
+  toIsoDate, 
+  parseCustomDate, 
+  calculateAge 
+} from '../../lib/utils/dateFormatter';
 
 const KYU_OPTIONS = [
   '10° Kyu (Cinta Blanca)',
@@ -64,96 +71,9 @@ function getKyuBadge(rank) {
   return { bg: 'bg-blue-50 text-[#2D2E83] border-blue-200', dot: 'bg-[#2D2E83]' };
 }
 
-function toIsoDate(val) {
-  if (!val || val === 'No registrada' || val === 'No indicada') return '';
-  const str = String(val).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  if (str.includes('T')) {
-    return str.split('T')[0];
-  }
-  const match = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (match) {
-    const day = match[1].padStart(2, '0');
-    const month = match[2].padStart(2, '0');
-    const year = match[3];
-    return `${year}-${month}-${day}`;
-  }
-  return '';
-}
-
-function toCostaRicaDate(val) {
-  if (!val || val === 'No registrada' || val === 'No indicada') return '';
-  const str = String(val).trim();
-  const ymd = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (ymd) {
-    return `${ymd[3]}/${ymd[2]}/${ymd[1]}`;
-  }
-  const dmy = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (dmy) {
-    return `${dmy[1].padStart(2, '0')}/${dmy[2].padStart(2, '0')}/${dmy[3]}`;
-  }
-  return str;
-}
-
-function parseCustomDate(str) {
-  if (!str) return null;
-  const s = String(str).trim();
-
-  // DD/MM/AAAA o DD-MM-AAAA
-  const dmyMatch = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10);
-    const month = parseInt(dmyMatch[2], 10) - 1;
-    const year = parseInt(dmyMatch[3], 10);
-    const d = new Date(year, month, day);
-    return (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) ? d : null;
-  }
-
-  // YYYY-MM-DD
-  const ymdMatch = s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
-  if (ymdMatch) {
-    const year = parseInt(ymdMatch[1], 10);
-    const month = parseInt(ymdMatch[2], 10) - 1;
-    const day = parseInt(ymdMatch[3], 10);
-    const d = new Date(year, month, day);
-    return (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) ? d : null;
-  }
-
-  return null;
-}
-
-function calculateAge(birthDate) {
-  if (!birthDate) return null;
-  let birth = null;
-  if (birthDate instanceof Date) {
-    birth = birthDate;
-  } else {
-    birth = parseCustomDate(birthDate);
-    if (!birth) {
-      const d = new Date(birthDate);
-      if (!isNaN(d.getTime())) birth = d;
-    }
-  }
-  if (!birth || isNaN(birth.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age >= 0 ? age : null;
-}
-
 function formatDate(isoDate) {
   if (!isoDate || isoDate === 'No registrada' || isoDate === 'No indicada') return 'No registrada';
-  const cr = toCostaRicaDate(isoDate);
-  if (cr) return cr;
-  const d = new Date(isoDate);
-  if (isNaN(d.getTime())) return 'No registrada';
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const year = d.getUTCFullYear();
-  return `${day}/${month}/${year}`;
+  return formatDateDDMMAAAA(isoDate);
 }
 
 function formatDateForInput(isoDate) {
@@ -502,8 +422,8 @@ export default function StudentsRosterView({
       } else if (sortField === 'rank') {
         comparison = getRankSortOrder(a.currentRank) - getRankSortOrder(b.currentRank);
       } else if (sortField === 'birthDate') {
-        const timeA = a.birthDate ? new Date(a.birthDate).getTime() : 0;
-        const timeB = b.birthDate ? new Date(b.birthDate).getTime() : 0;
+        const timeA = a.birthDate ? (parseCustomDate(a.birthDate)?.getTime() || 0) : 0;
+        const timeB = b.birthDate ? (parseCustomDate(b.birthDate)?.getTime() || 0) : 0;
         comparison = timeA - timeB;
       } else if (sortField === 'status') {
         const statA = a.isPromotedForExam ? 1 : 0;

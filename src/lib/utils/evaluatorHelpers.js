@@ -2,70 +2,14 @@
  * Utilidades puras para el Evaluador de Examen Técnico en Tatami (ISKF Costa Rica)
  */
 
-export function parseCustomDate(val) {
-  if (!val) return null;
-  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
-  const str = String(val).trim();
-
-  if (str.includes('T')) {
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-      return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-    }
-  }
-
-  const dmyMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10);
-    const month = parseInt(dmyMatch[2], 10) - 1;
-    const year = parseInt(dmyMatch[3], 10);
-    const d = new Date(year, month, day);
-    if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
-      return d;
-    }
-    return null;
-  }
-
-  const ymdMatch = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
-  if (ymdMatch) {
-    const year = parseInt(ymdMatch[1], 10);
-    const month = parseInt(ymdMatch[2], 10) - 1;
-    const day = parseInt(ymdMatch[3], 10);
-    const d = new Date(year, month, day);
-    if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
-      return d;
-    }
-    return null;
-  }
-
-  const fallback = new Date(str);
-  return isNaN(fallback.getTime()) ? null : fallback;
-}
-
-export function calculateAge(birthDateInput) {
-  const birthDate = parseCustomDate(birthDateInput);
-  if (!birthDate) return null;
-
-  const today = new Date();
-  if (birthDate > today) return null;
-
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age >= 0 ? age : 0;
-}
-
-export function formatDateDDMMAAAA(birthDateInput) {
-  const d = parseCustomDate(birthDateInput);
-  if (!d) return '';
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-}
+export { 
+  parseCustomDate, 
+  calculateAge, 
+  formatDateDDMMAAAA, 
+  formatDateTimeDDMMAAAA, 
+  toCostaRicaDate, 
+  toIsoDate 
+} from './dateFormatter';
 
 export function getBeltBadge(rankStr) {
   if (!rankStr) return { bg: 'bg-gray-100 text-gray-700 border-gray-300', label: 'Sin Cinta' };

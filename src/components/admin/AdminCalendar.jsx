@@ -8,6 +8,7 @@ import CustomSelect from '../ui/CustomSelect';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import { COUNTRIES, findCountryByFlagName, getEventFlagUrl } from '../../lib/constants/countries';
+import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
 
 export default function AdminCalendar({ initialEvents, organizers = [], isAdmin = true }) {
     const events = initialEvents || [];
@@ -160,8 +161,8 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                                 </thead>
                                 <tbody>
                                     {events.map(ev => {
-                                        const start = new Date(ev.startDate).toLocaleDateString('es-ES', { timeZone: 'UTC' });
-                                        const end = new Date(ev.endDate).toLocaleDateString('es-ES', { timeZone: 'UTC' });
+                                        const start = formatDateDDMMAAAA(ev.startDate);
+                                        const end = formatDateDDMMAAAA(ev.endDate);
                                         
                                         return (
                                             <tr key={ev.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">

@@ -98,6 +98,13 @@ import TribunalProgressMonitor from './TribunalProgressMonitor';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 import { getNextRank, compareStudentsForExam, getRankSortOrder, isKyuExemptFromWrittenExam } from '../../lib/constants/kyuRanks';
+import { 
+  parseCustomDate, 
+  calculateAge, 
+  formatDateDDMMAAAA, 
+  formatDateTimeDDMMAAAA, 
+  toIsoDate 
+} from '../../lib/utils/dateFormatter';
 
 function pointToRubric(pointStr, idx, category, defaultIcon = '🎯') {
   let text = '';
@@ -316,90 +323,6 @@ const KYU_OPTIONS = [
   '2° Kyu (Cinta Marrón 2)',
   '1° Kyu (Cinta Marrón 1)',
 ];
-
-function parseCustomDate(val) {
-  if (!val) return null;
-  if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
-  const str = String(val).trim();
-
-  // Formato ISO (ej. 2026-02-20T00:00:00.000Z)
-  if (str.includes('T')) {
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-      // Usar fecha UTC para prevenir desfases por zona horaria local (UTC-6)
-      return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-    }
-  }
-
-  // Formato DD/MM/AAAA o DD-MM-AAAA
-  const dmyMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10);
-    const month = parseInt(dmyMatch[2], 10) - 1;
-    const year = parseInt(dmyMatch[3], 10);
-    const d = new Date(year, month, day);
-    if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
-      return d;
-    }
-    return null;
-  }
-
-  // Formato YYYY-MM-DD
-  const ymdMatch = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
-  if (ymdMatch) {
-    const year = parseInt(ymdMatch[1], 10);
-    const month = parseInt(ymdMatch[2], 10) - 1;
-    const day = parseInt(ymdMatch[3], 10);
-    const d = new Date(year, month, day);
-    if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
-      return d;
-    }
-    return null;
-  }
-
-  const fallback = new Date(str);
-  return isNaN(fallback.getTime()) ? null : fallback;
-}
-
-function calculateAge(birthDateInput) {
-  const birthDate = parseCustomDate(birthDateInput);
-  if (!birthDate) return null;
-
-  const today = new Date();
-  if (birthDate > today) return null; // Fechas futuras no tienen edad cumplida
-
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age >= 0 ? age : 0;
-}
-
-function formatDateDDMMAAAA(birthDateInput) {
-  const d = parseCustomDate(birthDateInput);
-  if (!d) return 'No indicada';
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-function toIsoDate(val) {
-  if (!val || val === 'No registrada' || val === 'No indicada') return '';
-  const str = String(val).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  if (str.includes('T')) return str.split('T')[0];
-  const match = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (match) {
-    const day = match[1].padStart(2, '0');
-    const month = match[2].padStart(2, '0');
-    const year = match[3];
-    return `${year}-${month}-${day}`;
-  }
-  return '';
-}
 
 function normalizeSearchText(text) {
   return (text || '')
@@ -1424,8 +1347,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       } else if (studentSortField === 'rank') {
         comparison = getRankSortOrder(a.currentRank) - getRankSortOrder(b.currentRank);
       } else if (studentSortField === 'birthDate') {
-        const timeA = a.birthDate ? new Date(a.birthDate).getTime() : 0;
-        const timeB = b.birthDate ? new Date(b.birthDate).getTime() : 0;
+        const timeA = a.birthDate ? (parseCustomDate(a.birthDate)?.getTime() || 0) : 0;
+        const timeB = b.birthDate ? (parseCustomDate(b.birthDate)?.getTime() || 0) : 0;
         comparison = timeA - timeB;
       } else if (studentSortField === 'status') {
         const statA = a.isPromotedForExam ? 1 : 0;
@@ -3346,9 +3269,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       const generalComment = 'Tomar las notas y recomendaciones anteriores para corregir y asi mejorar su nivel';
 
       const isDay2 = (Number(item?.student?.examDay) === 2);
-      const studentExamDate = (selectedCallForDetail?.isMultiDay && isDay2 && selectedCallForDetail?.examEndDate)
+      const rawStudentExamDate = (selectedCallForDetail?.isMultiDay && isDay2 && selectedCallForDetail?.examEndDate)
         ? selectedCallForDetail.examEndDate
-        : (selectedCallForDetail?.examDate || new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }));
+        : (selectedCallForDetail?.examDate || new Date());
+      const studentExamDate = formatDateDDMMAAAA(rawStudentExamDate);
 
       await generateTechnicalExamCertificatePDF({
         studentName: item.student.name,
@@ -3986,7 +3910,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                               : 'text-gray-600 hover:text-gray-900'
                           }`}
                         >
-                          <span>🥋 Día 1: {selectedCallForDetail.examDate || 'Fecha 1'}</span>
+                          <span>🥋 Día 1: {formatDateDDMMAAAA(selectedCallForDetail.examDate) || 'Fecha 1'}</span>
                           <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                             activeCallDayFilter === 1 ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#2D2E83]'
                           }`}>
@@ -4003,7 +3927,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                               : 'text-gray-600 hover:text-gray-900'
                           }`}
                         >
-                          <span>🥋 Día 2: {selectedCallForDetail.examEndDate || 'Fecha 2'}</span>
+                          <span>🥋 Día 2: {formatDateDDMMAAAA(selectedCallForDetail.examEndDate) || 'Fecha 2'}</span>
                           <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                             activeCallDayFilter === 2 ? 'bg-white/20 text-white' : 'bg-red-100 text-[#BE1622]'
                           }`}>
@@ -5198,7 +5122,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
                                         <span className="flex items-center gap-1 font-bold">
                                           <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                          {call.isMultiDay ? `${call.examDate} y ${call.examEndDate || 'Día 2'}` : call.examDate}
+                                          {call.isMultiDay ? `${formatDateDDMMAAAA(call.examDate)} y ${formatDateDDMMAAAA(call.examEndDate) || 'Día 2'}` : formatDateDDMMAAAA(call.examDate)}
                                         </span>
                                         {call.isMultiDay && (
                                           <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-[#2D2E83] border border-blue-200">
@@ -7127,7 +7051,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
               <div>
                 <span>Registrado en BD: </span>
                 <strong className="text-gray-900 font-bold">
-                  {selectedStudentReport.evaluatedAt ? new Date(selectedStudentReport.evaluatedAt).toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Hoy'}
+                  {selectedStudentReport.evaluatedAt ? formatDateTimeDDMMAAAA(selectedStudentReport.evaluatedAt) : 'Hoy'}
                 </strong>
               </div>
             </div>
@@ -8294,7 +8218,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                     Modificar Tribunal Evaluador
                   </h3>
                   <p className="text-xs text-indigo-200 mt-0.5">
-                    {editingTribunalCall.title?.replace(/^Convocatoria Oficial de Examen Técnico\s*[-—–:]\s*/i, '') || editingTribunalCall.title || editingTribunalCall.dojoName} • {editingTribunalCall.examDate}
+                    {editingTribunalCall.title?.replace(/^Convocatoria Oficial de Examen Técnico\s*[-—–:]\s*/i, '') || editingTribunalCall.title || editingTribunalCall.dojoName} • {formatDateDDMMAAAA(editingTribunalCall.examDate)}
                   </p>
                 </div>
               </div>

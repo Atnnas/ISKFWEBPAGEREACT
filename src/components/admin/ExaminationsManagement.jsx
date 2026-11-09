@@ -58,6 +58,7 @@ import {
 } from '../../lib/actions/examinations';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
+import { formatDateTimeDDMMAAAA } from '../../lib/utils/dateFormatter';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 
@@ -1238,7 +1239,7 @@ export default function ExaminationsManagement({
                           {sub.studentRank || '—'}
                         </td>
                         <td className="p-4 text-gray-500 font-mono">
-                          {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('es-CR') : '—'}
+                          {sub.submittedAt ? formatDateTimeDDMMAAAA(sub.submittedAt) : '—'}
                         </td>
                         <td className="p-4">
                           {sub.closedBySecurity ? (
@@ -1389,7 +1390,7 @@ export default function ExaminationsManagement({
                     )}
                   </div>
                   <p className="text-xs sm:text-sm text-gray-700 font-medium">
-                    Dojo: <strong className="text-gray-900 font-bold">{selectedSubmission.studentDojo}</strong> • Grado/Kyu: <strong className="text-gray-900 font-bold">{selectedSubmission.studentRank || 'Aspirante'}</strong> • Entregado: {selectedSubmission.submittedAt ? new Date(selectedSubmission.submittedAt).toLocaleString('es-CR') : '—'}
+                    Dojo: <strong className="text-gray-900 font-bold">{selectedSubmission.studentDojo}</strong> • Grado/Kyu: <strong className="text-gray-900 font-bold">{selectedSubmission.studentRank || 'Aspirante'}</strong> • Entregado: {selectedSubmission.submittedAt ? formatDateTimeDDMMAAAA(selectedSubmission.submittedAt) : '—'}
                   </p>
                 </div>
 

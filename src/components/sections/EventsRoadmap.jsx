@@ -208,23 +208,21 @@ const EventsRoadmap = ({ events = [] }) => {
         const start = new Date(startDateStr);
         const end = endDateStr ? new Date(endDateStr) : start;
         
-        const options = { month: 'short', day: 'numeric', timeZone: 'UTC' };
-        
-        const startFormatted = start.toLocaleDateString('es-ES', options).replace('.', '');
+        const getMonthName = (d) => d.toLocaleDateString('es-ES', { month: 'short', timeZone: 'UTC' }).replace('.', '');
+        const formatSingle = (d) => `${d.getUTCDate()} ${getMonthName(d)}`;
         
         if (startDateStr && endDateStr) {
             const startDayOnly = startDateStr.split('T')[0];
             const endDayOnly = endDateStr.split('T')[0];
             if (startDayOnly !== endDayOnly) {
                 if (start.getUTCMonth() === end.getUTCMonth()) {
-                    return `${start.getUTCDate()} - ${end.getUTCDate()} de ${start.toLocaleDateString('es-ES', { month: 'short', timeZone: 'UTC' }).replace('.', '')}`;
+                    return `${start.getUTCDate()} - ${end.getUTCDate()} de ${getMonthName(start)}`;
                 } else {
-                    const endFormatted = end.toLocaleDateString('es-ES', options).replace('.', '');
-                    return `${startFormatted} - ${endFormatted}`;
+                    return `${formatSingle(start)} - ${formatSingle(end)}`;
                 }
             }
         }
-        return startFormatted;
+        return formatSingle(start);
     };
 
     const overlapSpacingRem = 18; // Overlap factor

@@ -129,11 +129,8 @@ function drawDiplomaPage(doc, submission, session) {
   // 6. Fecha y Lugar Oficial
   currentY += 8;
   const dateObj = submission?.submittedAt ? new Date(submission.submittedAt) : new Date();
-  const fechaTexto = dateObj.toLocaleDateString('es-CR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
+  const monthsEs = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
+  const fechaTexto = `${dateObj.getDate()} de ${monthsEs[dateObj.getMonth()]} de ${dateObj.getFullYear()}`;
   doc.setFontSize(9);
   doc.setTextColor(...darkGray);
   doc.text(`Dado en San José, Costa Rica, el ${fechaTexto}.`, pageWidth / 2, currentY, { align: 'center' });

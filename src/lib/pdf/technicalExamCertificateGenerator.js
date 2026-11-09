@@ -14,6 +14,7 @@ import {
 } from './certificateAssets.js';
 import { getKataForRank, getKumiteForRank } from '../utils/shotokanCriteriaFeedback.js';
 import { isKyuExemptFromWrittenExam } from '../constants/kyuRanks.js';
+import { formatDateDDMMAAAA } from '../utils/dateFormatter.js';
 
 export async function generateTechnicalExamCertificatePDF({
   studentName = 'Estudiante',
@@ -113,7 +114,7 @@ export async function generateTechnicalExamCertificatePDF({
   doc.line(15, 47, 195, 47);
 
   // 3. Metadatos: Destinatarios, Asunto, Fecha, Sensei y Dojo
-  const formattedDate = examDate || new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const formattedDate = formatDateDDMMAAAA(examDate || new Date());
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(...COLOR_DARK);
