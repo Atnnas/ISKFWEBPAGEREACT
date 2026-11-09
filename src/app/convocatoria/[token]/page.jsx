@@ -34,6 +34,7 @@ import {
 } from '../../../lib/actions/technicalExams';
 import { formatDateDDMMAAAA } from '../../../lib/utils/dateFormatter';
 import TimePickerField from '../../../components/ui/TimePickerField';
+import DatePickerField from '../../../components/ui/DatePickerField';
 
 const KYU_RANKS = [
   '10° Kyu (Cinta Blanca)',
@@ -1042,12 +1043,13 @@ export default function ConvocatoriaPublicPage({ params }) {
 
               <div>
                 <label className="text-[11px] font-bold text-slate-700">Fecha de Nacimiento</label>
-                <input
-                  type="date"
-                  value={newStudentForm.birthDate}
-                  onChange={(e) => setNewStudentForm(prev => ({ ...prev, birthDate: e.target.value }))}
-                  className="w-full mt-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:ring-2 focus:ring-[#2D2E83] outline-hidden"
-                />
+                <div className="mt-1">
+                  <DatePickerField
+                    value={newStudentForm.birthDate}
+                    onChange={(val) => setNewStudentForm(prev => ({ ...prev, birthDate: val }))}
+                    inputClassName="bg-slate-50 border-slate-200"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

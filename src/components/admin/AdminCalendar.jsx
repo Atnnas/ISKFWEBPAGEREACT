@@ -9,6 +9,7 @@ import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import { COUNTRIES, findCountryByFlagName, getEventFlagUrl } from '../../lib/constants/countries';
 import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
+import DatePickerField from '../ui/DatePickerField';
 
 export default function AdminCalendar({ initialEvents, organizers = [], isAdmin = true }) {
     const events = initialEvents || [];
@@ -273,22 +274,20 @@ export default function AdminCalendar({ initialEvents, organizers = [], isAdmin 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Fecha Inicio</label>
-                                        <input 
-                                            type="date" 
+                                        <DatePickerField 
                                             name="startDate" 
-                                            defaultValue={selectedEvent ? selectedEvent.startDate.split('T')[0] : selectedDate}
+                                            value={selectedEvent ? selectedEvent.startDate.split('T')[0] : selectedDate}
                                             required
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-iskf-red/50 focus:border-iskf-red transition-all"
+                                            inputClassName="bg-gray-50 border-gray-200 px-4 py-3 font-bold text-gray-900"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Fecha Fin</label>
-                                        <input 
-                                            type="date" 
+                                        <DatePickerField 
                                             name="endDate" 
-                                            defaultValue={selectedEvent ? selectedEvent.endDate.split('T')[0] : selectedDate}
+                                            value={selectedEvent ? selectedEvent.endDate.split('T')[0] : selectedDate}
                                             required
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-iskf-red/50 focus:border-iskf-red transition-all"
+                                            inputClassName="bg-gray-50 border-gray-200 px-4 py-3 font-bold text-gray-900"
                                         />
                                     </div>
                                 </div>

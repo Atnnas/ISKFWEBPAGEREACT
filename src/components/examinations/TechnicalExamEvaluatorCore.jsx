@@ -2061,11 +2061,10 @@ export default function TechnicalExamEvaluatorCore({
                             : (activeKataKey === 'kihon' ? (ev.notes || '') : '');
                           const hasPhaseNotes = Boolean(studentPhaseNotes && studentPhaseNotes.trim().length > 0);
 
-                          const hasAspects = Boolean(
+                          const hasAspectsToConsider = Boolean(
                             (student.hasSpecialCondition && student.specialCondition?.trim()) ||
                             student.specialCondition?.trim() ||
-                            student.positiveAspects?.trim() ||
-                            student.notes?.trim()
+                            student.aspectsToConsider?.trim()
                           );
 
                           return (
@@ -2102,10 +2101,10 @@ export default function TechnicalExamEvaluatorCore({
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       <span
                                         className={`text-xs whitespace-normal break-words transition-all font-black text-white ${
-                                          hasAspects ? 'white-radiance-glow' : ''
+                                          hasAspectsToConsider ? 'white-radiance-glow' : ''
                                         }`}
                                         style={
-                                          hasAspects
+                                          hasAspectsToConsider
                                             ? {
                                                 color: '#ffffff',
                                                 textShadow:
@@ -2117,7 +2116,7 @@ export default function TechnicalExamEvaluatorCore({
                                         {student.name}
                                       </span>
 
-                                      {hasAspects && (
+                                      {hasAspectsToConsider && (
                                         <button
                                           type="button"
                                           onClick={() => setSelectedStudentForAspects(student)}

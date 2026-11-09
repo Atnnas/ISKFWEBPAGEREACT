@@ -94,6 +94,7 @@ import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExam
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import TimePickerField from '../ui/TimePickerField';
+import DatePickerField from '../ui/DatePickerField';
 import TechnicalExamEvaluatorCore from '../examinations/TechnicalExamEvaluatorCore';
 import TribunalProgressMonitor from './TribunalProgressMonitor';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
@@ -974,7 +975,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   const [newCallForm, setNewCallForm] = useState({
     title: 'Convocatoria Oficial de Examen Técnico ISKF',
     dojoId: '',
-    examDate: new Date().toISOString().split('T')[0],
+    examDate: formatDateDDMMAAAA(new Date()),
     isMultiDay: false,
     examEndDate: '',
     startTime: '09:00 AM',
@@ -2061,7 +2062,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     setNewCallForm({
       title: targetDojo ? `Convocatoria Oficial de Examen Técnico — ${targetDojo.name}` : 'Examen Técnico ISKF',
       dojoId: targetDojo?._id || targetDojo?.id || selectedDojoId,
-      examDate: new Date().toISOString().split('T')[0],
+      examDate: formatDateDDMMAAAA(new Date()),
       startTime: '09:00 AM',
       location: targetDojo?.location || targetDojo?.address || '',
       notes: '',
@@ -4793,11 +4794,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       const studentObj = callReadyStudents.find(s => (s._id || s.id) === stId) || dojoAllStudents.find(s => (s._id || s.id) === stId);
                                       const isBeingDragged = draggedStudentData?.studentId === stId;
                                       const isDropTargetHover = dragOverStudentId === stId && draggedStudentData?.studentId !== stId;
-                                      const hasAspects = Boolean(
+                                      const hasAspectsToConsider = Boolean(
                                         (studentObj?.hasSpecialCondition && studentObj?.specialCondition?.trim()) ||
                                         studentObj?.specialCondition?.trim() ||
-                                        studentObj?.positiveAspects?.trim() ||
-                                        studentObj?.notes?.trim()
+                                        studentObj?.aspectsToConsider?.trim()
                                       );
 
                                       return (
@@ -4854,7 +4854,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                             </span>
                                             <div className="min-w-0 flex-1">
                                                <div className="flex flex-col gap-1 min-w-0">
-                                                 {hasAspects ? (
+                                                 {hasAspectsToConsider ? (
                                                    <span
                                                      className="text-xs font-black text-gray-950 whitespace-normal break-words leading-snug line-clamp-2 dark-radiance-glow"
                                                      style={{
@@ -4877,7 +4877,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                                      {calculateAge(studentObj.birthDate) !== null ? `${calculateAge(studentObj.birthDate)} años` : ''} ({formatDateDDMMAAAA(studentObj.birthDate)})
                                                    </span>
                                                  )}
-                                                 {hasAspects && (
+                                                 {hasAspectsToConsider && (
                                                    <div>
                                                      <button
                                                        type="button"
@@ -8056,12 +8056,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                       <label className="text-xs font-bold text-gray-700 block mb-1">
                         Fecha del Examen *
                       </label>
-                      <input
-                        type="date"
+                      <DatePickerField
                         required
                         value={newCallForm.examDate}
-                        onChange={(e) => setNewCallForm(prev => ({ ...prev, examDate: e.target.value }))}
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-medium focus:bg-white focus:border-[#2D2E83] outline-hidden"
+                        onChange={(val) => setNewCallForm(prev => ({ ...prev, examDate: val }))}
                       />
                     </div>
 
@@ -8124,12 +8122,11 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                           <label className="text-[11px] font-bold text-gray-700 block mb-1">
                             Fecha Día 2 *
                           </label>
-                          <input
-                            type="date"
+                          <DatePickerField
                             required={newCallForm.isMultiDay}
                             value={newCallForm.examEndDate}
-                            onChange={(e) => setNewCallForm(prev => ({ ...prev, examEndDate: e.target.value }))}
-                            className="w-full px-3 py-2 bg-white border border-blue-300 rounded-xl text-xs font-medium focus:border-[#2D2E83] outline-hidden shadow-2xs"
+                            onChange={(val) => setNewCallForm(prev => ({ ...prev, examEndDate: val }))}
+                            inputClassName="bg-white border-blue-300"
                           />
                         </div>
 
