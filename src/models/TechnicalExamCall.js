@@ -27,7 +27,21 @@ const TechnicalExamCallSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  isMultiDay: {
+    type: Boolean,
+    default: false,
+  },
+  examEndDate: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   startTime: {
+    type: String,
+    default: '09:00 AM',
+    trim: true,
+  },
+  startTimeDay2: {
     type: String,
     default: '09:00 AM',
     trim: true,
@@ -79,6 +93,7 @@ const TechnicalExamCallSchema = new mongoose.Schema({
     currentRank: { type: String, trim: true },
     targetRank: { type: String, trim: true },
     scheduleBlock: { type: String, trim: true, default: '' },
+    examDay: { type: Number, default: 1, min: 1, max: 2 },
     promotedAt: { type: Date, default: Date.now },
   }],
   // Tribunal Evaluador convocado (mínimo 1, máximo 5)
@@ -93,6 +108,7 @@ const TechnicalExamCallSchema = new mongoose.Schema({
     blockName: { type: String, trim: true }, // ej: "Tanda 1"
     startTime: { type: String, trim: true }, // ej: "09:00 AM"
     endTime: { type: String, trim: true },   // ej: "09:45 AM"
+    day: { type: Number, default: 1, min: 1, max: 2 },
     targetRanks: [{ type: String, trim: true }],
     studentIds: [{ type: String, trim: true }],
   }],

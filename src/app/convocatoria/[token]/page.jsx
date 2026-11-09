@@ -29,7 +29,8 @@ import {
   getTechnicalExamCallByToken, 
   toggleStudentPromotionForCall, 
   quickRegisterStudentForCall, 
-  updateExamCallSchedulesAndEvaluators 
+  updateExamCallSchedulesAndEvaluators,
+  transferStudentExamDay
 } from '../../../lib/actions/technicalExams';
 
 const KYU_RANKS = [
@@ -89,6 +90,7 @@ export default function ConvocatoriaPublicPage({ params }) {
   // Filtro y búsqueda
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('padron'); // 'padron' | 'alumnos' | 'horarios'
+  const [activeDayFilter, setActiveDayFilter] = useState('all'); // 'all' | 1 | 2
 
   // Modal para inscribir nuevo alumno
   const [showNewStudentModal, setShowNewStudentModal] = useState(false);
@@ -141,6 +143,39 @@ export default function ConvocatoriaPublicPage({ params }) {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  // Trasladar estudiante entre Día 1 y Día 2 (exclusión mutua estricta)
+  const handleTransferStudentDay = async (aspirant, targetDay) => {
+    if (!callData?._id || !aspirant?.studentId) return;
+    const dayNum = Number(targetDay) === 2 ? 2 : 1;
+
+    setCallData(prev => {
+      if (!prev) return prev;
+      const updatedAspirants = (prev.aspirants || []).map(a => {
+        if (a.studentId === aspirant.studentId) {
+          return { ...a, examDay: dayNum };
+        }
+        return a;
+      });
+      return { ...prev, aspirants: updatedAspirants };
+    });
+
+    try {
+      const res = await transferStudentExamDay({
+        callId: callData._id,
+        studentId: aspirant.studentId,
+        targetDay: dayNum
+      });
+      if (!res.success) {
+        alert(res.error || 'Error al trasladar estudiante de día.');
+        await loadData();
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión al trasladar karateca de día.');
+      await loadData();
+    }
   };
 
   // Promover o retirar alumno de la convocatoria
@@ -396,9 +431,18 @@ export default function ConvocatoriaPublicPage({ params }) {
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">Fecha del Examen</div>
-                <div className="text-sm font-bold text-slate-800">{callData.examDate}</div>
-                <div className="text-xs text-slate-500">Hora inicio: {callData.startTime}</div>
+                <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {callData.isMultiDay ? 'Fechas del Examen (2 Días)' : 'Fecha del Examen'}
+                </div>
+                <div className="text-sm font-bold text-slate-800">
+                  {callData.isMultiDay ? `${callData.examDate} y ${callData.examEndDate || 'Día 2'}` : callData.examDate}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {callData.isMultiDay
+                    ? `Día 1: ${callData.startTime} | Día 2: ${callData.startTimeDay2 || '09:00 AM'}`
+                    : `Hora inicio: ${callData.startTime}`
+                  }
+                </div>
               </div>
             </div>
 
@@ -500,6 +544,50 @@ export default function ConvocatoriaPublicPage({ params }) {
                 </button>
               </div>
 
+              {callData.isMultiDay && (
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl my-4 text-xs font-bold overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => setActiveDayFilter('all')}
+                    className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      activeDayFilter === 'all'
+                        ? 'bg-slate-900 text-white shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>Todos los Días ({aspirantsCount})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDayFilter(1)}
+                    className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      activeDayFilter === 1
+                        ? 'bg-[#2D2E83] text-white shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>🥋 Día 1: {callData.examDate}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-100 text-[#2D2E83] font-mono">
+                      {(callData.aspirants || []).filter(a => (Number(a.examDay) === 2 ? 2 : 1) === 1).length}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDayFilter(2)}
+                    className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      activeDayFilter === 2
+                        ? 'bg-[#BE1622] text-white shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>🥋 Día 2: {callData.examEndDate || 'Día 2'}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-red-100 text-[#BE1622] font-mono">
+                      {(callData.aspirants || []).filter(a => (Number(a.examDay) === 2 ? 2 : 1) === 2).length}
+                    </span>
+                  </button>
+                </div>
+              )}
+
               {aspirantsCount === 0 ? (
                 <div className="py-16 text-center">
                   <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 border border-amber-200">
@@ -519,7 +607,9 @@ export default function ConvocatoriaPublicPage({ params }) {
                 </div>
               ) : (
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {callData.aspirants.map((aspirant, idx) => {
+                  {(callData.aspirants || [])
+                    .filter(a => !callData.isMultiDay || activeDayFilter === 'all' || (Number(a.examDay) === 2 ? 2 : 1) === Number(activeDayFilter))
+                    .map((aspirant, idx) => {
                     const currentBelt = getBeltColor(aspirant.currentRank);
                     const targetBelt = getBeltColor(aspirant.targetRank);
                     const matchingStudent = students.find(s => s._id === aspirant.studentId);
@@ -534,9 +624,20 @@ export default function ConvocatoriaPublicPage({ params }) {
                             <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center">
                               #{idx + 1}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {aspirant.scheduleBlock || 'Horario por asignar'}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {callData.isMultiDay && (
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border shrink-0 ${
+                                  (Number(aspirant.examDay) === 2)
+                                    ? 'bg-red-50 text-[#BE1622] border-red-200'
+                                    : 'bg-blue-50 text-[#2D2E83] border-blue-200'
+                                }`}>
+                                  Día {Number(aspirant.examDay) === 2 ? 2 : 1}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {aspirant.scheduleBlock || 'Horario por asignar'}
+                              </span>
+                            </div>
                           </div>
                           
                           <h4 className="text-sm font-black text-slate-900 leading-snug">{aspirant.studentName}</h4>
@@ -562,19 +663,34 @@ export default function ConvocatoriaPublicPage({ params }) {
                           </div>
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
+                        <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
                           <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Listo en Padrón
                           </span>
-                          <button
-                            onClick={() => matchingStudent && handleTogglePromotion(matchingStudent)}
-                            disabled={isPending}
-                            className="text-xs text-rose-600 hover:text-rose-800 font-medium cursor-pointer"
-                            title="Retirar de este examen"
-                          >
-                            Retirar
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {callData.isMultiDay && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextDay = Number(aspirant.examDay) === 2 ? 1 : 2;
+                                  handleTransferStudentDay(aspirant, nextDay);
+                                }}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 font-bold cursor-pointer transition-colors"
+                                title="Trasladar karateca al otro día de examen"
+                              >
+                                {Number(aspirant.examDay) === 2 ? '⬅️ A Día 1' : '➡️ A Día 2'}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => matchingStudent && handleTogglePromotion(matchingStudent)}
+                              disabled={isPending}
+                              className="text-xs text-rose-600 hover:text-rose-800 font-medium cursor-pointer"
+                              title="Retirar de este examen"
+                            >
+                              Retirar
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );

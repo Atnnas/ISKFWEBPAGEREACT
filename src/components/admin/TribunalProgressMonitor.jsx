@@ -1665,7 +1665,10 @@ export default function TribunalProgressMonitor({
         || call?.syllabusSnapshots?.[0]?.targetRank
         || '8° Kyu (Cinta Naranja)';
 
-      const examDate = call?.examDate || new Date().toLocaleDateString('es-CR');
+      const isDay2 = (Number(aspirantInfo?.examDay) === 2);
+      const examDate = (call?.isMultiDay && isDay2 && call?.examEndDate)
+        ? call.examEndDate
+        : (call?.examDate || new Date().toLocaleDateString('es-CR'));
 
       const kihonVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kihon).filter(v => typeof v === 'number');
       const kataVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kata).filter(v => typeof v === 'number');

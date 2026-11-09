@@ -86,7 +86,8 @@ import {
   saveCallSchedules,
   toggleStudentPromotionForCall,
   updateExamCallSchedulesAndEvaluators,
-  updateExamCallMaxPerTanda
+  updateExamCallMaxPerTanda,
+  transferStudentExamDay
 } from '../../lib/actions/technicalExams';
 import { getExamCostConfig } from '../../lib/actions/examCosts';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
@@ -1050,7 +1051,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     title: 'Convocatoria Oficial de Examen Técnico ISKF',
     dojoId: '',
     examDate: new Date().toISOString().split('T')[0],
+    isMultiDay: false,
+    examEndDate: '',
     startTime: '09:00 AM',
+    startTimeDay2: '09:00 AM',
     location: '',
     notes: '',
     maxPerTanda: 6,
@@ -1082,6 +1086,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
   // Detalle de Convocatoria Activa y Configuración de Tandas
   const [selectedCallForDetail, setSelectedCallForDetail] = useState(null);
+  const [activeCallDayFilter, setActiveCallDayFilter] = useState('all'); // 'all' | 1 | 2
   const [callReadyStudents, setCallReadyStudents] = useState([]);
   const [dojoAllStudents, setDojoAllStudents] = useState([]);
   const [isLoadingCallStudents, setIsLoadingCallStudents] = useState(false);
@@ -1286,15 +1291,20 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     return (dojoAllStudents || []).filter(s => !readyIds.has(s._id || s.id));
   }, [dojoAllStudents, callReadyStudents]);
 
-  // Filtro por búsqueda de nombre o rango
+  // Filtro por búsqueda de nombre o rango y por día (en convocatorias multidía con exclusión mutua estricta)
   const filteredReadyStudents = useMemo(() => {
-    if (!studentSearchQuery.trim()) return callReadyStudents;
+    let list = callReadyStudents;
+    if (selectedCallForDetail?.isMultiDay && activeCallDayFilter !== 'all') {
+      const targetDay = Number(activeCallDayFilter) === 2 ? 2 : 1;
+      list = list.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === targetDay);
+    }
+    if (!studentSearchQuery.trim()) return list;
     const q = studentSearchQuery.toLowerCase();
-    return callReadyStudents.filter(s => 
+    return list.filter(s => 
       (s.name || '').toLowerCase().includes(q) || 
       (s.currentRank || '').toLowerCase().includes(q)
     );
-  }, [callReadyStudents, studentSearchQuery]);
+  }, [callReadyStudents, studentSearchQuery, selectedCallForDetail?.isMultiDay, activeCallDayFilter]);
 
   const filteredUnpromotedStudents = useMemo(() => {
     if (!studentSearchQuery.trim()) return unpromotedDojoStudents;
@@ -2167,7 +2177,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         dojoId: targetDojo._id || targetDojo.id,
         title: newCallForm.title,
         examDate: newCallForm.examDate,
+        isMultiDay: Boolean(newCallForm.isMultiDay),
+        examEndDate: newCallForm.examEndDate,
         startTime: newCallForm.startTime,
+        startTimeDay2: newCallForm.startTimeDay2,
         location: newCallForm.location || targetDojo.location || targetDojo.address || '',
         notes: newCallForm.notes,
         evaluators: evaluatorsList,
@@ -2341,79 +2354,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     }
   };
 
-  // Abrir vista detallada de una convocatoria para gestionar examinandos y tandas
-  const handleOpenCallDetail = async (call) => {
-    setSelectedCallForDetail(call);
-    setDetailMaxPerTanda(Number(call.maxPerTanda) || 6);
-    setIsLoadingCallStudents(true);
-    setStudentListFilterTab('promoted');
-    setStudentSearchQuery('');
-    setCallDetailSubTab('tandas');
-    try {
-      const [readyStudents, allStudents, freshSyllabi] = await Promise.all([
-        getStudentsReadyForExam(call.dojoId),
-        getStudentsByDojo(call.dojoId),
-        getExamSyllabi()
-      ]);
-      setCallReadyStudents((readyStudents || []).sort(compareStudentsForExam));
-      setDojoAllStudents((allStudents || []).filter(s => s.status !== 'inactive'));
-      if (freshSyllabi && freshSyllabi.length > 0) {
-        setSyllabi(freshSyllabi);
-      }
-
-      if (Array.isArray(call.schedules) && call.schedules.length > 0) {
-        setCallTandas(call.schedules.map((s, idx) => ({
-          id: `tanda_${idx}_${Date.now()}`,
-          blockName: s.blockName || `Tanda ${idx + 1}`,
-          startTime: s.startTime || '09:00 AM',
-          endTime: s.endTime || '09:45 AM',
-          studentIds: Array.isArray(s.studentIds) ? s.studentIds.map(String) : []
-        })));
-      } else {
-        setCallTandas([]);
-      }
-    } catch (err) {
-      console.error("Error al abrir detalle de convocatoria:", err);
-      showAlert("Error al cargar los examinandos de la convocatoria.", "Error", true);
-    } finally {
-      setIsLoadingCallStudents(false);
-    }
-  };
-
-  // Reagrupar automáticamente a los examinandos en tandas según detailMaxPerTanda
-  const handleAutoGroupTandas = () => {
-    if (callReadyStudents.length === 0) {
-      showAlert('No hay estudiantes listos para examen en este dojo para agrupar.', 'Sin Examinandos', true);
-      return;
-    }
-    const maxPerTanda = detailMaxPerTanda || 6;
-    const chunks = [];
-    const chunkSize = maxPerTanda;
-    for (let i = 0; i < callReadyStudents.length; i += chunkSize) {
-      const chunk = callReadyStudents.slice(i, i + chunkSize);
-      const tandaNum = Math.floor(i / chunkSize) + 1;
-      const startM = (9 * 60) + (tandaNum - 1) * 45;
-      const endM = startM + 45;
-      const fmt = (min) => {
-        const h = Math.floor(min / 60) % 24;
-        const m = min % 60;
-        const p = h >= 12 ? 'PM' : 'AM';
-        const h12 = h % 12 || 12;
-        return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${p}`;
-      };
-      chunks.push({
-        id: `tanda_${tandaNum}_${Date.now()}`,
-        blockName: `Tanda ${tandaNum}`,
-        startTime: fmt(startM),
-        endTime: fmt(endM),
-        studentIds: chunk.map(s => s._id || s.id)
-      });
-    }
-    setCallTandas(chunks);
-    persistTandasEvent(chunks);
-    showAlert(`Se organizaron ${callReadyStudents.length} examinandos en ${chunks.length} tandas ordenadas por cinturón y edad.`, 'Tandas Organizadas');
-  };
-
   // Funciones utilitarias para cálculo y sincronización de horarios de tandas
   const parseTimeToMinutes = (timeStr) => {
     if (!timeStr || typeof timeStr !== 'string') return 9 * 60;
@@ -2428,6 +2368,239 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     if (meridiem === 'AM' && hours === 12) hours = 0;
 
     return (hours * 60) + minutes;
+  };
+
+  // Abrir vista detallada de una convocatoria para gestionar examinandos y tandas
+  const handleOpenCallDetail = async (call) => {
+    setSelectedCallForDetail(call);
+    setActiveCallDayFilter(call.isMultiDay ? 1 : 'all');
+    setDetailMaxPerTanda(Number(call.maxPerTanda) || 6);
+    setIsLoadingCallStudents(true);
+    setStudentListFilterTab('promoted');
+    setStudentSearchQuery('');
+    setCallDetailSubTab('tandas');
+    try {
+      const [readyStudents, allStudents, freshSyllabi] = await Promise.all([
+        getStudentsReadyForExam(call.dojoId),
+        getStudentsByDojo(call.dojoId),
+        getExamSyllabi()
+      ]);
+      const enrichedReady = (readyStudents || []).map(st => {
+        const asp = (call.aspirants || []).find(a => String(a.studentId) === String(st._id || st.id));
+        return {
+          ...st,
+          examDay: asp ? (Number(asp.examDay) === 2 ? 2 : 1) : 1
+        };
+      });
+      setCallReadyStudents(enrichedReady.sort(compareStudentsForExam));
+      setDojoAllStudents((allStudents || []).filter(s => s.status !== 'inactive'));
+      if (freshSyllabi && freshSyllabi.length > 0) {
+        setSyllabi(freshSyllabi);
+      }
+
+      if (Array.isArray(call.schedules) && call.schedules.length > 0) {
+        setCallTandas(call.schedules.map((s, idx) => ({
+          id: `tanda_${idx}_${Date.now()}`,
+          blockName: s.blockName || `Tanda ${idx + 1}`,
+          startTime: s.startTime || '09:00 AM',
+          endTime: s.endTime || '09:45 AM',
+          day: Number(s.day) === 2 ? 2 : 1,
+          studentIds: Array.isArray(s.studentIds) ? s.studentIds.map(String) : []
+        })));
+      } else {
+        setCallTandas([]);
+      }
+    } catch (err) {
+      console.error("Error al abrir detalle de convocatoria:", err);
+      showAlert("Error al cargar los examinandos de la convocatoria.", "Error", true);
+    } finally {
+      setIsLoadingCallStudents(false);
+    }
+  };
+
+  // Trasladar a un estudiante entre Día 1 y Día 2 con exclusión mutua estricta
+  const handleTransferStudentDay = async (student, targetDay) => {
+    if (!selectedCallForDetail) return;
+    const callId = selectedCallForDetail._id || selectedCallForDetail.id;
+    const studentId = student._id || student.id;
+    if (!callId || !studentId) return;
+
+    const dayNum = Number(targetDay) === 2 ? 2 : 1;
+
+    // Actualización optimista de estado local
+    setCallReadyStudents(prev => prev.map(s => {
+      if ((s._id || s.id) === studentId) {
+        return { ...s, examDay: dayNum };
+      }
+      return s;
+    }));
+
+    // Exclusión mutua en tandas: removerlo de cualquier tanda del otro día
+    setCallTandas(prevTandas => {
+      const updated = prevTandas.map(tanda => {
+        const tDay = Number(tanda.day) === 2 ? 2 : 1;
+        if (tDay !== dayNum && (tanda.studentIds || []).includes(studentId)) {
+          return {
+            ...tanda,
+            studentIds: (tanda.studentIds || []).filter(id => id !== studentId)
+          };
+        }
+        return tanda;
+      });
+      persistTandasEvent(updated);
+      return updated;
+    });
+
+    try {
+      const res = await transferStudentExamDay({ callId, studentId, targetDay: dayNum });
+      if (!res.success) {
+        showAlert(res.error || 'Error al trasladar estudiante de día.', 'Error', true);
+        // Rollback
+        setCallReadyStudents(prev => prev.map(s => {
+          if ((s._id || s.id) === studentId) {
+            return { ...s, examDay: dayNum === 1 ? 2 : 1 };
+          }
+          return s;
+        }));
+      } else {
+        setSelectedCallForDetail(prev => {
+          if (!prev) return prev;
+          const updatedAspirants = (prev.aspirants || []).map(a => {
+            if (String(a.studentId) === String(studentId)) {
+              return { ...a, examDay: dayNum };
+            }
+            return a;
+          });
+          return { ...prev, aspirants: updatedAspirants };
+        });
+      }
+    } catch (err) {
+      console.error('Error al transferir de día:', err);
+      showAlert('Error de conexión al trasladar karateca de día.', 'Error', true);
+    }
+  };
+
+  // Reagrupar automáticamente a los examinandos en tandas según detailMaxPerTanda
+  const handleAutoGroupTandas = () => {
+    if (callReadyStudents.length === 0) {
+      showAlert('No hay estudiantes listos para examen en este dojo para agrupar.', 'Sin Examinandos', true);
+      return;
+    }
+    const maxPerTanda = detailMaxPerTanda || 6;
+    const chunkSize = maxPerTanda;
+
+    const fmt = (min) => {
+      const h = Math.floor(min / 60) % 24;
+      const m = min % 60;
+      const p = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${p}`;
+    };
+
+    if (selectedCallForDetail?.isMultiDay) {
+      // Si hay un día específico seleccionado en el filtro (1 o 2), agrupar solo ese día
+      if (activeCallDayFilter === 1 || activeCallDayFilter === 2) {
+        const targetDay = activeCallDayFilter;
+        const studentsForDay = callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === targetDay);
+        if (studentsForDay.length === 0) {
+          showAlert(`No hay karatecas asignados al Día ${targetDay} para agrupar.`, `Sin Alumnos en Día ${targetDay}`, true);
+          return;
+        }
+
+        const startBaseMinutes = targetDay === 2
+          ? parseTimeToMinutes(selectedCallForDetail.startTimeDay2 || '09:00 AM')
+          : parseTimeToMinutes(selectedCallForDetail.startTime || '09:00 AM');
+
+        const newChunksForDay = [];
+        for (let i = 0; i < studentsForDay.length; i += chunkSize) {
+          const chunk = studentsForDay.slice(i, i + chunkSize);
+          const tandaNum = Math.floor(i / chunkSize) + 1;
+          const startM = startBaseMinutes + (tandaNum - 1) * 45;
+          const endM = startM + 45;
+          newChunksForDay.push({
+            id: `tanda_d${targetDay}_${tandaNum}_${Date.now()}`,
+            blockName: `Día ${targetDay} - Tanda ${tandaNum}`,
+            startTime: fmt(startM),
+            endTime: fmt(endM),
+            day: targetDay,
+            studentIds: chunk.map(s => s._id || s.id)
+          });
+        }
+
+        // Mantener las tandas del otro día
+        const otherDayTandas = callTandas.filter(t => (Number(t.day) === 2 ? 2 : 1) !== targetDay);
+        const combined = targetDay === 1
+          ? [...newChunksForDay, ...otherDayTandas]
+          : [...otherDayTandas, ...newChunksForDay];
+
+        setCallTandas(combined);
+        persistTandasEvent(combined);
+        showAlert(`Se organizaron ${studentsForDay.length} examinandos del Día ${targetDay} en ${newChunksForDay.length} tandas.`, `Tandas Día ${targetDay} Organizadas`);
+        return;
+      }
+
+      // Si se seleccionó 'all': agrupar Día 1 y Día 2 de manera independiente respetando sus horarios y exclusión
+      const day1Students = callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 1);
+      const day2Students = callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 2);
+
+      const allChunks = [];
+      const startBaseDay1 = parseTimeToMinutes(selectedCallForDetail.startTime || '09:00 AM');
+      const startBaseDay2 = parseTimeToMinutes(selectedCallForDetail.startTimeDay2 || '09:00 AM');
+
+      for (let i = 0; i < day1Students.length; i += chunkSize) {
+        const chunk = day1Students.slice(i, i + chunkSize);
+        const tandaNum = Math.floor(i / chunkSize) + 1;
+        const startM = startBaseDay1 + (tandaNum - 1) * 45;
+        const endM = startM + 45;
+        allChunks.push({
+          id: `tanda_d1_${tandaNum}_${Date.now()}`,
+          blockName: `Día 1 - Tanda ${tandaNum}`,
+          startTime: fmt(startM),
+          endTime: fmt(endM),
+          day: 1,
+          studentIds: chunk.map(s => s._id || s.id)
+        });
+      }
+
+      for (let i = 0; i < day2Students.length; i += chunkSize) {
+        const chunk = day2Students.slice(i, i + chunkSize);
+        const tandaNum = Math.floor(i / chunkSize) + 1;
+        const startM = startBaseDay2 + (tandaNum - 1) * 45;
+        const endM = startM + 45;
+        allChunks.push({
+          id: `tanda_d2_${tandaNum}_${Date.now()}`,
+          blockName: `Día 2 - Tanda ${tandaNum}`,
+          startTime: fmt(startM),
+          endTime: fmt(endM),
+          day: 2,
+          studentIds: chunk.map(s => s._id || s.id)
+        });
+      }
+
+      setCallTandas(allChunks);
+      persistTandasEvent(allChunks);
+      showAlert(`Se organizaron ${callReadyStudents.length} examinandos (${day1Students.length} en Día 1 y ${day2Students.length} en Día 2) en ${allChunks.length} tandas.`, 'Tandas Multidía Organizadas');
+      return;
+    }
+
+    const chunks = [];
+    for (let i = 0; i < callReadyStudents.length; i += chunkSize) {
+      const chunk = callReadyStudents.slice(i, i + chunkSize);
+      const tandaNum = Math.floor(i / chunkSize) + 1;
+      const startM = (9 * 60) + (tandaNum - 1) * 45;
+      const endM = startM + 45;
+      chunks.push({
+        id: `tanda_${tandaNum}_${Date.now()}`,
+        blockName: `Tanda ${tandaNum}`,
+        startTime: fmt(startM),
+        endTime: fmt(endM),
+        day: 1,
+        studentIds: chunk.map(s => s._id || s.id)
+      });
+    }
+    setCallTandas(chunks);
+    persistTandasEvent(chunks);
+    showAlert(`Se organizaron ${callReadyStudents.length} examinandos en ${chunks.length} tandas ordenadas por cinturón y edad.`, 'Tandas Organizadas');
   };
 
   const minutesToFormattedTime = (totalMinutes) => {
@@ -2570,6 +2743,17 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       showAlert(`Esta tanda ya tiene el aforo completo de ${maxPerTanda} karatecas.`, 'Tanda Completa', true);
       return;
     }
+
+    if (selectedCallForDetail?.isMultiDay) {
+      const studentObj = callReadyStudents.find(s => (s._id || s.id) === studentId);
+      const studentDay = Number(studentObj?.examDay) === 2 ? 2 : 1;
+      const tandaDay = Number(target.day) === 2 ? 2 : 1;
+      if (studentDay !== tandaDay) {
+        showAlert(`Este karateca está asignado al Día ${studentDay}. Para agregarlo a una tanda del Día ${tandaDay}, trasládalo primero al Día ${tandaDay}.`, 'Día Diferente', true);
+        return;
+      }
+    }
+
     const newTandas = callTandas.map(t => {
       if (t.id === tandaId) {
         return { ...t, studentIds: [...t.studentIds, studentId] };
@@ -3161,12 +3345,17 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
       const generalComment = 'Tomar las notas y recomendaciones anteriores para corregir y asi mejorar su nivel';
 
+      const isDay2 = (Number(item?.student?.examDay) === 2);
+      const studentExamDate = (selectedCallForDetail?.isMultiDay && isDay2 && selectedCallForDetail?.examEndDate)
+        ? selectedCallForDetail.examEndDate
+        : (selectedCallForDetail?.examDate || new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }));
+
       await generateTechnicalExamCertificatePDF({
         studentName: item.student.name,
         dojoName: selectedDojo?.name || 'Kuma',
         dojoSensei: selectedDojo?.sensei || 'David Artavia Rodríguez',
         targetRank: targetRankForCert,
-        examDate: new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' }),
+        examDate: studentExamDate,
         kihonScore,
         kataScore,
         kumiteScore,
@@ -3750,6 +3939,81 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
               {callDetailSubTab === 'tandas' && (
                 <>
+                  {/* Selector de Días con Exclusión Mutua Estricta para Convocatoria de 2 Días */}
+                  {selectedCallForDetail?.isMultiDay && (
+                    <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-purple-50/90 border border-indigo-200/90 rounded-2xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <div className="w-8 h-8 rounded-xl bg-[#2D2E83] text-white flex items-center justify-center shadow-xs shrink-0">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-gray-900">
+                              Convocatoria Multidía de 2 Fechas Consecutivas
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              🔒 Exclusión Mutua Activa
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500">
+                            Los karatecas asignados a un día no aparecen en el otro. Puedes trasladarlos de día con un solo clic.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 p-1 bg-white/95 border border-indigo-200/80 rounded-xl text-xs font-bold shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => setActiveCallDayFilter('all')}
+                          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                            activeCallDayFilter === 'all'
+                              ? 'bg-gray-800 text-white shadow-2xs font-black'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          <span>📋 Todos</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-gray-100 text-gray-800 font-mono">
+                            {callReadyStudents.length}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveCallDayFilter(1)}
+                          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                            activeCallDayFilter === 1
+                              ? 'bg-[#2D2E83] text-white shadow-2xs font-black'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          <span>🥋 Día 1: {selectedCallForDetail.examDate || 'Fecha 1'}</span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                            activeCallDayFilter === 1 ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#2D2E83]'
+                          }`}>
+                            {callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 1).length}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveCallDayFilter(2)}
+                          className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                            activeCallDayFilter === 2
+                              ? 'bg-[#BE1622] text-white shadow-2xs font-black'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          <span>🥋 Día 2: {selectedCallForDetail.examEndDate || 'Fecha 2'}</span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                            activeCallDayFilter === 2 ? 'bg-white/20 text-white' : 'bg-red-100 text-[#BE1622]'
+                          }`}>
+                            {callReadyStudents.filter(s => (Number(s.examDay) === 2 ? 2 : 1) === 2).length}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Barra de Acciones Superior Compacta de Tandas */}
                   <div className="bg-white/95 backdrop-blur-md border border-gray-200/90 rounded-2xl p-3 sm:p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3 flex-wrap">
@@ -4058,7 +4322,33 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                                  {/* Indicador de Día y Botón de Traslado de Día (Convocatoria Multidía) */}
+                                  {selectedCallForDetail?.isMultiDay && (
+                                    <div className="flex items-center gap-1">
+                                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase border ${
+                                        (Number(st.examDay) === 2)
+                                          ? 'bg-red-50 text-[#BE1622] border-red-200'
+                                          : 'bg-blue-50 text-[#2D2E83] border-blue-200'
+                                      }`}>
+                                        Día {Number(st.examDay) === 2 ? 2 : 1}
+                                      </span>
+
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const targetDay = Number(st.examDay) === 2 ? 1 : 2;
+                                          handleTransferStudentDay(st, targetDay);
+                                        }}
+                                        className="px-2 py-0.5 text-[10px] font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-md transition-all flex items-center gap-0.5 cursor-pointer shadow-2xs active:scale-95"
+                                        title={`Trasladar a este karateca al Día ${Number(st.examDay) === 2 ? 1 : 2}`}
+                                      >
+                                        <span>{Number(st.examDay) === 2 ? '⬅️ A Día 1' : '➡️ A Día 2'}</span>
+                                      </button>
+                                    </div>
+                                  )}
+
                                   {assignedTanda ? (
                                     <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 text-right">
                                       {assignedTanda.blockName || 'Tanda'}
@@ -4315,14 +4605,18 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                       </div>
                     ) : (
                       <div className="space-y-4 mt-4">
-                        {callTandas.map((tanda, tIdx) => {
+                        {callTandas
+                          .filter(tanda => !selectedCallForDetail?.isMultiDay || activeCallDayFilter === 'all' || (Number(tanda.day) === 2 ? 2 : 1) === Number(activeCallDayFilter))
+                          .map((tanda, tIdx) => {
                           const assignedCount = (tanda.studentIds || []).length;
                           const isFull = assignedCount >= detailMaxPerTanda;
                           const isOver = assignedCount > detailMaxPerTanda;
+                          const tandaDay = Number(tanda.day) === 2 ? 2 : 1;
 
-                          // Alumnos disponibles que no están en esta tanda
+                          // Alumnos disponibles que no están en esta tanda y pertenecen al mismo día (en multidía)
                           const availableForThisTanda = callReadyStudents.filter(
-                            s => !(tanda.studentIds || []).includes(s._id || s.id)
+                            s => !(tanda.studentIds || []).includes(s._id || s.id) &&
+                                 (!selectedCallForDetail?.isMultiDay || (Number(s.examDay) === 2 ? 2 : 1) === tandaDay)
                           );
 
                           return (
@@ -4436,6 +4730,29 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       className="px-2 py-1 bg-white border border-gray-300 rounded-lg text-xs font-black text-gray-900 focus:border-indigo-600 outline-hidden w-28"
                                       placeholder="Nombre Tanda"
                                     />
+
+                                    {selectedCallForDetail?.isMultiDay && (
+                                      <div className="flex items-center gap-1">
+                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border shrink-0 ${
+                                          (Number(tanda.day) === 2)
+                                            ? 'bg-red-50 text-[#BE1622] border-red-200'
+                                            : 'bg-blue-50 text-[#2D2E83] border-blue-200'
+                                        }`}>
+                                          Día {Number(tanda.day) === 2 ? 2 : 1}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const nextDay = Number(tanda.day) === 2 ? 1 : 2;
+                                            handleUpdateTandaField(tanda.id, 'day', nextDay);
+                                          }}
+                                          className="px-1.5 py-0.5 text-[9px] font-bold text-gray-500 hover:text-indigo-700 bg-gray-100 hover:bg-indigo-50 border border-gray-200 rounded transition-colors cursor-pointer"
+                                          title="Alternar día asignado a esta tanda"
+                                        >
+                                          ⇄ Día {Number(tanda.day) === 2 ? 1 : 2}
+                                        </button>
+                                      </div>
+                                    )}
 
                                     {/* Horarios con controladores de Arriba / Abajo sincronizados */}
                                     <div className="flex items-center gap-1.5 text-xs">
@@ -4881,8 +5198,13 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
                                         <span className="flex items-center gap-1 font-bold">
                                           <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                          {call.examDate}
+                                          {call.isMultiDay ? `${call.examDate} y ${call.examEndDate || 'Día 2'}` : call.examDate}
                                         </span>
+                                        {call.isMultiDay && (
+                                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-[#2D2E83] border border-blue-200">
+                                            2 Días
+                                          </span>
+                                        )}
                                         <span>•</span>
                                         <span className="flex items-center gap-1 text-gray-500">
                                           <Clock className="w-3.5 h-3.5 text-gray-400" />
@@ -7846,6 +8168,63 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                         className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-indigo-700 focus:bg-white focus:border-[#2D2E83] outline-hidden"
                       />
                     </div>
+                  </div>
+
+                  {/* Selector / Toggle de Convocatoria de 2 Días Consecutivos */}
+                  <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3.5 space-y-3">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={newCallForm.isMultiDay}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setNewCallForm(prev => ({
+                            ...prev,
+                            isMultiDay: checked,
+                            examEndDate: checked && !prev.examEndDate ? prev.examDate : prev.examEndDate
+                          }));
+                        }}
+                        className="w-4 h-4 text-[#2D2E83] rounded border-gray-300 focus:ring-[#2D2E83]"
+                      />
+                      <div>
+                        <span className="text-xs font-black text-gray-900 block">
+                          🗓️ Programar en 2 Días Consecutivos (Sábado y Domingo / Fechas sucesivas)
+                        </span>
+                        <span className="text-[11px] text-gray-500 font-medium block">
+                          Permite dividir el examen en dos fechas distintas con exclusión mutua de atletas.
+                        </span>
+                      </div>
+                    </label>
+
+                    {newCallForm.isMultiDay && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2.5 border-t border-blue-200/60">
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                            Fecha Día 2 *
+                          </label>
+                          <input
+                            type="date"
+                            required={newCallForm.isMultiDay}
+                            value={newCallForm.examEndDate}
+                            onChange={(e) => setNewCallForm(prev => ({ ...prev, examEndDate: e.target.value }))}
+                            className="w-full px-3 py-2 bg-white border border-blue-300 rounded-xl text-xs font-medium focus:border-[#2D2E83] outline-hidden shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                            Hora Inicio Día 2
+                          </label>
+                          <input
+                            type="text"
+                            value={newCallForm.startTimeDay2}
+                            onChange={(e) => setNewCallForm(prev => ({ ...prev, startTimeDay2: e.target.value }))}
+                            placeholder="ej. 09:00 AM"
+                            className="w-full px-3 py-2 bg-white border border-blue-300 rounded-xl text-xs font-medium focus:border-[#2D2E83] outline-hidden shadow-2xs"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>

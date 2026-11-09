@@ -707,7 +707,10 @@ export async function createTechnicalExamCall({
   dojoId,
   title = 'Convocatoria Oficial de Examen Técnico ISKF',
   examDate,
+  isMultiDay = false,
+  examEndDate = '',
   startTime = '09:00 AM',
+  startTimeDay2 = '09:00 AM',
   location = '',
   notes = '',
   syllabusIds = [],
@@ -816,7 +819,10 @@ export async function createTechnicalExamCall({
       dojoName: dojo.name,
       dojoSensei: dojo.sensei || '',
       examDate: examDate ? String(examDate).trim() : new Date().toISOString().split('T')[0],
+      isMultiDay: Boolean(isMultiDay),
+      examEndDate: examEndDate ? String(examEndDate).trim() : '',
       startTime: String(startTime).trim() || '09:00 AM',
+      startTimeDay2: String(startTimeDay2 || '09:00 AM').trim(),
       location: location ? String(location).trim() : (dojo.location || ''),
       accessToken,
       status: 'convocado',
@@ -839,7 +845,10 @@ export async function createTechnicalExamCall({
       dojoName: String(newCall.dojoName || ''),
       dojoSensei: String(newCall.dojoSensei || ''),
       examDate: String(newCall.examDate || ''),
+      isMultiDay: Boolean(newCall.isMultiDay),
+      examEndDate: String(newCall.examEndDate || ''),
       startTime: String(newCall.startTime || '09:00 AM'),
+      startTimeDay2: String(newCall.startTimeDay2 || '09:00 AM'),
       location: String(newCall.location || ''),
       accessToken: String(newCall.accessToken || ''),
       status: String(newCall.status || 'convocado'),
@@ -939,7 +948,10 @@ export async function getTechnicalExamCallByToken(accessToken) {
         dojoName: call.dojoName,
         dojoSensei: call.dojoSensei,
         examDate: call.examDate,
+        isMultiDay: Boolean(call.isMultiDay),
+        examEndDate: call.examEndDate || '',
         startTime: call.startTime,
+        startTimeDay2: call.startTimeDay2 || '09:00 AM',
         location: call.location,
         accessToken: call.accessToken,
         status: call.status,
@@ -972,6 +984,8 @@ export async function getTechnicalExamCallByToken(accessToken) {
         schedules: (call.schedules || []).map(sc => ({
           blockName: sc.blockName || '',
           startTime: sc.startTime || '',
+          endTime: sc.endTime || '',
+          day: Number(sc.day) === 2 ? 2 : 1,
           targetRanks: sc.targetRanks || [],
           studentIds: (sc.studentIds || []).map(id => id.toString())
         })),
@@ -981,6 +995,7 @@ export async function getTechnicalExamCallByToken(accessToken) {
           currentRank: a.currentRank || '',
           targetRank: a.targetRank || '',
           scheduleBlock: a.scheduleBlock || '',
+          examDay: Number(a.examDay) === 2 ? 2 : 1,
           promotedAt: a.promotedAt ? a.promotedAt.toISOString() : null,
         })),
         maxPerTanda: call.maxPerTanda || 6,
@@ -1079,12 +1094,17 @@ export async function toggleStudentPromotionForCall({
     );
 
     if (isPromoted) {
+      const existingExamDay = (existingIndex >= 0 && call.aspirants[existingIndex]?.examDay)
+        ? call.aspirants[existingIndex].examDay
+        : 1;
+
       const aspirantData = {
         studentId: student._id,
         studentName: student.name,
         currentRank: student.currentRank,
         targetRank: targetRank || student.currentRank,
         scheduleBlock: scheduleBlock || '',
+        examDay: existingExamDay,
         promotedAt: new Date(),
       };
 
@@ -1115,6 +1135,121 @@ export async function toggleStudentPromotionForCall({
   } catch (error) {
     console.error('Error al alternar promoción de estudiante:', error);
     return { success: false, error: error.message || 'Error al actualizar promoción del aspirante.' };
+  }
+}
+
+/**
+ * Traslada a un estudiante entre el Día 1 y el Día 2 de una convocatoria multifecha.
+ * Garantiza exclusión mutua estricta: un karateca asignado a un día no aparece en el otro día.
+ * Además, lo remueve automáticamente de cualquier tanda configurada en el día anterior.
+ */
+export async function transferStudentExamDay({ callId, studentId, targetDay = 1 }) {
+  try {
+    await dbConnect();
+    if (!callId || !mongoose.Types.ObjectId.isValid(callId)) {
+      return { success: false, error: 'ID de convocatoria inválido.' };
+    }
+    if (!studentId || !mongoose.Types.ObjectId.isValid(studentId)) {
+      return { success: false, error: 'ID de estudiante inválido.' };
+    }
+
+    const dayNum = Number(targetDay) === 2 ? 2 : 1;
+    const call = await TechnicalExamCall.findById(callId);
+    if (!call) {
+      return { success: false, error: 'Convocatoria no encontrada.' };
+    }
+
+    let studentName = '';
+    if (Array.isArray(call.aspirants)) {
+      for (const a of call.aspirants) {
+        if (a.studentId?.toString() === studentId.toString()) {
+          a.examDay = dayNum;
+          studentName = a.studentName || '';
+          break;
+        }
+      }
+    }
+
+    // Exclusión mutua en tandas: remover al estudiante de cualquier tanda del otro día
+    if (Array.isArray(call.schedules)) {
+      for (const tanda of call.schedules) {
+        const tDay = Number(tanda.day) === 2 ? 2 : 1;
+        if (tDay !== dayNum && Array.isArray(tanda.studentIds)) {
+          tanda.studentIds = tanda.studentIds.filter(id => id.toString() !== studentId.toString());
+        }
+      }
+    }
+
+    await call.save();
+
+    revalidatePath(`/convocatoria/${call.accessToken}`);
+    revalidatePath('/admin/examinations/technical');
+
+    return {
+      success: true,
+      studentId: studentId.toString(),
+      studentName,
+      targetDay: dayNum,
+      message: `${studentName || 'Karateca'} trasladado(a) exitosamente al Día ${dayNum}.`
+    };
+  } catch (error) {
+    console.error('Error al transferir estudiante entre días:', error);
+    return { success: false, error: error.message || 'Error al trasladar de día.' };
+  }
+}
+
+/**
+ * Traslada en lote a múltiples karatecas entre Día 1 y Día 2.
+ */
+export async function batchTransferStudentsExamDay({ callId, studentIds = [], targetDay = 1 }) {
+  try {
+    await dbConnect();
+    if (!callId || !mongoose.Types.ObjectId.isValid(callId)) {
+      return { success: false, error: 'ID de convocatoria inválido.' };
+    }
+    if (!Array.isArray(studentIds) || studentIds.length === 0) {
+      return { success: false, error: 'Lista de estudiantes vacía.' };
+    }
+
+    const dayNum = Number(targetDay) === 2 ? 2 : 1;
+    const idsStr = studentIds.map(String);
+    const call = await TechnicalExamCall.findById(callId);
+    if (!call) {
+      return { success: false, error: 'Convocatoria no encontrada.' };
+    }
+
+    if (Array.isArray(call.aspirants)) {
+      for (const a of call.aspirants) {
+        if (idsStr.includes(a.studentId?.toString())) {
+          a.examDay = dayNum;
+        }
+      }
+    }
+
+    // Exclusión mutua: removerlos de tandas del otro día
+    if (Array.isArray(call.schedules)) {
+      for (const tanda of call.schedules) {
+        const tDay = Number(tanda.day) === 2 ? 2 : 1;
+        if (tDay !== dayNum && Array.isArray(tanda.studentIds)) {
+          tanda.studentIds = tanda.studentIds.filter(id => !idsStr.includes(id.toString()));
+        }
+      }
+    }
+
+    await call.save();
+
+    revalidatePath(`/convocatoria/${call.accessToken}`);
+    revalidatePath('/admin/examinations/technical');
+
+    return {
+      success: true,
+      transferredCount: idsStr.length,
+      targetDay: dayNum,
+      message: `${idsStr.length} karateca(s) trasladados al Día ${dayNum} exitosamente.`
+    };
+  } catch (error) {
+    console.error('Error en batchTransferStudentsExamDay:', error);
+    return { success: false, error: error.message || 'Error al transferir estudiantes en lote.' };
   }
 }
 
@@ -1654,7 +1789,10 @@ export async function getExamCallsByDojo(dojoId) {
       dojoName: c.dojoName,
       dojoSensei: c.dojoSensei || '',
       examDate: c.examDate,
+      isMultiDay: Boolean(c.isMultiDay),
+      examEndDate: c.examEndDate || '',
       startTime: c.startTime || '09:00 AM',
+      startTimeDay2: c.startTimeDay2 || '09:00 AM',
       location: c.location || '',
       accessToken: c.accessToken,
       status: c.status,
@@ -1672,6 +1810,7 @@ export async function getExamCallsByDojo(dojoId) {
         blockName: s.blockName,
         startTime: s.startTime,
         endTime: s.endTime || '',
+        day: Number(s.day) === 2 ? 2 : 1,
         targetRanks: s.targetRanks || [],
         studentIds: (s.studentIds || []).map(id => id.toString())
       })),
@@ -1680,7 +1819,8 @@ export async function getExamCallsByDojo(dojoId) {
         studentName: a.studentName,
         currentRank: a.currentRank,
         targetRank: a.targetRank,
-        scheduleBlock: a.scheduleBlock
+        scheduleBlock: a.scheduleBlock,
+        examDay: Number(a.examDay) === 2 ? 2 : 1
       })),
       maxPerTanda: c.maxPerTanda || 6,
       syllabusIds: (c.syllabusIds || []).map(String),
@@ -1808,6 +1948,7 @@ export async function saveCallSchedules({ callId, schedules = [], maxPerTanda = 
       blockName: String(s.blockName || '').trim(),
       startTime: String(s.startTime || '').trim(),
       endTime: String(s.endTime || '').trim(),
+      day: Number(s.day) === 2 ? 2 : 1,
       targetRanks: Array.isArray(s.targetRanks) ? s.targetRanks : [],
       studentIds: Array.isArray(s.studentIds) ? s.studentIds.map(id => String(id)) : []
     }));
@@ -1941,7 +2082,10 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
         dojoName: call.dojoName,
         dojoSensei: call.dojoSensei || '',
         examDate: call.examDate,
+        isMultiDay: Boolean(call.isMultiDay),
+        examEndDate: call.examEndDate || '',
         startTime: call.startTime || '09:00 AM',
+        startTimeDay2: call.startTimeDay2 || '09:00 AM',
         location: call.location || '',
         accessToken: call.accessToken,
         status: call.status,
@@ -1951,6 +2095,7 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
           blockName: s.blockName,
           startTime: s.startTime,
           endTime: s.endTime || '',
+          day: Number(s.day) === 2 ? 2 : 1,
           targetRanks: s.targetRanks || [],
           studentIds: (s.studentIds || []).map(id => id.toString())
         })),
@@ -1985,6 +2130,7 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
           hasSpecialCondition: Boolean(s.hasSpecialCondition),
           specialCondition: s.specialCondition || '',
           isPromotedForExam: Boolean(s.isPromotedForExam),
+          examDay: Number(aspirantInfo?.examDay) === 2 ? 2 : 1,
           promotedAt: s.promotedAt ? s.promotedAt.toISOString() : null
         };
       }).sort(compareStudentsForExam),
@@ -2843,6 +2989,7 @@ export async function getCallSchedulesLatest({ callId, accessToken }) {
           hasSpecialCondition: Boolean(s.hasSpecialCondition),
           specialCondition: s.specialCondition || '',
           isPromotedForExam: Boolean(s.isPromotedForExam),
+          examDay: Number(asp?.examDay) === 2 ? 2 : 1,
           promotedAt: s.promotedAt ? s.promotedAt.toISOString() : null
         };
       }).sort(compareStudentsForExam)
