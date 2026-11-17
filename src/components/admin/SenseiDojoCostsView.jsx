@@ -118,7 +118,7 @@ export default function SenseiDojoCostsView({ initialConfig, dojo, currentUser, 
           <span className="text-gray-400">/</span>
           <span className="text-gray-600 font-medium">Administración Dojo</span>
           <span className="text-gray-400">/</span>
-          <span className="text-[#BE1622] font-mono uppercase tracking-wider font-bold">Sensei Dojo</span>
+          <span className="text-[#BE1622] font-mono uppercase tracking-wider font-bold">Montos Examen</span>
         </div>
 
         {/* Badge identificador del Dojo */}
@@ -137,7 +137,7 @@ export default function SenseiDojoCostsView({ initialConfig, dojo, currentUser, 
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-2xl font-black text-[#2D2E83] tracking-tight">
-              Sensei Dojo — Aranceles y Costo del Examen
+              Montos Examen — Aranceles y Costo del Examen
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
               Parametrización Oficial

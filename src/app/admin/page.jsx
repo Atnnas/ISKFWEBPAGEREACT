@@ -125,7 +125,7 @@ export default async function AdminDashboard() {
                   <TrendingUp className="w-6 h-6" />
                 </div>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
-                  Sensei Dojo
+                  Montos Examen
                 </span>
               </div>
 
@@ -145,7 +145,7 @@ export default async function AdminDashboard() {
               href="/admin/dojo/sensei" 
               className="mt-2 flex items-center justify-center gap-2 w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-xs sm:text-sm transition-all shadow-md shadow-emerald-600/15 active:scale-95 cursor-pointer"
             >
-              <span>Configurar Sensei Dojo</span>
+              <span>Configurar Montos Examen</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -227,7 +227,7 @@ export default async function AdminDashboard() {
                 </div>
                 <div>
                   <h4 className="font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
-                    Sensei Dojo (Ganancia y Aranceles)
+                    Montos Examen (Ganancia y Aranceles)
                   </h4>
                   <p className="text-xs text-gray-500 font-medium mt-0.5">
                     Modificar ganancia del Sensei, ver sumatoria ISKF en solo lectura y costo final.

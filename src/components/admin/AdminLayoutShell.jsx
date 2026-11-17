@@ -132,7 +132,7 @@ export default function AdminLayoutShell({ children, user }) {
           exact: true 
         },
         { 
-          label: 'Sensei Dojo', 
+          label: 'Montos Examen', 
           href: '/admin/dojo/sensei', 
           exact: true 
         },
@@ -162,7 +162,7 @@ export default function AdminLayoutShell({ children, user }) {
           exact: true 
         },
         { 
-          label: 'Sensei Dojo', 
+          label: 'Montos Examen', 
           href: '/admin/dojo/sensei', 
           exact: true 
         },
@@ -192,7 +192,7 @@ export default function AdminLayoutShell({ children, user }) {
           exact: true 
         },
         { 
-          label: 'Sensei Dojo', 
+          label: 'Montos Examen', 
           href: '/admin/dojo/sensei', 
           exact: true 
         },

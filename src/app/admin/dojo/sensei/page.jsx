@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export const metadata = {
-  title: 'Sensei Dojo - Aranceles y Costo del Examen | ISKF Admin',
-  description: 'Gestión y parametrización de la ganancia del Sensei Dojo y aranceles federativos ISKF de examen.',
+  title: 'Montos Examen - ISKF Admin',
+  description: 'Gestión y parametrización de montos de examen, ganancia del Sensei Dojo y aranceles federativos ISKF.',
 };
 
 export default async function AdminDojoSenseiPage() {
