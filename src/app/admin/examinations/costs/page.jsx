@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 export const metadata = {
   title: 'Configuración de Costos de Examen - ISKF Admin',
-  description: 'Gestión y parametrización de aranceles de examen técnico: Sensei Dojo, Director General e ISKF CR.',
+  description: 'Gestión y parametrización de aranceles federativos oficiales ISKF: Director General e ISKF CR.',
 };
 
 export default async function AdminExamCostsPage() {
@@ -18,7 +18,7 @@ export default async function AdminExamCostsPage() {
     redirect('/');
   }
 
-  // Si el usuario es Sensei (Administrador de Dojo), redirigir a su vista especializada "Sensei Dojo"
+  // Si el usuario es Sensei (Administrador de Dojo), redirigir a su vista especializada "Montos Examen"
   if (session.user.role === 'sensei') {
     redirect('/admin/dojo/sensei');
   }

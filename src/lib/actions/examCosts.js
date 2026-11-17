@@ -173,7 +173,14 @@ export async function saveExamCostConfig(payload, userEmail = 'Administración')
   try {
     await dbConnect();
 
-    const senseiDojo = Math.max(0, Number(payload.senseiDojo) || 0);
+    // Obtener la configuración actual para preservar la ganancia del Sensei por defecto si no viene en el payload
+    const existingConfig = await ExamCostConfig.findOne({}).lean();
+    const currentSenseiDojo = existingConfig ? (Number(existingConfig.senseiDojo) || 15000) : 15000;
+
+    const senseiDojo = payload.senseiDojo !== undefined 
+      ? Math.max(0, Number(payload.senseiDojo) || 0)
+      : currentSenseiDojo;
+
     const directorGeneral = Math.max(0, Number(payload.directorGeneral) || 0);
     const iskfCr = Math.max(0, Number(payload.iskfCr) || 0);
     const total = senseiDojo + directorGeneral + iskfCr;
