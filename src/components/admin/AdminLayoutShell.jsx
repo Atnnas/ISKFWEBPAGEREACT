@@ -21,7 +21,8 @@ import {
   ShieldAlert,
   ChevronRight,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Building2
 } from 'lucide-react';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
 
@@ -48,7 +49,17 @@ const getSidebarServerSnapshot = () => false;
 export default function AdminLayoutShell({ children, user }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isExaminationsOpen, setIsExaminationsOpen] = useState(true);
+  const [openSubmenus, setOpenSubmenus] = useState({
+    'Administración Dojo': true,
+    'Examinaciones': true,
+  });
+
+  const toggleSubmenu = (label) => {
+    setOpenSubmenus(prev => ({
+      ...prev,
+      [label]: prev[label] === undefined ? false : !prev[label]
+    }));
+  };
 
   // Estado sincronizado de forma segura con SSR y hydration sin desajustes
   const isSidebarCollapsed = useSyncExternalStore(
@@ -104,10 +115,28 @@ export default function AdminLayoutShell({ children, user }) {
 
   const navLinks = isSensei ? [
     { 
-      label: 'Lista Estudiante', 
-      href: '/admin/students', 
-      icon: Users, 
+      label: 'Dashboard', 
+      href: '/admin', 
+      icon: LayoutDashboard, 
       exact: true 
+    },
+    { 
+      label: 'Administración Dojo', 
+      href: '/admin/students', 
+      icon: Building2, 
+      hasSubmenu: true,
+      subLinks: [
+        { 
+          label: 'Lista de Estudiantes', 
+          href: '/admin/students', 
+          exact: true 
+        },
+        { 
+          label: 'Sensei Dojo', 
+          href: '/admin/dojo/sensei', 
+          exact: true 
+        },
+      ]
     },
     { 
       label: 'Temarios Exámenes Técnicos', 
@@ -116,10 +145,28 @@ export default function AdminLayoutShell({ children, user }) {
     },
   ] : isInstructor ? [
     { 
-      label: 'Lista Estudiante', 
-      href: '/admin/students', 
-      icon: Users, 
+      label: 'Dashboard', 
+      href: '/admin', 
+      icon: LayoutDashboard, 
       exact: true 
+    },
+    { 
+      label: 'Administración Dojo', 
+      href: '/admin/students', 
+      icon: Building2, 
+      hasSubmenu: true,
+      subLinks: [
+        { 
+          label: 'Lista de Estudiantes', 
+          href: '/admin/students', 
+          exact: true 
+        },
+        { 
+          label: 'Sensei Dojo', 
+          href: '/admin/dojo/sensei', 
+          exact: true 
+        },
+      ]
     },
     { 
       label: 'Temarios Exámenes Técnicos', 
@@ -134,10 +181,22 @@ export default function AdminLayoutShell({ children, user }) {
       exact: true 
     },
     { 
-      label: 'Lista Estudiantes', 
+      label: 'Administración Dojo', 
       href: '/admin/students', 
-      icon: Users, 
-      exact: true 
+      icon: Building2, 
+      hasSubmenu: true,
+      subLinks: [
+        { 
+          label: 'Lista de Estudiantes', 
+          href: '/admin/students', 
+          exact: true 
+        },
+        { 
+          label: 'Sensei Dojo', 
+          href: '/admin/dojo/sensei', 
+          exact: true 
+        },
+      ]
     },
     { 
       label: 'Usuarios', 
@@ -431,12 +490,13 @@ export default function AdminLayoutShell({ children, user }) {
 
             if (item.hasSubmenu) {
               const isAnySubActive = item.subLinks.some(sub => isActive(sub.href, sub.exact));
+              const isSubmenuOpen = openSubmenus[item.label] ?? true;
 
               return (
                 <div key={item.label} className="space-y-1 pt-1">
                   <button
                     type="button"
-                    onClick={() => setIsExaminationsOpen(!isExaminationsOpen)}
+                    onClick={() => toggleSubmenu(item.label)}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                       isAnySubActive
                         ? 'bg-blue-50 text-[#2D2E83] border border-blue-200/60'
@@ -447,10 +507,10 @@ export default function AdminLayoutShell({ children, user }) {
                       <IconComponent className={`w-4 h-4 ${isAnySubActive ? 'text-[#2D2E83]' : 'text-gray-500'}`} />
                       <span>{item.label}</span>
                     </div>
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExaminationsOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isSubmenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
-                  {isExaminationsOpen && (
+                  {isSubmenuOpen && (
                     <div className="pl-6 pr-2 space-y-1 animate-in fade-in duration-150">
                       {item.subLinks.map((sub) => {
                         if (sub.hasNested) {

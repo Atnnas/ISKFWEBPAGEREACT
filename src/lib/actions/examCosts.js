@@ -19,23 +19,50 @@ const DEFAULT_RANKS = [
 
 /**
  * Obtiene la configuración activa de costos de examen
+ * Opcionalmente permite resolver los aranceles personalizados para un dojo específico
  */
-export async function getExamCostConfig() {
+export async function getExamCostConfig(dojoId = null) {
   try {
     await dbConnect();
     const config = await ExamCostConfig.findOne().sort({ updatedAt: -1 }).lean();
 
+    // Consultar si este dojo tiene un arancel personalizado para su Sensei
+    let dojoSenseiFee = null;
+    let dojoName = null;
+    if (dojoId) {
+      try {
+        const DojoModel = (await import('../../models/Dojo')).default;
+        const dojoDoc = await DojoModel.findById(dojoId).lean();
+        if (dojoDoc) {
+          dojoName = dojoDoc.name || null;
+          if (typeof dojoDoc.senseiExamFee === 'number' && !isNaN(dojoDoc.senseiExamFee)) {
+            dojoSenseiFee = dojoDoc.senseiExamFee;
+          }
+        }
+      } catch (err) {
+        console.debug('Error buscando dojo para exam costs:', err);
+      }
+    }
+
+    const directorGeneral = Number(config?.directorGeneral) || 10000;
+    const iskfCr = Number(config?.iskfCr) || 5000;
+    const iskfTotal = directorGeneral + iskfCr;
+
     if (!config) {
+      const senseiDojo = dojoSenseiFee !== null ? dojoSenseiFee : 15000;
       return {
         success: true,
         isNew: true,
+        dojoName,
+        dojoId: dojoId ? String(dojoId) : null,
         config: {
           currency: 'CRC',
           currencySymbol: '₡',
-          senseiDojo: 15000,
-          directorGeneral: 10000,
-          iskfCr: 5000,
-          total: 30000,
+          senseiDojo,
+          directorGeneral,
+          iskfCr,
+          iskfTotal,
+          total: senseiDojo + iskfTotal,
           notes: 'Aranceles oficiales de derecho de examen técnico ISKF Costa Rica.',
           rankCosts: DEFAULT_RANKS,
           updatedBy: 'Predeterminado',
@@ -44,26 +71,33 @@ export async function getExamCostConfig() {
       };
     }
 
+    const senseiDojo = dojoSenseiFee !== null ? dojoSenseiFee : (Number(config.senseiDojo) || 0);
+    const total = senseiDojo + iskfTotal;
+
     // Asegurar serialización limpia
     return {
       success: true,
       isNew: false,
+      dojoName,
+      dojoId: dojoId ? String(dojoId) : null,
       config: {
         _id: config._id.toString(),
         currency: config.currency || 'CRC',
         currencySymbol: config.currencySymbol || (config.currency === 'USD' ? '$' : '₡'),
-        senseiDojo: Number(config.senseiDojo) || 0,
-        directorGeneral: Number(config.directorGeneral) || 0,
-        iskfCr: Number(config.iskfCr) || 0,
-        total: (Number(config.senseiDojo) || 0) + (Number(config.directorGeneral) || 0) + (Number(config.iskfCr) || 0),
+        senseiDojo,
+        directorGeneral,
+        iskfCr,
+        iskfTotal,
+        total,
         notes: config.notes || '',
         rankCosts: Array.isArray(config.rankCosts) && config.rankCosts.length > 0 
           ? config.rankCosts.map(r => ({
               rank: r.rank,
-              senseiDojo: Number(r.senseiDojo) || 0,
+              senseiDojo: dojoSenseiFee !== null ? dojoSenseiFee : (Number(r.senseiDojo) || 0),
               directorGeneral: Number(r.directorGeneral) || 0,
               iskfCr: Number(r.iskfCr) || 0,
-              total: (Number(r.senseiDojo) || 0) + (Number(r.directorGeneral) || 0) + (Number(r.iskfCr) || 0),
+              iskfTotal: (Number(r.directorGeneral) || 0) + (Number(r.iskfCr) || 0),
+              total: (dojoSenseiFee !== null ? dojoSenseiFee : (Number(r.senseiDojo) || 0)) + (Number(r.directorGeneral) || 0) + (Number(r.iskfCr) || 0),
               active: r.active !== false,
             }))
           : DEFAULT_RANKS,
@@ -82,10 +116,52 @@ export async function getExamCostConfig() {
         senseiDojo: 0,
         directorGeneral: 0,
         iskfCr: 0,
+        iskfTotal: 0,
         total: 0,
         notes: '',
         rankCosts: DEFAULT_RANKS,
       }
+    };
+  }
+}
+
+/**
+ * Guarda exclusivamente la ganancia del Sensei Dojo para un dojo específico
+ */
+export async function saveSenseiDojoExamCost({ dojoId, senseiDojo, userEmail = 'Sensei' }) {
+  try {
+    await dbConnect();
+    const fee = Math.max(0, Number(senseiDojo) || 0);
+
+    if (dojoId) {
+      const DojoModel = (await import('../../models/Dojo')).default;
+      await DojoModel.findByIdAndUpdate(dojoId, {
+        $set: { senseiExamFee: fee }
+      });
+    } else {
+      // Si no tiene dojoId asignado, actualizar la ganancia por defecto en la configuración global
+      await ExamCostConfig.findOneAndUpdate(
+        {},
+        { $set: { senseiDojo: fee, updatedBy: userEmail, updatedAt: new Date() } },
+        { upsert: true }
+      );
+    }
+
+    revalidatePath('/admin/dojo/sensei');
+    revalidatePath('/admin/examinations/costs');
+    revalidatePath('/admin/examinations/technical');
+    revalidatePath('/admin');
+
+    return {
+      success: true,
+      message: 'Ganancia de Sensei Dojo guardada exitosamente.',
+      senseiDojo: fee
+    };
+  } catch (error) {
+    console.error('Error al guardar ganancia de Sensei Dojo:', error);
+    return {
+      success: false,
+      error: error.message || 'Error al persistir la ganancia del sensei en la base de datos.'
     };
   }
 }

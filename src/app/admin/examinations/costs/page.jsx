@@ -14,7 +14,16 @@ export const metadata = {
 export default async function AdminExamCostsPage() {
   const session = await auth();
 
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'editor')) {
+  if (!session?.user) {
+    redirect('/');
+  }
+
+  // Si el usuario es Sensei (Administrador de Dojo), redirigir a su vista especializada "Sensei Dojo"
+  if (session.user.role === 'sensei') {
+    redirect('/admin/dojo/sensei');
+  }
+
+  if (session.user.role !== 'admin' && session.user.role !== 'editor') {
     redirect('/');
   }
 

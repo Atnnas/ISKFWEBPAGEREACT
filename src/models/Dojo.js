@@ -61,6 +61,11 @@ const DojoSchema = new mongoose.Schema({
     detailsUrl: { 
         type: String, 
         default: '#'
+    },
+    // Ganancia personalizada del Sensei por examen técnico para este dojo (si es null, usa el arancel predeterminado)
+    senseiExamFee: {
+        type: Number,
+        default: null
     }
 }, {
     timestamps: true
