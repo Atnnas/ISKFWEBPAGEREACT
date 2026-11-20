@@ -27,7 +27,9 @@ import {
   Loader2,
   Sparkles,
   ChevronDown,
-  RefreshCw
+  RefreshCw,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall, getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { updateStudent } from '../../lib/actions/students';
@@ -181,6 +183,36 @@ export default function TechnicalExamEvaluatorCore({
   }, [callId, call?.accessToken, pollCallRoster]);
 
   const tandas = liveSchedules;
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement || document.webkitFullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          await document.documentElement.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          await document.webkitExitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen toggle error:", err);
+    }
+  };
 
   // Evaluaciones en memoria indexadas por studentId con caché local y datos de servidor
   const [evaluationsByStudent, setEvaluationsByStudent] = useState(() => {
@@ -1805,6 +1837,26 @@ export default function TechnicalExamEvaluatorCore({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             </button>
 
+            {/* Pantalla Completa / Expandir Tatami al Máximo */}
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-xs"
+              title={isFullscreen ? "Restaurar tamaño de ventana" : "Pantalla completa (Aprovechar 100% del monitor)"}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Restaurar</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Pantalla Completa</span>
+                </>
+              )}
+            </button>
+
             <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
             {/* Estado de Guardado */}
@@ -2010,10 +2062,10 @@ export default function TechnicalExamEvaluatorCore({
                   </div>
                 ) : (
                   <div className="overflow-x-auto custom-scrollbar pb-2">
-                    <table className="w-full text-left border-collapse min-w-[840px]">
+                    <table className="w-full text-left border-collapse min-w-[700px]">
                       <thead>
                         <tr className="bg-slate-950/70 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                          <th className="py-2 px-3 min-w-[220px] align-middle">
+                          <th className="py-2 px-2.5 min-w-[170px] sm:min-w-[190px] align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Karateca
                             </div>
@@ -2021,24 +2073,24 @@ export default function TechnicalExamEvaluatorCore({
                           {groupCriteria.map((criterion, cIdx) => (
                             <th 
                               key={criterion.key} 
-                              className="py-2 px-2.5 text-center align-middle min-w-[160px]"
+                              className="py-2 px-1 text-center align-middle min-w-[115px] sm:min-w-[125px]"
                             >
-                              <div className="flex flex-col items-center gap-1">
-                                <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.2 rounded whitespace-nowrap">
+                              <div className="flex flex-col items-center gap-0.5">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/25 px-1 py-0.2 rounded whitespace-nowrap">
                                   Aspecto #{cIdx + 1}
                                 </span>
-                                <span className="text-xs font-bold text-slate-200 leading-snug text-center">
+                                <span className="text-[11px] font-bold text-slate-200 leading-tight text-center" title={criterion.rawText || criterion.desc || criterion.label}>
                                   {criterion.rawText || criterion.desc || criterion.label}
                                 </span>
                               </div>
                             </th>
                           ))}
-                          <th className="py-2 px-2 text-center w-20 align-middle">
+                          <th className="py-2 px-1 text-center w-14 align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Nota
                             </div>
                           </th>
-                          <th className="py-2 px-3 w-40 text-right align-middle">
+                          <th className="py-2 px-2 w-28 sm:w-32 text-right align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Observaciones
                             </div>
@@ -2080,7 +2132,7 @@ export default function TechnicalExamEvaluatorCore({
                               key={sId}
                               className="hover:bg-slate-800/40 transition-colors group"
                             >
-                              <td className="py-2.5 px-3 min-w-[240px]">
+                              <td className="py-2 px-2.5 min-w-[170px] sm:min-w-[190px]">
                                 <div className="flex items-center gap-2">
                                   {isDirectorRoy && (
                                     <button

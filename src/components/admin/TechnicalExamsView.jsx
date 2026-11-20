@@ -3737,9 +3737,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   }, [studentBirthDate]);
 
   return (
-    <div className="space-y-6 pt-2 pb-12 font-sans text-gray-900">
+    <div className="w-full space-y-3.5 pt-1 pb-12 font-sans text-gray-900">
       {/* Breadcrumb Principal */}
-      <div className="flex items-center justify-between gap-4 border-b border-gray-200/80 pb-3">
+      <div className="flex items-center justify-between gap-4 border-b border-gray-200/80 pb-2">
         <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
           <Link href="/admin/examinations" className="text-[#2D2E83] hover:underline flex items-center gap-1.5 transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -3754,7 +3754,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       {/* TAB 0: CONVOCATORIAS OFICIALES Y ENLACE ÚNICO DEL DOJO (ETAPA 1) */}
       {/* ========================================================================= */}
       {activeTab === 'convocatorias' && (
-        <div className="space-y-6">
+        <div className="space-y-3.5 w-full">
           {selectedCallForDetail ? (
             /* ========================================================================= */
             /* VISTA DETALLE: GESTIÓN DE EXAMINANDOS Y CONFIGURACIÓN DE TANDAS DE 6 */
