@@ -665,7 +665,7 @@ export default function AdminLayoutShell({ children, user }) {
           isSidebarCollapsed ? 'md:ml-0' : 'md:ml-64'
         } ${
           isTechnicalRoute 
-            ? 'pt-16 md:pt-3 px-1 sm:px-2.5 md:px-3 pb-6' 
+            ? 'pt-16 md:pt-2 px-1 sm:px-1.5 md:px-2 pb-6' 
             : 'pt-20 md:pt-6 p-3 sm:p-5 md:p-6'
         } relative z-10 transition-all duration-300 ease-in-out`}
       >

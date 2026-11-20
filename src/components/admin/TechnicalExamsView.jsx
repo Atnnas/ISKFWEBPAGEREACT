@@ -3739,7 +3739,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   }, [studentBirthDate]);
 
   return (
-    <div className="w-full space-y-3.5 pt-1 pb-12 font-sans text-gray-900">
+    <div className="w-full space-y-2.5 pt-0.5 pb-12 font-sans text-gray-900">
       {/* Breadcrumb Principal */}
       <div className="flex items-center justify-between gap-4 border-b border-gray-200/80 pb-2">
         <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
@@ -3763,7 +3763,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             /* ========================================================================= */
             <div className="space-y-3.5">
               {/* Barra Superior de Navegación de la Convocatoria: Sub-Pestañas Ágiles */}
-              <div className="bg-white/95 backdrop-blur-md border border-gray-200/90 rounded-2xl p-2.5 sm:p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
+              <div className="bg-white/95 backdrop-blur-md border border-gray-200/90 rounded-2xl p-2 sm:p-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
                 <button
                   type="button"
                   onClick={() => setSelectedCallForDetail(null)}

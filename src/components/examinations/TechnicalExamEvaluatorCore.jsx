@@ -89,6 +89,18 @@ export default function TechnicalExamEvaluatorCore({
     }
   }, [rosterAlert]);
 
+  // Reloj digital en vivo para mesa de jueces
+  const [tatamiClock, setTatamiClock] = useState('');
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      setTatamiClock(now.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+    };
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Sondeo en tiempo real de tandas y karatecas
   const pollCallRoster = useCallback(async (isManual = false) => {
     if (!call?.accessToken && !callId) return;
@@ -918,6 +930,18 @@ export default function TechnicalExamEvaluatorCore({
     return Math.max(...beltGroups.map(g => g.techniques.length), 1);
   }, [beltGroups]);
 
+  // Cinturones presentes en la tanda activa
+  const tandaRanks = useMemo(() => {
+    return Array.from(new Set(tandaStudents.map(s => s.currentRank).filter(Boolean)));
+  }, [tandaStudents]);
+
+  // Nombre de la técnica activa para mostrar en el panel de control
+  const currentActiveTechName = useMemo(() => {
+    if (beltGroups.length === 0) return '';
+    const activeTech = beltGroups[0]?.techniques?.[selectedTechniqueIndex];
+    return activeTech?.name || '';
+  }, [beltGroups, selectedTechniqueIndex]);
+
   // Guardar estado de navegación en localStorage
   useEffect(() => {
     try {
@@ -1720,10 +1744,10 @@ export default function TechnicalExamEvaluatorCore({
       )}
 
       {/* 2. ENCABEZADO OPTIMIZADO: IDENTIFICACIÓN DEL SENSEI, TANDAS, FASES Y ESTADO CON 100% APROVECHAMIENTO */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-white shadow-md space-y-2">
-        {/* FILA 1: IDENTIFICACIÓN DEL SENSEI (IZQ) Y CONTROL DE TANDAS (DER) */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800/80 pb-2">
-          {/* Lado Izquierdo: Info del Sensei */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-white shadow-md space-y-2.5">
+        {/* FILA 1: IDENTIFICACIÓN DEL SENSEI (IZQ) Y CONTROL DE TANDAS + HERRAMIENTAS (DER) */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5 border-b border-slate-800/80 pb-2.5">
+          {/* Lado Izquierdo: Info del Sensei y Convocatoria */}
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="w-8 h-8 rounded-xl bg-linear-to-br from-amber-400 to-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-xs shrink-0 ring-1 ring-amber-300/50">
               🥋
@@ -1746,73 +1770,44 @@ export default function TechnicalExamEvaluatorCore({
             </div>
           </div>
 
-          {/* Lado Derecho: Selector de Tanda ergonómico */}
-          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5 sm:justify-end">
-            <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 px-0.5">
-              <Clock className="w-3.5 h-3.5 text-amber-400" /> Tanda:
-            </span>
-            {tandas.map((tanda, tIdx) => {
-              const isSelected = selectedTandaIndex === tIdx;
-              const studentCount = (tanda.studentIds || []).length;
-              return (
-                <button
-                  key={tanda.id || tIdx}
-                  type="button"
-                  onClick={() => {
-                    setSelectedTandaIndex(tIdx);
-                    setSelectedTechniqueIndex(0);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                    isSelected
-                      ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300 scale-102'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                  }`}
-                >
-                  <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
-                  }`}>
-                    {studentCount}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          {/* Lado Derecho: Selector de Tanda + Herramientas Operativas */}
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar py-0.5 lg:justify-end flex-wrap">
+            {/* Selector de Tanda */}
+            <div className="flex items-center gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-slate-800/80">
+              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 px-1">
+                <Clock className="w-3.5 h-3.5 text-amber-400" /> Tanda:
+              </span>
+              {tandas.map((tanda, tIdx) => {
+                const isSelected = selectedTandaIndex === tIdx;
+                const studentCount = (tanda.studentIds || []).length;
+                return (
+                  <button
+                    key={tanda.id || tIdx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTandaIndex(tIdx);
+                      setSelectedTechniqueIndex(0);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300 scale-102 font-black'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {studentCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-        {/* FILA 2: FASES OFICIALES ISKF (IZQ) Y HERRAMIENTAS OPERATIVAS / ESTADO (DER) */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-0.5">
-          {/* Lado Izquierdo: Fases Oficiales ISKF */}
-          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 shadow-inner overflow-x-auto custom-scrollbar">
-            {[
-              { key: 'kihon', label: '👊 1. KIHON' },
-              { key: 'kumite', label: '⚔️ 2. KUMITE' },
-              { key: 'kata', label: '🥋 3. KATA' },
-              ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '📋 4. ASPECTOS' }] : [])
-            ].map(phase => {
-              const isSelected = effectivePhase === phase.key;
-              return (
-                <button
-                  key={phase.key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedPhase(phase.key);
-                    setSelectedTechniqueIndex(0);
-                  }}
-                  className={`px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
-                    isSelected
-                      ? 'bg-amber-400 text-slate-950 shadow-md ring-1 ring-amber-300'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  {phase.label}
-                </button>
-              );
-            })}
-          </div>
+            {/* Separador vertical */}
+            <div className="h-5 w-px bg-slate-800 hidden sm:block"></div>
 
-          {/* Lado Derecho: Herramientas de Mesa y Estado en Vivo */}
-          <div className="flex items-center gap-2 sm:justify-end flex-wrap">
             {/* Botón Monitor Tribunal */}
             <button
               type="button"
@@ -1857,32 +1852,103 @@ export default function TechnicalExamEvaluatorCore({
               )}
             </button>
 
-            <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
+            {/* Estado de Guardado & Conexión */}
+            <div className="flex items-center gap-1.5">
+              {saveStatus === 'saving' ? (
+                <span className="flex items-center gap-1 text-amber-300 font-medium text-xs px-2 py-0.5 rounded-lg bg-amber-400/10 border border-amber-400/20" title="Guardando calificaciones...">
+                  <RotateCcw className="w-3 h-3 animate-spin" />
+                  <span className="hidden md:inline text-[10px]">Guardando</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20" title="Todo guardado en base de datos">
+                  <Check className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline text-[10px]">Guardado</span>
+                </span>
+              )}
 
-            {/* Estado de Guardado */}
-            {saveStatus === 'saving' ? (
-              <span className="flex items-center gap-1 text-amber-300 font-medium text-xs px-2 py-0.5 rounded-lg bg-amber-400/10 border border-amber-400/20" title="Guardando calificaciones...">
-                <RotateCcw className="w-3 h-3 animate-spin" />
-                <span className="hidden md:inline text-[10px]">Guardando</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20" title="Todo guardado en base de datos">
-                <Check className="w-3.5 h-3.5" />
-                <span className="hidden md:inline text-[10px]">Guardado</span>
-              </span>
-            )}
+              {!isOnline ? (
+                <span className="flex items-center gap-1 text-rose-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-rose-500/10 border border-rose-500/20" title="Sin conexión">
+                  <WifiOff className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline text-[10px]">Offline</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20" title="En línea">
+                  <Wifi className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline text-[10px]">Online</span>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
 
-            {/* Conectividad */}
-            {!isOnline ? (
-              <span className="flex items-center gap-1 text-rose-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-rose-500/10 border border-rose-500/20" title="Sin conexión">
-                <WifiOff className="w-3.5 h-3.5" />
-                <span className="hidden md:inline text-[10px]">Offline</span>
+        {/* FILA 2: FASES OFICIALES ISKF (IZQ) Y PANEL DE CONTROL DE TATAMI EN VIVO (DER) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-0.5">
+          {/* Lado Izquierdo: Fases Oficiales ISKF */}
+          <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800 shadow-inner overflow-x-auto custom-scrollbar">
+            {[
+              { key: 'kihon', label: '👊 1. KIHON' },
+              { key: 'kumite', label: '⚔️ 2. KUMITE' },
+              { key: 'kata', label: '🥋 3. KATA' },
+              ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '📋 4. ASPECTOS' }] : [])
+            ].map(phase => {
+              const isSelected = effectivePhase === phase.key;
+              return (
+                <button
+                  key={phase.key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPhase(phase.key);
+                    setSelectedTechniqueIndex(0);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                    isSelected
+                      ? 'bg-amber-400 text-slate-950 shadow-md ring-1 ring-amber-300 scale-102'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  {phase.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Lado Derecho: Monitor de Tatami en Tiempo Real (Aprovechamiento 100% del Ancho) */}
+          <div className="flex items-center gap-2 sm:justify-end flex-wrap text-xs">
+            {/* Atletas en Tatami */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/70 border border-slate-800 text-slate-300">
+              <Users className="w-3.5 h-3.5 text-amber-400" />
+              <span className="font-bold text-white">{tandaStudents.length}</span>
+              <span className="text-[11px] text-slate-400">en tatami</span>
+              {tandaRanks.length > 0 && (
+                <div className="flex items-center gap-1 ml-1 pl-1.5 border-l border-slate-800">
+                  {tandaRanks.slice(0, 2).map(r => (
+                    <span key={r} className={`text-[9px] px-1.5 py-0.2 rounded font-black ${getBeltBadgeClass(r)}`}>
+                      {r.split(' ')[0]}
+                    </span>
+                  ))}
+                  {tandaRanks.length > 2 && (
+                    <span className="text-[9px] text-slate-400 font-mono">+{tandaRanks.length - 2}</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Paso Técnico y Progreso */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/70 border border-slate-800">
+              <span className="text-[10px] uppercase font-mono font-black text-amber-300 bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded">
+                Paso {selectedTechniqueIndex + 1}/{totalPhaseSteps}
               </span>
-            ) : (
-              <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20" title="En línea">
-                <Wifi className="w-3 h-3 text-emerald-400" />
-                <span className="hidden md:inline text-[10px]">Online</span>
+              <span className="text-slate-300 font-bold truncate max-w-[140px] sm:max-w-[200px]" title={currentActiveTechName}>
+                {currentActiveTechName}
               </span>
+            </div>
+
+            {/* Reloj Digital de Tatami en Vivo */}
+            {tatamiClock && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950 border border-amber-400/30 text-amber-300 font-mono font-black shadow-2xs" title="Hora oficial de tatami">
+                <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span className="text-xs tracking-wider">{tatamiClock}</span>
+              </div>
             )}
           </div>
         </div>
@@ -1980,7 +2046,7 @@ export default function TechnicalExamEvaluatorCore({
                 className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
               >
                 {/* ENCABEZADO DEL CARRIL DEL CINTURÓN COMPACTO */}
-                <div className="bg-slate-950/95 border-b border-slate-800/80 px-3.5 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="bg-slate-950/95 border-b border-slate-800/80 px-3 py-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider ${getBeltBadgeClass(group.rankLabel)}`}>
                       {group.rankLabel}
@@ -2008,40 +2074,51 @@ export default function TechnicalExamEvaluatorCore({
                         <span className="text-[11px] uppercase tracking-wider font-mono font-black text-slate-950 bg-amber-400 px-2 py-0.5 rounded-md shadow-xs ring-1 ring-amber-300 shrink-0">
                           {effectivePhase === 'kihon' ? '👊 KIHON' : effectivePhase === 'kata' ? '🥋 KATA' : effectivePhase === 'kumite' ? '⚔️ KUMITE' : effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1}/{groupTechs.length}
                         </span>
-                        <span className="text-sm sm:text-base font-black text-amber-200 tracking-tight">
+                        <span className="text-sm font-black text-amber-200 tracking-tight">
                           {groupActiveTech?.name}
                         </span>
-                        {(groupActiveTech?.stance || groupActiveTech?.direction || groupActiveTech?.repetitions || groupActiveTech?.embusen) && (
-                          <div className="flex items-center gap-1 text-[10px]">
-                            {groupActiveTech.stance && (
-                              <span className="text-amber-300/90 font-semibold bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">
-                                {groupActiveTech.stance}
+                        {/* Badges técnicos deduplicados */}
+                        {(() => {
+                          const badges = [];
+                          if (groupActiveTech?.stance) {
+                            badges.push({ key: 'st', label: groupActiveTech.stance, cls: 'text-amber-300/90 bg-amber-400/10 border-amber-400/20' });
+                          }
+                          const dirClean = (groupActiveTech?.direction || '').trim().toLowerCase();
+                          const embClean = (groupActiveTech?.embusen || '').trim().toLowerCase();
+                          if (groupActiveTech?.direction && dirClean !== embClean) {
+                            badges.push({ key: 'dir', label: groupActiveTech.direction, cls: 'text-cyan-300/90 bg-cyan-400/10 border-cyan-400/20' });
+                          }
+                          if (groupActiveTech?.repetitions) {
+                            badges.push({ key: 'rep', label: `${groupActiveTech.repetitions} rep.`, cls: 'text-emerald-300/90 bg-emerald-400/10 border-emerald-400/20' });
+                          }
+                          if (groupActiveTech?.embusen) {
+                            badges.push({ key: 'emb', label: groupActiveTech.embusen, cls: 'text-purple-300/90 bg-purple-400/10 border-purple-400/20' });
+                          }
+                          return badges.length > 0 ? (
+                            <div className="flex items-center gap-1 text-[10px]">
+                              {badges.map(b => (
+                                <span key={b.key} className={`font-semibold px-1.5 py-0.2 rounded border ${b.cls}`}>
+                                  {b.label}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null;
+                        })()}
+                        {/* Notas no redundantes */}
+                        {(() => {
+                          const note = (groupActiveTech?.notes || '').trim();
+                          const name = (groupActiveTech?.name || '').trim();
+                          const noteNorm = note.toLowerCase().replace(/[.\s]/g, '');
+                          const nameNorm = name.toLowerCase().replace(/[.\s]/g, '');
+                          if (note && noteNorm !== nameNorm) {
+                            return (
+                              <span className="text-[10px] text-slate-400 italic max-w-xs truncate hidden md:inline">
+                                • {note}
                               </span>
-                            )}
-                            {groupActiveTech.direction && (
-                              <span className="text-cyan-300/90 font-medium bg-cyan-400/10 px-1.5 py-0.2 rounded border border-cyan-400/20">
-                                {groupActiveTech.direction}
-                              </span>
-                            )}
-                            {groupActiveTech.repetitions && (
-                              <span className="text-emerald-300/90 font-medium bg-emerald-400/10 px-1.5 py-0.2 rounded border border-emerald-400/20">
-                                {groupActiveTech.repetitions} rep.
-                              </span>
-                            )}
-                            {groupActiveTech.embusen && (
-                              <span className="text-purple-300/90 font-medium bg-purple-400/10 px-1.5 py-0.2 rounded border border-purple-400/20">
-                                {groupActiveTech.embusen}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {groupActiveTech?.notes && 
-                         groupActiveTech.notes.trim().toLowerCase() !== groupActiveTech.name?.trim().toLowerCase() && 
-                         groupActiveTech.notes.trim().toLowerCase() !== (groupActiveTech.name?.trim().toLowerCase() + '.') && (
-                          <span className="text-[10px] text-slate-400 italic max-w-xs truncate hidden md:inline">
-                            • {groupActiveTech.notes}
-                          </span>
-                        )}
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     )}
                   </div>
@@ -2065,7 +2142,7 @@ export default function TechnicalExamEvaluatorCore({
                     <table className="w-full text-left border-collapse min-w-[700px]">
                       <thead>
                         <tr className="bg-slate-950/70 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                          <th className="py-2 px-2.5 min-w-[170px] sm:min-w-[190px] align-middle">
+                          <th className="py-2 px-2 min-w-[145px] sm:min-w-[165px] align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Karateca
                             </div>
@@ -2073,7 +2150,7 @@ export default function TechnicalExamEvaluatorCore({
                           {groupCriteria.map((criterion, cIdx) => (
                             <th 
                               key={criterion.key} 
-                              className="py-2 px-1 text-center align-middle min-w-[115px] sm:min-w-[125px]"
+                              className="py-2 px-1 text-center align-middle min-w-[96px] sm:min-w-[106px]"
                             >
                               <div className="flex flex-col items-center gap-0.5">
                                 <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/25 px-1 py-0.2 rounded whitespace-nowrap">
@@ -2085,12 +2162,12 @@ export default function TechnicalExamEvaluatorCore({
                               </div>
                             </th>
                           ))}
-                          <th className="py-2 px-1 text-center w-14 align-middle">
+                          <th className="py-2 px-1 text-center w-12 align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Nota
                             </div>
                           </th>
-                          <th className="py-2 px-2 w-28 sm:w-32 text-right align-middle">
+                          <th className="py-2 px-2 w-24 sm:w-28 text-right align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Observaciones
                             </div>
@@ -2132,7 +2209,7 @@ export default function TechnicalExamEvaluatorCore({
                               key={sId}
                               className="hover:bg-slate-800/40 transition-colors group"
                             >
-                              <td className="py-2 px-2.5 min-w-[170px] sm:min-w-[190px]">
+                              <td className="py-2 px-2 min-w-[145px] sm:min-w-[165px]">
                                 <div className="flex items-center gap-2">
                                   {isDirectorRoy && (
                                     <button
@@ -2224,7 +2301,7 @@ export default function TechnicalExamEvaluatorCore({
                                     }`}
                                   >
                                     <div className="flex flex-col items-center justify-center">
-                                      <div className="flex flex-col items-center justify-center gap-1 select-none">
+                                      <div className="flex flex-col items-center justify-center gap-0.5 select-none">
                                         {/* Fila 1: Estrellas 1 a 5 */}
                                         <div className="flex items-center justify-center gap-1">
                                           {[1, 2, 3, 4, 5].map(starVal => {
