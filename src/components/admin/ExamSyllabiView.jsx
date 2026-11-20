@@ -116,7 +116,7 @@ function KyuCombobox({ selectedRank, onSelectRank, syllabi }) {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-1.5 w-full sm:w-84 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 z-40 space-y-0.5 max-h-80 overflow-y-auto">
+        <div className="absolute left-0 mt-1.5 w-full sm:w-84 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 z-40 space-y-0.5 max-h-80 overflow-y-auto custom-scrollbar">
           {/* Opción Todos */}
           <button
             type="button"
@@ -2455,7 +2455,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                       No has agregado técnicas en esta sección aún. Usa el formulario de arriba para agregarlas.
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                       {formTechniques
                         .filter(t => t.group === activeBuilderGroup)
                         .map((tech, idx) => (

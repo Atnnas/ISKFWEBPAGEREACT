@@ -1425,7 +1425,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
   // =========================================================================
   return (
     <div 
-      className={`relative min-h-screen w-full overflow-x-hidden bg-transparent text-gray-900 font-sans flex flex-col selection:bg-[#2D2E83] selection:text-white exam-text-scale-${fontScale}`}
+      className={`relative min-h-screen w-full overflow-x-hidden bg-transparent text-gray-900 font-sans flex flex-col selection:bg-[#2D2E83] selection:text-white examination-scope exam-text-scale-${fontScale}`}
       style={{ WebkitTextSizeAdjust: '100%', textSizeAdjust: '100%' }}
     >
       {/* ========================================================================= */}
@@ -1723,7 +1723,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
 
                     {/* Menú Desplegable con Escudos y Nombres */}
                     {isDojoDropdownOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white/95 border border-gray-200 rounded-2xl shadow-2xl py-1.5 max-h-64 overflow-y-auto divide-y divide-gray-100 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+                      <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white/95 border border-gray-200 rounded-2xl shadow-2xl py-1.5 max-h-64 overflow-y-auto divide-y divide-gray-100 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 custom-scrollbar">
                         {session.assignedDojos.map((dojo, dIdx) => {
                           const isSelected = studentDojo === dojo.name;
                           return (
@@ -1950,7 +1950,7 @@ export default function StudentExamTaker({ session, exam, initialDeviceToken = '
                       <p className="text-xs sm:text-sm text-gray-700 font-semibold">
                         Debes asociar todos los términos marcando la casilla correspondiente. Cada término bien respondido vale 1 punto.
                       </p>
-                      <div className="overflow-x-auto border border-gray-200 rounded-2xl bg-white shadow-sm">
+                      <div className="overflow-x-auto border border-gray-200 rounded-2xl bg-white shadow-sm custom-scrollbar pb-2">
                         <table className="min-w-full text-sm sm:text-base border-collapse">
                           <thead>
                             <tr className="bg-gray-100/90">

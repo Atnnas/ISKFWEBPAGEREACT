@@ -118,7 +118,7 @@ export default async function EvaluatorTatamiPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-gray-900 py-4 sm:py-6 px-3 sm:px-6">
+    <div className="min-h-screen bg-slate-100 text-gray-900 py-4 sm:py-6 px-3 sm:px-6 examination-scope">
       <TechnicalExamEvaluatorCore
         call={result.call}
         evaluator={result.evaluator}

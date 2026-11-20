@@ -486,7 +486,7 @@ function StudentEvaluationBreakdown({ item, examTechniques = [], onGenerateAI, i
   return (
     <div className="w-full space-y-3 pt-2">
       {/* Barra de Tabs: Promedios Finales + Cada Sensei */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-gray-200">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2.5 custom-scrollbar border-b border-gray-200">
         <button
           type="button"
           onClick={() => setActiveTabKey('final')}
@@ -4219,7 +4219,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                           </button>
                         </div>
                       ) : (
-                        <div className="divide-y divide-gray-100 max-h-[580px] overflow-y-auto pr-1 space-y-0.5">
+                        <div className="divide-y divide-gray-100 max-h-[580px] overflow-y-auto pr-2 space-y-0.5 custom-scrollbar">
                           {filteredReadyStudents.map((st, idx) => {
                             const sId = st._id || st.id;
                             const assignedTanda = callTandas.find(t => (t.studentIds || []).includes(sId));
@@ -4363,7 +4363,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                           </p>
                         </div>
                       ) : (
-                        <div className="divide-y divide-gray-100 max-h-[580px] overflow-y-auto pr-1 space-y-0.5">
+                        <div className="divide-y divide-gray-100 max-h-[580px] overflow-y-auto pr-2 space-y-0.5 custom-scrollbar">
                           {filteredUnpromotedStudents.map((st, idx) => {
                             const sId = st._id || st.id;
                             const belt = getBeltBadge(st.currentRank);
@@ -6149,7 +6149,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           <div className="bg-white/95 border border-gray-200/90 rounded-2xl p-4 shadow-xs space-y-3">
             {/* Pestañas de Fases Dinámicas + Controles Compactos */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2.5 custom-scrollbar">
               {['kihon', 'kumite', 'kata', 'aspectos'].map((phaseKey) => {
                 const isCurrentPhase = activeTechnique.phase === phaseKey;
                 const phaseIcons = { kihon: '🥋', kumite: '⚔️', kata: '📜', aspectos: '⭐' };
@@ -6233,7 +6233,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                 <span className="hidden sm:inline">Anterior</span>
               </button>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 flex-1 justify-center">
+              <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-2 flex-1 justify-center">
                 {examTechniques
                   .map((tech, idx) => ({ tech, idx }))
                   .filter(({ tech }) => tech.phase === activeTechnique.phase)
@@ -6769,7 +6769,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
               </button>
             </div>
 
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               {/* Condición Especial */}
               {(selectedStudentForAspects.hasSpecialCondition || selectedStudentForAspects.specialCondition) && (
                 <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-300 space-y-1.5">
@@ -6860,7 +6860,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             </div>
 
             {/* Formulario con Scroll Interno */}
-            <form onSubmit={handleSaveStudent} className="p-5 sm:p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
+            <form onSubmit={handleSaveStudent} className="p-5 sm:p-6 space-y-4 flex-1 overflow-y-auto min-h-0 custom-scrollbar">
               {/* Foto del Estudiante */}
               <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-200">
                 <div className="relative group shrink-0">
@@ -7174,7 +7174,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             </div>
 
             {/* Desglose por Técnica y Aspecto */}
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+            <div className="p-6 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
               <h4 className="text-xs font-black uppercase tracking-wider text-gray-500">
                 Puntuación Detallada por Técnica y Criterio Evaluado (1 a 5 Estrellas)
               </h4>
@@ -7370,7 +7370,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             </div>
 
             {/* Cuerpo del Modal */}
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 bg-gray-50/40">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 bg-gray-50/40 custom-scrollbar">
               {isLoadingConsolidation ? (
                 <div className="py-20 text-center space-y-3">
                   <Loader2 className="w-8 h-8 animate-spin text-[#2D2E83] mx-auto" />
@@ -7670,7 +7670,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             </div>
 
             {/* Cuerpo con Scroll */}
-            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 min-h-0 custom-scrollbar">
               <p className="text-xs text-gray-600 font-medium">
                 Cada Sensei convocado puede evaluar desde su propia tablet o computadora. Sus notas se promedian y sus observaciones se unifican al exponer el examen.
               </p>
@@ -7813,7 +7813,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             </div>
 
             {/* Contenido con Scroll Independiente */}
-            <div className="p-5 sm:p-6 overflow-y-auto flex-1 min-h-0">
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 min-h-0 custom-scrollbar">
               {createdCallResult ? (
                 <div className="space-y-4 text-center py-4">
                   <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
@@ -8341,7 +8341,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             </div>
 
             {/* Contenido con Scroll */}
-            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 flex items-start gap-2.5">
                 <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                 <div>
@@ -8365,7 +8365,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
               </div>
 
               {/* Lista seleccionable de Senseis */}
-              <div className="space-y-2 max-h-60 overflow-y-auto p-1">
+              <div className="space-y-2 max-h-60 overflow-y-auto p-1 custom-scrollbar">
                 {allSenseisForEdit.map((sensei) => {
                   const callDojo = dojos.find(d => (d._id || d.id)?.toString() === (editingTribunalCall?.dojoId?._id || editingTribunalCall?.dojoId)?.toString()) || selectedDojo;
                   const isDojoOwner = isDojoOwnerSensei(sensei, callDojo);

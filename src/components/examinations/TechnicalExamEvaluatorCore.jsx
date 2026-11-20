@@ -1718,7 +1718,7 @@ export default function TechnicalExamEvaluatorCore({
           <div className="hidden sm:block h-7 w-px bg-slate-800 shrink-0" />
 
           {/* A LA DERECHA DEL SENSEI: Selector / Información de Tanda */}
-          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-0.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-0.5 custom-scrollbar pb-2">
             <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 px-0.5">
               <Clock className="w-3 h-3 text-amber-400" /> Tanda:
             </span>
@@ -1754,7 +1754,7 @@ export default function TechnicalExamEvaluatorCore({
         {/* LADO DERECHO: Fases Oficiales ISKF + Monitor Tribunal + Sincronización + Estado */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Selector de Fases Oficial ISKF (Grande y muy vistoso) */}
-          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto">
+          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto custom-scrollbar pb-2">
             {[
               { key: 'kihon', label: '👊 1. KIHON' },
               { key: 'kumite', label: '⚔️ 2. KUMITE' },
@@ -2001,7 +2001,7 @@ export default function TechnicalExamEvaluatorCore({
                     </div>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto custom-scrollbar pb-3">
                     <table className="w-full text-left border-collapse min-w-[840px]">
                       <thead>
                         <tr className="bg-slate-950/70 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
@@ -2653,7 +2653,7 @@ export default function TechnicalExamEvaluatorCore({
             )}
 
             {/* Lista de Atletas de la Tanda con fuentes ampliadas y controles táctiles para Tablet */}
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar">
               {tandaStudents.map(student => {
                 const sId = String(student._id || student.id);
                 const summary = getStudentPhaseSummary(student, phaseToReview);
@@ -2816,7 +2816,7 @@ export default function TechnicalExamEvaluatorCore({
             </div>
 
             {/* Contenido con Scroll */}
-            <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
               <TribunalProgressMonitor
                 call={call}
                 students={liveStudents}
@@ -2866,7 +2866,7 @@ export default function TechnicalExamEvaluatorCore({
               </button>
             </div>
 
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               {/* Condición Especial */}
               {(selectedStudentForAspects.hasSpecialCondition || selectedStudentForAspects.specialCondition) && (
                 <div className="p-3.5 rounded-2xl bg-amber-950/50 border border-amber-500/50 space-y-1.5 shadow-inner">

@@ -528,7 +528,7 @@ function StudentMonitorDrawer({
     <div className="bg-white rounded-2xl border border-indigo-200/90 p-4 sm:p-5 shadow-sm space-y-4 text-xs">
       {/* Barra superior de pestañas */}
       <div className="flex items-center justify-between gap-3 flex-wrap border-b border-gray-100 pb-3">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 custom-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab('colegiado')}
@@ -2467,7 +2467,7 @@ export default function TribunalProgressMonitor({
 
               {/* Selector de Pestañas de Tandas */}
               {schedules.length > 1 && (
-                <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center gap-1 overflow-x-auto pb-2 custom-scrollbar">
                   <button
                     type="button"
                     onClick={() => setSelectedTandaIndex('all')}

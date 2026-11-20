@@ -90,22 +90,140 @@
     }
 }
 
-/* Custom Scrollbar */
+@utility custom-scrollbar {
+    scrollbar-width: auto;
+    scrollbar-color: #BE1622 #e2e8f0;
+}
+
+/* ========================================================================= */
+/* BARRAS DE DESPLAZAMIENTO VISTOSAS Y ERGONÓMICAS (ISKF OFICIAL)            */
+/* Diseñadas con alto contraste, grosor cómodo (12px) y colores llamativos   */
+/* que invitan a la interacción tanto en horizontal como en vertical         */
+/* ========================================================================= */
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #BE1622 #e2e8f0;
+}
+
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 11px;
+    height: 11px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #0a0a0a;
+    background: #f1f5f9;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 4px;
+    background: linear-gradient(135deg, #BE1622 0%, #99101b 100%);
+    border-radius: 9999px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 0 4px rgba(190, 22, 34, 0.35);
+    min-height: 36px;
+    min-width: 36px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #ce1126;
+    background: linear-gradient(135deg, #e11d48 0%, #be1622 100%);
+    box-shadow: 0 0 10px rgba(225, 29, 72, 0.6);
+    cursor: grab;
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: #7f0e16;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+    cursor: grabbing;
+}
+
+/* ========================================================================= */
+/* SCOPED: EXAMINACIONES Y ADMINISTRACIÓN (ALTA VISIBILIDAD & MANIPULACIÓN)  */
+/* ========================================================================= */
+.admin-scope,
+.examination-scope,
+.custom-scrollbar {
+    scrollbar-width: auto;
+    scrollbar-color: #BE1622 #e2e8f0;
+}
+
+.admin-scope ::-webkit-scrollbar,
+.examination-scope ::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+.custom-scrollbar ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.admin-scope ::-webkit-scrollbar-track,
+.examination-scope ::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+.custom-scrollbar ::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 9999px;
+    border: 2px solid #cbd5e1;
+}
+
+.admin-scope ::-webkit-scrollbar-thumb,
+.examination-scope ::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.custom-scrollbar ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #BE1622 0%, #99101b 100%);
+    border-radius: 9999px;
+    border: 2.5px solid #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), 0 0 6px rgba(190, 22, 34, 0.45);
+    min-height: 40px;
+    min-width: 40px;
+}
+
+.admin-scope ::-webkit-scrollbar-thumb:hover,
+.examination-scope ::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #f43f5e 0%, #be1622 100%);
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.75);
+    cursor: grab;
+}
+
+.admin-scope ::-webkit-scrollbar-thumb:active,
+.examination-scope ::-webkit-scrollbar-thumb:active,
+.custom-scrollbar::-webkit-scrollbar-thumb:active,
+.custom-scrollbar ::-webkit-scrollbar-thumb:active {
+    background: #7f0e16;
+    cursor: grabbing;
+}
+
+/* Modo oscuro para la mesa de evaluación del Sensei (Dark Tatami Mode) */
+.dark,
+[class*="bg-slate-900"],
+[class*="bg-slate-950"],
+.bg-slate-900,
+.bg-slate-950 {
+    scrollbar-color: #ef4444 #1e293b;
+}
+
+.dark ::-webkit-scrollbar-track,
+[class*="bg-slate-900"] ::-webkit-scrollbar-track,
+[class*="bg-slate-950"] ::-webkit-scrollbar-track {
+    background: #1e293b !important;
+    border: 2px solid #334155 !important;
+}
+
+.dark ::-webkit-scrollbar-thumb,
+[class*="bg-slate-900"] ::-webkit-scrollbar-thumb,
+[class*="bg-slate-950"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #ef4444 0%, #be1622 100%) !important;
+    border: 2px solid #0f172a !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+[class*="bg-slate-900"] ::-webkit-scrollbar-thumb:hover,
+[class*="bg-slate-950"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #f87171 0%, #dc2626 100%) !important;
+    box-shadow: 0 0 14px rgba(248, 113, 113, 0.85) !important;
 }
 
 html {
