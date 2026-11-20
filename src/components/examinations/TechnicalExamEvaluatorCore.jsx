@@ -1687,40 +1687,37 @@ export default function TechnicalExamEvaluatorCore({
         </div>
       )}
 
-      {/* 2. ENCABEZADO ULTRA COMPACTO: IDENTIFICACIÓN DEL SENSEI, TANDAS, FASES Y ESTADO */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-white flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shadow-sm">
-        {/* LADO IZQUIERDO: Info del Sensei + A su derecha la Tanda */}
-        <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap">
-          {/* Sensei Info */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            <span className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 font-black flex items-center justify-center text-sm shadow-xs shrink-0">
+      {/* 2. ENCABEZADO OPTIMIZADO: IDENTIFICACIÓN DEL SENSEI, TANDAS, FASES Y ESTADO CON 100% APROVECHAMIENTO */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-white shadow-md space-y-2">
+        {/* FILA 1: IDENTIFICACIÓN DEL SENSEI (IZQ) Y CONTROL DE TANDAS (DER) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800/80 pb-2">
+          {/* Lado Izquierdo: Info del Sensei */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-8 h-8 rounded-xl bg-linear-to-br from-amber-400 to-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-xs shrink-0 ring-1 ring-amber-300/50">
               🥋
             </span>
-            <div className="leading-tight">
+            <div className="leading-tight min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs sm:text-sm font-black text-white">{evaluator?.name || 'Sensei Sinodal'}</span>
-                <span className="text-[10px] px-1.5 py-0.2 bg-white/10 text-amber-300 rounded font-semibold">
+                <span className="text-xs sm:text-sm font-black text-white truncate">{evaluator?.name || 'Sensei Sinodal'}</span>
+                <span className="text-[10px] px-1.5 py-0.5 bg-amber-400/15 text-amber-300 border border-amber-400/30 rounded-md font-bold">
                   {evaluator?.role || 'Sinodal'}
                 </span>
                 {isAdmin && (
-                  <span className="text-[10px] px-1.5 py-0.2 bg-indigo-500/30 text-indigo-200 rounded font-bold">
+                  <span className="text-[10px] px-1.5 py-0.5 bg-indigo-500/25 text-indigo-200 border border-indigo-400/30 rounded-md font-bold">
                     Admin
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-slate-400 truncate max-w-[180px] sm:max-w-xs">
-                {call?.title || 'Examen Técnico'} • {call?.dojoName}
+              <p className="text-[10px] text-slate-400 truncate max-w-xs sm:max-w-md">
+                {call?.title || 'Examen Técnico'} • <span className="text-slate-300 font-semibold">{call?.dojoName}</span>
               </p>
             </div>
           </div>
 
-          {/* Separador vertical sutil */}
-          <div className="hidden sm:block h-7 w-px bg-slate-800 shrink-0" />
-
-          {/* A LA DERECHA DEL SENSEI: Selector / Información de Tanda */}
-          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-0.5 custom-scrollbar pb-2">
+          {/* Lado Derecho: Selector de Tanda ergonómico */}
+          <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5 sm:justify-end">
             <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 px-0.5">
-              <Clock className="w-3 h-3 text-amber-400" /> Tanda:
+              <Clock className="w-3.5 h-3.5 text-amber-400" /> Tanda:
             </span>
             {tandas.map((tanda, tIdx) => {
               const isSelected = selectedTandaIndex === tIdx;
@@ -1735,12 +1732,12 @@ export default function TechnicalExamEvaluatorCore({
                   }}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                     isSelected
-                      ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300 scale-102'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
                   <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
-                  <span className={`text-[10px] px-1 rounded-full font-mono ${
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                     isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
                   }`}>
                     {studentCount}
@@ -1751,10 +1748,10 @@ export default function TechnicalExamEvaluatorCore({
           </div>
         </div>
 
-        {/* LADO DERECHO: Fases Oficiales ISKF + Monitor Tribunal + Sincronización + Estado */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Selector de Fases Oficial ISKF (Grande y muy vistoso) */}
-          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto custom-scrollbar pb-2">
+        {/* FILA 2: FASES OFICIALES ISKF (IZQ) Y HERRAMIENTAS OPERATIVAS / ESTADO (DER) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-0.5">
+          {/* Lado Izquierdo: Fases Oficiales ISKF */}
+          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 shadow-inner overflow-x-auto custom-scrollbar">
             {[
               { key: 'kihon', label: '👊 1. KIHON' },
               { key: 'kumite', label: '⚔️ 2. KUMITE' },
@@ -1770,9 +1767,9 @@ export default function TechnicalExamEvaluatorCore({
                     setSelectedPhase(phase.key);
                     setSelectedTechniqueIndex(0);
                   }}
-                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
                     isSelected
-                      ? 'bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-300 scale-102'
+                      ? 'bg-amber-400 text-slate-950 shadow-md ring-1 ring-amber-300'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
@@ -1782,49 +1779,60 @@ export default function TechnicalExamEvaluatorCore({
             })}
           </div>
 
-          {/* Botón Monitor Tribunal */}
-          <button
-            type="button"
-            onClick={() => setShowTribunalMonitorModal(true)}
-            className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border border-indigo-400/40 active:scale-95 text-xs"
-            title="Supervisar avance del tribunal"
-          >
-            <Users className="w-3.5 h-3.5 text-amber-300" />
-            <span className="hidden lg:inline">Monitor Tribunal</span>
-          </button>
+          {/* Lado Derecho: Herramientas de Mesa y Estado en Vivo */}
+          <div className="flex items-center gap-2 sm:justify-end flex-wrap">
+            {/* Botón Monitor Tribunal */}
+            <button
+              type="button"
+              onClick={() => setShowTribunalMonitorModal(true)}
+              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border border-indigo-400/40 active:scale-95 text-xs"
+              title="Supervisar avance del tribunal"
+            >
+              <Users className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden sm:inline">Monitor Tribunal</span>
+            </button>
 
-          {/* Sincronización en Vivo */}
-          <button
-            type="button"
-            onClick={() => pollCallRoster(true)}
-            disabled={isSyncingRoster}
-            className="flex items-center gap-1.5 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-[11px]"
-            title="Sincronizar en tiempo real"
-          >
-            <RotateCcw className={`w-3.5 h-3.5 text-cyan-400 ${isSyncingRoster ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{isSyncingRoster ? 'Sync...' : 'En Vivo'}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          </button>
+            {/* Sincronización en Vivo */}
+            <button
+              type="button"
+              onClick={() => pollCallRoster(true)}
+              disabled={isSyncingRoster}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-xs"
+              title="Sincronizar en tiempo real"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 text-cyan-400 ${isSyncingRoster ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isSyncingRoster ? 'Sync...' : 'En Vivo'}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            </button>
 
-          {/* Estado de Guardado */}
-          {saveStatus === 'saving' ? (
-            <span className="flex items-center gap-1 text-amber-300 font-medium text-xs">
-              <RotateCcw className="w-3 h-3 animate-spin" />
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs" title="Todo guardado en base de datos">
-              <Check className="w-3.5 h-3.5" />
-            </span>
-          )}
+            <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-          {/* Conectividad */}
-          {!isOnline ? (
-            <span className="flex items-center gap-1 text-rose-400 font-bold text-xs" title="Sin conexión">
-              <WifiOff className="w-3.5 h-3.5" />
-            </span>
-          ) : (
-            <Wifi className="w-3 h-3 text-emerald-400" title="En línea" />
-          )}
+            {/* Estado de Guardado */}
+            {saveStatus === 'saving' ? (
+              <span className="flex items-center gap-1 text-amber-300 font-medium text-xs px-2 py-0.5 rounded-lg bg-amber-400/10 border border-amber-400/20" title="Guardando calificaciones...">
+                <RotateCcw className="w-3 h-3 animate-spin" />
+                <span className="hidden md:inline text-[10px]">Guardando</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20" title="Todo guardado en base de datos">
+                <Check className="w-3.5 h-3.5" />
+                <span className="hidden md:inline text-[10px]">Guardado</span>
+              </span>
+            )}
+
+            {/* Conectividad */}
+            {!isOnline ? (
+              <span className="flex items-center gap-1 text-rose-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-rose-500/10 border border-rose-500/20" title="Sin conexión">
+                <WifiOff className="w-3.5 h-3.5" />
+                <span className="hidden md:inline text-[10px]">Offline</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20" title="En línea">
+                <Wifi className="w-3 h-3 text-emerald-400" />
+                <span className="hidden md:inline text-[10px]">Online</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1919,10 +1927,10 @@ export default function TechnicalExamEvaluatorCore({
                 key={group.key || groupIdx}
                 className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
               >
-                {/* ENCABEZADO DEL CARRIL DEL CINTURÓN */}
-                <div className="bg-slate-950/90 border-b border-slate-800/80 px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${getBeltBadgeClass(group.rankLabel)}`}>
+                {/* ENCABEZADO DEL CARRIL DEL CINTURÓN COMPACTO */}
+                <div className="bg-slate-950/95 border-b border-slate-800/80 px-3.5 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider ${getBeltBadgeClass(group.rankLabel)}`}>
                       {group.rankLabel}
                     </span>
                     {group.targetRankLabel && group.targetRankLabel !== group.rankLabel && (
@@ -1939,48 +1947,48 @@ export default function TechnicalExamEvaluatorCore({
                   {/* ESTADO / TÉCNICA ACTIVA DE ESTE CINTURÓN */}
                   <div>
                     {isGroupCompleted ? (
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-sm">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <span>{phaseTitleName} Completado para este cinturón</span>
                       </div>
                     ) : (
-                      <div className="flex flex-col md:items-end text-left md:text-right gap-1">
-                        <div className="text-sm font-black text-white flex items-center gap-2 flex-wrap md:justify-end">
-                          <span className="text-xs sm:text-sm uppercase tracking-wider font-mono font-black text-slate-950 bg-amber-400 px-3 py-1 rounded-lg shadow-sm ring-1 ring-amber-300">
-                            {effectivePhase === 'kihon' ? '👊 KIHON' : effectivePhase === 'kata' ? '🥋 KATA' : effectivePhase === 'kumite' ? '⚔️ KUMITE' : effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1}/{groupTechs.length}
-                          </span>
-                          <span className="text-base sm:text-lg font-black text-amber-200 tracking-tight">
-                            {groupActiveTech?.name}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+                        <span className="text-[11px] uppercase tracking-wider font-mono font-black text-slate-950 bg-amber-400 px-2 py-0.5 rounded-md shadow-xs ring-1 ring-amber-300 shrink-0">
+                          {effectivePhase === 'kihon' ? '👊 KIHON' : effectivePhase === 'kata' ? '🥋 KATA' : effectivePhase === 'kumite' ? '⚔️ KUMITE' : effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1}/{groupTechs.length}
+                        </span>
+                        <span className="text-sm sm:text-base font-black text-amber-200 tracking-tight">
+                          {groupActiveTech?.name}
+                        </span>
                         {(groupActiveTech?.stance || groupActiveTech?.direction || groupActiveTech?.repetitions || groupActiveTech?.embusen) && (
-                          <div className="text-[11px] text-slate-300 font-medium flex items-center gap-1.5 flex-wrap md:justify-end mt-0.5">
+                          <div className="flex items-center gap-1 text-[10px]">
                             {groupActiveTech.stance && (
-                              <span className="text-amber-300/90 font-semibold bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20 text-[10px]">
+                              <span className="text-amber-300/90 font-semibold bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">
                                 {groupActiveTech.stance}
                               </span>
                             )}
                             {groupActiveTech.direction && (
-                              <span className="text-cyan-300/90 font-medium bg-cyan-400/10 px-1.5 py-0.5 rounded border border-cyan-400/20 text-[10px]">
+                              <span className="text-cyan-300/90 font-medium bg-cyan-400/10 px-1.5 py-0.2 rounded border border-cyan-400/20">
                                 {groupActiveTech.direction}
                               </span>
                             )}
                             {groupActiveTech.repetitions && (
-                              <span className="text-emerald-300/90 font-medium bg-emerald-400/10 px-1.5 py-0.5 rounded border border-emerald-400/20 text-[10px]">
+                              <span className="text-emerald-300/90 font-medium bg-emerald-400/10 px-1.5 py-0.2 rounded border border-emerald-400/20">
                                 {groupActiveTech.repetitions} rep.
                               </span>
                             )}
                             {groupActiveTech.embusen && (
-                              <span className="text-purple-300/90 font-medium bg-purple-400/10 px-1.5 py-0.5 rounded border border-purple-400/20 text-[10px]">
+                              <span className="text-purple-300/90 font-medium bg-purple-400/10 px-1.5 py-0.2 rounded border border-purple-400/20">
                                 {groupActiveTech.embusen}
                               </span>
                             )}
                           </div>
                         )}
-                        {groupActiveTech?.notes && (
-                          <div className="text-[10px] text-slate-400 italic max-w-md truncate">
-                            {groupActiveTech.notes}
-                          </div>
+                        {groupActiveTech?.notes && 
+                         groupActiveTech.notes.trim().toLowerCase() !== groupActiveTech.name?.trim().toLowerCase() && 
+                         groupActiveTech.notes.trim().toLowerCase() !== (groupActiveTech.name?.trim().toLowerCase() + '.') && (
+                          <span className="text-[10px] text-slate-400 italic max-w-xs truncate hidden md:inline">
+                            • {groupActiveTech.notes}
+                          </span>
                         )}
                       </div>
                     )}
@@ -2001,11 +2009,11 @@ export default function TechnicalExamEvaluatorCore({
                     </div>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto custom-scrollbar pb-3">
+                  <div className="overflow-x-auto custom-scrollbar pb-2">
                     <table className="w-full text-left border-collapse min-w-[840px]">
                       <thead>
                         <tr className="bg-slate-950/70 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                          <th className="py-3 px-3 min-w-[240px] align-middle">
+                          <th className="py-2 px-3 min-w-[220px] align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Karateca
                             </div>
@@ -2013,10 +2021,10 @@ export default function TechnicalExamEvaluatorCore({
                           {groupCriteria.map((criterion, cIdx) => (
                             <th 
                               key={criterion.key} 
-                              className="py-3 px-3 text-center align-middle min-w-[180px]"
+                              className="py-2 px-2.5 text-center align-middle min-w-[160px]"
                             >
-                              <div className="flex flex-col items-center gap-1.5">
-                                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/25 px-2 py-0.5 rounded-md whitespace-nowrap">
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.2 rounded whitespace-nowrap">
                                   Aspecto #{cIdx + 1}
                                 </span>
                                 <span className="text-xs font-bold text-slate-200 leading-snug text-center">
@@ -2025,12 +2033,12 @@ export default function TechnicalExamEvaluatorCore({
                               </div>
                             </th>
                           ))}
-                          <th className="py-3 px-2 text-center w-20 align-middle">
+                          <th className="py-2 px-2 text-center w-20 align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Nota
                             </div>
                           </th>
-                          <th className="py-3 px-3 w-40 text-right align-middle">
+                          <th className="py-2 px-3 w-40 text-right align-middle">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Observaciones
                             </div>

@@ -3759,7 +3759,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             /* ========================================================================= */
             /* VISTA DETALLE: GESTIÓN DE EXAMINANDOS Y CONFIGURACIÓN DE TANDAS DE 6 */
             /* ========================================================================= */
-            <div className="space-y-6">
+            <div className="space-y-3.5">
               {/* Barra Superior de Navegación de la Convocatoria: Sub-Pestañas Ágiles */}
               <div className="bg-white/95 backdrop-blur-md border border-gray-200/90 rounded-2xl p-2.5 sm:p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
                 <button
@@ -5131,7 +5131,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           {/* SUB-PESTAÑA 2: MI EVALUACIÓN (SENSEI ADMINISTRADOR JUEZ ACTIVO) */}
           {/* ========================================================================= */}
           {callDetailSubTab === 'evaluation' && (
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <TechnicalExamEvaluatorCore
                 call={selectedCallForDetail}
                 evaluator={adminEvaluator}
