@@ -111,6 +111,12 @@ const TechnicalExamCallSchema = new mongoose.Schema({
     day: { type: Number, default: 1, min: 1, max: 2 },
     targetRanks: [{ type: String, trim: true }],
     studentIds: [{ type: String, trim: true }],
+    status: { type: String, enum: ['pendiente', 'en_tatami', 'evaluada'], default: 'pendiente' },
+  }],
+  // IDs de karatecas cuyo derecho de examen ha sido registrado como pagado
+  paidStudentIds: [{
+    type: String,
+    trim: true,
   }],
   // Cantidad máxima de karatecas configurada por tanda (configurable al crear convocatoria)
   maxPerTanda: {

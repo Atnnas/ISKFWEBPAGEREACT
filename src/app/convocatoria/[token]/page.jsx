@@ -404,6 +404,16 @@ export default function ConvocatoriaPublicPage({ params }) {
               <span>{copied ? '¡Enlace Copiado!' : 'Copiar Link'}</span>
             </button>
 
+            <Link
+              href={`/tandas/${token}`}
+              target="_blank"
+              className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-md active:scale-95"
+              title="Abrir vista en vivo de tandas, horarios y control de pagos"
+            >
+              <Clock className="w-4 h-4 text-slate-950" />
+              <span>Ver Tandas y Horarios</span>
+            </Link>
+
             <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs text-right">
               <div className="text-[10px] text-blue-200 uppercase tracking-widest font-bold">Estado</div>
               <div className="font-black text-amber-300 capitalize">{callData.status}</div>

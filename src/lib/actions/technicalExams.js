@@ -19,6 +19,7 @@ import {
 } from '../utils/shotokanCriteriaFeedback';
 import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
 import { getNextRank, compareStudentsForExam } from '../constants/kyuRanks';
+import { getExamCostConfig } from './examCosts';
 
 /**
  * Obtener evaluaciones técnicas de un dojo específico (para Padrón y Tatami)
@@ -938,8 +939,20 @@ export async function getTechnicalExamCallByToken(accessToken) {
       syllabi = await ExamSyllabus.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, name: 1 }).lean();
     }
 
+    // Cargar configuración de costos/aranceles del dojo
+    let costConfig = null;
+    try {
+      const costRes = await getExamCostConfig(call.dojoId ? call.dojoId.toString() : null);
+      if (costRes?.success) {
+        costConfig = costRes.config;
+      }
+    } catch (costErr) {
+      console.debug('Error obteniendo costos para la convocatoria:', costErr);
+    }
+
     return {
       success: true,
+      costConfig,
       call: {
         _id: call._id.toString(),
         id: call._id.toString(),
@@ -955,7 +968,7 @@ export async function getTechnicalExamCallByToken(accessToken) {
         location: call.location,
         accessToken: call.accessToken,
         status: call.status,
-      isUnlocked: Boolean(call.isUnlocked && (call.schedules || []).length > 0),
+        isUnlocked: Boolean(call.isUnlocked && (call.schedules || []).length > 0),
         syllabusIds: call.syllabusIds || [],
         syllabusSnapshots: (call.syllabusSnapshots || []).map(s => ({
           syllabusId: String(s.syllabusId || s._id || ''),
@@ -981,13 +994,16 @@ export async function getTechnicalExamCallByToken(accessToken) {
           email: ev.email || '',
           role: ev.role || 'Sinodal'
         })),
-        schedules: (call.schedules || []).map(sc => ({
+        paidStudentIds: (call.paidStudentIds || []).map(String),
+        schedules: (call.schedules || []).map((sc, scIdx) => ({
+          id: sc._id ? sc._id.toString() : (sc.id || `tanda_${scIdx}`),
           blockName: sc.blockName || '',
           startTime: sc.startTime || '',
           endTime: sc.endTime || '',
           day: Number(sc.day) === 2 ? 2 : 1,
           targetRanks: sc.targetRanks || [],
-          studentIds: (sc.studentIds || []).map(id => id.toString())
+          studentIds: (sc.studentIds || []).map(id => id.toString()),
+          status: sc.status || 'pendiente'
         })),
         aspirants: (call.aspirants || []).map(a => ({
           studentId: a.studentId.toString(),
@@ -2997,6 +3013,103 @@ export async function getCallSchedulesLatest({ callId, accessToken }) {
   } catch (err) {
     console.error('Error al consultar horarios recientes de convocatoria:', err);
     return { success: false, error: err.message };
+  }
+}
+
+/**
+ * ============================================================================
+ * MARCAR O DESMARCAR PAGO DE DERECHO DE EXAMEN DE UN KARATECA
+ * Permite registrar y persistir en tiempo real el cobro del arancel de examen.
+ * ============================================================================
+ */
+export async function toggleStudentPaymentForCall({ token, studentId, hasPaid }) {
+  try {
+    await dbConnect();
+
+    if (!token || !studentId) {
+      return { success: false, error: 'Parámetros insuficientes para actualizar pago.' };
+    }
+
+    const call = await TechnicalExamCall.findOne({ accessToken: token.trim() });
+    if (!call) {
+      return { success: false, error: 'Convocatoria no encontrada.' };
+    }
+
+    const sIdStr = String(studentId);
+    let updatedPaid = (call.paidStudentIds || []).map(String);
+
+    if (hasPaid) {
+      if (!updatedPaid.includes(sIdStr)) {
+        updatedPaid.push(sIdStr);
+      }
+    } else {
+      updatedPaid = updatedPaid.filter(id => id !== sIdStr);
+    }
+
+    call.paidStudentIds = updatedPaid;
+    await call.save();
+
+    revalidatePath(`/tandas/${token}`);
+    revalidatePath(`/convocatoria/${token}`);
+    revalidatePath('/admin/examinations/technical');
+
+    return {
+      success: true,
+      paidStudentIds: updatedPaid,
+      hasPaid: Boolean(hasPaid),
+      studentId: sIdStr,
+      message: hasPaid ? '✓ Pago registrado correctamente.' : '○ Pago marcado como pendiente.'
+    };
+  } catch (error) {
+    console.error('Error al actualizar pago de examen:', error);
+    return { success: false, error: 'Error de servidor al actualizar estado de pago.' };
+  }
+}
+
+/**
+ * ============================================================================
+ * ACTUALIZAR ESTADO DE UNA TANDA EN VIVO (PENDIENTE, EN TATAMI, EVALUADA)
+ * ============================================================================
+ */
+export async function updateTandaStatusByToken({ token, tandaIndex, status }) {
+  try {
+    await dbConnect();
+
+    if (!token || tandaIndex === undefined) {
+      return { success: false, error: 'Parámetros insuficientes.' };
+    }
+
+    const validStatuses = ['pendiente', 'en_tatami', 'evaluada'];
+    if (!validStatuses.includes(status)) {
+      return { success: false, error: 'Estado de tanda inválido.' };
+    }
+
+    const call = await TechnicalExamCall.findOne({ accessToken: token.trim() });
+    if (!call) {
+      return { success: false, error: 'Convocatoria no encontrada.' };
+    }
+
+    const idx = Number(tandaIndex);
+    if (!call.schedules || !call.schedules[idx]) {
+      return { success: false, error: 'Tanda no encontrada en la convocatoria.' };
+    }
+
+    call.schedules[idx].status = status;
+    await call.save();
+
+    revalidatePath(`/tandas/${token}`);
+    revalidatePath(`/convocatoria/${token}`);
+    revalidatePath('/admin/examinations/technical');
+
+    return {
+      success: true,
+      tandaIndex: idx,
+      status,
+      message: `Tanda actualizada a "${status}".`
+    };
+  } catch (error) {
+    console.error('Error al actualizar estado de tanda:', error);
+    return { success: false, error: 'Error de servidor al actualizar estado de la tanda.' };
   }
 }
 

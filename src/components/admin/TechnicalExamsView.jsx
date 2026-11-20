@@ -58,7 +58,9 @@ import {
   UserMinus,
   ShieldAlert,
   Lock,
-  Unlock
+  Unlock,
+  ExternalLink,
+  Share2
 } from 'lucide-react';
 import { 
   getStudentsByDojo, 
@@ -4023,6 +4025,34 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
                 {/* Botones de Acción de Tandas y Convocatoria Alineados */}
                 <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Ver y Compartir Enlace Público de Tandas y Pagos */}
+                  <a
+                    href={`/tandas/${selectedCallForDetail?.accessToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2.5 bg-gradient-to-r from-[#2D2E83] to-indigo-800 hover:from-indigo-900 hover:to-indigo-950 text-white rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    title="Abrir enlace público de tandas, horarios y control de pagos"
+                  >
+                    <ExternalLink className="w-4 h-4 text-amber-300" />
+                    <span>📋 Ver / Compartir Tandas</span>
+                  </a>
+
+                  {/* Copiar Enlace Directo */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && selectedCallForDetail?.accessToken) {
+                        const url = `${window.location.origin}/tandas/${selectedCallForDetail.accessToken}`;
+                        navigator.clipboard.writeText(url);
+                        showAlert('✓ Enlace público de tandas y horarios copiado al portapapeles. Puedes compartirlo con el Sensei o terceros para llevar el control.', 'Enlace Copiado');
+                      }
+                    }}
+                    className="p-2.5 text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-indigo-200 flex items-center justify-center cursor-pointer active:scale-95"
+                    title="Copiar enlace directo de tandas para compartir con terceros"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+
                   {/* 2. Agrupar en Tandas */}
                   <button
                     type="button"

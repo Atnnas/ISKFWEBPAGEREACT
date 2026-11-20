@@ -15,7 +15,7 @@ const Navbar = () => {
     const { data: session } = useSession();
 
     // En todo /admin, en la toma de exámenes y en el enlace de evaluación de senseis no se necesita el topbar para nada
-    if (pathname?.startsWith('/admin') || pathname?.startsWith('/examinations/take') || pathname?.startsWith('/evaluar')) {
+    if (pathname?.startsWith('/admin') || pathname?.startsWith('/examinations/take') || pathname?.startsWith('/evaluar') || pathname?.startsWith('/tandas')) {
         return null;
     }
 
