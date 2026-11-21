@@ -3,6 +3,7 @@
  * Incluye membrete oficial ISKF Costa Rica, datos del dojo, horarios, aspirantes por tanda y balance de recaudación.
  */
 import { formatDateTimeDDMMAAAA, formatDateDDMMAAAA } from '../utils/dateFormatter.js';
+import { getNextRank } from '../constants/kyuRanks.js';
 
 export async function generateTandasSchedulePDF({ call, tandas = [], students = [], paidStudentIds = [], costConfig = null }) {
   const { default: jsPDF } = await import('jspdf');
@@ -199,7 +200,11 @@ export async function generateTandasSchedulePDF({ call, tandas = [], students = 
       const sId = String(st._id || st.id);
       const isPaid = paidSet.has(sId);
       const studentAspirant = (call.aspirants || []).find(a => String(a.studentId) === sId);
-      const targetRank = studentAspirant?.targetRank || st.targetRank || st.currentRank;
+      const targetRank = (studentAspirant?.targetRank && studentAspirant.targetRank !== st.currentRank)
+        ? studentAspirant.targetRank
+        : (st.targetRank && st.targetRank !== st.currentRank)
+        ? st.targetRank
+        : (getNextRank(st.currentRank) || st.currentRank || 'Por definir');
 
       return [
         String(idx + 1),

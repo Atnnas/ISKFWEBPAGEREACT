@@ -3,6 +3,7 @@
  * Incluye formato condicional visual, encabezados institucionales, desglose por tanda y fórmulas de totales.
  */
 import { formatDateDDMMAAAA, formatDateTimeDDMMAAAA, calculateAge } from '../utils/dateFormatter.js';
+import { getNextRank } from '../constants/kyuRanks.js';
 
 export function downloadTandasScheduleXLS({ call, tandas = [], students = [], paidStudentIds = [], costConfig = null }) {
   const studentsMap = {};
@@ -166,7 +167,11 @@ export function downloadTandasScheduleXLS({ call, tandas = [], students = [], pa
       const sId = String(st._id || st.id);
       const isPaid = paidSet.has(sId);
       const studentAspirant = (call.aspirants || []).find(a => String(a.studentId) === sId);
-      const targetRank = studentAspirant?.targetRank || st.targetRank || st.currentRank;
+      const targetRank = (studentAspirant?.targetRank && studentAspirant.targetRank !== st.currentRank)
+        ? studentAspirant.targetRank
+        : (st.targetRank && st.targetRank !== st.currentRank)
+        ? st.targetRank
+        : (getNextRank(st.currentRank) || st.currentRank || 'Por definir');
       const age = st.birthDate ? calculateAge(st.birthDate) : '';
 
       html += `

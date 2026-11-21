@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { formatDateDDMMAAAA, calculateAge } from '../../lib/utils/dateFormatter';
 import { getBeltBadge } from '../../lib/utils/evaluatorHelpers';
+import { getNextRank } from '../../lib/constants/kyuRanks';
 import { toggleStudentPaymentForCall, updateTandaStatusByToken } from '../../lib/actions/technicalExams';
 import { generateTandasSchedulePDF } from '../../lib/pdf/tandasSchedulePdfGenerator';
 import { downloadTandasScheduleXLS } from '../../lib/excel/tandasScheduleExcelGenerator';
@@ -609,7 +610,11 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
                             const isPaid = paidIds.has(sId);
                             const belt = getBeltBadge(st.currentRank);
                             const studentAspirant = (call?.aspirants || []).find(a => String(a.studentId) === sId);
-                            const targetRank = studentAspirant?.targetRank || st.targetRank || st.currentRank;
+                            const targetRank = (studentAspirant?.targetRank && studentAspirant.targetRank !== st.currentRank)
+                              ? studentAspirant.targetRank
+                              : (st.targetRank && st.targetRank !== st.currentRank)
+                              ? st.targetRank
+                              : (getNextRank(st.currentRank) || st.currentRank || 'Por definir');
                             const isUpdating = updatingStudentId === sId;
 
                             return (

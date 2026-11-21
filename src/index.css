@@ -20,13 +20,16 @@
 }
 
 @keyframes white-radiance-glow {
-    0%, 100% {
+
+    0%,
+    100% {
         text-shadow:
             0 0 2px #ffffff,
             0 0 5px rgba(255, 255, 255, 0.85),
             0 0 10px rgba(255, 255, 255, 0.6),
             0 0 16px rgba(255, 255, 255, 0.35);
     }
+
     50% {
         text-shadow:
             0 0 3px #ffffff,
@@ -54,9 +57,12 @@
 }
 
 @keyframes dark-radiance-glow {
-    0%, 100% {
+
+    0%,
+    100% {
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 5px rgba(0, 0, 0, 0.2);
     }
+
     50% {
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 9px rgba(0, 0, 0, 0.35), 0 0 14px rgba(0, 0, 0, 0.15);
     }
@@ -361,19 +367,33 @@ html {
 .animate-thunder-glow {
     animation: thunder-glow 2s ease-in-out infinite;
 }
+
 @keyframes scroll-arrows-right {
-  from { background-position: 0 0; }
-  to { background-position: 10000px 0; }
+    from {
+        background-position: 0 0;
+    }
+
+    to {
+        background-position: 10000px 0;
+    }
 }
+
 @keyframes scroll-arrows-left {
-  from { background-position: 10000px 0; }
-  to { background-position: 0 0; }
+    from {
+        background-position: 10000px 0;
+    }
+
+    to {
+        background-position: 0 0;
+    }
 }
+
 .animate-arrows-right {
-  animation: scroll-arrows-right 15s linear infinite;
+    animation: scroll-arrows-right 15s linear infinite;
 }
+
 .animate-arrows-left {
-  animation: scroll-arrows-left 15s linear infinite;
+    animation: scroll-arrows-left 15s linear infinite;
 }
 
 /* ============================================================
@@ -400,18 +420,23 @@ html.admin-scope {
 .admin-scope .text-\[10px\] {
     font-size: 11px !important;
 }
+
 .admin-scope .text-\[11px\] {
     font-size: 12.1px !important;
 }
+
 .admin-scope .text-\[12px\] {
     font-size: 13.2px !important;
 }
+
 .admin-scope .text-\[13px\] {
     font-size: 14.3px !important;
 }
+
 .admin-scope .text-\[14px\] {
     font-size: 15.4px !important;
 }
+
 .admin-scope .text-\[15px\] {
     font-size: 16.5px !important;
 }
@@ -420,105 +445,166 @@ html.admin-scope {
    MASCOTA ESTILO DUOLINGO: ÁRBITRO WKF
    ============================================================ */
 @keyframes duolingo-bounce {
-  0%, 100% {
-    transform: translateY(0) scale(1, 1);
-  }
-  50% {
-    transform: translateY(-8px) scale(0.98, 1.02);
-  }
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1, 1);
+    }
+
+    50% {
+        transform: translateY(-8px) scale(0.98, 1.02);
+    }
 }
 
 @keyframes duolingo-shadow {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.35;
-  }
-  50% {
-    transform: scale(0.85);
-    opacity: 0.2;
-  }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.35;
+    }
+
+    50% {
+        transform: scale(0.85);
+        opacity: 0.2;
+    }
 }
 
 @keyframes duolingo-wiggle {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  25% { transform: rotate(-6deg) scale(1.06); }
-  75% { transform: rotate(6deg) scale(1.06); }
+
+    0%,
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    25% {
+        transform: rotate(-6deg) scale(1.06);
+    }
+
+    75% {
+        transform: rotate(6deg) scale(1.06);
+    }
 }
 
 @keyframes duolingo-pop {
-  0% { transform: scale(0.8) translateY(10px); opacity: 0; }
-  70% { transform: scale(1.05) translateY(-2px); opacity: 1; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+    0% {
+        transform: scale(0.8) translateY(10px);
+        opacity: 0;
+    }
+
+    70% {
+        transform: scale(1.05) translateY(-2px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
 }
 
 .animate-duolingo-bounce {
-  animation: duolingo-bounce 2.6s ease-in-out infinite;
+    animation: duolingo-bounce 2.6s ease-in-out infinite;
 }
 
 .animate-duolingo-shadow {
-  animation: duolingo-shadow 2.6s ease-in-out infinite;
+    animation: duolingo-shadow 2.6s ease-in-out infinite;
 }
 
 .animate-duolingo-wiggle {
-  animation: duolingo-wiggle 0.45s ease-in-out;
+    animation: duolingo-wiggle 0.45s ease-in-out;
 }
 
 .animate-duolingo-pop {
-  animation: duolingo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: duolingo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 /* ============================================================
    ACCESIBILIDAD Y ESCALAMIENTO TIPOGRÁFICO EN EXÁMENES
    ============================================================ */
 .exam-text-scale-normal {
-  font-size: 100%;
+    font-size: 100%;
 }
 
 .exam-text-scale-large {
-  font-size: 112%;
+    font-size: 112%;
 }
-.exam-text-scale-large .text-xs { font-size: 0.875rem !important; }
-.exam-text-scale-large .text-sm { font-size: 1.025rem !important; }
-.exam-text-scale-large .text-base { font-size: 1.175rem !important; }
-.exam-text-scale-large .text-lg { font-size: 1.325rem !important; }
-.exam-text-scale-large .text-xl { font-size: 1.5rem !important; }
+
+.exam-text-scale-large .text-xs {
+    font-size: 0.875rem !important;
+}
+
+.exam-text-scale-large .text-sm {
+    font-size: 1.025rem !important;
+}
+
+.exam-text-scale-large .text-base {
+    font-size: 1.175rem !important;
+}
+
+.exam-text-scale-large .text-lg {
+    font-size: 1.325rem !important;
+}
+
+.exam-text-scale-large .text-xl {
+    font-size: 1.5rem !important;
+}
 
 .exam-text-scale-xlarge {
-  font-size: 124%;
+    font-size: 124%;
 }
-.exam-text-scale-xlarge .text-xs { font-size: 0.95rem !important; }
-.exam-text-scale-xlarge .text-sm { font-size: 1.15rem !important; }
-.exam-text-scale-xlarge .text-base { font-size: 1.3rem !important; }
-.exam-text-scale-xlarge .text-lg { font-size: 1.48rem !important; }
-.exam-text-scale-xlarge .text-xl { font-size: 1.68rem !important; }
+
+.exam-text-scale-xlarge .text-xs {
+    font-size: 0.95rem !important;
+}
+
+.exam-text-scale-xlarge .text-sm {
+    font-size: 1.15rem !important;
+}
+
+.exam-text-scale-xlarge .text-base {
+    font-size: 1.3rem !important;
+}
+
+.exam-text-scale-xlarge .text-lg {
+    font-size: 1.48rem !important;
+}
+
+.exam-text-scale-xlarge .text-xl {
+    font-size: 1.68rem !important;
+}
 
 /* ============================================================
    OPTIMIZACIONES MÓVILES NATIVAS & APPLE IPHONE (Safari WebKit)
    ============================================================ */
 html {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
 }
 
 /* Prevenir zoom automático forzado en iOS Safari cuando el usuario enfoca un input */
 @media (pointer: coarse) {
-  input, textarea, select {
-    font-size: 16px !important;
-  }
+
+    input,
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
 }
 
 /* Eliminar el retardo de toque de 300ms y prevenir selección accidental en controles de examen */
-button, [role="button"], [role="radio"], .touch-manipulation {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+button,
+[role="button"],
+[role="radio"],
+.touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* En dispositivos táctiles, evitar que los estados :hover se queden pegados (sticky hover bug de iOS) */
 @media (hover: none) and (pointer: coarse) {
-  .exam-option-card:hover {
-    background-color: inherit;
-    border-color: inherit;
-  }
+    .exam-option-card:hover {
+        background-color: inherit;
+        border-color: inherit;
+    }
 }
-
-
