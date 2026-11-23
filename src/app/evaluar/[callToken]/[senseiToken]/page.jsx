@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ShieldAlert, ChevronLeft, Lock } from 'lucide-react';
+import { auth } from '../../../../auth';
 import { getExamCallForEvaluator } from '../../../../lib/actions/technicalExams';
 import TechnicalExamEvaluatorCore from '../../../../components/examinations/TechnicalExamEvaluatorCore';
 
@@ -117,6 +118,21 @@ export default async function EvaluatorTatamiPage({ params }) {
     );
   }
 
+  // Detectar rol de administrador según base de datos (sesión autenticada o rol de evaluador)
+  let isUserAdmin = false;
+  try {
+    const session = await auth();
+    if (session?.user?.role === 'admin') {
+      isUserAdmin = true;
+    }
+  } catch (err) {
+    console.debug('Error validando sesión de usuario:', err);
+  }
+
+  if (result.evaluator?.role === 'admin' || result.evaluator?.role === 'administrador') {
+    isUserAdmin = true;
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 text-gray-900 py-2 sm:py-4 px-1.5 sm:px-3 examination-scope">
       <TechnicalExamEvaluatorCore
@@ -125,7 +141,7 @@ export default async function EvaluatorTatamiPage({ params }) {
         students={result.students || []}
         syllabi={result.syllabi || []}
         initialEvaluations={result.evaluations || []}
-        isAdmin={false}
+        isAdmin={isUserAdmin}
       />
     </div>
   );

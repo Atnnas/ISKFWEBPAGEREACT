@@ -29,7 +29,8 @@ import {
   ChevronDown,
   RefreshCw,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Zap
 } from 'lucide-react';
 import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall, getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { updateStudent } from '../../lib/actions/students';
@@ -42,12 +43,15 @@ import {
   calculateAge,
   formatDateDDMMAAAA,
   getBeltBadge,
+  doesCriterionApplyToTechnique,
   getTandasRosterSignature,
   parseAspectPoint,
   KIHON_CANON_ORDER,
   KATA_CANON_ORDER,
   getCanonicalTechKey,
-  DEFAULT_TECHNIQUES
+  DEFAULT_TECHNIQUES,
+  sortCriteriaMartialOrder,
+  getMartialCriterionIcon
 } from '../../lib/utils/evaluatorHelpers';
 
 export default function TechnicalExamEvaluatorCore({
@@ -399,11 +403,23 @@ export default function TechnicalExamEvaluatorCore({
     return Boolean(
       isAdmin ||
       evaluator?.role === 'director' ||
+      evaluator?.role === 'admin' ||
+      evaluator?.role === 'administrador' ||
       evaluator?.isDirector ||
       (evaluator?.name && /roy/i.test(evaluator.name) && !/lee/i.test(evaluator.name)) ||
       (evaluator?.email && /roygatjens/i.test(evaluator.email))
     );
   }, [isAdmin, evaluator]);
+
+  const isUserAdmin = Boolean(
+    isAdmin ||
+    evaluator?.role === 'admin' ||
+    evaluator?.role === 'administrador' ||
+    isDirectorRoy
+  );
+
+  // Modo Auditor Admin: permite avanzar y correr técnicas libremente sin calificar estrellas obligatoriamente
+  const [adminAuditMode, setAdminAuditMode] = useState(isUserAdmin);
 
   // Función para refrescar el progreso del tribunal (manual y automático en segundo plano)
   const fetchTribunalProgress = useCallback(async (isSilent = false) => {
@@ -823,56 +839,55 @@ export default function TechnicalExamEvaluatorCore({
 
     const criteria = [];
 
-    if (isKick) {
-      if (geriAspect && Array.isArray(geriAspect.points) && geriAspect.points.length > 0) {
-        geriAspect.points.forEach((p, pIdx) => {
-          const item = parseAspectPoint(p, pIdx, 'geri');
-          if (item) criteria.push(item);
-        });
-      } else {
-        criteria.push({ key: 'geri_0', label: 'Trayectoria y Hikiashi', short: 'Elevación / Hikiashi', desc: 'Elevación de rodilla y recogida rápida', rawText: 'Hikiashi' });
-        criteria.push({ key: 'geri_1', label: 'Anclaje del pie de apoyo', short: 'Pie de Apoyo', desc: 'Base firme sin balanceo en el impacto', rawText: 'Pie de apoyo' });
-      }
-    } else if (isBlock) {
-      if (ukeAspect && Array.isArray(ukeAspect.points) && ukeAspect.points.length > 0) {
-        ukeAspect.points.forEach((p, pIdx) => {
-          const item = parseAspectPoint(p, pIdx, 'uke');
-          if (item) criteria.push(item);
-        });
-      } else {
-        criteria.push({ key: 'uke_0', label: 'Angulación y Altura Oficial', short: 'Angulación Uke', desc: 'Ángulo correcto de bloqueo a distancia reglamentaria', rawText: 'Angulación' });
-        criteria.push({ key: 'uke_1', label: 'Preparación y Rotación', short: 'Rotación / Kime', desc: 'Movimiento preparatorio limpio y giro de antebrazo', rawText: 'Preparación' });
-        criteria.push({ key: 'uke_2', label: 'Hikite Sincronizado', short: 'Hikite Firme', desc: 'Tirón de cadera y brazo opuesto sobre cinturón', rawText: 'Hikite' });
-      }
-    } else {
-      if (tsukiAspect && Array.isArray(tsukiAspect.points) && tsukiAspect.points.length > 0) {
-        tsukiAspect.points.forEach((p, pIdx) => {
-          const item = parseAspectPoint(p, pIdx, 'tsuki');
-          if (item) criteria.push(item);
-        });
-      } else {
-        criteria.push({ key: 'tsuki_0', label: 'Trayectoria Directa', short: 'Trayectoria', desc: 'Sin abrir el codo hacia el punto focal', rawText: 'Trayectoria' });
-        criteria.push({ key: 'tsuki_1', label: 'Rotación y Kime', short: 'Rotación / Kime', desc: 'Giro de antebrazo al final del impacto', rawText: 'Rotación' });
-        criteria.push({ key: 'tsuki_2', label: 'Hikite Firme en Cadera', short: 'Hikite Firme', desc: 'Puño contrario cerrado sobre cresta ilíaca', rawText: 'Hikite' });
-      }
-    }
-
-    // Agregar punto normativo de Dachi Waza (postura) configurado en el temario
+    // 1. Dachi Waza (Postura y Base): SIEMPRE PRIMERO en la secuencia marcial tradicional
     const techStance = (technique?.stance || '').toLowerCase();
-    let matchedDachiPoint = null;
+    const dachiPointsAdded = [];
+
     if (dachiAspect && Array.isArray(dachiAspect.points) && dachiAspect.points.length > 0) {
-      const getPtText = (pt) => (typeof pt === 'object' && pt !== null ? (pt.text || pt.point || '') : String(pt || '')).toLowerCase();
-      if (techStance.includes('kiba')) {
-        matchedDachiPoint = dachiAspect.points.find(p => getPtText(p).includes('kiba')) || dachiAspect.points[1];
-      } else if (techStance.includes('kokutsu')) {
-        matchedDachiPoint = dachiAspect.points.find(p => getPtText(p).includes('kokutsu')) || dachiAspect.points[2];
-      } else {
-        matchedDachiPoint = dachiAspect.points.find(p => getPtText(p).includes('zenkutsu')) || dachiAspect.points[0];
+      // a. Buscar todos los criterios de Dachi que tengan appliesTo configurado para esta técnica
+      dachiAspect.points.forEach((p, pIdx) => {
+        const item = parseAspectPoint(p, pIdx, 'dachi');
+        if (item && doesCriterionApplyToTechnique(item, technique)) {
+          const hasExplicitAppliesTo = Array.isArray(p.appliesTo) && p.appliesTo.length > 0;
+          if (hasExplicitAppliesTo) {
+            dachiPointsAdded.push(item);
+          }
+        }
+      });
+
+      // b. Si no hubo ninguno con appliesTo explícito para esta técnica, evaluar criterios generales de Dachi
+      if (dachiPointsAdded.length === 0) {
+        dachiAspect.points.forEach((p, pIdx) => {
+          const item = parseAspectPoint(p, pIdx, 'dachi');
+          if (item && doesCriterionApplyToTechnique(item, technique)) {
+            dachiPointsAdded.push(item);
+          }
+        });
+      }
+
+      // c. Si aún así no hubo ninguno, seleccionar el criterio de postura por defecto correspondiente
+      if (dachiPointsAdded.length === 0) {
+        const getPtText = (pt) => (typeof pt === 'object' && pt !== null ? (pt.text || pt.point || '') : String(pt || '')).toLowerCase();
+        let fallbackPoint = null;
+        let fallbackIdx = 0;
+        if (techStance.includes('kiba')) {
+          fallbackIdx = dachiAspect.points.findIndex(p => getPtText(p).includes('kiba'));
+          fallbackPoint = fallbackIdx !== -1 ? dachiAspect.points[fallbackIdx] : dachiAspect.points[1];
+        } else if (techStance.includes('kokutsu')) {
+          fallbackIdx = dachiAspect.points.findIndex(p => getPtText(p).includes('kokutsu'));
+          fallbackPoint = fallbackIdx !== -1 ? dachiAspect.points[fallbackIdx] : dachiAspect.points[2];
+        } else {
+          fallbackIdx = dachiAspect.points.findIndex(p => getPtText(p).includes('zenkutsu'));
+          fallbackPoint = fallbackIdx !== -1 ? dachiAspect.points[fallbackIdx] : dachiAspect.points[0];
+        }
+        if (fallbackPoint) {
+          dachiPointsAdded.push(parseAspectPoint(fallbackPoint, fallbackIdx !== -1 ? fallbackIdx : 0, 'dachi'));
+        }
       }
     }
 
-    if (matchedDachiPoint) {
-      criteria.push(parseAspectPoint(matchedDachiPoint, 0, 'dachi'));
+    if (dachiPointsAdded.length > 0) {
+      criteria.push(...dachiPointsAdded);
     } else {
       criteria.push({
         key: 'dachi_base',
@@ -883,7 +898,51 @@ export default function TechnicalExamEvaluatorCore({
       });
     }
 
-    return criteria.filter(Boolean);
+    // 2. Si la técnica cuenta con criterios específicos propios configurados en el temario, cargarlos
+    if (Array.isArray(technique?.criteria) && technique.criteria.length > 0) {
+      technique.criteria.forEach((c, cIdx) => {
+        const item = parseAspectPoint(c, cIdx, 'tech_crit');
+        if (item) criteria.push(item);
+      });
+    }
+
+    // 3. Criterios de la acción específica (Geri, Uke o Tsuki)
+    if (isKick) {
+      if (geriAspect && Array.isArray(geriAspect.points) && geriAspect.points.length > 0) {
+        geriAspect.points.forEach((p, pIdx) => {
+          const item = parseAspectPoint(p, pIdx, 'geri');
+          if (item && doesCriterionApplyToTechnique(item, technique)) criteria.push(item);
+        });
+      } else if (criteria.length <= 1) {
+        criteria.push({ key: 'geri_0', label: 'Trayectoria y Hikiashi', short: 'Elevación / Hikiashi', desc: 'Elevación de rodilla y recogida rápida', rawText: 'Hikiashi' });
+        criteria.push({ key: 'geri_1', label: 'Anclaje del pie de apoyo', short: 'Pie de Apoyo', desc: 'Base firme sin balanceo en el impacto', rawText: 'Pie de apoyo' });
+      }
+    } else if (isBlock) {
+      if (ukeAspect && Array.isArray(ukeAspect.points) && ukeAspect.points.length > 0) {
+        ukeAspect.points.forEach((p, pIdx) => {
+          const item = parseAspectPoint(p, pIdx, 'uke');
+          if (item && doesCriterionApplyToTechnique(item, technique)) criteria.push(item);
+        });
+      } else if (criteria.length <= 1) {
+        criteria.push({ key: 'uke_0', label: 'Angulación y Altura Oficial', short: 'Angulación Uke', desc: 'Ángulo correcto de bloqueo a distancia reglamentaria', rawText: 'Angulación' });
+        criteria.push({ key: 'uke_1', label: 'Preparación y Rotación', short: 'Rotación / Kime', desc: 'Movimiento preparatorio limpio y giro de antebrazo', rawText: 'Preparación' });
+        criteria.push({ key: 'uke_2', label: 'Hikite Sincronizado', short: 'Hikite Firme', desc: 'Tirón de cadera y brazo opuesto sobre cinturón', rawText: 'Hikite' });
+      }
+    } else {
+      if (tsukiAspect && Array.isArray(tsukiAspect.points) && tsukiAspect.points.length > 0) {
+        tsukiAspect.points.forEach((p, pIdx) => {
+          const item = parseAspectPoint(p, pIdx, 'tsuki');
+          if (item && doesCriterionApplyToTechnique(item, technique)) criteria.push(item);
+        });
+      } else if (criteria.length <= 1) {
+        criteria.push({ key: 'tsuki_0', label: 'Trayectoria Directa', short: 'Trayectoria', desc: 'Sin abrir el codo hacia el punto focal', rawText: 'Trayectoria' });
+        criteria.push({ key: 'tsuki_1', label: 'Rotación y Kime', short: 'Rotación / Kime', desc: 'Giro de antebrazo al final del impacto', rawText: 'Rotación' });
+        criteria.push({ key: 'tsuki_2', label: 'Hikite Firme en Cadera', short: 'Hikite Firme', desc: 'Puño contrario cerrado sobre cresta ilíaca', rawText: 'Hikite' });
+      }
+    }
+
+    // Ordenar canónicamente: 1° Dachi -> 2° Uke -> 3° Tsuki/Geri -> 4° Foco/Kime
+    return sortCriteriaMartialOrder(criteria.filter(Boolean));
   }, [getStudentSyllabus]);
 
   // Agrupar los estudiantes de la tanda activa por su respectivo cinturón / temario oficial
@@ -1328,6 +1387,11 @@ export default function TechnicalExamEvaluatorCore({
 
   // Validar si todos los karatecas en tatami tienen todas sus estrellas asignadas (> 0) en sus técnicas activas
   const validateCurrentTechniqueComplete = useCallback(() => {
+    // Si el modo auditor admin está activo, se permite correr y avanzar libremente sin calificar estrellas
+    if (adminAuditMode) {
+      return { isValid: true, missing: new Set() };
+    }
+
     const missing = new Set();
     if (!tandaStudents || tandaStudents.length === 0) {
       return { isValid: true, missing };
@@ -1365,7 +1429,7 @@ export default function TechnicalExamEvaluatorCore({
       isValid: missing.size === 0,
       missing
     };
-  }, [tandaStudents, evaluationsByStudent, effectivePhase, selectedTechniqueIndex, studentTechOverrides, getStudentTechniques, getStudentCriteriaForPhase]);
+  }, [adminAuditMode, tandaStudents, evaluationsByStudent, effectivePhase, selectedTechniqueIndex, studentTechOverrides, getStudentTechniques, getStudentCriteriaForPhase]);
 
   // Flags para control de avance entre técnicas, fases y tandas
   const currentPhaseIndex = availablePhaseKeys.indexOf(effectivePhase);
@@ -1644,16 +1708,18 @@ export default function TechnicalExamEvaluatorCore({
   }, [tribunalProgress, tandaStudents, phaseToReview, evaluatorEmail, evaluator, getStudentPhaseSummary]);
 
   const handleNextTechnique = () => {
-    // Validar técnica actual antes de avanzar
-    const { isValid, missing } = validateCurrentTechniqueComplete();
-    if (!isValid) {
-      setUnratedStarKeys(missing);
-      setValidationWarning({
-        techName: `Paso ${selectedTechniqueIndex + 1}`,
-        count: missing.size,
-        message: `Debe completar la calificación de todos los karatecas en sus técnicas activas antes de avanzar. Las estrellas vacías han sido resaltadas en rojo.`
-      });
-      return;
+    // Validar técnica actual antes de avanzar (si no está activo el modo auditor admin)
+    if (!adminAuditMode) {
+      const { isValid, missing } = validateCurrentTechniqueComplete();
+      if (!isValid) {
+        setUnratedStarKeys(missing);
+        setValidationWarning({
+          techName: `Paso ${selectedTechniqueIndex + 1}`,
+          count: missing.size,
+          message: `Debe completar la calificación de todos los karatecas en sus técnicas activas antes de avanzar. Las estrellas vacías han sido resaltadas en rojo.`
+        });
+        return;
+      }
     }
 
     setUnratedStarKeys(new Set());
@@ -1762,6 +1828,30 @@ export default function TechnicalExamEvaluatorCore({
                   <span className="text-[10px] px-1.5 py-0.5 bg-indigo-500/25 text-indigo-200 border border-indigo-400/30 rounded-md font-bold">
                     Admin
                   </span>
+                )}
+                {isUserAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminAuditMode(prev => !prev);
+                      setValidationWarning(null);
+                      setUnratedStarKeys(new Set());
+                    }}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all flex items-center gap-1 cursor-pointer shadow-xs active:scale-95 ${
+                      adminAuditMode
+                        ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-amber-400/20 ring-1 ring-amber-300'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
+                    }`}
+                    title={
+                      adminAuditMode
+                        ? 'Modo Auditor Admin ACTIVO: Permite avanzar y correr todas las técnicas sin calificar estrellas obligatoriamente'
+                        : 'Modo Auditor Admin INACTIVO: Calificación estricta con validación de estrellas obligatoria'
+                    }
+                  >
+                    <Zap className={`w-3 h-3 ${adminAuditMode ? 'text-slate-950 fill-slate-950' : 'text-amber-400'}`} />
+                    <span>Modo Admin:</span>
+                    <span className="font-mono">{adminAuditMode ? 'ON (Sin estrellas)' : 'OFF'}</span>
+                  </button>
                 )}
               </div>
               <p className="text-[10px] text-slate-400 truncate max-w-xs sm:max-w-md">
@@ -2153,8 +2243,9 @@ export default function TechnicalExamEvaluatorCore({
                               className="py-2 px-1 text-center align-middle min-w-[96px] sm:min-w-[106px]"
                             >
                               <div className="flex flex-col items-center gap-0.5">
-                                <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 border border-amber-400/25 px-1 py-0.2 rounded whitespace-nowrap">
-                                  Aspecto #{cIdx + 1}
+                                <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.2 rounded-md whitespace-nowrap flex items-center gap-1 shadow-2xs">
+                                  <span>{getMartialCriterionIcon(criterion)}</span>
+                                  <span>Aspecto #{cIdx + 1}</span>
                                 </span>
                                 <span className="text-[11px] font-bold text-slate-200 leading-tight text-center" title={criterion.rawText || criterion.desc || criterion.label}>
                                   {criterion.rawText || criterion.desc || criterion.label}
@@ -2461,13 +2552,35 @@ export default function TechnicalExamEvaluatorCore({
           )}
 
           {/* INDICADOR CENTRAL DE TANDA Y PASO */}
-          <div className="text-center text-xs font-bold text-slate-400 flex items-center justify-center gap-2 truncate px-1 min-w-0">
+          <div className="text-center text-xs font-bold text-slate-400 flex items-center justify-center gap-2 truncate px-1 min-w-0 flex-wrap">
             <span className="px-2.5 py-1 rounded-full bg-slate-800 text-amber-300 text-[11px] font-mono shrink-0 border border-slate-700">
               Tanda {selectedTandaIndex + 1} de {tandas.length}
             </span>
             <span className="px-3 py-1 rounded-lg bg-indigo-950/80 border border-indigo-400/30 text-white font-mono text-xs font-black truncate hidden sm:inline">
               FASE: <span className="text-amber-400 font-black">{effectivePhase.toUpperCase()}</span> • Paso {selectedTechniqueIndex + 1} de {totalPhaseSteps}
             </span>
+            {isUserAdmin && totalPhaseSteps > 1 && (
+              <div className="flex items-center gap-1 shrink-0 bg-slate-950 px-2 py-0.5 rounded-lg border border-amber-400/30">
+                <span className="text-[10px] text-amber-400 font-mono hidden md:inline">Ir a paso:</span>
+                <select
+                  value={selectedTechniqueIndex}
+                  onChange={(e) => {
+                    setSelectedTechniqueIndex(Number(e.target.value));
+                    setStudentTechOverrides({});
+                    setValidationWarning(null);
+                    setUnratedStarKeys(new Set());
+                  }}
+                  className="bg-transparent text-amber-300 text-[11px] font-mono font-bold focus:outline-none cursor-pointer"
+                  title="Salto directo de técnica para Administrador (sin validar estrellas)"
+                >
+                  {Array.from({ length: totalPhaseSteps }).map((_, idx) => (
+                    <option key={idx} value={idx} className="bg-slate-900 text-white">
+                      Paso {idx + 1} de {totalPhaseSteps}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <span className="text-slate-500 text-[11px] hidden md:inline">({tandaStudents.length} karatecas)</span>
           </div>
 

@@ -291,12 +291,36 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     return findSyllabusForRank(selectedRankFilter) || syllabi[0] || null;
   }, [selectedRankFilter, findSyllabusForRank, syllabi]);
 
-  // Respetar estrictamente los aspectos técnicos guardados por el usuario en MongoDB
+  // Orden canónico estricto de categorías para todos los grados: DACHI WAZA SIEMPRE DE PRIMERO
+  const CANONICAL_ASPECT_CATEGORIES = [
+    'dachi',    // 1° Dachi Waza (Postura y Base)
+    'tsuki',    // 2° Tsuki Waza (Puños)
+    'uke',      // 3° Uke Waza (Bloqueos)
+    'geri',     // 4° Geri Waza (Patadas)
+    'kata',     // 5° Kata
+    'kumite',   // 6° Kumite
+    'physical', // 7° Capacidades Físicas
+    'mental',   // 8° Capacidades Mentales
+    'do'        // 9° DO
+  ];
+
+  const sortAspectsByCanonicalOrder = (aspects = []) => {
+    return [...aspects].sort((a, b) => {
+      const idxA = CANONICAL_ASPECT_CATEGORIES.indexOf(a.category);
+      const idxB = CANONICAL_ASPECT_CATEGORIES.indexOf(b.category);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (a.order || 99) - (b.order || 99);
+    });
+  };
+
+  // Respetar estrictamente los aspectos técnicos asegurando orden canónico (Dachi primero)
   const mergeAspectsWithDefaults = (existingAspects) => {
     if (!Array.isArray(existingAspects) || existingAspects.length === 0) {
-      return JSON.parse(JSON.stringify(DEFAULT_TECHNICAL_ASPECTS));
+      return sortAspectsByCanonicalOrder(JSON.parse(JSON.stringify(DEFAULT_TECHNICAL_ASPECTS)));
     }
-    return JSON.parse(JSON.stringify(existingAspects)).sort((a, b) => (a.order || 99) - (b.order || 99));
+    return sortAspectsByCanonicalOrder(JSON.parse(JSON.stringify(existingAspects)));
   };
 
   // Aspectos técnicos en memoria para edición
@@ -336,11 +360,15 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   };
 
   const section1Aspects = useMemo(() => {
-    return aspectsState.filter(a => ['tsuki', 'uke', 'dachi', 'geri', 'kata', 'kumite'].includes(a.category));
+    return sortAspectsByCanonicalOrder(
+      aspectsState.filter(a => ['dachi', 'tsuki', 'uke', 'geri', 'kata', 'kumite'].includes(a.category))
+    );
   }, [aspectsState]);
 
   const section2Aspects = useMemo(() => {
-    return aspectsState.filter(a => ['physical', 'mental', 'do'].includes(a.category));
+    return sortAspectsByCanonicalOrder(
+      aspectsState.filter(a => ['physical', 'mental', 'do'].includes(a.category))
+    );
   }, [aspectsState]);
 
   const allSection1Open = section1Aspects.length > 0 && section1Aspects.every(a => Boolean(openAspectCards[a.id]));
@@ -349,21 +377,91 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   // Input para agregar nuevo punto/criterio en cada bloque de aspecto
   const [newPointInput, setNewPointInput] = useState({});
   const [newPointEvaluable, setNewPointEvaluable] = useState({});
+  const [newPointAppliesTo, setNewPointAppliesTo] = useState({}); // { [aspectId]: ['Chudan Oi zuki', ...] }
   const [isSavingAspects, setIsSavingAspects] = useState(false);
 
-  // Helper para normalizar un parámetro técnico (string u objeto con isEvaluable)
+  // Helper para normalizar un parámetro técnico (string u objeto con isEvaluable y appliesTo)
   const getPointData = (point, isSection2 = false) => {
-    if (!point) return { text: '', isEvaluable: false };
+    if (!point) return { text: '', isEvaluable: false, appliesTo: [] };
     if (typeof point === 'object') {
       return {
         text: point.text || point.point || point.rawText || '',
-        isEvaluable: Boolean(point.isEvaluable || point.evaluableInExam || point.evaluable)
+        isEvaluable: Boolean(point.isEvaluable || point.evaluableInExam || point.evaluable),
+        appliesTo: Array.isArray(point.appliesTo) ? point.appliesTo : []
       };
     }
     return {
       text: String(point),
-      isEvaluable: !isSection2
+      isEvaluable: !isSection2,
+      appliesTo: []
     };
+  };
+
+  // Helper para obtener técnicas del temario actual que pertenecen a una categoría de aspecto
+  const getTechniquesForAspectCategory = useCallback((category, syllabusTechniques = []) => {
+    if (!Array.isArray(syllabusTechniques)) return [];
+    const cat = String(category || '').toLowerCase();
+    if (cat.includes('tsuki')) {
+      return syllabusTechniques.filter(t => {
+        const n = (t.name || '').toLowerCase();
+        return n.includes('zuki') || n.includes('tsuki') || n.includes('puño') || n.includes('golpe');
+      });
+    }
+    if (cat.includes('uke')) {
+      return syllabusTechniques.filter(t => {
+        const n = (t.name || '').toLowerCase();
+        return n.includes('uke') || n.includes('barai') || n.includes('bloqueo');
+      });
+    }
+    if (cat.includes('geri')) {
+      return syllabusTechniques.filter(t => {
+        const n = (t.name || '').toLowerCase();
+        return n.includes('geri') || n.includes('patada');
+      });
+    }
+    if (cat.includes('dachi')) {
+      return syllabusTechniques.filter(t => t.group === 'kihon');
+    }
+    if (cat.includes('kata')) {
+      return syllabusTechniques.filter(t => t.group === 'kata');
+    }
+    if (cat.includes('kumite')) {
+      return syllabusTechniques.filter(t => t.group === 'kumite');
+    }
+    return [];
+  }, []);
+
+  // Navegación directa desde una técnica hacia sus aspectos técnicos
+  const handleGoToTechAspects = (syllabus, tech) => {
+    if (!syllabus) return;
+    const rank = syllabus.currentRank || syllabus.targetRank;
+    setSelectedRankFilter(rank);
+    setActiveMainTab('aspectos');
+
+    const techName = (tech.name || '').toLowerCase();
+    let targetCat = 'tsuki';
+    if (techName.includes('uke') || techName.includes('barai') || techName.includes('bloqueo')) {
+      targetCat = 'uke';
+    } else if (techName.includes('geri') || techName.includes('patada')) {
+      targetCat = 'geri';
+    } else if (tech.group === 'kumite') {
+      targetCat = 'kumite';
+    } else if (tech.group === 'kata') {
+      targetCat = 'kata';
+    } else {
+      targetCat = 'tsuki';
+    }
+
+    const aspects = Array.isArray(syllabus.technicalAspects) ? syllabus.technicalAspects : DEFAULT_TECHNICAL_ASPECTS;
+    const targetAspect = aspects.find(a => (a.category || a.id || '').toLowerCase().includes(targetCat))
+      || DEFAULT_TECHNICAL_ASPECTS.find(a => a.category === targetCat);
+
+    if (targetAspect) {
+      setOpenAspectCards(prev => ({
+        ...prev,
+        [targetAspect.id]: true
+      }));
+    }
   };
 
   const handleAddPointToAspect = (aspectId, defaultEvaluable = false) => {
@@ -374,11 +472,13 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
       ? newPointEvaluable[aspectId]
       : defaultEvaluable;
 
+    const appliesTo = Array.isArray(newPointAppliesTo[aspectId]) ? newPointAppliesTo[aspectId] : [];
+
     setAspectsState(prev => prev.map(a => {
       if (a.id === aspectId) {
         return {
           ...a,
-          points: [...(a.points || []), { text, isEvaluable }]
+          points: [...(a.points || []), { text, isEvaluable, appliesTo }]
         };
       }
       return a;
@@ -386,6 +486,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
 
     setNewPointInput(prev => ({ ...prev, [aspectId]: '' }));
     setNewPointEvaluable(prev => ({ ...prev, [aspectId]: false }));
+    setNewPointAppliesTo(prev => ({ ...prev, [aspectId]: [] }));
   };
 
   const handleTogglePointEvaluable = (aspectId, pointIndex) => {
@@ -396,8 +497,10 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
           if (idx !== pointIndex) return p;
           const current = getPointData(p, isSec2);
           return {
+            ...p,
             text: current.text,
-            isEvaluable: !current.isEvaluable
+            isEvaluable: !current.isEvaluable,
+            appliesTo: current.appliesTo
           };
         });
         return {
@@ -490,13 +593,17 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
   };
 
   // Estado para edición / modificación en línea de un criterio
-  const [editingPoint, setEditingPoint] = useState(null); // { aspectId, pointIndex, text }
+  const [editingPoint, setEditingPoint] = useState(null); // { aspectId, pointIndex, text, appliesTo }
 
-  const handleStartEditPoint = (aspectId, pointIndex, currentText) => {
+  const handleStartEditPoint = (aspectId, pointIndex, currentPointData) => {
+    const data = typeof currentPointData === 'object' && currentPointData !== null 
+      ? currentPointData 
+      : { text: String(currentPointData || ''), appliesTo: [] };
     setEditingPoint({
       aspectId,
       pointIndex,
-      text: currentText
+      text: data.text || '',
+      appliesTo: Array.isArray(data.appliesTo) ? [...data.appliesTo] : []
     });
   };
 
@@ -511,14 +618,12 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
         const points = (a.points || []).map((p, idx) => {
           if (idx !== editingPoint.pointIndex) return p;
           const prevData = getPointData(p, isSec2);
-          if (typeof p === 'object') {
-            return {
-              ...p,
-              text: trimmed,
-              isEvaluable: prevData.isEvaluable
-            };
-          }
-          return isSec2 ? { text: trimmed, isEvaluable: prevData.isEvaluable } : trimmed;
+          return {
+            ...prevData,
+            text: trimmed,
+            isEvaluable: prevData.isEvaluable,
+            appliesTo: Array.isArray(editingPoint.appliesTo) ? editingPoint.appliesTo : []
+          };
         });
         return { ...a, points };
       }
@@ -606,6 +711,19 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
       setIsSavingAspects(false);
     }
   };
+
+  const isCurrentSyllabusWhiteBelt = useMemo(() => {
+    if (!selectedAspectSyllabus) return false;
+    const n = (selectedAspectSyllabus.name || '').toLowerCase();
+    const r = (selectedAspectSyllabus.currentRank || '').toLowerCase();
+    const t = (selectedAspectSyllabus.targetRank || '').toLowerCase();
+    return (r.includes('10') || n.includes('10 kyu') || n.includes('10° kyu') || n.includes('10º kyu') || t.includes('10° kyu') || (n.includes('cinturón blanco') && !n.includes('morad'))) &&
+      !n.includes('morad') &&
+      !r.includes('morad') &&
+      !r.includes('4° kyu');
+  }, [selectedAspectSyllabus]);
+
+  // Criterios individuales de cada bloque de aspecto técnico
 
   // =========================================================================
   // HANDLERS DE TEMARIOS DE TÉCNICAS
@@ -1318,6 +1436,16 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
                                       <span>{tech.tripType === 'ida_y_vuelta' ? 'Ida y Vuelta (Mawatte)' : 'Solo Ida'}</span>
                                     </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleGoToTechAspects(syllabus, tech)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-[#2D2E83]/10 hover:bg-[#2D2E83] text-[#2D2E83] hover:text-white border border-[#2D2E83]/20 transition-all cursor-pointer shadow-2xs"
+                                      title={`Ir a configurar los criterios y aspectos técnicos de ${tech.name}`}
+                                    >
+                                      <Shield className="w-3.5 h-3.5 text-[#BE1622]" />
+                                      <span>Aspectos Técnicos</span>
+                                    </button>
                                   </div>
                                 </div>
                               ))}
@@ -1551,7 +1679,12 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                       <Shield className="w-4 h-4 text-[#BE1622]" />
                       1. Aspectos Técnicos (Kihon, Kata y Kumite)
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {isCurrentSyllabusWhiteBelt && (
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          🛡️ Blanco Protegido
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleToggleAllSection(['tsuki', 'uke', 'dachi', 'geri', 'kata', 'kumite'], !allSection1Open)}
@@ -1570,6 +1703,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                       const isOpen = Boolean(openAspectCards[aspect.id]);
                       const icon = ASPECT_ICONS[aspect.category] || '🥋';
                       const pointsCount = (aspect.points || []).length;
+                      const availableTechs = getTechniquesForAspectCategory(aspect.category, selectedAspectSyllabus?.techniques || []);
 
                       return (
                         <div 
@@ -1617,6 +1751,20 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                               </div>
                             </div>
                           </button>
+
+                          {/* Técnicas de este temario que pertenecen a este aspecto */}
+                          {isOpen && availableTechs.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 bg-indigo-50/60 rounded-lg border border-indigo-100 text-xs">
+                              <span className="font-bold text-[#2D2E83] flex items-center gap-1">
+                                🥋 Kihones asociados de este grado:
+                              </span>
+                              {availableTechs.map(t => (
+                                <span key={t.id || t.name} className="px-2 py-0.5 rounded-md font-bold text-[11px] bg-white text-[#2D2E83] border border-indigo-200 shadow-2xs">
+                                  {t.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Contenido Desplegable: Manipulación de Puntos */}
                           {isOpen && (
@@ -1711,56 +1859,127 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
 
                                         {/* Cuerpo del Criterio: Modo Edición o Modo Visualización */}
                                         {isEditing ? (
-                                          <div className="flex-1 min-w-0 flex items-center gap-2">
-                                            <input
-                                              type="text"
-                                              autoFocus
-                                              value={editingPoint.text}
-                                              onChange={(e) => setEditingPoint(prev => ({ ...prev, text: e.target.value }))}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                  e.preventDefault();
-                                                  handleSaveEditPoint();
-                                                } else if (e.key === 'Escape') {
-                                                  e.preventDefault();
-                                                  handleCancelEditPoint();
-                                                }
-                                              }}
-                                              className="flex-1 px-2.5 py-1.5 rounded-lg border border-[#2D2E83] text-xs md:text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2D2E83]/20 bg-white"
-                                              placeholder="Escribe el criterio técnico..."
-                                            />
-                                            <div className="flex items-center gap-1 shrink-0">
-                                              <button
-                                                type="button"
-                                                onClick={handleSaveEditPoint}
-                                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-                                                title="Guardar modificación (Enter)"
-                                              >
-                                                <Check className="w-3.5 h-3.5 stroke-3" />
-                                                <span>Guardar</span>
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={handleCancelEditPoint}
-                                                className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                                                title="Cancelar (Escape)"
-                                              >
-                                                <X className="w-3.5 h-3.5" />
-                                              </button>
+                                          <div className="flex-1 min-w-0 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                type="text"
+                                                autoFocus
+                                                value={editingPoint.text}
+                                                onChange={(e) => setEditingPoint(prev => ({ ...prev, text: e.target.value }))}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSaveEditPoint();
+                                                  } else if (e.key === 'Escape') {
+                                                    e.preventDefault();
+                                                    handleCancelEditPoint();
+                                                  }
+                                                }}
+                                                className="flex-1 px-2.5 py-1.5 rounded-lg border border-[#2D2E83] text-xs md:text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2D2E83]/20 bg-white"
+                                                placeholder="Escribe el criterio técnico..."
+                                              />
+                                              <div className="flex items-center gap-1 shrink-0">
+                                                <button
+                                                  type="button"
+                                                  onClick={handleSaveEditPoint}
+                                                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                                                  title="Guardar modificación (Enter)"
+                                                >
+                                                  <Check className="w-3.5 h-3.5 stroke-3" />
+                                                  <span>Guardar</span>
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={handleCancelEditPoint}
+                                                  className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                                  title="Cancelar (Escape)"
+                                                >
+                                                  <X className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
                                             </div>
+
+                                            {/* Selector de Técnicas a las que aplica este criterio */}
+                                            {availableTechs.length > 0 && (
+                                              <div className="p-2 bg-slate-100 rounded-lg space-y-1.5 text-xs">
+                                                <div className="flex items-center justify-between">
+                                                  <span className="font-bold text-slate-700 text-[11px]">
+                                                    ¿A qué técnicas aplica este criterio?
+                                                  </span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setEditingPoint(prev => ({ ...prev, appliesTo: [] }))}
+                                                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all border ${
+                                                      !editingPoint.appliesTo || editingPoint.appliesTo.length === 0
+                                                        ? 'bg-[#2D2E83] text-white border-[#2D2E83]'
+                                                        : 'bg-white text-slate-600 border-slate-300'
+                                                    }`}
+                                                  >
+                                                    ✓ Todas las de este aspecto
+                                                  </button>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                  {availableTechs.map(t => {
+                                                    const isChecked = (editingPoint.appliesTo || []).includes(t.name);
+                                                    return (
+                                                      <button
+                                                        key={t.id || t.name}
+                                                        type="button"
+                                                        onClick={() => {
+                                                          setEditingPoint(prev => {
+                                                            const current = prev.appliesTo || [];
+                                                            const next = isChecked
+                                                              ? current.filter(x => x !== t.name)
+                                                              : [...current, t.name];
+                                                            return { ...prev, appliesTo: next };
+                                                          });
+                                                        }}
+                                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 border ${
+                                                          isChecked
+                                                            ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-2xs'
+                                                            : 'bg-white text-slate-700 hover:bg-slate-200 border-slate-300'
+                                                        }`}
+                                                      >
+                                                        <span>{isChecked ? '✓' : '+'}</span>
+                                                        <span>{t.name}</span>
+                                                      </button>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
                                         ) : (
                                           <>
-                                            <div className="flex items-start gap-2 flex-1 min-w-0 pt-0.5">
-                                              <span className="w-1.5 h-1.5 rounded-full bg-[#2D2E83] mt-2 shrink-0" />
-                                              <span className="leading-relaxed text-slate-800 break-words flex-1">{pointData.text}</span>
+                                            <div className="flex-1 min-w-0 pt-0.5 space-y-1">
+                                              <div className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-[#2D2E83] mt-2 shrink-0" />
+                                                <span className="leading-relaxed text-slate-800 break-words flex-1 font-medium">{pointData.text}</span>
+                                              </div>
+
+                                              {/* Badge de técnicas a las que aplica */}
+                                              {availableTechs.length > 0 && (
+                                                <div className="ml-3.5 flex items-center gap-1 flex-wrap">
+                                                  {pointData.appliesTo && pointData.appliesTo.length > 0 && !pointData.appliesTo.includes('all') ? (
+                                                    pointData.appliesTo.map(tName => (
+                                                      <span key={tName} className="inline-flex items-center gap-1 px-2 py-0.2 rounded-md text-[10px] font-bold bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
+                                                        🎯 {tName}
+                                                      </span>
+                                                    ))
+                                                  ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                                      🎯 General (Todas las de {aspect.title.split(' ')[0]})
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                             <div className="flex items-center gap-1 shrink-0">
                                               <button
                                                 type="button"
-                                                onClick={() => handleStartEditPoint(aspect.id, pIdx, pointData.text)}
+                                                onClick={() => handleStartEditPoint(aspect.id, pIdx, pointData)}
                                                 className="text-slate-400 hover:text-[#2D2E83] p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-slate-100"
-                                                title="Modificar texto del criterio"
+                                                title="Modificar texto y asignación de técnicas del criterio"
                                               >
                                                 <Edit3 className="w-3.5 h-3.5" />
                                               </button>
@@ -1782,27 +2001,68 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                               )}
 
                               {/* Input para agregar un nuevo parámetro a este aspecto */}
-                              <div className="flex items-center gap-2 pt-1">
-                                <input
-                                  type="text"
-                                  value={newPointInput[aspect.id] || ''}
-                                  onChange={(e) => setNewPointInput({ ...newPointInput, [aspect.id]: e.target.value })}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      handleAddPointToAspect(aspect.id, true);
-                                    }
-                                  }}
-                                  placeholder="+ Escribir nuevo parámetro técnico..."
-                                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2D2E83]/20 bg-white placeholder-slate-400"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleAddPointToAspect(aspect.id, true)}
-                                  className="px-3.5 py-2 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-lg text-xs md:text-sm font-semibold transition-all shrink-0 cursor-pointer"
-                                >
-                                  Agregar
-                                </button>
+                              <div className="pt-2 border-t border-slate-100 space-y-2">
+                                {availableTechs.length > 0 && (
+                                  <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Asignar nuevo criterio a:</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setNewPointAppliesTo(prev => ({ ...prev, [aspect.id]: [] }))}
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all border ${
+                                        !newPointAppliesTo[aspect.id] || newPointAppliesTo[aspect.id].length === 0
+                                          ? 'bg-[#2D2E83] text-white border-[#2D2E83]'
+                                          : 'bg-white text-slate-600 border-slate-300'
+                                      }`}
+                                    >
+                                      ✓ Todas
+                                    </button>
+                                    {availableTechs.map(t => {
+                                      const isSel = (newPointAppliesTo[aspect.id] || []).includes(t.name);
+                                      return (
+                                        <button
+                                          key={t.id || t.name}
+                                          type="button"
+                                          onClick={() => {
+                                            setNewPointAppliesTo(prev => {
+                                              const cur = prev[aspect.id] || [];
+                                              const next = isSel ? cur.filter(x => x !== t.name) : [...cur, t.name];
+                                              return { ...prev, [aspect.id]: next };
+                                            });
+                                          }}
+                                          className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all border ${
+                                            isSel
+                                              ? 'bg-amber-400 text-slate-950 border-amber-500 font-black'
+                                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                          }`}
+                                        >
+                                          {isSel ? '✓ ' : '+ '}{t.name}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={newPointInput[aspect.id] || ''}
+                                    onChange={(e) => setNewPointInput({ ...newPointInput, [aspect.id]: e.target.value })}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleAddPointToAspect(aspect.id, true);
+                                      }
+                                    }}
+                                    placeholder="+ Escribir nuevo parámetro técnico..."
+                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2D2E83]/20 bg-white placeholder-slate-400"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddPointToAspect(aspect.id, true)}
+                                    className="px-3.5 py-2 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-lg text-xs md:text-sm font-semibold transition-all shrink-0 cursor-pointer shadow-2xs"
+                                  >
+                                    Agregar
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -2054,7 +2314,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                               </button>
                                               <button
                                                 type="button"
-                                                onClick={() => handleStartEditPoint(aspect.id, pIdx, pointData.text)}
+                                                onClick={() => handleStartEditPoint(aspect.id, pIdx, pointData)}
                                                 className="text-slate-400 hover:text-[#2D2E83] p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-slate-100"
                                                 title="Modificar texto del criterio"
                                               >
@@ -2132,22 +2392,25 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                 </div>
               </div>
 
-              {/* Botón inferior para guardar aspectos a Base de Datos */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex items-center justify-between gap-4">
+              {/* Botón inferior para guardar aspectos a Base de Datos y herramientas de limpieza */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>Todos los criterios modificados se guardan de forma persistente en MongoDB para este grado.</span>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={isSavingAspects}
-                  onClick={handleSaveAspectsToDatabase}
-                  className="px-6 py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                >
-                  {isSavingAspects ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-emerald-400" />}
-                  <span>{isSavingAspects ? 'Guardando en BD...' : 'Guardar Aspectos Técnicos en Base de Datos'}</span>
-                </button>
+                <div className="flex items-center gap-2.5 flex-wrap justify-end">
+                  {/* Botón Guardar en Base de Datos */}
+                  <button
+                    type="button"
+                    disabled={isSavingAspects}
+                    onClick={handleSaveAspectsToDatabase}
+                    className="px-5 py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    {isSavingAspects ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-emerald-400" />}
+                    <span>{isSavingAspects ? 'Guardando en BD...' : 'Guardar Aspectos en BD'}</span>
+                  </button>
+                </div>
               </div>
             </>
           )}

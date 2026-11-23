@@ -1,29 +1,5 @@
 export const DEFAULT_TECHNICAL_ASPECTS = [
   {
-    id: 'aspect-tsuki',
-    category: 'tsuki',
-    categoryLabel: '1. Aspectos Técnicos',
-    title: 'TSUKI WAZA (Ataques de Puño)',
-    subtitle: 'Enfoque, punto focal y trayectoria',
-    points: [
-      'Golpes dirigidos a la zona específica (Jodan, Chudan, Gedan).',
-      'Brazos de Hikite, con puño hacia arriba al costado del cuerpo.',
-      'Tronco recto, hombros atrás, vista al frente. (Chakugan)'
-    ],
-    order: 1
-  },
-  {
-    id: 'aspect-uke',
-    category: 'uke',
-    categoryLabel: '1. Aspectos Técnicos',
-    title: 'UKE WAZA (Bloqueos y Defensas)',
-    subtitle: 'Mecánica de bloqueo y preparación',
-    points: [
-      'Mecánica de cada bloqueo (preparación y ejecución de la técnica).'
-    ],
-    order: 2
-  },
-  {
     id: 'aspect-dachi',
     category: 'dachi',
     categoryLabel: '1. Aspectos Técnicos',
@@ -34,6 +10,30 @@ export const DEFAULT_TECHNICAL_ASPECTS = [
       'Posición (pies separados, paso largo al frente, rodilla con flexión correcta).',
       'Desplazamientos de Media Luna.',
       'Mecánica de las vueltas (Mawatte).'
+    ],
+    order: 1
+  },
+  {
+    id: 'aspect-tsuki',
+    category: 'tsuki',
+    categoryLabel: '1. Aspectos Técnicos',
+    title: 'TSUKI WAZA (Ataques de Puño)',
+    subtitle: 'Enfoque, punto focal y trayectoria',
+    points: [
+      'Golpes dirigidos a la zona específica (Jodan, Chudan, Gedan).',
+      'Brazos de Hikite, con puño hacia arriba al costado del cuerpo.',
+      'Tronco recto, hombros atrás, vista al frente. (Chakugan)'
+    ],
+    order: 2
+  },
+  {
+    id: 'aspect-uke',
+    category: 'uke',
+    categoryLabel: '1. Aspectos Técnicos',
+    title: 'UKE WAZA (Bloqueos y Defensas)',
+    subtitle: 'Mecánica de bloqueo y preparación',
+    points: [
+      'Mecánica de cada bloqueo (preparación y ejecución de la técnica).'
     ],
     order: 3
   },

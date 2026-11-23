@@ -608,13 +608,14 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
                           {studentList.map((st, sIdx) => {
                             const sId = String(st._id || st.id);
                             const isPaid = paidIds.has(sId);
-                            const belt = getBeltBadge(st.currentRank);
                             const studentAspirant = (call?.aspirants || []).find(a => String(a.studentId) === sId);
-                            const targetRank = (studentAspirant?.targetRank && studentAspirant.targetRank !== st.currentRank)
+                            const currentRank = studentAspirant?.currentRank || st.currentRank || '10° Kyu (Cinta Blanca)';
+                            const belt = getBeltBadge(currentRank);
+                            const targetRank = (studentAspirant?.targetRank && studentAspirant.targetRank !== currentRank)
                               ? studentAspirant.targetRank
-                              : (st.targetRank && st.targetRank !== st.currentRank)
+                              : (st.targetRank && st.targetRank !== currentRank)
                               ? st.targetRank
-                              : (getNextRank(st.currentRank) || st.currentRank || 'Por definir');
+                              : (getNextRank(currentRank) || currentRank || 'Por definir');
                             const isUpdating = updatingStudentId === sId;
 
                             return (

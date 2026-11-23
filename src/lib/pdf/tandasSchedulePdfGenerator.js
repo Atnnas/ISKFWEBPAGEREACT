@@ -200,17 +200,18 @@ export async function generateTandasSchedulePDF({ call, tandas = [], students = 
       const sId = String(st._id || st.id);
       const isPaid = paidSet.has(sId);
       const studentAspirant = (call.aspirants || []).find(a => String(a.studentId) === sId);
-      const targetRank = (studentAspirant?.targetRank && studentAspirant.targetRank !== st.currentRank)
+      const currentRank = studentAspirant?.currentRank || st.currentRank || '10° Kyu (Cinta Blanca)';
+      const targetRank = (studentAspirant?.targetRank && studentAspirant.targetRank !== currentRank)
         ? studentAspirant.targetRank
-        : (st.targetRank && st.targetRank !== st.currentRank)
+        : (st.targetRank && st.targetRank !== currentRank)
         ? st.targetRank
-        : (getNextRank(st.currentRank) || st.currentRank || 'Por definir');
+        : (getNextRank(currentRank) || currentRank || 'Por definir');
 
       return [
         String(idx + 1),
         st.name || 'Karateca',
-        st.currentRank || '10° Kyu',
-        targetRank || '9° Kyu',
+        currentRank,
+        targetRank,
         st.hasSpecialCondition ? `Cond. Especial` : 'Regular',
         `₡${unitCost.toLocaleString('es-CR')}`,
         isPaid ? '✓ PAGADO' : '○ PENDIENTE'

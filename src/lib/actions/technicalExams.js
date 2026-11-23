@@ -255,10 +255,10 @@ export async function synthesizeSenseiObservationsWithAI({
   averagedPercentage = 0,
   _isPassed = false,
   senseiObservations = [], // Array of { evaluatorName, techniqueName, observation }
-  _scores = {},             // Map of criteria scores (e.g. { "tech-01_aspect-dachi": 40 })
+  scores = {},             // Map of criteria scores (e.g. { "tech-01_tsuki_0": 80 })
   techniqueAverages = {},  // Map of technique scores (e.g. { "tech-01": 2 })
   techniques = [],         // Techniques from syllabus
-  _technicalAspects = []    // Aspects from syllabus
+  technicalAspects = []    // Aspects from syllabus
 }) {
   try {
     const validNotes = senseiObservations.filter(o => o.observation && String(o.observation).trim().length > 0);
@@ -272,6 +272,8 @@ export async function synthesizeSenseiObservationsWithAI({
     // 2. Analizar promedios y falencias por técnica y criterio según estrellas
     const lowTechs = [];
     const highTechs = [];
+    const moderateTechs = [];
+
     Object.entries(techniqueAverages || {}).forEach(([techId, val]) => {
       if (typeof val !== 'number') return;
       const normalized = val <= 10 ? val * 10 : val;
@@ -280,8 +282,40 @@ export async function synthesizeSenseiObservationsWithAI({
       const tGroup = (tObj?.group || tObj?.phase || 'kihon').toLowerCase();
       if (normalized < 70) {
         lowTechs.push({ id: techId, name: tName, group: tGroup, score: normalized });
-      } else if (normalized >= 85) {
+      } else if (normalized < 88) {
+        moderateTechs.push({ id: techId, name: tName, group: tGroup, score: normalized, stars: Math.round(normalized / 10) });
+      } else {
         highTechs.push({ id: techId, name: tName, group: tGroup, score: normalized });
+      }
+    });
+
+    // Analizar criterios específicos calificados con estrellas intermedias (ej. 7 a 8 estrellas)
+    const criteriaMarginList = [];
+    Object.entries(scores || {}).forEach(([scoreKey, val]) => {
+      if (typeof val !== 'number') return;
+      const normalized = val <= 10 ? val * 10 : val;
+      if (normalized >= 60 && normalized < 88) {
+        const parts = scoreKey.split('_');
+        const techId = parts[0];
+        const tObj = (techniques || []).find(t => t.id === techId);
+        const tName = tObj?.name || 'Técnica de Kihon';
+
+        // Buscar texto del criterio en technicalAspects
+        let matchedPointText = '';
+        (technicalAspects || []).forEach(asp => {
+          (asp.points || []).forEach(p => {
+            const pTxt = typeof p === 'object' ? (p.text || p.point) : String(p || '');
+            if (parts[1] && (asp.category || '').toLowerCase().includes(parts[1].toLowerCase())) {
+              matchedPointText = pTxt;
+            }
+          });
+        });
+
+        criteriaMarginList.push({
+          techniqueName: tName,
+          stars: Math.round(normalized / 10),
+          criterion: matchedPointText || scoreKey
+        });
       }
     });
 
@@ -291,8 +325,16 @@ export async function synthesizeSenseiObservationsWithAI({
       : 'No se redactaron notas textuales. La evaluación se realizó mediante la escala oficial de estrellas por técnica y criterio.';
 
     const lowTechsDesc = lowTechs.length > 0
-      ? lowTechs.map(t => `- ${t.name} (${t.group}): ${t.score}% (Falla en el criterio técnico)`).join('\n')
+      ? lowTechs.map(t => `- ${t.name} (${t.group}): ${t.score}% (Falla crítica en ejecución)`).join('\n')
       : (pct < 70 ? `- Desempeño insuficiente en las técnicas fundamentales de ${targetRank}` : 'Ninguna técnica en nivel crítico');
+
+    const moderateTechsDesc = moderateTechs.length > 0
+      ? moderateTechs.map(t => `- ${t.name} (${t.group}): ${t.stars}/10 estrellas (${t.score}%). Margen de mejora correctivo.`).join('\n')
+      : 'Técnicas en nivel satisfactorio.';
+
+    const criteriaMarginDesc = criteriaMarginList.length > 0
+      ? criteriaMarginList.map(c => `- [${c.techniqueName}]: ${c.stars}/10 estrellas en "${c.criterion}".`).join('\n')
+      : 'Criterios evaluados sin incidencias críticas.';
 
     const prompt = `Analiza la evaluación técnica del karateca ${studentName} para el grado de ${targetRank} (${syllabusName}), con una calificación final de ${pct}% (sobre 100%):
 
@@ -304,6 +346,10 @@ INFORMACIÓN DEL TEMARIO Y CALIFICACIONES DEL ASPIRANTE:
 - Calificación consolidada: ${pct}%
 - Técnicas con calificación baja / deficiente (1-2 estrellas o <70%):
 ${lowTechsDesc}
+- Técnicas con calificación de 7 a 8 estrellas (margen de mejora técnica y detalle fino):
+${moderateTechsDesc}
+- Criterios específicos calificados con 7 u 8 estrellas:
+${criteriaMarginDesc}
 
 OBSERVACIONES REGISTRADAS POR EVALUADORES:
 ${notesSummaryText}
@@ -312,33 +358,21 @@ TU TAREA OBLIGATORIA:
 1. REGLA 100% CORRECTIVA (PROHIBIDAS FELICITACIONES O ADULACIONES):
    - Queda terminantemente PROHIBIDO incluir comentarios de felicitación, adulación o complacencia (como "excelente", "sobresaliente", "gran actitud", "actitud ejemplar", "felicitaciones", "muy buen desempeño").
    - El examen de grado es una instancia marcial estricta: todo comentario, nota y viñeta debe ser 100% CORRECTIVO, señalando con precisión qué aspecto biomecánico o técnico debe corregir el aspirante para su progreso marcial.
-2. REGLA ESTRICTA DE ENFOQUE (SIN NOMBRES NI ATRIBUCIÓN):
+2. REGLA DE TÉCNICAS CON 7 U 8 ESTRELLAS:
+   - Para las técnicas o criterios calificados con 7 u 8 estrellas (donde el aspirante no alcanzó la nota perfecta de 10), genera OBLIGATORIAMENTE una viñeta correctiva técnica indicando el ajuste fino (codos rozando el torso, anclaje de talón, trayectoria del puño o recogida de patada) que le faltó para la puntuación completa.
+3. REGLA ESTRICTA DE ENFOQUE (SIN NOMBRES NI ATRIBUCIÓN):
    - NUNCA menciones nombres de evaluadores, ni frases como "según el tribunal", "el tribunal indica", "los profesores observaron".
    - Al karateca le interesan ÚNICAMENTE las correcciones técnicas directas y biomecánicas de su examen.
-3. REGLA DE SEVERIDAD Y CORRELACIÓN CON LOS ASPECTOS TÉCNICOS:
+4. REGLA DE SEVERIDAD Y CORRELACIÓN CON LOS ASPECTOS TÉCNICOS:
    - SI LA NOTA ES BAJA (< 70% o 1-2 estrellas):
-     El dictamen debe ser SEVERO, FIRME Y EXIGENTE. Señala con precisión las falencias de Shotokan que provocaron la reprobación:
-     * En Kihon (Posturas/Dachi): pierna posterior doblada en vez de estirada, talón despegado al avanzar, pasos en falso o reajustar los pies.
-     * En Kihon (Golpes/Tsuki): mano de Hikite descolgada en la cadera, hombros tensos y golpe sin foco ni Kime.
-     * En Kihon (Defensas/Uke): bloqueo pegado al cuerpo sin la separación de un puño de distancia y sin rotación de cadera.
-     * En Kihon (Patadas/Geri): no elevar la rodilla antes de patear, no recoger la pierna con Hikiashi e impacto incorrecto.
-     * En Kata (${kataName}): olvidar pasos, detenerse, o la falta grave de tocarse o acomodarse el karategui rompiendo la inmovilidad en tatami.
-     * En Kumite (${kumiteName}): perder la distancia Ma-ai, retroceder con miedo o desarmar la guardia Kamae tras bloquear.
-   - SI LA NOTA ES ALTA (>= 85% o 4-5 estrellas):
-     Tono de alta precisión técnica. Enfocado EXCLUSIVAMENTE en el detalle fino que le faltó corregir para ganar 100% (10 de 10) (ej: descender medio puño más el centro de gravedad sin oscilar la altura, máxima aceleración en el Hikite en el impacto final, cero movimientos tras el kiai en ${kataName}).
-   - SI LA NOTA ES MEDIA (70% - 84% o 3 estrellas):
-     Correcciones constructivas directas para afianzar la fijación de posturas y kime.
-4. COMPARACIÓN Y SÍNTESIS INTELIGENTE DE COMENTARIOS:
-   - Compara las observaciones de los evaluadores por cada fase (Kihon, Kata, Kumite).
-   - Si dos o más Senseis coinciden o se parecen en un rubro (por ejemplo: la salida con la punta del pie antes de avanzar, acomodarse el cabello o uniforme, los codos en un bloqueo, la respiración o la distancia), sintétizalos y unifícalos en una sola viñeta concisa de consenso.
-   - Si las observaciones de los Senseis coinciden con las técnicas de baja calificación de estrellas, intégralas directamente en la corrección de esa técnica.
-   - Si una técnica recibió estrellas bajas y no fue mencionada en texto, añade la corrección técnica correspondiente.
+     El dictamen debe ser SEVERO, FIRME Y EXIGENTE. Señala con precisión las falencias de Shotokan que provocaron la reprobación.
+   - SI LA NOTA ES DE 8 ESTRELLAS (75% - 85%):
+     Enfocado en las correcciones biomecánicas constructivas para que el alumno suba a 9-10 estrellas en su siguiente grado.
 5. Formato OBLIGATORIO: Lista con viñetas (*), una por línea, 100% correctivas:
 * [Corrección en Kata (${kataName})]
-* [Corrección en Kihon / Posturas]
+* [Corrección en Kihon / Posturas según las técnicas con 7-8 estrellas]
 * [Corrección en Kumite (${kumiteName})]
-* [Detalle correctivo específico para alcanzar 100% O Falencia crítica de no aprobación]
-* [Corrección biomecánica prioritaria de guardia, respiración o foco]`;
+* [Detalle correctivo específico de cadera, Hikite o respiración]`;
 
     // 4. Intentar Gemini API si está configurada
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
@@ -613,9 +647,9 @@ export async function saveConsolidatedVerdict({
       // Snapshot of the criteria (techniques and technical aspects) used for this exam
       criteriaSnapshot: syllabusDoc
         ? {
-            techniques: syllabusDoc.techniques || [],
-            technicalAspects: syllabusDoc.technicalAspects || [],
-          }
+          techniques: syllabusDoc.techniques || [],
+          technicalAspects: syllabusDoc.technicalAspects || [],
+        }
         : {},
     };
 
@@ -2105,7 +2139,7 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
         location: call.location || '',
         accessToken: call.accessToken,
         status: call.status,
-      isUnlocked: Boolean(call.isUnlocked && (call.schedules || []).length > 0),
+        isUnlocked: Boolean(call.isUnlocked && (call.schedules || []).length > 0),
         maxPerTanda: call.maxPerTanda || 6,
         schedules: (call.schedules || []).map(s => ({
           blockName: s.blockName,
@@ -2114,6 +2148,15 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
           day: Number(s.day) === 2 ? 2 : 1,
           targetRanks: s.targetRanks || [],
           studentIds: (s.studentIds || []).map(id => id.toString())
+        })),
+        aspirants: (call.aspirants || []).map(a => ({
+          studentId: a.studentId.toString(),
+          studentName: a.studentName || '',
+          currentRank: a.currentRank || '',
+          targetRank: a.targetRank || '',
+          scheduleBlock: a.scheduleBlock || '',
+          examDay: Number(a.examDay) === 2 ? 2 : 1,
+          promotedAt: a.promotedAt ? a.promotedAt.toISOString() : null,
         })),
         evaluators: evaluators.map(e => ({
           name: e.name,

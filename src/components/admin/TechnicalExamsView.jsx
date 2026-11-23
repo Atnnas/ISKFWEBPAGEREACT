@@ -100,6 +100,7 @@ import DatePickerField from '../ui/DatePickerField';
 import TechnicalExamEvaluatorCore from '../examinations/TechnicalExamEvaluatorCore';
 import TribunalProgressMonitor from './TribunalProgressMonitor';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
+import { doesCriterionApplyToTechnique, sortCriteriaMartialOrder } from '../../lib/utils/evaluatorHelpers';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 import { getNextRank, compareStudentsForExam, getRankSortOrder, isKyuExemptFromWrittenExam } from '../../lib/constants/kyuRanks';
 import { 
@@ -203,35 +204,50 @@ export function generateExamTechniques(syllabus) {
     const techNameLower = (tech.name || '').toLowerCase();
 
     if (phase === 'kihon') {
+      // 1. Mapea dinámicamente TODOS los puntos del aspecto Dachi Waza filtrados por aplicabilidad a esta técnica
+      let dachiRubrics = (dachiAspect?.points || [])
+        .map((p, pIdx) => {
+          if (doesCriterionApplyToTechnique(p, tech)) {
+            return pointToRubric(p, pIdx, 'dachi', '🦵');
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      // Si ninguno aplicó específicamente con appliesTo, cargar el punto de postura base correspondiente
+      if (dachiRubrics.length === 0 && dachiAspect?.points?.length > 0) {
+        const techStance = (tech.stance || '').toLowerCase();
+        let fallbackPoint = dachiAspect.points[0];
+        let fallbackIdx = 0;
+        if (techStance.includes('kiba') && dachiAspect.points[1]) {
+          fallbackPoint = dachiAspect.points[1];
+          fallbackIdx = 1;
+        } else if (techStance.includes('kokutsu') && dachiAspect.points[2]) {
+          fallbackPoint = dachiAspect.points[2];
+          fallbackIdx = 2;
+        }
+        const fallbackRubric = pointToRubric(fallbackPoint, fallbackIdx, 'dachi', '🦵');
+        if (fallbackRubric) dachiRubrics = [fallbackRubric];
+      }
+
       if (techNameLower.includes('zuki') || techNameLower.includes('tsuki') || techNameLower.includes('chudan') || techNameLower.includes('jodan') || techNameLower.includes('puño') || techNameLower.includes('golpe')) {
-        // Mapea dinámicamente TODOS los puntos del aspecto Tsuki Waza desde MongoDB (incluyendo opciones agregadas)
-        const tsukiRubrics = (tsukiAspect?.points || []).map((p, pIdx) => pointToRubric(p, pIdx, 'tsuki', '👊')).filter(Boolean);
-        const dachiRubric = dachiAspect?.points?.[0] ? pointToRubric(dachiAspect.points[0], 0, 'dachi', '🦵') : null;
-
-        rubrics = [...tsukiRubrics];
-        if (dachiRubric) rubrics.push(dachiRubric);
+        const tsukiRubrics = (tsukiAspect?.points || []).filter(p => doesCriterionApplyToTechnique(p, tech)).map((p, pIdx) => pointToRubric(p, pIdx, 'tsuki', '👊')).filter(Boolean);
+        rubrics = [...dachiRubrics, ...tsukiRubrics];
       } else if (techNameLower.includes('uke') || techNameLower.includes('barai') || techNameLower.includes('bloqueo')) {
-        // Mapea dinámicamente TODOS los puntos del aspecto Uke Waza desde MongoDB
-        const ukeRubrics = (ukeAspect?.points || []).map((p, pIdx) => pointToRubric(p, pIdx, 'uke', '🛡️')).filter(Boolean);
-        const dachiRubric = dachiAspect?.points?.[1] ? pointToRubric(dachiAspect.points[1], 1, 'dachi', '🦵') : null;
-
-        rubrics = [...ukeRubrics];
-        if (dachiRubric) rubrics.push(dachiRubric);
+        const ukeRubrics = (ukeAspect?.points || []).filter(p => doesCriterionApplyToTechnique(p, tech)).map((p, pIdx) => pointToRubric(p, pIdx, 'uke', '🛡️')).filter(Boolean);
+        rubrics = [...dachiRubrics, ...ukeRubrics];
       } else if (techNameLower.includes('geri') || techNameLower.includes('patada')) {
-        // Mapea dinámicamente TODOS los puntos del aspecto Geri Waza desde MongoDB
-        const geriRubrics = (geriAspect?.points || []).map((p, pIdx) => pointToRubric(p, pIdx, 'geri', '🦶')).filter(Boolean);
-        const dachiRubric = dachiAspect?.points?.[0] ? pointToRubric(dachiAspect.points[0], 0, 'dachi', '🦵') : null;
-
-        rubrics = [...geriRubrics];
-        if (dachiRubric) rubrics.push(dachiRubric);
+        const geriRubrics = (geriAspect?.points || []).filter(p => doesCriterionApplyToTechnique(p, tech)).map((p, pIdx) => pointToRubric(p, pIdx, 'geri', '🦶')).filter(Boolean);
+        rubrics = [...dachiRubrics, ...geriRubrics];
       } else {
-        const dachiRubrics = (dachiAspect?.points || []).map((p, pIdx) => pointToRubric(p, pIdx, 'dachi', '🦵')).filter(Boolean);
         rubrics = dachiRubrics.length > 0 ? dachiRubrics : [
-          pointToRubric('Precisión Técnica: Mecánica y trayectoria', 0, 'gen', '🎯'),
-          pointToRubric('Postura y Estabilidad: Base firme sin paso en falso', 1, 'gen', '🦵'),
+          pointToRubric('Postura y Estabilidad: Base firme sin paso en falso', 0, 'dachi', '🦵'),
+          pointToRubric('Precisión Técnica: Mecánica y trayectoria', 1, 'gen', '🎯'),
           pointToRubric('Kime y Enfoque: Respiración, cadera y punto de impacto', 2, 'gen', '⚡')
         ].filter(Boolean);
       }
+      // Ordenamiento biomecánico canónico: 1° Dachi -> 2° Uke -> 3° Tsuki/Geri -> 4° Kime/Foco
+      rubrics = sortCriteriaMartialOrder(rubrics);
     } else if (phase === 'kumite') {
       const kumiteAspect = aspects.find(a => (a.category || a.id || '').toLowerCase().includes('kumite'));
       if (kumiteAspect && Array.isArray(kumiteAspect.points)) {
@@ -1887,6 +1903,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
       const aggregatedTechAvgs = {};
       const techCounts = {};
+      const aggregatedScores = {};
+      const scoreCounts = {};
+
       (item.evaluations || []).forEach(ev => {
         Object.entries(ev.techniqueAverages || {}).forEach(([tId, avg]) => {
           if (typeof avg === 'number') {
@@ -1894,9 +1913,18 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             techCounts[tId] = (techCounts[tId] || 0) + 1;
           }
         });
+        Object.entries(ev.scores || {}).forEach(([sKey, val]) => {
+          if (typeof val === 'number') {
+            aggregatedScores[sKey] = (aggregatedScores[sKey] || 0) + val;
+            scoreCounts[sKey] = (scoreCounts[sKey] || 0) + 1;
+          }
+        });
       });
       Object.keys(aggregatedTechAvgs).forEach(tId => {
         aggregatedTechAvgs[tId] = Math.round(aggregatedTechAvgs[tId] / techCounts[tId]);
+      });
+      Object.keys(aggregatedScores).forEach(sKey => {
+        aggregatedScores[sKey] = Math.round(aggregatedScores[sKey] / scoreCounts[sKey]);
       });
 
       const res = await synthesizeSenseiObservationsWithAI({
@@ -1906,6 +1934,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         averagedPercentage: item.averagePercentage,
         isPassed: item.isPassed,
         senseiObservations: notesList,
+        scores: aggregatedScores,
         techniqueAverages: aggregatedTechAvgs,
         techniques: activeSyllabus?.techniques || [],
         technicalAspects: activeSyllabus?.technicalAspects || []

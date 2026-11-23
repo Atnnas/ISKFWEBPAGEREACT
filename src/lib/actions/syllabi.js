@@ -197,17 +197,22 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: [
       {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Bases y desplazamientos sin paso en falso',
+        points: [],
+        order: 1
+      },
+      {
         id: 'aspect-tsuki',
         category: 'tsuki',
         categoryLabel: '1. Aspectos Técnicos',
         title: 'TZUKI WAZA (Ataques de Puño)',
         subtitle: 'Enfoque, punto focal y trayectoria',
-        points: [
-          'Golpes dirigidos la zona específica enfocada en un punto particular.',
-          'Brazos de Hikite, con puño en la cadera sobre el cinturón.',
-          'Tronco recto, hombros hacia abajo, vista al frente al horizonte.'
-        ],
-        order: 1
+        points: [],
+        order: 2
       },
       {
         id: 'aspect-uke',
@@ -215,25 +220,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'UKE WAZA (Bloqueos y Defensas)',
         subtitle: 'Mecánica de codo y cobertura',
-        points: [
-          'Mecánica de la técnica de angulación del codo con relación al antebrazo y bíceps en cada bloque.'
-        ],
-        order: 2
-      },
-      {
-        id: 'aspect-dachi',
-        category: 'dachi',
-        categoryLabel: '1. Aspectos Técnicos',
-        title: 'DACHI WAZA (Posturas y Desplazamientos)',
-        subtitle: 'Bases y desplazamientos sin paso en falso',
-        points: [
-          'Posiciones de paso largo al frente con énfasis en la pierna de atrás estirada completamente, Posición Adelantada 70/30.',
-          'Desplazamientos de Media Luna sin mover los pies.',
-          'No ajustar las posiciones al avanzar.',
-          'Posturas atrasada 70/30 (Kokutsu Dachi) pie de adelante hacia adelante',
-          'Movimiento de técnica de tren superior con desplazamiento de piernas (Postura primero y luego la técnica)',
-          'Manejo correcto de la distancia en Sam -Bon -Kumite.'
-        ],
+        points: [],
         order: 3
       },
       {
@@ -242,9 +229,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Pie base y trayectoria',
-        points: [
-          'Énfasis en el movimiento o no movimiento del pie base según la patada.'
-        ],
+        points: [],
         order: 4
       },
       {
@@ -444,16 +429,22 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: [
       {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Bases, flexión, talones y cadera',
+        points: [],
+        order: 1
+      },
+      {
         id: 'aspect-tsuki',
         category: 'tsuki',
         categoryLabel: '1. Aspectos Técnicos',
         title: 'TZUKI WAZA (Ataques de Puño)',
         subtitle: 'Relación Tsuki te / Hikite y postura',
-        points: [
-          'Inicia relación entre el Tsuki te y el Hikite según técnica.',
-          'Tronco recto, hombros hacia abajo, vista al frente al horizonte, barbilla levantada.'
-        ],
-        order: 1
+        points: [],
+        order: 2
       },
       {
         id: 'aspect-uke',
@@ -461,24 +452,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'UKE WAZA (Bloqueos y Defensas)',
         subtitle: 'Angulación de codo y distancia al cuerpo',
-        points: [
-          'Mecánica de la técnica de angulación del codo con relación al dorso según cada bloqueo, (un puño entre el codo y el costado del cuerpo)'
-        ],
-        order: 2
-      },
-      {
-        id: 'aspect-dachi',
-        category: 'dachi',
-        categoryLabel: '1. Aspectos Técnicos',
-        title: 'DACHI WAZA (Posturas y Desplazamientos)',
-        subtitle: 'Bases, flexión, talones y cadera',
-        points: [
-          'Posiciones de paso largo al frente con énfasis en la pierna delantera en forma correcta (Rodilla sobre los dedos de los pies) Zenkutsu-Dachi 70/30',
-          'Desplazamientos de Media Luna hacia atrás sin mover ni levantar el talón.',
-          'Postura atrasada (Kokutsu Dachi) con flexión de rodilla delantera.',
-          'Manejo correcto de la distancia en Sam -Bon -Kumite (medición de rodilla con respecto al oponente).',
-          'Inicio de utilización de la cadera con relación al bloqueo.'
-        ],
+        points: [],
         order: 3
       },
       {
@@ -487,10 +461,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Relación tronco/patada y guardia',
-        points: [
-          'Buena relación entre el tronco y el desarrollo de la patada',
-          'Preparación de la guardia dentro de la ejecución de la patada'
-        ],
+        points: [],
         order: 4
       },
       {
@@ -701,16 +672,22 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: [
       {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Flexión, cadera, balance y peso corporal',
+        points: [],
+        order: 1
+      },
+      {
         id: 'aspect-tsuki',
         category: 'tsuki',
         categoryLabel: '1. Aspectos Técnicos',
         title: 'TZUKI WAZA (Ataques de Puño)',
         subtitle: 'Movimiento y manejo de cadera en combinaciones',
-        points: [
-          'Movimiento de cadera en relación del golpe.',
-          'Manejo de la Cadera en los movimientos básicos combinados.'
-        ],
-        order: 1
+        points: [],
+        order: 2
       },
       {
         id: 'aspect-uke',
@@ -718,25 +695,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'UKE WAZA (Bloqueos y Defensas)',
         subtitle: 'Uso de cadera en bloqueos',
-        points: [
-          'Movimiento de cadera según técnica de bloqueo.'
-        ],
-        order: 2
-      },
-      {
-        id: 'aspect-dachi',
-        category: 'dachi',
-        categoryLabel: '1. Aspectos Técnicos',
-        title: 'DACHI WAZA (Posturas y Desplazamientos)',
-        subtitle: 'Flexión, cadera, balance y peso corporal',
-        points: [
-          'Posiciones de paso largo al frente con ENFASIS EN FLEXION CORRECTA EXTENCION DE LA RODILLA TRASERA SEGÚN UTILIZACION DE LA CADERA',
-          'Desplazamientos de Media Luna utilizando la proyección de cadera al avanzar o retroceder.',
-          'Postura atrasada (kokutsu dachi) Con el balance correcto del peso del cuerpo.',
-          'Manejo correcto de la cadera dentro del Kumite comprometido.',
-          'Manejo del peso corporal según técnica.',
-          'Activación de la pierna adecuada para los diferentes desplazamientos para lograr la correcta utilización de los músculos.'
-        ],
+        points: [],
         order: 3
       },
       {
@@ -745,9 +704,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Aplicación de cadera en patadas',
-        points: [
-          'Aplicación de la cadera según patada.'
-        ],
+        points: [],
         order: 4
       },
       {
@@ -958,15 +915,22 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: [
       {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Firmeza de rodilla, nivel de cadera y desplazamientos laterales',
+        points: [],
+        order: 1
+      },
+      {
         id: 'aspect-tsuki',
         category: 'tsuki',
         categoryLabel: '1. Aspectos Técnicos',
         title: 'TZUKI WAZA (Ataques de Puño)',
         subtitle: 'Coordinación con capacidad física inicial',
-        points: [
-          'Coordinación entre la aplicación de técnica del golpe con la capacidad física en nivel inicial.'
-        ],
-        order: 1
+        points: [],
+        order: 2
       },
       {
         id: 'aspect-uke',
@@ -974,24 +938,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'UKE WAZA (Bloqueos y Defensas)',
         subtitle: 'Coordinación con capacidad física inicial',
-        points: [
-          'Coordinación entre la aplicación de técnica del bloqueo con la capacidad física en nivel inicial.'
-        ],
-        order: 2
-      },
-      {
-        id: 'aspect-dachi',
-        category: 'dachi',
-        categoryLabel: '1. Aspectos Técnicos',
-        title: 'DACHI WAZA (Posturas y Desplazamientos)',
-        subtitle: 'Firmeza de rodilla, nivel de cadera y desplazamientos laterales',
-        points: [
-          'Posiciones de paso largo al frente con ENFASIS NO DESPLAZAR DE LA RODILLA DELANTERA DE UN LADO A OTRO (izquierda-derecha)',
-          'Desplazamientos de Media Luna con la cadera al mismo nivel.',
-          'Postura atrasada (Kokutsu Dachi) ubicación de la pierna delantera con respecto al tronco.',
-          'Manejo correcto del desplazamiento lateral.',
-          'Manejo del peso corporal según técnica.'
-        ],
+        points: [],
         order: 3
       },
       {
@@ -1000,9 +947,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Estabilidad de cadera en patadas',
-        points: [
-          'Aplicación del Geri sin elevar el nivel de la cadera.'
-        ],
+        points: [],
         order: 4
       },
       {
@@ -1224,15 +1169,22 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: [
       {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Translación de posturas, cadera y desplazamiento diagonal',
+        points: [],
+        order: 1
+      },
+      {
         id: 'aspect-tsuki',
         category: 'tsuki',
         categoryLabel: '1. Aspectos Técnicos',
         title: 'TZUKI WAZA (Ataques de Puño)',
         subtitle: 'Coordinación técnica con capacidad física',
-        points: [
-          'Coordinación entre la aplicación de técnica del golpe con la capacidad física.'
-        ],
-        order: 1
+        points: [],
+        order: 2
       },
       {
         id: 'aspect-uke',
@@ -1240,24 +1192,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'UKE WAZA (Bloqueos y Defensas)',
         subtitle: 'Coordinación técnica con capacidad física',
-        points: [
-          'Coordinación entre la aplicación de técnica del bloqueo con la capacidad física.'
-        ],
-        order: 2
-      },
-      {
-        id: 'aspect-dachi',
-        category: 'dachi',
-        categoryLabel: '1. Aspectos Técnicos',
-        title: 'DACHI WAZA (Posturas y Desplazamientos)',
-        subtitle: 'Translación de posturas, cadera y desplazamiento diagonal',
-        points: [
-          'Translación de Posiciones de paso largo al frente con posición atrasada.',
-          'Desplazamientos de Media Luna con la cadera al mismo nivel.',
-          'Postura atrasada (Kokutsu Dachi) con la cadera en dirección de la rodilla atrasada.',
-          'Manejo correcto del desplazamiento diagonal.',
-          'Manejo del peso corporal según técnica.'
-        ],
+        points: [],
         order: 3
       },
       {
@@ -1266,9 +1201,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Forma correcta del pie según patada',
-        points: [
-          'Aplicación del Geri dándole énfasis a la forma correcta del pie según patada (Mawashi Geri Kiba Dachi Kokutsu Dachi)'
-        ],
+        points: [],
         order: 4
       },
       {
@@ -1503,15 +1436,22 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: [
       {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Desplazamientos rápidos y coordinados',
+        points: [],
+        order: 1
+      },
+      {
         id: 'aspect-tsuki',
         category: 'tsuki',
         categoryLabel: '1. Aspectos Técnicos',
         title: 'TZUKI WAZA (Ataques de Puño)',
         subtitle: 'Tensión y relajación en el golpe',
-        points: [
-          'Aplicación de la tensión relajación en la técnica del Tzuki.'
-        ],
-        order: 1
+        points: [],
+        order: 2
       },
       {
         id: 'aspect-uke',
@@ -1519,20 +1459,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'UKE WAZA (Bloqueos y Defensas)',
         subtitle: 'Tensión y relajación en el bloqueo',
-        points: [
-          'Aplicación de la tensión relajación en la técnica de bloqueo.'
-        ],
-        order: 2
-      },
-      {
-        id: 'aspect-dachi',
-        category: 'dachi',
-        categoryLabel: '1. Aspectos Técnicos',
-        title: 'DACHI WAZA (Posturas y Desplazamientos)',
-        subtitle: 'Desplazamientos rápidos y coordinados',
-        points: [
-          'Desplazamientos rápidos y coordinados.'
-        ],
+        points: [],
         order: 3
       },
       {
@@ -1541,9 +1468,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Tensión y relajación en patadas',
-        points: [
-          'Aplicación de la tensión relajación al Geri.'
-        ],
+        points: [],
         order: 4
       },
       {
@@ -1791,15 +1716,22 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: [
       {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Inicio del desarrollo de la Posición Kime',
+        points: [],
+        order: 1
+      },
+      {
         id: 'aspect-tsuki',
         category: 'tsuki',
         categoryLabel: '1. Aspectos Técnicos',
         title: 'TZUKI WAZA (Ataques de Puño)',
         subtitle: 'Transferencia de potencia al choque mediante impacto',
-        points: [
-          'Transferencia de la potencia física de la técnica de golpe al choque mediante un impacto.'
-        ],
-        order: 1
+        points: [],
+        order: 2
       },
       {
         id: 'aspect-uke',
@@ -1807,20 +1739,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'UKE WAZA (Bloqueos y Defensas)',
         subtitle: 'Transferencia de potencia al bloqueo mediante impacto',
-        points: [
-          'Transferencia de la potencia física a la técnica de bloqueo mediante un impacto.'
-        ],
-        order: 2
-      },
-      {
-        id: 'aspect-dachi',
-        category: 'dachi',
-        categoryLabel: '1. Aspectos Técnicos',
-        title: 'DACHI WAZA (Posturas y Desplazamientos)',
-        subtitle: 'Inicio del desarrollo de la Posición Kime',
-        points: [
-          'Inicio del desarrollo de la POSICION KIME.'
-        ],
+        points: [],
         order: 3
       },
       {
@@ -1829,9 +1748,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Inicio del desarrollo de patadas con giros',
-        points: [
-          'Inicio del desarrollo de las patadas con giros.'
-        ],
+        points: [],
         order: 4
       },
       {
@@ -2068,15 +1985,22 @@ const DEFAULT_INITIAL_SYLLABI = [
     createdBy: 'Comisión Técnica ISKF Costa Rica',
     technicalAspects: [
       {
+        id: 'aspect-dachi',
+        category: 'dachi',
+        categoryLabel: '1. Aspectos Técnicos',
+        title: 'DACHI WAZA (Posturas y Desplazamientos)',
+        subtitle: 'Desarrollo intermedio de la Posición Kime',
+        points: [],
+        order: 1
+      },
+      {
         id: 'aspect-tsuki',
         category: 'tsuki',
         categoryLabel: '1. Aspectos Técnicos',
         title: 'TZUKI WAZA (Ataques de Puño)',
         subtitle: 'Teoría técnica y músculos implicados',
-        points: [
-          'Conocimiento y aplicación de la teoría de la técnica de ataque y músculos implicados en su ejecución.'
-        ],
-        order: 1
+        points: [],
+        order: 2
       },
       {
         id: 'aspect-uke',
@@ -2084,20 +2008,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'UKE WAZA (Bloqueos y Defensas)',
         subtitle: 'Teoría de bloqueo y músculos implicados',
-        points: [
-          'Conocimiento y aplicación de la teoría de la técnica de bloqueo y músculos implicados en su ejecución.'
-        ],
-        order: 2
-      },
-      {
-        id: 'aspect-dachi',
-        category: 'dachi',
-        categoryLabel: '1. Aspectos Técnicos',
-        title: 'DACHI WAZA (Posturas y Desplazamientos)',
-        subtitle: 'Desarrollo intermedio de la Posición Kime',
-        points: [
-          'Desarrollo intermedio de la POSICION KIME.'
-        ],
+        points: [],
         order: 3
       },
       {
@@ -2106,9 +2017,7 @@ const DEFAULT_INITIAL_SYLLABI = [
         categoryLabel: '1. Aspectos Técnicos',
         title: 'GERI WAZA (Patadas)',
         subtitle: 'Control muscular físico y psíquico en patadas',
-        points: [
-          'Control muscular físico y psíquico en la aplicación de las patadas.'
-        ],
+        points: [],
         order: 4
       },
       {
@@ -2414,15 +2323,28 @@ export async function getExamSyllabi(targetRankFilter = null) {
         embusen: t.embusen || (t.group === 'kata' ? 'Embusen Oficial' : ''),
         notes: t.notes || ''
       })),
-      technicalAspects: Array.isArray(doc.technicalAspects) ? doc.technicalAspects.map(a => ({
-        id: a.id || Math.random().toString(36).substring(2, 9),
-        category: a.category || 'tsuki',
-        categoryLabel: a.categoryLabel || '1. Aspectos Técnicos',
-        title: a.title || '',
-        subtitle: a.subtitle || '',
-        points: Array.isArray(a.points) ? a.points : [],
-        order: Number(a.order) || 0
-      })) : DEFAULT_TECHNICAL_ASPECTS,
+      technicalAspects: (() => {
+        const CANONICAL_ORDER = ['dachi', 'tsuki', 'uke', 'geri', 'kata', 'kumite', 'physical', 'mental', 'do'];
+        const list = Array.isArray(doc.technicalAspects) && doc.technicalAspects.length > 0
+          ? doc.technicalAspects
+          : DEFAULT_TECHNICAL_ASPECTS;
+        return [...list].sort((a, b) => {
+          const idxA = CANONICAL_ORDER.indexOf(a.category);
+          const idxB = CANONICAL_ORDER.indexOf(b.category);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return (Number(a.order) || 99) - (Number(b.order) || 99);
+        }).map((a, i) => ({
+          id: a.id || Math.random().toString(36).substring(2, 9),
+          category: a.category || 'dachi',
+          categoryLabel: a.categoryLabel || '1. Aspectos Técnicos',
+          title: a.title || '',
+          subtitle: a.subtitle || '',
+          points: Array.isArray(a.points) ? a.points : [],
+          order: i + 1
+        }));
+      })(),
       createdBy: doc.createdBy || 'Comisión Técnica',
       createdAt: doc.createdAt?.toISOString() || null,
       updatedAt: doc.updatedAt?.toISOString() || null
@@ -2657,16 +2579,21 @@ export async function updateSyllabusTechnicalAspects(syllabusId, technicalAspect
           const rawText = p.text || p.point || p.rawText || '';
           const text = sanitizeString(rawText, 300);
           if (!text) return null;
+          const appliesTo = Array.isArray(p.appliesTo)
+            ? p.appliesTo.map(item => sanitizeString(item, 100)).filter(Boolean)
+            : [];
           return {
             text,
-            isEvaluable: Boolean(p.isEvaluable === true || p.evaluableInExam === true || p.evaluable === true)
+            isEvaluable: Boolean(p.isEvaluable === true || p.evaluableInExam === true || p.evaluable === true),
+            appliesTo
           };
         }
         const text = sanitizeString(p, 300);
         if (!text) return null;
         return {
           text,
-          isEvaluable: !isSec2
+          isEvaluable: !isSec2,
+          appliesTo: []
         };
       }).filter(Boolean);
 
@@ -2681,9 +2608,19 @@ export async function updateSyllabusTechnicalAspects(syllabusId, technicalAspect
       };
     });
 
+    const CANONICAL_ORDER = ['dachi', 'tsuki', 'uke', 'geri', 'kata', 'kumite', 'physical', 'mental', 'do'];
+    const sortedAspects = [...cleanedAspects].sort((a, b) => {
+      const idxA = CANONICAL_ORDER.indexOf(a.category);
+      const idxB = CANONICAL_ORDER.indexOf(b.category);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (a.order || 99) - (b.order || 99);
+    }).map((a, i) => ({ ...a, order: i + 1 }));
+
     const updated = await ExamSyllabus.findByIdAndUpdate(
       syllabusId,
-      { $set: { technicalAspects: cleanedAspects } },
+      { $set: { technicalAspects: sortedAspects } },
       { new: true, runValidators: false }
     ).lean();
 
@@ -2698,10 +2635,123 @@ export async function updateSyllabusTechnicalAspects(syllabusId, technicalAspect
 
     return { 
       success: true, 
-      technicalAspects: cleanedAspects 
+      technicalAspects: sortedAspects 
     };
   } catch (error) {
     console.error('Error al actualizar aspectos técnicos:', error);
     return { success: false, error: 'Error al procesar la actualización en base de datos.' };
+  }
+}
+
+/**
+ * Limpia estrictamente los criterios de Kihon (tsuki, uke, dachi, geri)
+ * en todos los temarios desde Cinturón Amarillo hasta Dan en la base de datos MongoDB.
+ * PROTECCIÓN ABSOLUTA: Cinturón Blanco (10° Kyu a 9° Kyu) se mantiene 100% INTACTO.
+ * Categorías de Kata, Kumite, Físicos, Mentales y DO se mantienen 100% INTACTAS en todos los temarios.
+ */
+export async function cleanKihonAspectsExcludingWhite() {
+  try {
+    await dbConnect();
+    const syllabi = await ExamSyllabus.find({});
+    let updatedCount = 0;
+    const kihonCategories = ['tsuki', 'uke', 'dachi', 'geri'];
+
+    for (const syl of syllabi) {
+      const nameLower = (syl.name || '').toLowerCase();
+      const currentRankLower = (syl.currentRank || '').toLowerCase();
+      const targetRankLower = (syl.targetRank || '').toLowerCase();
+
+      // PROTECCIÓN ABSOLUTA: Omitir estrictamente Cinturón Blanco (10° Kyu)
+      // Cuidado: 4° Kyu es "Cinta Morada con Línea Blanca", NO es cinturón blanco.
+      const isWhiteBelt = 
+        (currentRankLower.includes('10') || 
+         nameLower.includes('10 kyu') || 
+         nameLower.includes('10° kyu') || 
+         nameLower.includes('10º kyu') ||
+         targetRankLower.includes('10° kyu') ||
+         (nameLower.includes('cinturón blanco') && !nameLower.includes('morad'))
+        ) &&
+        !nameLower.includes('morad') &&
+        !currentRankLower.includes('morad') &&
+        !currentRankLower.includes('4° kyu') &&
+        !currentRankLower.includes('4 kyu');
+
+      const CANONICAL_ORDER = ['dachi', 'tsuki', 'uke', 'geri', 'kata', 'kumite', 'physical', 'mental', 'do'];
+
+      if (isWhiteBelt) {
+        // En Cinturón Blanco garantizamos orden canónico con Dachi de primero SIN TOCAR SUS PUNTOS
+        const currentAspects = syl.technicalAspects || [];
+        const isAlreadyCanonical = currentAspects.length > 0 && currentAspects.every((asp, i) => {
+          return asp.category === CANONICAL_ORDER[i] && asp.order === (i + 1);
+        });
+        if (!isAlreadyCanonical && currentAspects.length > 0) {
+          const sortedAspects = [...currentAspects].sort((a, b) => {
+            const idxA = CANONICAL_ORDER.indexOf(a.category);
+            const idxB = CANONICAL_ORDER.indexOf(b.category);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return (a.order || 99) - (b.order || 99);
+          }).map((a, i) => ({ ...a, order: i + 1 }));
+
+          await ExamSyllabus.updateOne(
+            { _id: syl._id },
+            { $set: { technicalAspects: sortedAspects } }
+          );
+        }
+        continue;
+      }
+
+      let modified = false;
+      const updatedAspects = (syl.technicalAspects || []).map(aspect => {
+        if (kihonCategories.includes(aspect.category)) {
+          if (Array.isArray(aspect.points) && aspect.points.length > 0) {
+            modified = true;
+          }
+          return {
+            ...aspect,
+            points: []
+          };
+        }
+        return aspect;
+      });
+
+      // Validar si el orden ya era canónico con Dachi de primero
+      const isAlreadyCanonical = (syl.technicalAspects || []).length > 0 && (syl.technicalAspects || []).every((asp, i) => {
+        return asp.category === CANONICAL_ORDER[i] && asp.order === (i + 1);
+      });
+      if (!isAlreadyCanonical) {
+        modified = true;
+      }
+
+      if (modified) {
+        const sortedAspects = [...updatedAspects].sort((a, b) => {
+          const idxA = CANONICAL_ORDER.indexOf(a.category);
+          const idxB = CANONICAL_ORDER.indexOf(b.category);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+          return (a.order || 99) - (b.order || 99);
+        }).map((a, i) => ({ ...a, order: i + 1 }));
+
+        await ExamSyllabus.updateOne(
+          { _id: syl._id },
+          { $set: { technicalAspects: sortedAspects } }
+        );
+        updatedCount++;
+      }
+    }
+
+    revalidatePath('/admin/examinations/syllabi');
+    revalidatePath('/admin/examinations/technical');
+
+    return {
+      success: true,
+      message: `Se limpiaron con éxito los criterios de Kihon en ${updatedCount} temarios de la base de datos (Cinturón Blanco se mantuvo 100% intacto).`,
+      updatedCount
+    };
+  } catch (error) {
+    console.error('Error al limpiar aspectos de Kihon:', error);
+    return { success: false, error: 'Ocurrió un error al procesar la limpieza en la base de datos.' };
   }
 }

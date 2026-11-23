@@ -66,6 +66,7 @@ export function parseAspectPoint(pointItem, idx, prefix, isSection2 = false) {
   if (!pointItem) return null;
   let raw = '';
   let isEvaluable = !isSection2;
+  let appliesTo = [];
 
   if (typeof pointItem === 'object' && pointItem !== null) {
     raw = String(pointItem.text || pointItem.point || pointItem.rawText || '').trim();
@@ -73,6 +74,9 @@ export function parseAspectPoint(pointItem, idx, prefix, isSection2 = false) {
       isEvaluable = pointItem.isEvaluable;
     } else if (typeof pointItem.evaluableInExam === 'boolean') {
       isEvaluable = pointItem.evaluableInExam;
+    }
+    if (Array.isArray(pointItem.appliesTo)) {
+      appliesTo = pointItem.appliesTo;
     }
   } else {
     raw = String(pointItem).trim();
@@ -96,8 +100,203 @@ export function parseAspectPoint(pointItem, idx, prefix, isSection2 = false) {
     label,
     desc,
     rawText: raw,
-    isEvaluable
+    isEvaluable,
+    appliesTo
   };
+}
+
+/**
+ * Determina si un criterio técnico aplica a una técnica específica de Kihon/Kumite/Kata.
+ * 1. Prioriza 'appliesTo' configurado por el usuario en el temario.
+ * 2. Si no tiene 'appliesTo' o es general, aplica filtro de exclusión de seguridad
+ *    (evita por ejemplo criterios de Gyaku Zuki en Oi Zuki, o de Mae Geri en Yoko Geri).
+ */
+export function doesCriterionApplyToTechnique(criterionPoint, technique) {
+  if (!criterionPoint || !technique) return false;
+  const techName = String(technique.name || '').toLowerCase().trim();
+  const techId = String(technique.id || '').toLowerCase().trim();
+  const normTech = techName.replace(/tsuki/g, 'zuki');
+
+  // 1. Verificación por appliesTo explícito
+  const appliesTo = Array.isArray(criterionPoint.appliesTo) ? criterionPoint.appliesTo : [];
+  if (appliesTo.length > 0 && !appliesTo.includes('all')) {
+    return appliesTo.some(t => {
+      const target = String(t).toLowerCase().trim();
+      const normTarget = target.replace(/tsuki/g, 'zuki');
+      return target === techName || target === techId || 
+             normTarget === normTech ||
+             techName.includes(target) || target.includes(techName) ||
+             normTech.includes(normTarget) || normTarget.includes(normTech);
+    });
+  }
+
+  // 2. Filtro semántico de exclusión para criterios sin 'appliesTo' específico
+  const rawText = String(criterionPoint.rawText || criterionPoint.text || criterionPoint.desc || '').toLowerCase();
+
+  // Caso Tsuki: No mezclar Oi Zuki con Gyaku Zuki
+  if (techName.includes('oi') && techName.includes('zuki')) {
+    if (rawText.includes('gyaku')) return false;
+  }
+  if (techName.includes('gyaku') && techName.includes('zuki') && !techName.includes('age') && !techName.includes('soto') && !techName.includes('uchi') && !techName.includes('gedan')) {
+    if (rawText.includes('oi zuki') || rawText.includes('oi tsuki')) return false;
+  }
+
+  // Caso Uke: Bloqueos no deben mostrar fallas específicas de otros bloqueos
+  if (techName.includes('age') && techName.includes('uke')) {
+    if (rawText.includes('soto') || rawText.includes('uchi') || rawText.includes('gedan') || rawText.includes('shuto')) return false;
+  }
+  if (techName.includes('soto') && techName.includes('uke')) {
+    if (rawText.includes('age') || rawText.includes('uchi') || rawText.includes('gedan') || rawText.includes('shuto')) return false;
+  }
+  if (techName.includes('uchi') && techName.includes('uke')) {
+    if (rawText.includes('age') || rawText.includes('soto') || rawText.includes('gedan') || rawText.includes('shuto')) return false;
+  }
+  if (techName.includes('gedan') && techName.includes('barai')) {
+    if (rawText.includes('age') || rawText.includes('soto') || rawText.includes('uchi') || rawText.includes('shuto')) return false;
+  }
+  if (techName.includes('shuto') && techName.includes('uke')) {
+    if (rawText.includes('age') || rawText.includes('soto') || rawText.includes('uchi') || rawText.includes('gedan')) return false;
+  }
+
+  // Caso Geri: Patadas no deben cruzarse
+  if (techName.includes('mae') && techName.includes('geri')) {
+    if (rawText.includes('yoko') || rawText.includes('mawashi') || rawText.includes('ushiro')) return false;
+  }
+  if (techName.includes('yoko') && techName.includes('geri')) {
+    if (rawText.includes('mae geri') || rawText.includes('mawashi') || rawText.includes('ushiro')) return false;
+  }
+  if (techName.includes('mawashi') && techName.includes('geri')) {
+    if (rawText.includes('mae geri') || rawText.includes('yoko') || rawText.includes('ushiro')) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Calcula el peso biomecánico de un criterio técnico para Shotokan Karate:
+ * 10: Dachi Waza (Postura, base, anclaje y pies firmes) - PRIMERO
+ * 20: Uke Waza (Bloqueos y defensas preparatorias)
+ * 30: Tsuki / Geri (Técnicas de impacto: puños, golpes y patadas)
+ * 40: Foco general (Kime, kiai, zanshin, mirada/chakugan, respiración)
+ * 50: Otros aspectos técnicos
+ */
+export function getMartialCriterionWeight(criterion) {
+  if (!criterion) return 50;
+  const key = String(criterion.key || '').toLowerCase();
+  const cat = String(criterion.category || '').toLowerCase();
+  const text = `${criterion.label || ''} ${criterion.desc || ''} ${criterion.rawText || ''} ${criterion.short || ''}`.toLowerCase();
+
+  // 1. Dachi Waza / Postura y Base (Prioridad 1: peso 10)
+  if (
+    key.startsWith('dachi') ||
+    key.includes('dachi') ||
+    cat === 'dachi' ||
+    text.includes('dachi') ||
+    text.includes('postura') ||
+    text.includes('base') ||
+    text.includes('zenkutsu') ||
+    text.includes('kokutsu') ||
+    text.includes('kiba') ||
+    text.includes('fudo') ||
+    text.includes('anclaje') ||
+    text.includes('pie de apoyo') ||
+    text.includes('talon') ||
+    text.includes('talón') ||
+    text.includes('pies firmes')
+  ) {
+    return 10;
+  }
+
+  // 2. Bloqueos / Uke Waza (Prioridad 2: peso 20)
+  if (
+    key.startsWith('uke') ||
+    key.includes('uke') ||
+    cat === 'uke' ||
+    text.includes('uke') ||
+    text.includes('barai') ||
+    text.includes('bloqueo') ||
+    text.includes('angulación') ||
+    text.includes('angulacion')
+  ) {
+    return 20;
+  }
+
+  // 3. Tsuki Waza y Geri Waza (Prioridad 3: peso 30)
+  if (
+    key.startsWith('tsuki') ||
+    key.includes('tsuki') ||
+    key.includes('zuki') ||
+    cat === 'tsuki' ||
+    text.includes('tsuki') ||
+    text.includes('zuki') ||
+    text.includes('puño') ||
+    text.includes('golpe') ||
+    text.includes('chudan') ||
+    text.includes('jodan') ||
+    text.includes('hikite') ||
+    text.includes('trayectoria directa')
+  ) {
+    return 30;
+  }
+
+  if (
+    key.startsWith('geri') ||
+    key.includes('geri') ||
+    cat === 'geri' ||
+    text.includes('geri') ||
+    text.includes('patada') ||
+    text.includes('hikiashi')
+  ) {
+    return 30;
+  }
+
+  // 4. Kiai, Kime, Zanshin, Chakugan / Mirada (Prioridad 4: peso 40)
+  if (
+    text.includes('kiai') ||
+    text.includes('kime') ||
+    text.includes('zanshin') ||
+    text.includes('mirada') ||
+    text.includes('chakugan') ||
+    text.includes('respiración') ||
+    text.includes('respiracion') ||
+    text.includes('espíritu') ||
+    text.includes('espiritu')
+  ) {
+    return 40;
+  }
+
+  return 50;
+}
+
+/**
+ * Ordena una lista de criterios según la secuencia biomecánica tradicional de Shotokan:
+ * 1° Dachi Waza (Base / Postura)
+ * 2° Uke Waza (Defensa)
+ * 3° Tsuki Waza / Geri Waza (Ataque / Impacto)
+ * 4° Kime, Kiai, Zanshin y Foco
+ */
+export function sortCriteriaMartialOrder(criteriaList = []) {
+  if (!Array.isArray(criteriaList) || criteriaList.length <= 1) return criteriaList || [];
+  return [...criteriaList].sort((a, b) => {
+    const wA = getMartialCriterionWeight(a);
+    const wB = getMartialCriterionWeight(b);
+    return wA - wB;
+  });
+}
+
+/**
+ * Obtiene el icono marcial representativo para el aspecto
+ */
+export function getMartialCriterionIcon(criterion) {
+  const w = getMartialCriterionWeight(criterion);
+  if (w === 10) return '🦵';
+  if (w === 20) return '🛡️';
+  if (w === 30) {
+    const text = `${criterion?.label || ''} ${criterion?.desc || ''} ${criterion?.key || ''}`.toLowerCase();
+    if (text.includes('geri') || text.includes('patada')) return '🦶';
+    return '👊';
+  }
+  return '⚡';
 }
 
 export const KIHON_CANON_ORDER = [
