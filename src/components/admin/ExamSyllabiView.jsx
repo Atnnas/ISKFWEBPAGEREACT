@@ -636,43 +636,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     setEditingPoint(null);
   };
 
-  // Restablecer un bloque/aspecto a sus criterios oficiales de fábrica
-  const handleResetAspectToDefault = (aspectId, aspectTitle = '') => {
-    showConfirm({
-      title: `¿Restablecer criterios de ${aspectTitle || 'la categoría'}?`,
-      message: '¿Estás seguro de que deseas restablecer los criterios a los valores oficiales de fábrica? Esto reemplazará los criterios personalizados actuales.',
-      confirmText: 'Sí, Restablecer',
-      cancelText: 'No, Cancelar',
-      onConfirm: () => {
-        const defaultAspect = DEFAULT_TECHNICAL_ASPECTS.find(d => d.id === aspectId || d.category === aspectId);
-        if (!defaultAspect) return;
-        setAspectsState(prev => prev.map(a => {
-          if (a.id === aspectId || a.category === defaultAspect.category) {
-            return JSON.parse(JSON.stringify(defaultAspect));
-          }
-          return a;
-        }));
-      }
-    });
-  };
 
-  // Vaciar todos los criterios de un bloque/aspecto específico
-  const handleClearAspectPoints = (aspectId, aspectTitle) => {
-    showConfirm({
-      title: `¿Vaciar todos los criterios de ${aspectTitle}?`,
-      message: `¿Estás seguro de que deseas borrar todos los criterios dentro de "${aspectTitle}" para este cinturón? Recuerda presionar "Guardar en Base de Datos" para confirmar el cambio.`,
-      confirmText: 'Sí, Borrar todos',
-      cancelText: 'No, Cancelar',
-      onConfirm: () => {
-        setAspectsState(prev => prev.map(a => {
-          if (a.id === aspectId) {
-            return { ...a, points: [] };
-          }
-          return a;
-        }));
-      }
-    });
-  };
 
   // Guardar aspectos técnicos en Base de Datos
   const handleSaveAspectsToDatabase = async () => {
@@ -1774,28 +1738,6 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                   Criterios Evaluados ({pointsCount})
                                 </span>
-                                <div className="flex items-center gap-3">
-                                  {pointsCount > 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleClearAspectPoints(aspect.id, aspect.title)}
-                                      className="text-[11px] font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 hover:underline cursor-pointer transition-colors"
-                                      title="Borrar todos los criterios de esta categoría"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                      <span>Vaciar bloque</span>
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleResetAspectToDefault(aspect.id, aspect.title)}
-                                    className="text-[11px] font-semibold text-slate-500 hover:text-[#2D2E83] flex items-center gap-1 hover:underline cursor-pointer transition-colors"
-                                    title="Restablecer a los criterios oficiales por defecto de este aspecto"
-                                  >
-                                    <RotateCcw className="w-3 h-3" />
-                                    <span>Restablecer oficiales</span>
-                                  </button>
-                                </div>
                               </div>
 
                               {pointsCount === 0 ? (
@@ -2160,28 +2102,6 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                   Criterios Formativos y de Examen ({pointsCount})
                                 </span>
-                                <div className="flex items-center gap-3">
-                                  {pointsCount > 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleClearAspectPoints(aspect.id, aspect.title)}
-                                      className="text-[11px] font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 hover:underline cursor-pointer transition-colors"
-                                      title="Borrar todos los criterios de esta categoría"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                      <span>Vaciar bloque</span>
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleResetAspectToDefault(aspect.id, aspect.title)}
-                                    className="text-[11px] font-semibold text-slate-500 hover:text-[#2D2E83] flex items-center gap-1 hover:underline cursor-pointer transition-colors"
-                                    title="Restablecer a los criterios oficiales por defecto de este aspecto"
-                                  >
-                                    <RotateCcw className="w-3 h-3" />
-                                    <span>Restablecer oficiales</span>
-                                  </button>
-                                </div>
                               </div>
 
                               {pointsCount === 0 ? (
