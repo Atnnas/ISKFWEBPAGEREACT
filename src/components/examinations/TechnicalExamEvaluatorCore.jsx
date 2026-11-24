@@ -989,18 +989,6 @@ export default function TechnicalExamEvaluatorCore({
     return Math.max(...beltGroups.map(g => g.techniques.length), 1);
   }, [beltGroups]);
 
-  // Cinturones presentes en la tanda activa
-  const tandaRanks = useMemo(() => {
-    return Array.from(new Set(tandaStudents.map(s => s.currentRank).filter(Boolean)));
-  }, [tandaStudents]);
-
-  // Nombre de la técnica activa para mostrar en el panel de control
-  const currentActiveTechName = useMemo(() => {
-    if (beltGroups.length === 0) return '';
-    const activeTech = beltGroups[0]?.techniques?.[selectedTechniqueIndex];
-    return activeTech?.name || '';
-  }, [beltGroups, selectedTechniqueIndex]);
-
   // Guardar estado de navegación en localStorage
   useEffect(() => {
     try {
@@ -1860,8 +1848,40 @@ export default function TechnicalExamEvaluatorCore({
             </div>
           </div>
 
-          {/* Lado Derecho: Selector de Tanda + Herramientas Operativas */}
+          {/* Lado Derecho: Selector de Fase + Selector de Tanda + Herramientas Operativas */}
           <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar py-0.5 lg:justify-end flex-wrap">
+            {/* Fases Oficiales ISKF integradas */}
+            <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
+              {[
+                { key: 'kihon', label: '1. KIHON' },
+                { key: 'kumite', label: '2. KUMITE' },
+                { key: 'kata', label: '3. KATA' },
+                ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '4. ASPECTOS' }] : [])
+              ].map(phase => {
+                const isSelected = effectivePhase === phase.key;
+                return (
+                  <button
+                    key={phase.key}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPhase(phase.key);
+                      setSelectedTechniqueIndex(0);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                      isSelected
+                        ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                  >
+                    {phase.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Separador vertical */}
+            <div className="h-5 w-px bg-slate-800 hidden sm:block"></div>
+
             {/* Selector de Tanda */}
             <div className="flex items-center gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-slate-800/80">
               <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 px-1">
@@ -1897,6 +1917,14 @@ export default function TechnicalExamEvaluatorCore({
 
             {/* Separador vertical */}
             <div className="h-5 w-px bg-slate-800 hidden sm:block"></div>
+
+            {/* Reloj Digital de Tatami en Vivo */}
+            {tatamiClock && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-amber-400/30 text-amber-300 font-mono font-black shadow-2xs text-xs" title="Hora oficial de tatami">
+                <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span className="tracking-wider">{tatamiClock}</span>
+              </div>
+            )}
 
             {/* Botón Monitor Tribunal */}
             <button
@@ -1968,78 +1996,6 @@ export default function TechnicalExamEvaluatorCore({
                 </span>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* FILA 2: FASES OFICIALES ISKF (IZQ) Y PANEL DE CONTROL DE TATAMI EN VIVO (DER) */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-0.5">
-          {/* Lado Izquierdo: Fases Oficiales ISKF */}
-          <div className="flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800 shadow-inner overflow-x-auto custom-scrollbar">
-            {[
-              { key: 'kihon', label: '👊 1. KIHON' },
-              { key: 'kumite', label: '⚔️ 2. KUMITE' },
-              { key: 'kata', label: '🥋 3. KATA' },
-              ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '📋 4. ASPECTOS' }] : [])
-            ].map(phase => {
-              const isSelected = effectivePhase === phase.key;
-              return (
-                <button
-                  key={phase.key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedPhase(phase.key);
-                    setSelectedTechniqueIndex(0);
-                  }}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
-                    isSelected
-                      ? 'bg-amber-400 text-slate-950 shadow-md ring-1 ring-amber-300 scale-102'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  {phase.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Lado Derecho: Monitor de Tatami en Tiempo Real (Aprovechamiento 100% del Ancho) */}
-          <div className="flex items-center gap-2 sm:justify-end flex-wrap text-xs">
-            {/* Atletas en Tatami */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/70 border border-slate-800 text-slate-300">
-              <Users className="w-3.5 h-3.5 text-amber-400" />
-              <span className="font-bold text-white">{tandaStudents.length}</span>
-              <span className="text-[11px] text-slate-400">en tatami</span>
-              {tandaRanks.length > 0 && (
-                <div className="flex items-center gap-1 ml-1 pl-1.5 border-l border-slate-800">
-                  {tandaRanks.slice(0, 2).map(r => (
-                    <span key={r} className={`text-[9px] px-1.5 py-0.2 rounded font-black ${getBeltBadgeClass(r)}`}>
-                      {r.split(' ')[0]}
-                    </span>
-                  ))}
-                  {tandaRanks.length > 2 && (
-                    <span className="text-[9px] text-slate-400 font-mono">+{tandaRanks.length - 2}</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Paso Técnico y Progreso */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950/70 border border-slate-800">
-              <span className="text-[10px] uppercase font-mono font-black text-amber-300 bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded">
-                Paso {selectedTechniqueIndex + 1}/{totalPhaseSteps}
-              </span>
-              <span className="text-slate-300 font-bold truncate max-w-[140px] sm:max-w-[200px]" title={currentActiveTechName}>
-                {currentActiveTechName}
-              </span>
-            </div>
-
-            {/* Reloj Digital de Tatami en Vivo */}
-            {tatamiClock && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-950 border border-amber-400/30 text-amber-300 font-mono font-black shadow-2xs" title="Hora oficial de tatami">
-                <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                <span className="text-xs tracking-wider">{tatamiClock}</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -2135,10 +2091,11 @@ export default function TechnicalExamEvaluatorCore({
                 key={group.key || groupIdx}
                 className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
               >
-                {/* ENCABEZADO DEL CARRIL DEL CINTURÓN COMPACTO */}
-                <div className="bg-slate-950/95 border-b border-slate-800/80 px-3 py-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider ${getBeltBadgeClass(group.rankLabel)}`}>
+                {/* ENCABEZADO DEL CARRIL: CINTURÓN (IZQ), TÉCNICA ACTIVA GRANDE Y CENTRADA (CENTRO) */}
+                <div className="bg-slate-950 border-b border-slate-800/80 px-4 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3">
+                  {/* Lado Izquierdo: Cinturón y Aspirantes */}
+                  <div className="flex items-center gap-2 flex-wrap shrink-0 self-start md:self-center">
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider shadow-xs ${getBeltBadgeClass(group.rankLabel)}`}>
                       {group.rankLabel}
                     </span>
                     {group.targetRankLabel && group.targetRankLabel !== group.rankLabel && (
@@ -2152,64 +2109,63 @@ export default function TechnicalExamEvaluatorCore({
                     </span>
                   </div>
 
-                  {/* ESTADO / TÉCNICA ACTIVA DE ESTE CINTURÓN */}
-                  <div>
+                  {/* CENTRO DE LA PANTALLA: TÉCNICA GRANDE, DESTACADA Y TOTALMENTE VISIBLE */}
+                  <div className="flex-1 flex flex-col items-center justify-center text-center px-2 min-w-0">
                     {isGroupCompleted ? (
-                      <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-xs">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                         <span>{phaseTitleName} Completado para este cinturón</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 flex-wrap sm:justify-end">
-                        <span className="text-[11px] uppercase tracking-wider font-mono font-black text-slate-950 bg-amber-400 px-2 py-0.5 rounded-md shadow-xs ring-1 ring-amber-300 shrink-0">
-                          {effectivePhase === 'kihon' ? '👊 KIHON' : effectivePhase === 'kata' ? '🥋 KATA' : effectivePhase === 'kumite' ? '⚔️ KUMITE' : effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1}/{groupTechs.length}
-                        </span>
-                        <span className="text-sm font-black text-amber-200 tracking-tight">
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-mono font-black text-slate-950 bg-amber-400 px-2.5 py-0.5 rounded-md shadow-xs ring-1 ring-amber-300">
+                            {effectivePhase === 'kihon' ? '👊 KIHON' : effectivePhase === 'kata' ? '🥋 KATA' : effectivePhase === 'kumite' ? '⚔️ KUMITE' : effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1} de {groupTechs.length}
+                          </span>
+                        </div>
+
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] text-center leading-tight">
                           {groupActiveTech?.name}
-                        </span>
-                        {/* Badges técnicos deduplicados */}
+                        </h2>
+
+                        {/* Badges técnicos deduplicados centrados abajo */}
                         {(() => {
                           const badges = [];
-                          if (groupActiveTech?.stance) {
-                            badges.push({ key: 'st', label: groupActiveTech.stance, cls: 'text-amber-300/90 bg-amber-400/10 border-amber-400/20' });
-                          }
+                          if (groupActiveTech?.stance) badges.push({ key: 'st', label: groupActiveTech.stance, cls: 'text-amber-300 bg-amber-400/10 border-amber-400/25' });
                           const dirClean = (groupActiveTech?.direction || '').trim().toLowerCase();
                           const embClean = (groupActiveTech?.embusen || '').trim().toLowerCase();
-                          if (groupActiveTech?.direction && dirClean !== embClean) {
-                            badges.push({ key: 'dir', label: groupActiveTech.direction, cls: 'text-cyan-300/90 bg-cyan-400/10 border-cyan-400/20' });
-                          }
-                          if (groupActiveTech?.repetitions) {
-                            badges.push({ key: 'rep', label: `${groupActiveTech.repetitions} rep.`, cls: 'text-emerald-300/90 bg-emerald-400/10 border-emerald-400/20' });
-                          }
-                          if (groupActiveTech?.embusen) {
-                            badges.push({ key: 'emb', label: groupActiveTech.embusen, cls: 'text-purple-300/90 bg-purple-400/10 border-purple-400/20' });
-                          }
+                          if (groupActiveTech?.direction && dirClean !== embClean) badges.push({ key: 'dir', label: groupActiveTech.direction, cls: 'text-cyan-300 bg-cyan-400/10 border-cyan-400/25' });
+                          if (groupActiveTech?.repetitions) badges.push({ key: 'rep', label: `${groupActiveTech.repetitions} rep.`, cls: 'text-emerald-300 bg-emerald-400/10 border-emerald-400/25' });
+                          if (groupActiveTech?.embusen) badges.push({ key: 'emb', label: groupActiveTech.embusen, cls: 'text-purple-300 bg-purple-400/10 border-purple-400/25' });
                           return badges.length > 0 ? (
-                            <div className="flex items-center gap-1 text-[10px]">
+                            <div className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs flex-wrap mt-1">
                               {badges.map(b => (
-                                <span key={b.key} className={`font-semibold px-1.5 py-0.2 rounded border ${b.cls}`}>
-                                  {b.label}
-                                </span>
+                                <span key={b.key} className={`font-bold px-2 py-0.5 rounded-md border ${b.cls}`}>{b.label}</span>
                               ))}
                             </div>
                           ) : null;
                         })()}
-                        {/* Notas no redundantes */}
+
                         {(() => {
                           const note = (groupActiveTech?.notes || '').trim();
                           const name = (groupActiveTech?.name || '').trim();
                           const noteNorm = note.toLowerCase().replace(/[.\s]/g, '');
                           const nameNorm = name.toLowerCase().replace(/[.\s]/g, '');
                           if (note && noteNorm !== nameNorm) {
-                            return (
-                              <span className="text-[10px] text-slate-400 italic max-w-xs truncate hidden md:inline">
-                                • {note}
-                              </span>
-                            );
+                            return <span className="text-[11px] text-slate-400 italic max-w-md truncate mt-0.5">• {note}</span>;
                           }
                           return null;
                         })()}
                       </div>
+                    )}
+                  </div>
+
+                  {/* Lado Derecho: Balance visual */}
+                  <div className="hidden md:flex items-center gap-2 shrink-0 self-center justify-end min-w-[120px]">
+                    {!isGroupCompleted && (
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {groupTechIdx + 1}/{groupTechs.length}
+                      </span>
                     )}
                   </div>
                 </div>
