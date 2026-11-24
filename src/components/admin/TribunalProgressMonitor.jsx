@@ -2551,7 +2551,7 @@ export default function TribunalProgressMonitor({
                             {tanda.blockName || `Tanda ${tIdx + 1}`}
                           </span>
                           <span className="text-[11px] text-gray-500 font-mono">
-                            ({tanda.startTime || '09:00 AM'} - {tanda.endTime || '09:45 AM'})
+                            ({tanda.startTime || '09:00 AM'} - {tanda.endTime || '10:00 AM'})
                           </span>
                         </div>
                         <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">

@@ -107,7 +107,7 @@ const TechnicalExamCallSchema = new mongoose.Schema({
   schedules: [{
     blockName: { type: String, trim: true }, // ej: "Tanda 1"
     startTime: { type: String, trim: true }, // ej: "09:00 AM"
-    endTime: { type: String, trim: true },   // ej: "09:45 AM"
+    endTime: { type: String, trim: true },   // ej: "10:00 AM"
     day: { type: Number, default: 1, min: 1, max: 2 },
     targetRanks: [{ type: String, trim: true }],
     studentIds: [{ type: String, trim: true }],

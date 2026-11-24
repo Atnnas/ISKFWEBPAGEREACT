@@ -2362,7 +2362,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           id: `tanda_${idx}_${Date.now()}`,
           blockName: s.blockName || `Tanda ${idx + 1}`,
           startTime: s.startTime || '09:00 AM',
-          endTime: s.endTime || '09:45 AM',
+          endTime: s.endTime || '10:00 AM',
           day: Number(s.day) === 2 ? 2 : 1,
           studentIds: Array.isArray(s.studentIds) ? s.studentIds.map(String) : []
         })));
@@ -2491,8 +2491,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       // 4. Asignar nombres, horarios continuos y metadatos
       return chunks.map((item, idx) => {
         const tandaNum = idx + 1;
-        const startM = startBaseMinutes + (idx * 45);
-        const endM = startM + 45;
+        const startM = startBaseMinutes + (idx * 60);
+        const endM = startM + 60;
         const dayPrefix = selectedCallForDetail?.isMultiDay ? `Día ${dayNumber} - ` : '';
         return {
           id: `tanda_d${dayNumber}_${tandaNum}_${Date.now()}_${idx}`,
@@ -4865,9 +4865,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       <div className="flex items-center bg-white border border-gray-300 rounded-lg overflow-hidden shadow-2xs">
                                         <input
                                           type="text"
-                                          value={tanda.endTime || '09:45 AM'}
+                                          value={tanda.endTime || '10:00 AM'}
                                           onChange={(e) => handleUpdateTandaTime(tanda.id, 'endTime', e.target.value)}
-                                          placeholder="09:45 AM"
+                                          placeholder="10:00 AM"
                                           className="w-18 px-1.5 py-1 text-xs font-mono font-bold text-gray-800 text-center outline-hidden focus:bg-indigo-50/30"
                                           title="Hora de Fin (sincroniza inicio de tanda siguiente)"
                                         />
