@@ -2240,7 +2240,9 @@ export default function TechnicalExamEvaluatorCore({
                           {groupCriteria.map((criterion, cIdx) => (
                             <th 
                               key={criterion.key} 
-                              className="py-2 px-1 text-center align-middle min-w-[96px] sm:min-w-[106px]"
+                              className={`py-2 px-1 text-center align-middle min-w-[96px] sm:min-w-[106px] ${
+                                cIdx > 0 ? 'border-l border-red-500/35' : 'border-l border-slate-800/60'
+                              }`}
                             >
                               <div className="flex flex-col items-center gap-0.5">
                                 <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.2 rounded-md whitespace-nowrap flex items-center gap-1 shadow-2xs">
@@ -2253,7 +2255,7 @@ export default function TechnicalExamEvaluatorCore({
                               </div>
                             </th>
                           ))}
-                          <th className="py-2 px-1 text-center w-12 align-middle">
+                          <th className="py-2 px-1 text-center w-12 align-middle border-l border-slate-800">
                             <div className="text-[11px] font-black uppercase text-slate-400">
                               Nota
                             </div>
@@ -2373,8 +2375,8 @@ export default function TechnicalExamEvaluatorCore({
                                 </div>
                               </td>
 
-                              {/* Celdas con las 10 estrellas por criterio */}
-                              {groupCriteria.map(criterion => {
+                              {/* Celdas con las 10 estrellas por criterio con separador rojo entre aspectos */}
+                              {groupCriteria.map((criterion, cIdx) => {
                                 const criterionKey = effectivePhase === 'aspectos'
                                   ? `aspect_${groupTechKey}_${criterion.key}`
                                   : `${groupTechKey}_${criterion.key}`;
@@ -2386,13 +2388,15 @@ export default function TechnicalExamEvaluatorCore({
                                   <td
                                     key={criterion.key}
                                     className={`py-2 px-1 text-center transition-all ${
+                                      cIdx > 0 ? 'border-l border-red-500/30' : 'border-l border-slate-800/40'
+                                    } ${
                                       isMissing
                                         ? 'bg-rose-950/40 ring-2 ring-rose-500 rounded-xl animate-pulse shadow-sm shadow-rose-500/25'
                                         : ''
                                     }`}
                                   >
                                     <div className="flex flex-col items-center justify-center">
-                                      <div className="flex flex-col items-center justify-center gap-0.5 select-none">
+                                      <div className="flex flex-col items-center justify-center gap-0.5 select-none bg-slate-900/60 p-1 rounded-xl border border-slate-800/80">
                                         {/* Fila 1: Estrellas 1 a 5 */}
                                         <div className="flex items-center justify-center gap-1">
                                           {[1, 2, 3, 4, 5].map(starVal => {
@@ -2476,7 +2480,7 @@ export default function TechnicalExamEvaluatorCore({
                               })}
 
                               {/* Columna: Nota promedio de la técnica */}
-                              <td className="py-2 px-2 text-center align-middle">
+                              <td className="py-2 px-2 text-center align-middle border-l border-slate-800">
                                 <div className="flex flex-col items-center justify-center">
                                   <span
                                     className={`text-xs font-black font-mono px-2 py-1 rounded-lg ${

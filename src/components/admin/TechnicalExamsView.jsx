@@ -6394,8 +6394,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                     <tr className="bg-[#2D2E83] text-white text-[11px] uppercase tracking-wider font-bold divide-x divide-[#232468]">
                       <th className="py-3 px-3 w-20 text-center">Puesto</th>
                       <th className="py-3 px-4 min-w-[220px]">Aspirante (Tatami)</th>
-                      {activeTechnique.rubrics.map((rub) => (
-                        <th key={rub.id} className="py-3 px-4 min-w-[240px] max-w-[340px]">
+                      {activeTechnique.rubrics.map((rub, rIdx) => (
+                        <th key={rub.id} className={`py-3 px-4 min-w-[240px] max-w-[340px] ${rIdx > 0 ? '!border-l !border-red-500/35' : ''}`}>
                           <div className="flex items-start gap-1.5 text-white">
                             <span className="shrink-0 mt-0.5">{rub.icon}</span>
                             <span className="font-bold text-xs normal-case leading-snug">{rub.label}</span>
@@ -6467,11 +6467,11 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                           </td>
 
                           {/* Criterios / Rubros específicos de la técnica con 1 a 5 estrellas */}
-                          {activeTechnique.rubrics.map((rub) => {
+                          {activeTechnique.rubrics.map((rub, rIdx) => {
                             const currentVal = stScores[rub.id] || 0;
 
                             return (
-                              <td key={rub.id} className="py-3.5 px-4 align-middle">
+                              <td key={rub.id} className={`py-3.5 px-4 align-middle ${rIdx > 0 ? '!border-l !border-red-500/30' : ''}`}>
                                 <div className="flex items-center gap-2">
                                   <div className="flex flex-col gap-1 bg-gray-50 p-1.5 rounded-xl border border-gray-200/90 shadow-2xs select-none">
                                     {/* Fila 1: Estrellas 1 a 5 */}
