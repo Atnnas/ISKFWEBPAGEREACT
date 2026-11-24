@@ -2395,20 +2395,18 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     }));
 
     // Exclusión mutua en tandas: removerlo de cualquier tanda del otro día
-    setCallTandas(prevTandas => {
-      const updated = prevTandas.map(tanda => {
-        const tDay = Number(tanda.day) === 2 ? 2 : 1;
-        if (tDay !== dayNum && (tanda.studentIds || []).includes(studentId)) {
-          return {
-            ...tanda,
-            studentIds: (tanda.studentIds || []).filter(id => id !== studentId)
-          };
-        }
-        return tanda;
-      });
-      persistTandasEvent(updated);
-      return updated;
+    const updatedTandas = callTandas.map(tanda => {
+      const tDay = Number(tanda.day) === 2 ? 2 : 1;
+      if (tDay !== dayNum && (tanda.studentIds || []).includes(studentId)) {
+        return {
+          ...tanda,
+          studentIds: (tanda.studentIds || []).filter(id => id !== studentId)
+        };
+      }
+      return tanda;
     });
+    setCallTandas(updatedTandas);
+    persistTandasEvent(updatedTandas);
 
     try {
       const res = await transferStudentExamDay({ callId, studentId, targetDay: dayNum });
