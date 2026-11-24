@@ -1920,7 +1920,8 @@ export default function TribunalProgressMonitor({
   }, [progressData, call]);
 
   const evaluatorsProgress = useMemo(() => {
-    if (!isSenseiSession) return rawEvaluatorsProgress;
+    // Si solo hay 1 evaluador en total (Sensei Roy solo), no filtramos para que pueda verse el avance
+    if (!isSenseiSession || rawEvaluatorsProgress.length <= 1) return rawEvaluatorsProgress;
     return rawEvaluatorsProgress.filter(item => {
       const ev = item.evaluator;
       const matchEmail = currentEvaluatorEmail && ev.email?.toLowerCase() === currentEvaluatorEmail.toLowerCase();
@@ -1993,7 +1994,9 @@ export default function TribunalProgressMonitor({
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-0.5">
-                {isSenseiSession
+                {rawEvaluatorsProgress.length <= 1
+                  ? 'Evaluación técnica individual con Sinodal Único (Sensei Roy Gatjens)'
+                  : isSenseiSession
                   ? `Supervisando el avance de los otros ${evaluatorsProgress.length} Senseis evaluadores en tatami`
                   : `Supervisión simultánea del avance de los ${evaluatorsProgress.length} Senseis evaluadores de ${progressData?.dojoName || call?.dojoName || 'Dojo'}`}
               </p>

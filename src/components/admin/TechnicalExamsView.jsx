@@ -959,8 +959,12 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     const sEmail = String(sensei.email || '').toLowerCase().trim();
     const dEmail = String(targetDojo.email || '').toLowerCase().trim();
 
-    // 1. Coincidencia por nombre del Sensei
-    if (dSensei && sName) {
+    // Distinción estricta entre Sensei Roy Gatjens y Sensei Roy Lee Gatjens
+    const sHasLee = sName.includes('lee');
+    const dHasLee = dSensei.includes('lee');
+    if (sHasLee !== dHasLee) {
+      // Uno es Roy Lee y el otro es Roy padre: no coinciden como titular
+    } else if (dSensei && sName) {
       if (dSensei === sName || dSensei.includes(sName) || sName.includes(dSensei)) {
         return true;
       }
@@ -1139,6 +1143,11 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     const nB = cleanNormName(b.name);
     if (!nA || !nB) return false;
     if (nA === nB) return true;
+
+    // Distinción estricta: Sensei Roy Gatjens (padre, Director Nacional) vs Sensei Roy Lee Gatjens (hijo)
+    const aHasLee = nA.includes('lee');
+    const bHasLee = nB.includes('lee');
+    if (aHasLee !== bHasLee) return false;
 
     // Si ambos comparten al menos 2 palabras clave significativas (ej. "luis" y "roman")
     const wordsA = nA.split(/\s+/).filter(w => w.length > 2);
@@ -2069,7 +2078,9 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     const targetDojo = selectedDojo || dojos[0];
     const initialSenseis = [];
 
-    // Sensei Roy Gatjens como Director Nacional de la ISKF siempre preside el tribunal
+    // Sensei Roy Gatjens como Director Nacional de la ISKF siempre preside el tribunal.
+    // Por directiva ISKF, Sensei Roy Gatjens puede calificar solo (1 evaluador) o acompañado
+    // de 1 a 4 sinodales opcionales según decida el administrador al convocar.
     const royGatjens = availableSenseis.find(s => s.name.toLowerCase().includes('gatjens') && !s.name.toLowerCase().includes('lee')) || {
       id: 'sensei-roy-gatjens',
       name: 'Sensei Roy Gatjens',
@@ -2080,16 +2091,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       isPermanent: true
     };
     initialSenseis.push(royGatjens);
-
-    // Completar hasta 3 evaluadores por defecto si están disponibles,
-    // EXCLUYENDO rigurosamente al sensei titular del dojo a evaluar (conflicto de interés)
-    for (const s of availableSenseis) {
-      if (initialSenseis.length >= 3) break;
-      if (isDojoOwnerSensei(s, targetDojo)) continue;
-      if (!initialSenseis.some(item => item.email === s.email)) {
-        initialSenseis.push(s);
-      }
-    }
 
     setSelectedSenseisForCall(initialSenseis);
     setNewCallForm({
@@ -8090,9 +8091,12 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-rose-50 text-rose-700 border border-rose-200'
                       }`}>
-                        {selectedSenseisForCall.length} de 5 Senseis
+                        {selectedSenseisForCall.length} de 5 Senseis {selectedSenseisForCall.length === 1 ? '(Sinodal Único)' : ''}
                       </span>
                     </div>
+                    <p className="text-[11px] text-gray-500 mb-1.5">
+                      Sensei Roy Gatjens puede calificar solo (1 evaluador) o acompañado de hasta 4 sinodales opcionales.
+                    </p>
 
                     <div className="max-h-44 overflow-y-auto p-2 bg-gray-50 border border-gray-200 rounded-xl space-y-1.5">
                       {allSenseisForNewCall.map((sensei) => {
@@ -8419,9 +8423,12 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                     : 'bg-rose-50 text-rose-700 border border-rose-200'
                 }`}>
-                  {editingSenseisList.length} de 5 Senseis
+                  {editingSenseisList.length} de 5 Senseis {editingSenseisList.length === 1 ? '(Sinodal Único)' : ''}
                 </span>
               </div>
+              <p className="text-[11px] text-gray-500">
+                Sensei Roy Gatjens puede calificar solo (1 evaluador) o acompañado de hasta 4 sinodales opcionales.
+              </p>
 
               {/* Lista seleccionable de Senseis */}
               <div className="space-y-2 max-h-60 overflow-y-auto p-1 custom-scrollbar">
