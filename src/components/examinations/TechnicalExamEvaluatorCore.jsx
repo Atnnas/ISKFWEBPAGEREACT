@@ -1797,208 +1797,7 @@ export default function TechnicalExamEvaluatorCore({
         </div>
       )}
 
-      {/* 2. ENCABEZADO OPTIMIZADO: IDENTIFICACIÓN DEL SENSEI, TANDAS, FASES Y ESTADO CON 100% APROVECHAMIENTO */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 sm:p-3 text-white shadow-md space-y-2.5">
-        {/* FILA 1: IDENTIFICACIÓN DEL SENSEI (IZQ) Y CONTROL DE TANDAS + HERRAMIENTAS (DER) */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5 border-b border-slate-800/80 pb-2.5">
-          {/* Lado Izquierdo: Info del Sensei y Convocatoria */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-8 h-8 rounded-xl bg-linear-to-br from-amber-400 to-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-xs shrink-0 ring-1 ring-amber-300/50">
-              🥋
-            </span>
-            <div className="leading-tight min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs sm:text-sm font-black text-white truncate">{evaluator?.name || 'Sensei Sinodal'}</span>
-                <span className="text-[10px] px-1.5 py-0.5 bg-amber-400/15 text-amber-300 border border-amber-400/30 rounded-md font-bold">
-                  {evaluator?.role || 'Sinodal'}
-                </span>
-                {isAdmin && (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-indigo-500/25 text-indigo-200 border border-indigo-400/30 rounded-md font-bold">
-                    Admin
-                  </span>
-                )}
-                {isUserAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAdminAuditMode(prev => !prev);
-                      setValidationWarning(null);
-                      setUnratedStarKeys(new Set());
-                    }}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all flex items-center gap-1 cursor-pointer shadow-xs active:scale-95 ${
-                      adminAuditMode
-                        ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-amber-400/20 ring-1 ring-amber-300'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
-                    }`}
-                    title={
-                      adminAuditMode
-                        ? 'Modo Auditor Admin ACTIVO: Permite avanzar y correr todas las técnicas sin calificar estrellas obligatoriamente'
-                        : 'Modo Auditor Admin INACTIVO: Calificación estricta con validación de estrellas obligatoria'
-                    }
-                  >
-                    <Zap className={`w-3 h-3 ${adminAuditMode ? 'text-slate-950 fill-slate-950' : 'text-amber-400'}`} />
-                    <span>Modo Admin:</span>
-                    <span className="font-mono">{adminAuditMode ? 'ON (Sin estrellas)' : 'OFF'}</span>
-                  </button>
-                )}
-              </div>
-              <p className="text-[10px] text-slate-400 truncate max-w-xs sm:max-w-md">
-                {call?.title || 'Examen Técnico'} • <span className="text-slate-300 font-semibold">{call?.dojoName}</span>
-              </p>
-            </div>
-          </div>
 
-          {/* Lado Derecho: Selector de Fase + Selector de Tanda + Herramientas Operativas */}
-          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar py-0.5 lg:justify-end flex-wrap">
-            {/* Fases Oficiales ISKF integradas */}
-            <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-xl border border-slate-800">
-              {[
-                { key: 'kihon', label: '1. KIHON' },
-                { key: 'kumite', label: '2. KUMITE' },
-                { key: 'kata', label: '3. KATA' },
-                ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '4. ASPECTOS' }] : [])
-              ].map(phase => {
-                const isSelected = effectivePhase === phase.key;
-                return (
-                  <button
-                    key={phase.key}
-                    type="button"
-                    onClick={() => {
-                      setSelectedPhase(phase.key);
-                      setSelectedTechniqueIndex(0);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
-                      isSelected
-                        ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                    }`}
-                  >
-                    {phase.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Separador vertical */}
-            <div className="h-5 w-px bg-slate-800 hidden sm:block"></div>
-
-            {/* Selector de Tanda */}
-            <div className="flex items-center gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-slate-800/80">
-              <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 shrink-0 px-1">
-                <Clock className="w-3.5 h-3.5 text-amber-400" /> Tanda:
-              </span>
-              {tandas.map((tanda, tIdx) => {
-                const isSelected = selectedTandaIndex === tIdx;
-                const studentCount = (tanda.studentIds || []).length;
-                return (
-                  <button
-                    key={tanda.id || tIdx}
-                    type="button"
-                    onClick={() => {
-                      setSelectedTandaIndex(tIdx);
-                      setSelectedTechniqueIndex(0);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300 scale-102 font-black'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                    }`}
-                  >
-                    <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                      isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
-                    }`}>
-                      {studentCount}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Separador vertical */}
-            <div className="h-5 w-px bg-slate-800 hidden sm:block"></div>
-
-            {/* Reloj Digital de Tatami en Vivo */}
-            {tatamiClock && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-amber-400/30 text-amber-300 font-mono font-black shadow-2xs text-xs" title="Hora oficial de tatami">
-                <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                <span className="tracking-wider">{tatamiClock}</span>
-              </div>
-            )}
-
-            {/* Botón Monitor Tribunal */}
-            <button
-              type="button"
-              onClick={() => setShowTribunalMonitorModal(true)}
-              className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border border-indigo-400/40 active:scale-95 text-xs"
-              title="Supervisar avance del tribunal"
-            >
-              <Users className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">Monitor Tribunal</span>
-            </button>
-
-            {/* Sincronización en Vivo */}
-            <button
-              type="button"
-              onClick={() => pollCallRoster(true)}
-              disabled={isSyncingRoster}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-xs"
-              title="Sincronizar en tiempo real"
-            >
-              <RotateCcw className={`w-3.5 h-3.5 text-cyan-400 ${isSyncingRoster ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isSyncingRoster ? 'Sync...' : 'En Vivo'}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            </button>
-
-            {/* Pantalla Completa / Expandir Tatami al Máximo */}
-            <button
-              type="button"
-              onClick={toggleFullscreen}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-xl font-bold transition-all shadow-xs cursor-pointer active:scale-95 text-xs"
-              title={isFullscreen ? "Restaurar tamaño de ventana" : "Pantalla completa (Aprovechar 100% del monitor)"}
-            >
-              {isFullscreen ? (
-                <>
-                  <Minimize2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden sm:inline">Restaurar</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden sm:inline">Pantalla Completa</span>
-                </>
-              )}
-            </button>
-
-            {/* Estado de Guardado & Conexión */}
-            <div className="flex items-center gap-1.5">
-              {saveStatus === 'saving' ? (
-                <span className="flex items-center gap-1 text-amber-300 font-medium text-xs px-2 py-0.5 rounded-lg bg-amber-400/10 border border-amber-400/20" title="Guardando calificaciones...">
-                  <RotateCcw className="w-3 h-3 animate-spin" />
-                  <span className="hidden md:inline text-[10px]">Guardando</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20" title="Todo guardado en base de datos">
-                  <Check className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline text-[10px]">Guardado</span>
-                </span>
-              )}
-
-              {!isOnline ? (
-                <span className="flex items-center gap-1 text-rose-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-rose-500/10 border border-rose-500/20" title="Sin conexión">
-                  <WifiOff className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline text-[10px]">Offline</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-emerald-400 font-bold text-xs px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20" title="En línea">
-                  <Wifi className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline text-[10px]">Online</span>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* ALERTA DE TANDAS Y KARATECAS ACTUALIZADAS EN TIEMPO REAL */}
       {rosterAlert && (
@@ -2444,88 +2243,158 @@ export default function TechnicalExamEvaluatorCore({
         </div>
       )}
 
-      {/* 6. BARRA FIJA INFERIOR PARA AVANCE RÁPIDO */}
+      {/* 6. BARRA FIJA INFERIOR PARA AVANCE RÁPIDO CON CONTROLES OPERATIVOS INTEGRADOS */}
       {/* ========================================================================= */}
-      {/* BARRA INFERIOR FIJA DE NAVEGACIÓN Y CIERRE DE FASE (OPTIMIZADA PARA TABLET) */}
+      {/* BARRA INFERIOR: SENSEI (IZQ), TANDA, FASES ISKF (CENTRO) Y NAVEGACIÓN (DER) */}
       {/* ========================================================================= */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 p-2.5 sm:p-3 shadow-2xl">
-        <div className="w-full px-2 sm:px-4 md:px-6 flex items-center justify-between gap-2 sm:gap-3">
-          {/* BOTÓN ANTERIOR */}
-          {isFirstStepInTanda && hasPrevTanda ? (
-            <button
-              type="button"
-              onClick={handlePrevTechnique}
-              className="h-11 sm:h-12 px-3.5 sm:px-4 bg-indigo-950 hover:bg-indigo-900 text-amber-300 border border-amber-400/40 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
-              title={`Volver a ${tandas[selectedTandaIndex - 1]?.blockName || `Tanda ${selectedTandaIndex}`}`}
-            >
-              <ChevronLeft className="w-4 h-4 text-amber-400 stroke-[3]" />
-              <span>Tanda Anterior</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handlePrevTechnique}
-              disabled={isFirstStepInTanda && !hasPrevTanda}
-              className="h-11 sm:h-12 px-3.5 sm:px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer shrink-0"
-              title="Retroceder al paso anterior"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Anterior</span>
-            </button>
-          )}
-
-          {/* INDICADOR CENTRAL DE TANDA Y PASO */}
-          <div className="text-center text-xs font-bold text-slate-400 flex items-center justify-center gap-2 truncate px-1 min-w-0 flex-wrap">
-            <span className="px-2.5 py-1 rounded-full bg-slate-800 text-amber-300 text-[11px] font-mono shrink-0 border border-slate-700">
-              Tanda {selectedTandaIndex + 1} de {tandas.length}
-            </span>
-            <span className="px-3 py-1 rounded-lg bg-indigo-950/80 border border-indigo-400/30 text-white font-mono text-xs font-black truncate hidden sm:inline">
-              FASE: <span className="text-amber-400 font-black">{effectivePhase.toUpperCase()}</span> • Paso {selectedTechniqueIndex + 1} de {totalPhaseSteps}
-            </span>
-            {isUserAdmin && totalPhaseSteps > 1 && (
-              <div className="flex items-center gap-1 shrink-0 bg-slate-950 px-2 py-0.5 rounded-lg border border-amber-400/30">
-                <span className="text-[10px] text-amber-400 font-mono hidden md:inline">Ir a paso:</span>
-                <select
-                  value={selectedTechniqueIndex}
-                  onChange={(e) => {
-                    setSelectedTechniqueIndex(Number(e.target.value));
-                    setStudentTechOverrides({});
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 p-2 sm:p-2.5 shadow-2xl">
+        <div className="w-full px-2 sm:px-4 flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
+          {/* LADO IZQUIERDO: SENSEI QUE ESTÁ EVALUANDO + SELECTOR DE TANDA A SU LADO DERECHO */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {/* NOMBRE DEL SENSEI EVALUADOR */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-400/40 text-xs shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+              <span className="text-amber-400 font-bold shrink-0">Sensei:</span>
+              <span className="font-black text-white truncate max-w-[150px] sm:max-w-[220px]">
+                {evaluator?.name || 'Sinodal'}
+              </span>
+              {isUserAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminAuditMode(prev => !prev);
                     setValidationWarning(null);
                     setUnratedStarKeys(new Set());
                   }}
-                  className="bg-transparent text-amber-300 text-[11px] font-mono font-bold focus:outline-none cursor-pointer"
-                  title="Salto directo de técnica para Administrador (sin validar estrellas)"
+                  className={`ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${
+                    adminAuditMode
+                      ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-xs'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                  }`}
+                  title={adminAuditMode ? 'Modo Auditor Admin ACTIVO (Sin estrellas)' : 'Modo Auditor Admin INACTIVO'}
                 >
-                  {Array.from({ length: totalPhaseSteps }).map((_, idx) => (
-                    <option key={idx} value={idx} className="bg-slate-900 text-white">
-                      Paso {idx + 1} de {totalPhaseSteps}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <span className="text-slate-500 text-[11px] hidden md:inline">({tandaStudents.length} karatecas)</span>
+                  ⚡ Admin: {adminAuditMode ? 'ON' : 'OFF'}
+                </button>
+              )}
+            </div>
+
+            {/* SELECTOR DE TANDAS (INMEDIATAMENTE AL LADO DERECHO DEL SENSEI) */}
+            <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 shrink-0">
+              <span className="text-[11px] font-bold text-slate-400 px-1 hidden md:inline">Tanda:</span>
+              {tandas.map((tanda, tIdx) => {
+                const isSelected = selectedTandaIndex === tIdx;
+                const studentCount = (tanda.studentIds || []).length;
+                return (
+                  <button
+                    key={tanda.id || tIdx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTandaIndex(tIdx);
+                      setSelectedTechniqueIndex(0);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                      isSelected
+                        ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300 font-black scale-102'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
+                    <span className={`text-[10px] px-1 py-0.2 rounded-full font-mono ${
+                      isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {studentCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* BOTÓN REVISIÓN DE FIN DE FASE Y SIGUIENTE (TAMAÑO CÓMODO PARA TABLET) */}
+          {/* CENTRO: FASES OFICIALES ISKF */}
+          <div className="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 shrink-0">
+            {[
+              { key: 'kihon', label: '1. KIHON' },
+              { key: 'kumite', label: '2. KUMITE' },
+              { key: 'kata', label: '3. KATA' },
+              ...(hasEvaluableAspects ? [{ key: 'aspectos', label: '4. ASPECTOS' }] : [])
+            ].map(phase => {
+              const isSelected = effectivePhase === phase.key;
+              return (
+                <button
+                  key={phase.key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPhase(phase.key);
+                    setSelectedTechniqueIndex(0);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
+                    isSelected
+                      ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  {phase.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* LADO DERECHO: HERRAMIENTAS Y NAVEGACIÓN ANTERIOR / SIGUIENTE */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Botón Monitor Tribunal */}
+            <button
+              type="button"
+              onClick={() => setShowTribunalMonitorModal(true)}
+              className="h-10 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border border-indigo-400/40 text-xs shrink-0 active:scale-95"
+              title="Supervisar avance del tribunal"
+            >
+              <Users className="w-3.5 h-3.5 text-amber-300" />
+              <span className="hidden lg:inline">Tribunal</span>
+            </button>
+
+            {/* BOTÓN ANTERIOR */}
+            {isFirstStepInTanda && hasPrevTanda ? (
+              <button
+                type="button"
+                onClick={handlePrevTechnique}
+                className="h-10 px-3 bg-indigo-950 hover:bg-indigo-900 text-amber-300 border border-amber-400/40 rounded-xl text-xs font-black transition-all flex items-center gap-1 cursor-pointer shadow-md active:scale-95 shrink-0"
+                title={`Volver a ${tandas[selectedTandaIndex - 1]?.blockName || `Tanda ${selectedTandaIndex}`}`}
+              >
+                <ChevronLeft className="w-4 h-4 text-amber-400 stroke-[3]" />
+                <span className="hidden sm:inline">Tanda Anterior</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePrevTechnique}
+                disabled={isFirstStepInTanda && !hasPrevTanda}
+                className="h-10 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer shrink-0"
+                title="Retroceder al paso anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Anterior</span>
+              </button>
+            )}
+
+            {/* Revisar Fase */}
             <button
               type="button"
               onClick={() => {
                 setPhaseToReview(effectivePhase);
                 setShowPhaseReviewModal(true);
               }}
-              className="h-11 sm:h-12 px-3.5 sm:px-4 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-amber-400/30 shrink-0"
+              className="h-10 px-3 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border border-amber-400/30 shrink-0"
               title="Verificar y afinar notas de la tanda para esta fase"
             >
               <span>Revisar <strong>{effectivePhase.toUpperCase()}</strong></span>
             </button>
 
+            {/* Botón Siguiente / Fin de Fase */}
             {isLastStepInTanda && hasNextTanda ? (
               <button
                 type="button"
                 onClick={handleNextTechnique}
-                className="h-11 sm:h-12 px-4 sm:px-6 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-300 active:scale-95 shrink-0"
+                className="h-10 px-4 sm:px-5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-300 active:scale-95 shrink-0"
                 title={`Verificar fin de fase y avanzar a ${tandas[selectedTandaIndex + 1]?.blockName || `Tanda ${selectedTandaIndex + 2}`}`}
               >
                 <span>Fin de {effectivePhase.toUpperCase()} ►</span>
@@ -2534,7 +2403,7 @@ export default function TechnicalExamEvaluatorCore({
               <button
                 type="button"
                 onClick={handleNextTechnique}
-                className="h-11 sm:h-12 px-4 sm:px-6 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
+                className="h-10 px-4 sm:px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
                 title="Has concluido la última tanda del examen"
               >
                 <Check className="w-4 h-4 stroke-[3]" />
@@ -2544,12 +2413,66 @@ export default function TechnicalExamEvaluatorCore({
               <button
                 type="button"
                 onClick={handleNextTechnique}
-                className="h-11 sm:h-12 px-4 sm:px-6 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
+                className="h-10 px-4 sm:px-5 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 shrink-0"
               >
-                <span>{selectedTechniqueIndex < maxTechniquesInPhase - 1 ? 'Siguiente Paso' : `Fin de ${effectivePhase.toUpperCase()} ►`}</span>
+                <span>{selectedTechniqueIndex < maxTechniquesInPhase - 1 ? 'Siguiente' : `Fin de ${effectivePhase.toUpperCase()} ►`}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             )}
+
+            {/* Sincronización y Pantalla Completa */}
+            <div className="hidden lg:flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => pollCallRoster(true)}
+                disabled={isSyncingRoster}
+                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white cursor-pointer active:scale-95"
+                title="Sincronizar padrón en vivo"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 text-cyan-400 ${isSyncingRoster ? 'animate-spin' : ''}`} />
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white cursor-pointer active:scale-95"
+                title={isFullscreen ? "Restaurar pantalla" : "Pantalla completa"}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="w-3.5 h-3.5 text-amber-400" />
+                ) : (
+                  <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                )}
+              </button>
+            </div>
+
+            {/* Reloj y Estado */}
+            {tatamiClock && (
+              <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-900 border border-amber-400/30 text-amber-300 font-mono text-xs font-black shadow-2xs shrink-0" title="Hora oficial de tatami">
+                <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>{tatamiClock}</span>
+              </div>
+            )}
+            <div className="hidden xl:flex items-center gap-1 shrink-0">
+              {saveStatus === 'saving' ? (
+                <span className="text-[10px] text-amber-300 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/10 border border-amber-400/20">
+                  <RotateCcw className="w-3 h-3 animate-spin" />
+                  <span>Guardando</span>
+                </span>
+              ) : (
+                <span className="text-[10px] text-emerald-400 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-400/10 border border-emerald-400/20" title="Guardado">
+                  <Check className="w-3 h-3" />
+                  <span>Guardado</span>
+                </span>
+              )}
+
+              {!isOnline && (
+                <span className="text-[10px] text-rose-400 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-500/10 border border-rose-500/20" title="Sin conexión">
+                  <WifiOff className="w-3 h-3" />
+                  <span>Offline</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
