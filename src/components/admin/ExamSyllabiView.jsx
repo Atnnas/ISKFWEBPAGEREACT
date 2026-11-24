@@ -464,6 +464,37 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     }
   };
 
+  // Guardar aspectos técnicos directamente en MongoDB al modificar cualquier criterio
+  const persistAspects = async (newAspects) => {
+    setAspectsState(newAspects);
+    if (!selectedAspectSyllabus) return;
+
+    const syllabusId = selectedAspectSyllabus.id || selectedAspectSyllabus._id;
+    setIsSavingAspects(true);
+
+    try {
+      const res = await updateSyllabusTechnicalAspects(syllabusId, newAspects);
+      if (res.success) {
+        setSyllabi(prev => prev.map(s => {
+          if ((s.id || s._id) === syllabusId) {
+            return {
+              ...s,
+              technicalAspects: newAspects
+            };
+          }
+          return s;
+        }));
+      } else {
+        showAlert(res.error || 'Error al guardar aspectos técnicos en la base de datos.', 'Error', true);
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert('Error de conexión al guardar aspectos en base de datos.', 'Error', true);
+    } finally {
+      setIsSavingAspects(false);
+    }
+  };
+
   const handleAddPointToAspect = (aspectId, defaultEvaluable = false) => {
     const text = (newPointInput[aspectId] || '').trim();
     if (!text) return;
@@ -474,7 +505,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
 
     const appliesTo = Array.isArray(newPointAppliesTo[aspectId]) ? newPointAppliesTo[aspectId] : [];
 
-    setAspectsState(prev => prev.map(a => {
+    const newAspects = aspectsState.map(a => {
       if (a.id === aspectId) {
         return {
           ...a,
@@ -482,15 +513,17 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
         };
       }
       return a;
-    }));
+    });
 
     setNewPointInput(prev => ({ ...prev, [aspectId]: '' }));
     setNewPointEvaluable(prev => ({ ...prev, [aspectId]: false }));
     setNewPointAppliesTo(prev => ({ ...prev, [aspectId]: [] }));
+
+    persistAspects(newAspects);
   };
 
   const handleTogglePointEvaluable = (aspectId, pointIndex) => {
-    setAspectsState(prev => prev.map(a => {
+    const newAspects = aspectsState.map(a => {
       if (a.id === aspectId) {
         const isSec2 = ['physical', 'mental', 'do'].includes(a.category);
         const updatedPoints = (a.points || []).map((p, idx) => {
@@ -509,17 +542,18 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
         };
       }
       return a;
-    }));
+    });
+    persistAspects(newAspects);
   };
 
   const handleRemovePointFromAspect = (aspectId, pointIndex, pointText = '') => {
     showConfirm({
       title: '¿Eliminar criterio técnico?',
-      message: `¿Estás seguro de que deseas eliminar este criterio${pointText ? `: "${pointText}"` : ''}? Recuerda presionar "Guardar en Base de Datos" para confirmar el cambio.`,
+      message: `¿Estás seguro de que deseas eliminar este criterio${pointText ? `: "${pointText}"` : ''}?`,
       confirmText: 'Sí, Eliminar',
       cancelText: 'No, Cancelar',
       onConfirm: () => {
-        setAspectsState(prev => prev.map(a => {
+        const newAspects = aspectsState.map(a => {
           if (a.id === aspectId) {
             return {
               ...a,
@@ -527,7 +561,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
             };
           }
           return a;
-        }));
+        });
+        persistAspects(newAspects);
       }
     });
   };
@@ -560,7 +595,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
 
     if (sourceAspectId !== targetAspectId || sourcePointIndex === targetPointIndex) return;
 
-    setAspectsState(prev => prev.map(a => {
+    const newAspects = aspectsState.map(a => {
       if (a.id === targetAspectId) {
         const points = [...(a.points || [])];
         const [movedItem] = points.splice(sourcePointIndex, 1);
@@ -568,7 +603,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
         return { ...a, points };
       }
       return a;
-    }));
+    });
+    persistAspects(newAspects);
   };
 
   const handlePointDragEnd = () => {
@@ -578,7 +614,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
 
   // Botones rápidos subir / bajar de posición un criterio
   const handleMovePointStep = (aspectId, pointIndex, direction) => {
-    setAspectsState(prev => prev.map(a => {
+    let changed = false;
+    const newAspects = aspectsState.map(a => {
       if (a.id === aspectId) {
         const points = [...(a.points || [])];
         const targetIndex = pointIndex + direction;
@@ -586,10 +623,14 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
         const temp = points[pointIndex];
         points[pointIndex] = points[targetIndex];
         points[targetIndex] = temp;
+        changed = true;
         return { ...a, points };
       }
       return a;
-    }));
+    });
+    if (changed) {
+      persistAspects(newAspects);
+    }
   };
 
   // Estado para edición / modificación en línea de un criterio
@@ -612,7 +653,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
     const trimmed = (editingPoint.text || '').trim();
     if (!trimmed) return;
 
-    setAspectsState(prev => prev.map(a => {
+    const newAspects = aspectsState.map(a => {
       if (a.id === editingPoint.aspectId) {
         const isSec2 = ['physical', 'mental', 'do'].includes(a.category);
         const points = (a.points || []).map((p, idx) => {
@@ -628,52 +669,13 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
         return { ...a, points };
       }
       return a;
-    }));
+    });
     setEditingPoint(null);
+    persistAspects(newAspects);
   };
 
   const handleCancelEditPoint = () => {
     setEditingPoint(null);
-  };
-
-
-
-  // Guardar aspectos técnicos en Base de Datos
-  const handleSaveAspectsToDatabase = async () => {
-    if (!selectedAspectSyllabus) {
-      showAlert('No hay un temario seleccionado para guardar.', 'Error', true);
-      return;
-    }
-
-    const syllabusId = selectedAspectSyllabus.id || selectedAspectSyllabus._id;
-    setIsSavingAspects(true);
-
-    try {
-      const res = await updateSyllabusTechnicalAspects(syllabusId, aspectsState);
-      if (res.success) {
-        // Actualizar en el estado de temarios
-        setSyllabi(prev => prev.map(s => {
-          if ((s.id || s._id) === syllabusId) {
-            return {
-              ...s,
-              technicalAspects: aspectsState
-            };
-          }
-          return s;
-        }));
-        showAlert(
-          `Los aspectos técnicos y parámetros de evaluación para "${selectedAspectSyllabus.name}" han sido guardados correctamente en la base de datos.`,
-          '¡Guardado en Base de Datos!'
-        );
-      } else {
-        showAlert(res.error || 'Error al guardar aspectos técnicos.', 'Error', true);
-      }
-    } catch (err) {
-      console.error(err);
-      showAlert('Error de conexión al guardar aspectos en base de datos.', 'Error', true);
-    } finally {
-      setIsSavingAspects(false);
-    }
   };
 
   const isCurrentSyllabusWhiteBelt = useMemo(() => {
@@ -1123,15 +1125,19 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
         )}
 
         {activeMainTab === 'aspectos' && selectedAspectSyllabus && (
-          <button
-            type="button"
-            disabled={isSavingAspects}
-            onClick={handleSaveAspectsToDatabase}
-            className="px-5 py-3 bg-slate-900 hover:bg-black text-white font-bold text-xs md:text-sm rounded-xl transition-all shadow-md flex items-center gap-2 shrink-0 cursor-pointer active:scale-95 self-start md:self-auto disabled:opacity-50"
-          >
-            {isSavingAspects ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-emerald-400" />}
-            <span>{isSavingAspects ? 'Guardando...' : 'Guardar en Base de Datos'}</span>
-          </button>
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700">
+            {isSavingAspects ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-amber-600 shrink-0" />
+                <span className="text-amber-800">Guardando en Base de Datos...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-slate-700">Guardado directo en Base de Datos</span>
+              </>
+            )}
+          </div>
         )}
       </div>
 
@@ -2312,25 +2318,18 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                 </div>
               </div>
 
-              {/* Botón inferior para guardar aspectos a Base de Datos y herramientas de limpieza */}
+              {/* Pie informativo de persistencia directa en Base de Datos */}
               <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Todos los criterios modificados se guardan de forma persistente en MongoDB para este grado.</span>
+                  <span>Todos los criterios modificados se guardan de forma directa y automática en MongoDB al presionar Guardar.</span>
                 </div>
-
-                <div className="flex items-center gap-2.5 flex-wrap justify-end">
-                  {/* Botón Guardar en Base de Datos */}
-                  <button
-                    type="button"
-                    disabled={isSavingAspects}
-                    onClick={handleSaveAspectsToDatabase}
-                    className="px-5 py-2.5 bg-slate-900 hover:bg-black text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                  >
-                    {isSavingAspects ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-emerald-400" />}
-                    <span>{isSavingAspects ? 'Guardando en BD...' : 'Guardar Aspectos en BD'}</span>
-                  </button>
-                </div>
+                {isSavingAspects && (
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-700">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                    <span>Guardando en base de datos...</span>
+                  </div>
+                )}
               </div>
             </>
           )}
