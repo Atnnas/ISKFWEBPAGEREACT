@@ -2341,17 +2341,6 @@ export default function TechnicalExamEvaluatorCore({
 
           {/* LADO DERECHO: HERRAMIENTAS Y NAVEGACIÓN ANTERIOR / SIGUIENTE */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Botón Monitor Tribunal */}
-            <button
-              type="button"
-              onClick={() => setShowTribunalMonitorModal(true)}
-              className="h-10 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border border-indigo-400/40 text-xs shrink-0 active:scale-95"
-              title="Supervisar avance del tribunal"
-            >
-              <Users className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden lg:inline">Tribunal</span>
-            </button>
-
             {/* BOTÓN ANTERIOR */}
             {isFirstStepInTanda && hasPrevTanda ? (
               <button
