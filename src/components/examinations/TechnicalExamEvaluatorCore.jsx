@@ -2092,7 +2092,7 @@ export default function TechnicalExamEvaluatorCore({
                 className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
               >
                 {/* ENCABEZADO DEL CARRIL: CINTURÓN (IZQ), TÉCNICA ACTIVA GRANDE Y CENTRADA (CENTRO) */}
-                <div className="bg-slate-950 border-b border-slate-800/80 px-4 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3">
+                <div className="bg-slate-950 border-b border-slate-800/80 px-4 py-1.5 flex flex-col md:flex-row items-center justify-between gap-2">
                   {/* Lado Izquierdo: Cinturón y Aspirantes */}
                   <div className="flex items-center gap-2 flex-wrap shrink-0 self-start md:self-center">
                     <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider shadow-xs ${getBeltBadgeClass(group.rankLabel)}`}>
@@ -2109,62 +2109,25 @@ export default function TechnicalExamEvaluatorCore({
                     </span>
                   </div>
 
-                  {/* CENTRO DE LA PANTALLA: TÉCNICA GRANDE, DESTACADA Y TOTALMENTE VISIBLE */}
-                  <div className="flex-1 flex flex-col items-center justify-center text-center px-2 min-w-0">
+                  {/* CENTRO DE LA PANTALLA: SOLO LA TÉCNICA GRANDE Y PROMINENTE (ESPACIO 100% OPTIMIZADO) */}
+                  <div className="flex-1 flex items-center justify-center text-center px-2 min-w-0">
                     {isGroupCompleted ? (
-                      <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-xs">
+                      <div className="flex items-center gap-2 px-3.5 py-1 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold shadow-xs">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                         <span>{phaseTitleName} Completado para este cinturón</span>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-mono font-black text-slate-950 bg-amber-400 px-2.5 py-0.5 rounded-md shadow-xs ring-1 ring-amber-300">
-                            {effectivePhase === 'kihon' ? '👊 KIHON' : effectivePhase === 'kata' ? '🥋 KATA' : effectivePhase === 'kumite' ? '⚔️ KUMITE' : effectivePhase.toUpperCase()} • Paso {groupTechIdx + 1} de {groupTechs.length}
-                          </span>
-                        </div>
-
-                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] text-center leading-tight">
-                          {groupActiveTech?.name}
-                        </h2>
-
-                        {/* Badges técnicos deduplicados centrados abajo */}
-                        {(() => {
-                          const badges = [];
-                          if (groupActiveTech?.stance) badges.push({ key: 'st', label: groupActiveTech.stance, cls: 'text-amber-300 bg-amber-400/10 border-amber-400/25' });
-                          const dirClean = (groupActiveTech?.direction || '').trim().toLowerCase();
-                          const embClean = (groupActiveTech?.embusen || '').trim().toLowerCase();
-                          if (groupActiveTech?.direction && dirClean !== embClean) badges.push({ key: 'dir', label: groupActiveTech.direction, cls: 'text-cyan-300 bg-cyan-400/10 border-cyan-400/25' });
-                          if (groupActiveTech?.repetitions) badges.push({ key: 'rep', label: `${groupActiveTech.repetitions} rep.`, cls: 'text-emerald-300 bg-emerald-400/10 border-emerald-400/25' });
-                          if (groupActiveTech?.embusen) badges.push({ key: 'emb', label: groupActiveTech.embusen, cls: 'text-purple-300 bg-purple-400/10 border-purple-400/25' });
-                          return badges.length > 0 ? (
-                            <div className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs flex-wrap mt-1">
-                              {badges.map(b => (
-                                <span key={b.key} className={`font-bold px-2 py-0.5 rounded-md border ${b.cls}`}>{b.label}</span>
-                              ))}
-                            </div>
-                          ) : null;
-                        })()}
-
-                        {(() => {
-                          const note = (groupActiveTech?.notes || '').trim();
-                          const name = (groupActiveTech?.name || '').trim();
-                          const noteNorm = note.toLowerCase().replace(/[.\s]/g, '');
-                          const nameNorm = name.toLowerCase().replace(/[.\s]/g, '');
-                          if (note && noteNorm !== nameNorm) {
-                            return <span className="text-[11px] text-slate-400 italic max-w-md truncate mt-0.5">• {note}</span>;
-                          }
-                          return null;
-                        })()}
-                      </div>
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)] text-center leading-tight">
+                        {groupActiveTech?.name}
+                      </h2>
                     )}
                   </div>
 
-                  {/* Lado Derecho: Balance visual */}
+                  {/* Lado Derecho: Balance visual y progreso numérico */}
                   <div className="hidden md:flex items-center gap-2 shrink-0 self-center justify-end min-w-[120px]">
                     {!isGroupCompleted && (
-                      <span className="text-[10px] text-slate-500 font-mono">
-                        {groupTechIdx + 1}/{groupTechs.length}
+                      <span className="text-xs text-amber-400/90 font-mono font-bold bg-slate-900 border border-slate-800 px-2.5 py-0.5 rounded-lg shadow-2xs">
+                        Paso {groupTechIdx + 1}/{groupTechs.length}
                       </span>
                     )}
                   </div>
