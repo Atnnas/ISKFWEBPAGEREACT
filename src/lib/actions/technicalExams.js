@@ -270,6 +270,7 @@ export async function synthesizeSenseiObservationsWithAI({
     const primaryStance = getPrimaryStance(targetRank, techniques);
 
     // 2. Analizar promedios y falencias por técnica y criterio según estrellas
+    const nonPerfectTechs = [];
     const lowTechs = [];
     const highTechs = [];
     const moderateTechs = [];
@@ -280,41 +281,66 @@ export async function synthesizeSenseiObservationsWithAI({
       const tObj = (techniques || []).find(t => t.id === techId);
       const tName = tObj?.name || techId;
       const tGroup = (tObj?.group || tObj?.phase || 'kihon').toLowerCase();
+      const techItem = { id: techId, name: tName, group: tGroup, score: normalized, stars: Math.round(normalized / 10) };
+      
+      if (normalized < 100) {
+        nonPerfectTechs.push(techItem);
+      }
       if (normalized < 70) {
-        lowTechs.push({ id: techId, name: tName, group: tGroup, score: normalized });
-      } else if (normalized < 88) {
-        moderateTechs.push({ id: techId, name: tName, group: tGroup, score: normalized, stars: Math.round(normalized / 10) });
+        lowTechs.push(techItem);
+      } else if (normalized < 90) {
+        moderateTechs.push(techItem);
       } else {
-        highTechs.push({ id: techId, name: tName, group: tGroup, score: normalized });
+        highTechs.push(techItem);
       }
     });
 
-    // Analizar criterios específicos calificados con estrellas intermedias (ej. 7 a 8 estrellas)
+    // Analizar TODOS los criterios específicos calificados con estrellas menores a 10 (< 100%)
     const criteriaMarginList = [];
     Object.entries(scores || {}).forEach(([scoreKey, val]) => {
-      if (typeof val !== 'number') return;
+      if (typeof val !== 'number' || val <= 0) return;
       const normalized = val <= 10 ? val * 10 : val;
-      if (normalized >= 60 && normalized < 88) {
-        const parts = scoreKey.split('_');
+      if (normalized < 100) {
+        let pureKey = scoreKey;
+        if (pureKey.startsWith('aspect_')) pureKey = pureKey.replace(/^aspect_/, '');
+        const parts = pureKey.split('_');
+        const lastPart = parts[parts.length - 1];
         const techId = parts[0];
-        const tObj = (techniques || []).find(t => t.id === techId);
-        const tName = tObj?.name || 'Técnica de Kihon';
+        const tObj = (techniques || []).find(t => t.id === techId || t.name === techId);
+        const tName = tObj?.name || 'Kihon';
+        const tGroup = (tObj?.group || tObj?.phase || (techId.includes('kata') ? 'kata' : techId.includes('kumite') ? 'kumite' : 'kihon')).toLowerCase();
 
-        // Buscar texto del criterio en technicalAspects
+        // Buscar texto exacto del criterio en technicalAspects o criteria de la técnica
         let matchedPointText = '';
         (technicalAspects || []).forEach(asp => {
-          (asp.points || []).forEach(p => {
-            const pTxt = typeof p === 'object' ? (p.text || p.point) : String(p || '');
-            if (parts[1] && (asp.category || '').toLowerCase().includes(parts[1].toLowerCase())) {
+          const cat = (asp.category || asp.id || asp.title || '').toLowerCase();
+          (asp.points || []).forEach((p, pIdx) => {
+            const pTxt = typeof p === 'object' && p !== null ? (p.text || p.point || p.rawText || '') : String(p || '');
+            if (String(pIdx) === lastPart && (pureKey.toLowerCase().includes(cat) || (parts[1] && cat.includes(parts[1].toLowerCase())))) {
               matchedPointText = pTxt;
             }
           });
         });
 
+        if (!matchedPointText && tObj && Array.isArray(tObj.criteria)) {
+          (tObj.criteria || []).forEach((c, cIdx) => {
+            const cTxt = typeof c === 'object' && c !== null ? (c.text || c.point || c.label || '') : String(c || '');
+            if (String(cIdx) === lastPart) matchedPointText = cTxt;
+          });
+        }
+
+        if (!matchedPointText) {
+          // Si no se halló coincidencia estricta, limpiar nombre de criterio
+          matchedPointText = parts.slice(1).join(' ').replace(/\d+/g, '').trim() || 'Aspecto técnico';
+        }
+
         criteriaMarginList.push({
+          key: scoreKey,
           techniqueName: tName,
+          group: tGroup,
           stars: Math.round(normalized / 10),
-          criterion: matchedPointText || scoreKey
+          score: normalized,
+          criterion: matchedPointText
         });
       }
     });
@@ -480,24 +506,31 @@ TU TAREA OBLIGATORIA:
       }
     });
 
+    const kihonAspectScores = criteriaMarginList.filter(c => c.group === 'kihon');
+    const kataAspectScores = criteriaMarginList.filter(c => c.group === 'kata');
+    const kumiteAspectScores = criteriaMarginList.filter(c => c.group === 'kumite');
+
     const synK = synthesizePhaseBulletsWithAI({
       phase: 'kihon',
       notesList: kihonNotes,
-      techniqueScores: lowTechs.filter(t => t.group === 'kihon'),
+      techniqueScores: nonPerfectTechs.filter(t => t.group === 'kihon'),
+      aspectScores: kihonAspectScores,
       phaseAverage: pct,
       targetRank
     });
     const synKa = synthesizePhaseBulletsWithAI({
       phase: 'kata',
       notesList: kataNotes,
-      techniqueScores: lowTechs.filter(t => t.group === 'kata'),
+      techniqueScores: nonPerfectTechs.filter(t => t.group === 'kata'),
+      aspectScores: kataAspectScores,
       phaseAverage: pct,
       targetRank
     });
     const synKu = synthesizePhaseBulletsWithAI({
       phase: 'kumite',
       notesList: kumiteNotes,
-      techniqueScores: lowTechs.filter(t => t.group === 'kumite'),
+      techniqueScores: nonPerfectTechs.filter(t => t.group === 'kumite'),
+      aspectScores: kumiteAspectScores,
       phaseAverage: pct,
       targetRank
     });
@@ -506,6 +539,13 @@ TU TAREA OBLIGATORIA:
     synK.forEach(b => combinedList.push(`* ${b.text}`));
     synKa.forEach(b => combinedList.push(`* ${b.text}`));
     synKu.forEach(b => combinedList.push(`* ${b.text}`));
+
+    // Si aún con todo no hubo viñetas (ej: todas las técnicas en 100% y sin notas), emitir directiva oficial 100%
+    if (combinedList.length === 0) {
+      combinedList.push(`* Kihon: Mantener la máxima profundidad y asentamiento del talón en ${primaryStance} para sostener el 100% en el siguiente nivel.`);
+      combinedList.push(`* Kata (${kataName}): Fijar la mirada de Chakugan sin titubeos tras cada técnica y sostener el Zanshin hasta la orden oficial.`);
+      combinedList.push(`* Combate (${kumiteName}): Acelerar la salida de contraataque inmediatamente tras el bloqueo preservando la guardia de Kamae.`);
+    }
 
     const fallbackList = generateShotokanFeedbackBullets({
       percentage: pct,

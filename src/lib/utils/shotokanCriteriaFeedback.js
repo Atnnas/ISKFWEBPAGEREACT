@@ -104,18 +104,18 @@ export function generateShotokanFeedbackBullets({
       `* Motivo de no aprobación (Calificación obtenida: ${pct}%): El desempeño técnico demostrado no cumple el estándar mínimo para ${targetRank}. Para optar por una nueva examinación debe corregir de inmediato la fijación biomecánica de las posturas, memorizar con total solidez el kata ${kataName} y mantener disciplina corporal absoluta en tatami.`
     );
   } else if (pct >= 85) {
-    // Caso alto (>= 85% o 4-5 estrellas): Tono de excelencia y detalle fino para 100%
+    // Caso alto (>= 85% o 4-5 estrellas): Tono de excelencia y detalle fino para 100% (estrictamente correctivo)
     listItems.push(
-      `* Detalle en Kata (${kataName}) para ganar 100%: Mantener inmovilidad y concentración absoluta tras el kiai final sin realizar el más mínimo reajuste a la vestimenta hasta la orden oficial de descanso.`
+      `* Detalle correctivo en Kata (${kataName}) para alcanzar 100%: Mantener inmovilidad y concentración absoluta tras el kiai final sin realizar reajustes a la vestimenta hasta la orden oficial de descanso.`
     );
     listItems.push(
-      `* Corrección postural para ganar 100%: En ${primaryStance}, descender medio puño más el centro de gravedad sin subir la altura del cuerpo durante los avances en media luna.`
+      `* Corrección postural para alcanzar 100%: En ${primaryStance}, descender medio puño más el centro de gravedad sin subir la altura del cuerpo durante los avances en media luna.`
     );
     listItems.push(
-      `* Detalle de impacto para ganar 100%: Máxima aceleración y sincronía en el tirón del Hikite hacia la cintura en el instante exacto del impacto final.`
+      `* Detalle de impacto para alcanzar 100%: Máxima aceleración y sincronía en el tirón del Hikite hacia la cintura en el instante exacto del impacto final.`
     );
     listItems.push(
-      `* Detalle en Combate (${kumiteName}) para ganar 100%: Mayor velocidad explosiva y rotación de cadera en la respuesta de contraataque inmediatamente tras el bloqueo.`
+      `* Detalle en Combate (${kumiteName}) para alcanzar 100%: Mayor velocidad explosiva y rotación de cadera en la respuesta de contraataque inmediatamente tras el bloqueo.`
     );
 
     const missingFor100 = [];
@@ -126,21 +126,21 @@ export function generateShotokanFeedbackBullets({
     if (missingFor100.length === 0) missingFor100.push('máxima sincronía de cadera en el impacto final');
 
     listItems.push(
-      `* Detalle para alcanzar la nota máxima (100%): Con una nota destacada de ${pct}%, para la calificación perfecta faltó: ${missingFor100.join(', ')}.`
+      `* Detalle para alcanzar la nota máxima (100%): Con una nota de ${pct}%, para la calificación perfecta faltó: ${missingFor100.join(', ')}.`
     );
   } else {
-    // Caso medio (70% - 84% o 3 estrellas): Correcciones constructivas directas
+    // Caso intermedio (70% - 84% o 3-4 estrellas): Correcciones biomecánicas constructivas
     listItems.push(
-      `* Corrección en Kata (${kataName}): Mantener la mirada fija al frente tras cada giro, bajar bien las posiciones y evitar tocarse o acomodarse el uniforme durante la ejecución.`
+      `* Ajuste técnico en Kihon: En ${primaryStance}, afianzar el anclaje del talón posterior y asegurar el cierre de codos al armar las defensas antes de iniciar el impacto.`
     );
     listItems.push(
-      `* Corrección de postura básica (${primaryStance}): Estirar por completo la pierna trasera apoyando todo el talón en el suelo y flexionar bien la rodilla del frente.`
+      `* Ajuste en Kata (${kataName}): Fijar la mirada (Chakugan) al frente en cada pausa sin desviar los ojos y sostener la profundidad de las posturas en los giros.`
     );
     listItems.push(
-      `* Mano a la cintura (Hikite): Jalar con fuerza y rapidez la mano que no golpea hasta pegarla firmemente a la cintura sobre el cinturón.`
+      `* Ajuste en Combate (${kumiteName}): Mantener la distancia reglamentaria (Ma-ai) y sostener la guardia (Kamae) sin desarmar los brazos tras defender.`
     );
     listItems.push(
-      `* Corrección en Combate (${kumiteName}): Mantener la distancia de seguridad con el compañero y no bajar las manos de defensa tras bloquear.`
+      `* Ajuste en Kime y Respiración: Sincronizar la exhalación potente en el impacto con un tirón enérgico del Hikite sobre el cinturón.`
     );
 
     const missingPoints = [];
@@ -152,19 +152,6 @@ export function generateShotokanFeedbackBullets({
 
     listItems.push(
       `* ¿Qué faltó para alcanzar la nota máxima (10 de 10)?: Con una nota de ${pct}%, para sacar un 10 perfecto faltó: ${missingPoints.join(', ')}.`
-    );
-  }
-
-  // Aspectos positivos demostrados
-  const positiveMentions = [];
-  if (lower.includes('buen impacto') || lower.includes('fuerte')) positiveMentions.push('buena fuerza al golpear');
-  if (lower.includes('trayectoria limpia') || lower.includes('limpio')) positiveMentions.push('movimientos limpios en los bloqueos');
-  if (lower.includes('control adecuado') || lower.includes('distancia (ma-ai) adecuada') || lower.includes('buen control')) positiveMentions.push('buen control de la distancia con su compañero');
-  if (lower.includes('buen saludo') || lower.includes('respeto') || lower.includes('actitud respetuosa') || pct >= 80) positiveMentions.push('muy buen saludo, respeto y disciplina dentro del tatami');
-
-  if (positiveMentions.length > 0) {
-    listItems.push(
-      `* Aspectos aprobados demostrados: ${positiveMentions.join(', ')}.`
     );
   }
 

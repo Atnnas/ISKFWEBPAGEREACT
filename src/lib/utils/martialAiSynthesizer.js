@@ -25,6 +25,52 @@ function normalizeText(str = '') {
     .trim();
 }
 
+// Resuelve el texto exacto del criterio a partir de technicalAspects o del key
+export function resolveAspectTextFromKey(criterionKey = '', technicalAspects = [], techniques = []) {
+  if (!criterionKey) return '';
+
+  let pureKey = criterionKey;
+  if (pureKey.startsWith('aspect_')) {
+    pureKey = pureKey.replace(/^aspect_/, '');
+  }
+
+  // Si tiene técnica prefijada (ej: tech-01_tsuki_0 o kiba_dachi_1)
+  const parts = pureKey.split('_');
+  const lastPart = parts[parts.length - 1]; // e.g. "0", "1", "kiai", etc.
+  const prefixPart = parts.length > 1 ? parts[parts.length - 2] : parts[0];
+
+  let matchedText = '';
+
+  (technicalAspects || []).forEach(asp => {
+    const cat = (asp.category || asp.id || asp.title || '').toLowerCase();
+    (asp.points || []).forEach((p, pIdx) => {
+      const pText = typeof p === 'object' && p !== null ? (p.text || p.point || p.rawText || '') : String(p || '');
+      // Coincidencia por índice y categoría
+      if (String(pIdx) === lastPart && (cat.includes(prefixPart) || prefixPart.includes(cat))) {
+        matchedText = pText;
+      }
+      // Coincidencia si el key incluye la categoría
+      if (!matchedText && pureKey.toLowerCase().includes(cat) && String(pIdx) === lastPart) {
+        matchedText = pText;
+      }
+    });
+  });
+
+  // Si no se encontró por índice estricto, buscar en técnicas si es tech_crit
+  if (!matchedText) {
+    (techniques || []).forEach(t => {
+      (t.criteria || []).forEach((c, cIdx) => {
+        const cText = typeof c === 'object' && c !== null ? (c.text || c.point || c.label || '') : String(c || '');
+        if (pureKey.includes(t.id) && String(cIdx) === lastPart) {
+          matchedText = cText;
+        }
+      });
+    });
+  }
+
+  return matchedText;
+}
+
 // Extraer tokens semánticos significativos aplicando stemming ligero en español
 function extractSemanticStems(str = '') {
   const norm = normalizeText(str);
@@ -265,7 +311,8 @@ export function synthesizePhaseBulletsWithAI({
   techniqueScores = [],
   phaseAverage = 75,
   targetRank = '9° Kyu (Cinta Amarilla)',
-  specificKataName = ''
+  specificKataName = '',
+  aspectScores = [] // Array of { techniqueName, criterion, stars, score, key }
 }) {
   const resolvedKataFromTech = (phase === 'kata' && techniqueScores.length === 1 && techniqueScores[0]?.name)
     ? techniqueScores[0].name
@@ -419,8 +466,47 @@ export function synthesizePhaseBulletsWithAI({
     });
   });
 
-  // 4. Integrar con falencias e indicaciones correctivas derivadas de calificaciones por estrellas (técnicas < 100%)
-  // Filosofía Marcial ISKF: Siempre correctivo explicando qué está haciendo mal para no alcanzar el 100
+  // 4. Integrar con falencias e indicaciones correctivas derivadas de calificaciones por estrellas (técnicas y aspectos específicos < 100%)
+  // Filosofía Marcial ISKF: Siempre correctivo explicando qué está haciendo mal según el aspecto evaluado
+  (aspectScores || []).forEach(asp => {
+    const rawVal = typeof asp.stars === 'number' ? asp.stars : (typeof asp.score === 'number' ? asp.score / 10 : null);
+    if (rawVal === null || rawVal >= 10) return;
+
+    const stars = Math.round(rawVal);
+    const critText = (asp.criterion || '').trim();
+    if (!critText) return;
+
+    const tName = asp.techniqueName || 'Técnica de examen';
+    let severityTag = '';
+    let directiveText = '';
+
+    if (stars <= 3) {
+      severityTag = `Falla crítica en ${tName}`;
+      directiveText = `En el aspecto "${critText}" (${stars}/10 estrellas): Deficiencia severa en la ejecución marcial. Debe corregir de inmediato la alineación, estabilidad y mecánica básica antes del próximo grado.`;
+    } else if (stars <= 6) {
+      severityTag = `Deficiencia técnica en ${tName}`;
+      directiveText = `En el aspecto "${critText}" (${stars}/10 estrellas): No cumple con la solidez y precisión biomecánica requerida. Debe ajustar la posición, trayectoria y fijación del punto focal.`;
+    } else if (stars <= 8) {
+      severityTag = `Margen de mejora en ${tName}`;
+      directiveText = `En el aspecto "${critText}" (${stars}/10 estrellas): Para alcanzar la calificación máxima de 10 estrellas, debe perfeccionar la coordinación con la respiración y fijar el impacto con mayor Kime y firmeza.`;
+    } else {
+      severityTag = `Ajuste fino en ${tName}`;
+      directiveText = `En el aspecto "${critText}" (9/10 estrellas): Detalle milimétrico en el cierre final y control postural para alcanzar el 100% de excelencia técnica.`;
+    }
+
+    synthesizedBullets.push({
+      text: `${severityTag}: ${directiveText}`,
+      coincidenceCount: 1,
+      isCoincidence: false,
+      evaluators: ['Consenso de estrellas'],
+      phase,
+      sourceType: 'stars_only',
+      sourceIcon: '⭐',
+      sourceLabel: `Estrellas por Criterio (${stars}/10)`
+    });
+  });
+
+  // Integrar técnicas generales con < 100% que no hayan sido cubiertas
   (techniqueScores || []).forEach(t => {
     const rawScore = typeof t.score === 'number' ? t.score : null;
     const tScore = rawScore !== null ? (rawScore <= 5 ? rawScore * 20 : (rawScore <= 10 ? rawScore * 10 : rawScore)) : null;
