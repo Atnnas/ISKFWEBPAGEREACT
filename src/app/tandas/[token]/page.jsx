@@ -7,9 +7,12 @@ import PublicTandasLiveView from '../../../components/examinations/PublicTandasL
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const token = resolvedParams?.token;
+  const dayStr = resolvedSearchParams?.dia ? ` • Día ${resolvedSearchParams.dia}` : '';
+
   if (!token) {
     return { title: 'Tandas y Horarios de Examen — ISKF Costa Rica' };
   }
@@ -18,7 +21,7 @@ export async function generateMetadata({ params }) {
     const res = await getTechnicalExamCallByToken(token);
     if (res.success && res.call) {
       return {
-        title: `Tandas y Horarios de Examen — ${res.call.dojoName || 'Dojo'} — ISKF Costa Rica`,
+        title: `Tandas y Horarios de Examen${dayStr} — ${res.call.dojoName || 'Dojo'} — ISKF Costa Rica`,
         description: `Horarios de atención, distribución en tandas y control de aspirantes para el examen técnico en ${res.call.dojoName}.`,
       };
     }
@@ -26,12 +29,15 @@ export async function generateMetadata({ params }) {
     // fallback
   }
 
-  return { title: 'Tandas y Horarios de Examen — ISKF Costa Rica' };
+  return { title: `Tandas y Horarios de Examen${dayStr} — ISKF Costa Rica` };
 }
 
-export default async function PublicTandasPage({ params }) {
+export default async function PublicTandasPage({ params, searchParams }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const token = resolvedParams?.token;
+  const rawDia = resolvedSearchParams?.dia;
+  const initialDay = rawDia !== undefined && rawDia !== null ? (rawDia === 'all' ? 'all' : Number(rawDia)) : null;
 
   if (!token) {
     return (
@@ -81,6 +87,7 @@ export default async function PublicTandasPage({ params }) {
       initialCall={res.call}
       initialStudents={res.students || []}
       initialCostConfig={res.costConfig || null}
+      initialDay={initialDay}
     />
   );
 }

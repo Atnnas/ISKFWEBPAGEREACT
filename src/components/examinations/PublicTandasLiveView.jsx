@@ -9,24 +9,115 @@ import {
   FileText,
   Share2,
   Check,
-  Search
+  Search,
+  Radio,
+  ExternalLink
 } from 'lucide-react';
 import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
 import { getBeltBadge } from '../../lib/utils/evaluatorHelpers';
 import { getNextRank } from '../../lib/constants/kyuRanks';
 import { generateTandasSchedulePDF } from '../../lib/pdf/tandasSchedulePdfGenerator';
 import { downloadTandasScheduleXLS } from '../../lib/excel/tandasScheduleExcelGenerator';
+import { getTandasLiveUpdateByToken } from '../../lib/actions/technicalExams';
 
-export default function PublicTandasLiveView({ initialCall, initialStudents = [] }) {
-  const call = initialCall;
-  const students = initialStudents;
+export default function PublicTandasLiveView({
+  initialCall,
+  initialStudents = [],
+  initialDay = null
+}) {
+  // Estado reactivo para reflejar cambios en tiempo real
+  const [call, setCall] = useState(initialCall);
+  const [students, setStudents] = useState(initialStudents);
 
-  // Filtros
-  const [dayFilter, setDayFilter] = useState(call?.isMultiDay ? 1 : 'all');
+  // Filtro de día (inicializado con initialDay si viene en URL o por defecto Día 1 en multidia)
+  const [dayFilter, setDayFilter] = useState(() => {
+    if (initialDay !== null && initialDay !== undefined) {
+      return initialDay;
+    }
+    return initialCall?.isMultiDay ? 1 : 'all';
+  });
+
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(initialCall?.updatedAt || null);
+  const [isLiveSyncing, setIsLiveSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copiedToast, setCopiedToast] = useState(null);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isExportingXLS, setIsExportingXLS] = useState(false);
+
+  // Polling reactivo en tiempo real (cada 4.5 segundos)
+  useEffect(() => {
+    if (!call?.accessToken) return;
+
+    let isMounted = true;
+
+    const syncLiveTandas = async () => {
+      // Si la pestaña está oculta, evitar consumo de recursos
+      if (typeof document !== 'undefined' && document.hidden) return;
+
+      try {
+        setIsLiveSyncing(true);
+        const res = await getTandasLiveUpdateByToken(call.accessToken, lastUpdatedAt);
+        if (!isMounted) return;
+
+        if (res?.success) {
+          if (!res.unchanged && res.call) {
+            setCall(res.call);
+            if (Array.isArray(res.students)) {
+              setStudents(res.students);
+            }
+            if (res.updatedAt) {
+              setLastUpdatedAt(res.updatedAt);
+            }
+          }
+        }
+      } catch (err) {
+        console.debug('Error en sincronización en vivo de tandas:', err);
+      } finally {
+        if (isMounted) {
+          setIsLiveSyncing(false);
+        }
+      }
+    };
+
+    const intervalId = setInterval(syncLiveTandas, 4500);
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [call?.accessToken, lastUpdatedAt]);
+
+  // Sincronizar cambio de día en la URL del navegador sin recargar
+  const handleDayChange = (newDay) => {
+    setDayFilter(newDay);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (newDay === 'all') {
+        url.searchParams.delete('dia');
+      } else {
+        url.searchParams.set('dia', String(newDay));
+      }
+      window.history.replaceState(null, '', url.toString());
+    }
+  };
+
+  // Copiar link específico por día
+  const handleCopyLink = (targetDay = null) => {
+    if (typeof window === 'undefined') return;
+    const activeDay = targetDay !== null ? targetDay : dayFilter;
+    const url = new URL(window.location.origin + window.location.pathname);
+    if (call?.isMultiDay && activeDay !== 'all') {
+      url.searchParams.set('dia', String(activeDay));
+    }
+    navigator.clipboard.writeText(url.toString());
+    setCopied(true);
+    const dayName = (call?.isMultiDay && activeDay !== 'all') ? `del Día ${activeDay}` : 'completo';
+    setCopiedToast(`✓ Enlace ${dayName} copiado`);
+    setTimeout(() => {
+      setCopied(false);
+      setCopiedToast(null);
+    }, 3000);
+  };
 
   // Reloj en vivo de Tatami
   const [currentTime, setCurrentTime] = useState('');
@@ -65,15 +156,6 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
 
   const totalAssignedStudents = allAssignedStudentIds.length;
 
-  // Copiar link
-  const handleCopyLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    }
-  };
-
   // Exportar PDF
   const handleExportPDF = async () => {
     setIsExportingPDF(true);
@@ -81,7 +163,8 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
       await generateTandasSchedulePDF({
         call,
         tandas: filteredTandas,
-        students
+        students,
+        dayFilter
       });
     } catch (err) {
       console.error('Error al generar PDF:', err);
@@ -98,7 +181,8 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
       downloadTandasScheduleXLS({
         call,
         tandas: filteredTandas,
-        students
+        students,
+        dayFilter
       });
     } catch (err) {
       console.error('Error al generar XLS:', err);
@@ -131,8 +215,22 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
             </div>
           </div>
 
-          {/* Reloj y Botones Rápidos de Compartir y Descargar */}
+          {/* Reloj, Indicador En Vivo y Botones Rápidos de Compartir y Descargar */}
           <div className="flex items-center gap-2 flex-wrap sm:justify-end">
+            {/* Indicador de Sincronización en Vivo */}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono font-bold shadow-inner"
+              title="Sincronización en vivo activada: cualquier cambio realizado en la mesa de examen se refleja automáticamente aquí."
+            >
+              <span className="relative flex h-2 w-2">
+                <span className={`absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 ${isLiveSyncing ? 'animate-ping' : ''}`}></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-emerald-400 text-[11px]">
+                {isLiveSyncing ? 'Sincronizando...' : 'En vivo'}
+              </span>
+            </div>
+
             {/* Reloj digital de tatami */}
             {currentTime && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-amber-400 shadow-inner">
@@ -144,12 +242,14 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
             {/* Botón Copiar Link */}
             <button
               type="button"
-              onClick={handleCopyLink}
+              onClick={() => handleCopyLink()}
               className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
               title="Copiar enlace directo de esta lista para compartir"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-amber-400" />}
-              <span>{copied ? '¡Copiado!' : 'Compartir'}</span>
+              <span>
+                {copied ? '¡Copiado!' : (call?.isMultiDay && dayFilter !== 'all' ? `Compartir Día ${dayFilter}` : 'Compartir')}
+              </span>
             </button>
 
             {/* Descargar PDF */}
@@ -242,7 +342,7 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
             <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-bold shadow-inner">
               <button
                 type="button"
-                onClick={() => setDayFilter(1)}
+                onClick={() => handleDayChange(1)}
                 className={`px-3 sm:px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
                   Number(dayFilter) === 1
                     ? 'bg-[#2D2E83] text-white shadow-md font-black'
@@ -257,7 +357,7 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
 
               <button
                 type="button"
-                onClick={() => setDayFilter(2)}
+                onClick={() => handleDayChange(2)}
                 className={`px-3 sm:px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
                   Number(dayFilter) === 2
                     ? 'bg-[#BE1622] text-white shadow-md font-black'
@@ -272,7 +372,7 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
 
               <button
                 type="button"
-                onClick={() => setDayFilter('all')}
+                onClick={() => handleDayChange('all')}
                 className={`px-3 py-2 rounded-xl transition-all cursor-pointer ${
                   dayFilter === 'all'
                     ? 'bg-amber-400 text-slate-950 shadow-md font-black'
@@ -310,6 +410,61 @@ export default function PublicTandasLiveView({ initialCall, initialStudents = []
             )}
           </div>
         </div>
+
+        {/* 3.1. BARRA DE COMPARTIR POR DÍA RÁPIDO (EN CASO DE EVENTOS MULTIDÍA) */}
+        {call?.isMultiDay && (
+          <div className="flex items-center justify-between gap-3 flex-wrap p-2.5 sm:px-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 font-mono">
+                <Share2 className="w-3.5 h-3.5 text-amber-400" />
+                Compartir Tabla por Día:
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCopyLink(1)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border ${
+                  Number(dayFilter) === 1
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-400 shadow-sm'
+                    : 'bg-blue-950/50 hover:bg-blue-900/60 text-blue-200 border-blue-800/60'
+                }`}
+                title="Copiar enlace directo exclusivamente para la tabla del Día 1"
+              >
+                <span>📋 Enlace Día 1</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopyLink(2)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border ${
+                  Number(dayFilter) === 2
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-400 shadow-sm'
+                    : 'bg-rose-950/50 hover:bg-rose-900/60 text-rose-200 border-rose-800/60'
+                }`}
+                title="Copiar enlace directo exclusivamente para la tabla del Día 2"
+              >
+                <span>📋 Enlace Día 2</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopyLink('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border ${
+                  dayFilter === 'all'
+                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm font-black'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                }`}
+                title="Copiar enlace completo de ambos días"
+              >
+                <span>📋 Enlace Ambos Días</span>
+              </button>
+            </div>
+
+            {copiedToast && (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold animate-pulse">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{copiedToast}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 4. LISTA DE TANDAS CON HORA INICIO, HORA FINAL Y ESTUDIANTES */}
         {filteredTandas.length === 0 ? (

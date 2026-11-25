@@ -4053,33 +4053,102 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
                 {/* Botones de Acción de Tandas y Convocatoria Alineados */}
                 <div className="flex flex-wrap items-center gap-2.5">
-                  {/* Ver y Compartir Enlace Público de Tandas y Pagos */}
-                  <a
-                    href={`/tandas/${selectedCallForDetail?.accessToken}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-2.5 bg-gradient-to-r from-[#2D2E83] to-indigo-800 hover:from-indigo-900 hover:to-indigo-950 text-white rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-                    title="Abrir enlace público de tandas, horarios y control de pagos"
-                  >
-                    <ExternalLink className="w-4 h-4 text-amber-300" />
-                    <span>📋 Ver / Compartir Tandas</span>
-                  </a>
+                  {/* Ver y Compartir Enlace Público de Tandas */}
+                  {selectedCallForDetail?.isMultiDay ? (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* Ver Día Activo */}
+                      <a
+                        href={`/tandas/${selectedCallForDetail?.accessToken}?dia=${Number(activeCallDayFilter) === 2 ? 2 : 1}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-2.5 bg-gradient-to-r from-[#2D2E83] to-indigo-800 hover:from-indigo-900 hover:to-indigo-950 text-white rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                        title={`Abrir vista pública del Día ${Number(activeCallDayFilter) === 2 ? 2 : 1}`}
+                      >
+                        <ExternalLink className="w-4 h-4 text-amber-300" />
+                        <span>📋 Ver Día {Number(activeCallDayFilter) === 2 ? 2 : 1}</span>
+                      </a>
 
-                  {/* Copiar Enlace Directo */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (typeof window !== 'undefined' && selectedCallForDetail?.accessToken) {
-                        const url = `${window.location.origin}/tandas/${selectedCallForDetail.accessToken}`;
-                        navigator.clipboard.writeText(url);
-                        showAlert('✓ Enlace público de tandas y horarios copiado al portapapeles. Puedes compartirlo con el Sensei o terceros para llevar el control.', 'Enlace Copiado');
-                      }
-                    }}
-                    className="p-2.5 text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-indigo-200 flex items-center justify-center cursor-pointer active:scale-95"
-                    title="Copiar enlace directo de tandas para compartir con terceros"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
+                      {/* Botón rápido Copiar Día 1 */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof window !== 'undefined' && selectedCallForDetail?.accessToken) {
+                            const url = `${window.location.origin}/tandas/${selectedCallForDetail.accessToken}?dia=1`;
+                            navigator.clipboard.writeText(url);
+                            showAlert(`✓ Enlace exclusivo del DÍA 1 copiado al portapapeles:\n${url}`, 'Enlace Día 1 Copiado');
+                          }
+                        }}
+                        className="px-2.5 py-2 text-[#2D2E83] hover:text-white hover:bg-[#2D2E83] bg-blue-50 rounded-xl transition-all border border-blue-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
+                        title="Copiar enlace público exclusivo del Día 1"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-[#2D2E83]" />
+                        <span>Copiar Día 1</span>
+                      </button>
+
+                      {/* Botón rápido Copiar Día 2 */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof window !== 'undefined' && selectedCallForDetail?.accessToken) {
+                            const url = `${window.location.origin}/tandas/${selectedCallForDetail.accessToken}?dia=2`;
+                            navigator.clipboard.writeText(url);
+                            showAlert(`✓ Enlace exclusivo del DÍA 2 copiado al portapapeles:\n${url}`, 'Enlace Día 2 Copiado');
+                          }
+                        }}
+                        className="px-2.5 py-2 text-[#BE1622] hover:text-white hover:bg-[#BE1622] bg-red-50 rounded-xl transition-all border border-red-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
+                        title="Copiar enlace público exclusivo del Día 2"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-[#BE1622]" />
+                        <span>Copiar Día 2</span>
+                      </button>
+
+                      {/* Botón rápido Copiar Ambos Días */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof window !== 'undefined' && selectedCallForDetail?.accessToken) {
+                            const url = `${window.location.origin}/tandas/${selectedCallForDetail.accessToken}?dia=all`;
+                            navigator.clipboard.writeText(url);
+                            showAlert(`✓ Enlace completo de AMBOS DÍAS copiado al portapapeles:\n${url}`, 'Enlace Copiado');
+                          }
+                        }}
+                        className="p-2 text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all border border-gray-200 flex items-center justify-center cursor-pointer active:scale-95"
+                        title="Copiar enlace con ambos días juntos"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Ver y Compartir Enlace Público de Tandas */}
+                      <a
+                        href={`/tandas/${selectedCallForDetail?.accessToken}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2.5 bg-gradient-to-r from-[#2D2E83] to-indigo-800 hover:from-indigo-900 hover:to-indigo-950 text-white rounded-xl text-xs font-black transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                        title="Abrir enlace público de tandas y horarios"
+                      >
+                        <ExternalLink className="w-4 h-4 text-amber-300" />
+                        <span>📋 Ver / Compartir Tandas</span>
+                      </a>
+
+                      {/* Copiar Enlace Directo */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof window !== 'undefined' && selectedCallForDetail?.accessToken) {
+                            const url = `${window.location.origin}/tandas/${selectedCallForDetail.accessToken}`;
+                            navigator.clipboard.writeText(url);
+                            showAlert('✓ Enlace público de tandas y horarios copiado al portapapeles. Puedes compartirlo con el Sensei o terceros.', 'Enlace Copiado');
+                          }
+                        }}
+                        className="p-2.5 text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-indigo-200 flex items-center justify-center cursor-pointer active:scale-95"
+                        title="Copiar enlace directo de tandas para compartir con terceros"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
 
                   {/* 2. Agrupar en Tandas */}
                   <button

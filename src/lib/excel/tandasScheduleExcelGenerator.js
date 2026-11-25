@@ -5,7 +5,7 @@
 import { formatDateDDMMAAAA } from '../utils/dateFormatter.js';
 import { getNextRank } from '../constants/kyuRanks.js';
 
-export function downloadTandasScheduleXLS({ call, tandas = [], students = [] }) {
+export function downloadTandasScheduleXLS({ call, tandas = [], students = [], dayFilter = null }) {
   const studentsMap = {};
   (students || []).forEach(st => {
     studentsMap[String(st._id || st.id)] = st;
@@ -15,9 +15,19 @@ export function downloadTandasScheduleXLS({ call, tandas = [], students = [] }) 
   const uniqueStudentIds = [...new Set(allAssignedIds)];
   const totalStudents = uniqueStudentIds.length;
 
-  const dateStr = call.isMultiDay && call.examEndDate
-    ? `Día 1: ${formatDateDDMMAAAA(call.examDate)} - Día 2: ${formatDateDDMMAAAA(call.examEndDate)}`
-    : formatDateDDMMAAAA(call.examDate);
+  const isDaySpecific = dayFilter !== null && dayFilter !== undefined && dayFilter !== 'all';
+  const dayLabel = isDaySpecific ? `DÍA ${dayFilter}` : (call.isMultiDay ? 'AMBOS DÍAS' : '');
+
+  let dateStr = formatDateDDMMAAAA(call.examDate);
+  if (call.isMultiDay) {
+    if (Number(dayFilter) === 1) {
+      dateStr = `${formatDateDDMMAAAA(call.examDate)} (Día 1)`;
+    } else if (Number(dayFilter) === 2 && call.examEndDate) {
+      dateStr = `${formatDateDDMMAAAA(call.examEndDate)} (Día 2)`;
+    } else if (call.examEndDate) {
+      dateStr = `Día 1: ${formatDateDDMMAAAA(call.examDate)} - Día 2: ${formatDateDDMMAAAA(call.examEndDate)}`;
+    }
+  }
 
   let html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -28,7 +38,7 @@ export function downloadTandasScheduleXLS({ call, tandas = [], students = [] }) 
         <x:ExcelWorkbook>
           <x:ExcelWorksheets>
             <x:ExcelWorksheet>
-              <x:Name>Tandas y Horarios ISKF</x:Name>
+              <x:Name>Tandas ISKF ${dayLabel || 'Horario'}</x:Name>
               <x:WorksheetOptions>
                 <x:DisplayGridlines/>
               </x:WorksheetOptions>
@@ -56,7 +66,7 @@ export function downloadTandasScheduleXLS({ call, tandas = [], students = [] }) 
           <td colspan="7" class="header-main">ISKF COSTA RICA • FEDERACIÓN INTERNACIONAL DE SHOTOKAN KARATE</td>
         </tr>
         <tr>
-          <td colspan="7" class="header-sub">CRONOGRAMA OFICIAL DE TANDAS Y ESTUDIANTES CON HORARIOS</td>
+          <td colspan="7" class="header-sub">CRONOGRAMA OFICIAL DE TANDAS Y ESTUDIANTES CON HORARIOS${isDaySpecific ? ` — ${dayLabel}` : ''}</td>
         </tr>
       </table>
 
@@ -167,7 +177,8 @@ export function downloadTandasScheduleXLS({ call, tandas = [], students = [] }) 
   const a = document.createElement('a');
   a.href = url;
   const cleanTitle = (call.title || 'Horario_Tandas').replace(/[^a-zA-Z0-9_-]+/g, '_');
-  a.download = `${cleanTitle}_Horario_Tandas.xls`;
+  const daySuffix = isDaySpecific ? `_Dia_${dayFilter}` : (call.isMultiDay ? '_Completo' : '');
+  a.download = `${cleanTitle}${daySuffix}_Horario_Tandas.xls`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

@@ -1091,6 +1091,7 @@ export async function getTechnicalExamCallByToken(accessToken) {
         maxPerTanda: call.maxPerTanda || 6,
         notes: call.notes || '',
         createdAt: call.createdAt ? call.createdAt.toISOString() : null,
+        updatedAt: call.updatedAt ? call.updatedAt.toISOString() : null,
       },
       students: students.map(s => ({
         _id: s._id.toString(),
@@ -1134,6 +1135,49 @@ export async function getTechnicalExamCallByToken(accessToken) {
   } catch (error) {
     console.error('Error al obtener convocatoria por token:', error);
     return { success: false, error: 'Ocurrió un error al cargar la convocatoria.' };
+  }
+}
+
+/**
+ * Polling reactivo y eficiente para la vista pública de tandas en tiempo real.
+ * Si el documento no ha cambiado según su updatedAt, responde inmediatamente con { unchanged: true }.
+ */
+export async function getTandasLiveUpdateByToken(accessToken, lastUpdatedAt = null) {
+  try {
+    await dbConnect();
+
+    if (!accessToken || typeof accessToken !== 'string') {
+      return { success: false, error: 'Token de convocatoria inválido.' };
+    }
+
+    const header = await TechnicalExamCall.findOne(
+      { accessToken: accessToken.trim() },
+      { _id: 1, updatedAt: 1 }
+    ).lean();
+
+    if (!header) {
+      return { success: false, error: 'Convocatoria no encontrada.' };
+    }
+
+    const currentUpdatedAt = header.updatedAt ? new Date(header.updatedAt).toISOString() : null;
+
+    if (lastUpdatedAt && currentUpdatedAt && lastUpdatedAt === currentUpdatedAt) {
+      return {
+        success: true,
+        unchanged: true,
+        updatedAt: currentUpdatedAt
+      };
+    }
+
+    const fullRes = await getTechnicalExamCallByToken(accessToken);
+    return {
+      ...fullRes,
+      unchanged: false,
+      updatedAt: currentUpdatedAt
+    };
+  } catch (error) {
+    console.error('Error en getTandasLiveUpdateByToken:', error);
+    return { success: false, error: 'Error al verificar actualizaciones en tiempo real.' };
   }
 }
 
@@ -1212,6 +1256,7 @@ export async function toggleStudentPromotionForCall({
     await call.save();
 
     revalidatePath(`/convocatoria/${call.accessToken}`);
+    revalidatePath(`/tandas/${call.accessToken}`);
     revalidatePath('/admin/examinations/technical');
 
     return {
@@ -1273,6 +1318,7 @@ export async function transferStudentExamDay({ callId, studentId, targetDay = 1 
     await call.save();
 
     revalidatePath(`/convocatoria/${call.accessToken}`);
+    revalidatePath(`/tandas/${call.accessToken}`);
     revalidatePath('/admin/examinations/technical');
 
     return {
@@ -1329,6 +1375,7 @@ export async function batchTransferStudentsExamDay({ callId, studentIds = [], ta
     await call.save();
 
     revalidatePath(`/convocatoria/${call.accessToken}`);
+    revalidatePath(`/tandas/${call.accessToken}`);
     revalidatePath('/admin/examinations/technical');
 
     return {
@@ -1493,6 +1540,7 @@ export async function updateExamCallSchedulesAndEvaluators({
     await call.save();
 
     revalidatePath(`/convocatoria/${call.accessToken}`);
+    revalidatePath(`/tandas/${call.accessToken}`);
     revalidatePath('/admin/examinations/technical');
 
     return {
@@ -2077,6 +2125,7 @@ export async function saveCallSchedules({ callId, schedules = [], maxPerTanda = 
 
     revalidatePath('/admin/examinations/technical');
     revalidatePath(`/convocatoria/${call.accessToken}`);
+    revalidatePath(`/tandas/${call.accessToken}`);
     revalidatePath('/evaluar', 'layout');
 
     return {

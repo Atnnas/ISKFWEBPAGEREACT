@@ -5,7 +5,7 @@
 import { formatDateTimeDDMMAAAA, formatDateDDMMAAAA } from '../utils/dateFormatter.js';
 import { getNextRank } from '../constants/kyuRanks.js';
 
-export async function generateTandasSchedulePDF({ call, tandas = [], students = [] }) {
+export async function generateTandasSchedulePDF({ call, tandas = [], students = [], dayFilter = null }) {
   const { default: jsPDF } = await import('jspdf');
   const { default: autoTable } = await import('jspdf-autotable');
 
@@ -35,6 +35,9 @@ export async function generateTandasSchedulePDF({ call, tandas = [], students = 
   const uniqueStudentIds = [...new Set(allAssignedIds)];
   const totalStudents = uniqueStudentIds.length;
 
+  const isDaySpecific = dayFilter !== null && dayFilter !== undefined && dayFilter !== 'all';
+  const dayLabel = isDaySpecific ? `DÍA ${dayFilter}` : (call.isMultiDay ? 'AMBOS DÍAS' : '');
+
   // 1. Barra superior decorativa bicolor
   doc.setFillColor(...primaryBlue);
   doc.rect(0, 0, pageWidth, 5, 'F');
@@ -55,7 +58,10 @@ export async function generateTandasSchedulePDF({ call, tandas = [], students = 
 
   doc.setFontSize(7.5);
   doc.setTextColor(...lightGray);
-  doc.text('COMISIÓN TÉCNICA NACIONAL • CRONOGRAMA DE TANDAS Y HORARIOS', 14, currentY + 8.5);
+  const headerSubtitle = isDaySpecific
+    ? `COMISIÓN TÉCNICA NACIONAL • CRONOGRAMA DE TANDAS Y HORARIOS — ${dayLabel}`
+    : 'COMISIÓN TÉCNICA NACIONAL • CRONOGRAMA DE TANDAS Y HORARIOS';
+  doc.text(headerSubtitle, 14, currentY + 8.5);
 
   doc.setFontSize(7.5);
   doc.text(`Impreso: ${formatDateTimeDDMMAAAA(new Date())}`, pageWidth - 14, currentY, { align: 'right' });
@@ -93,7 +99,10 @@ export async function generateTandasSchedulePDF({ call, tandas = [], students = 
   doc.text('Convocatoria:', 18, currentY + 17.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
-  doc.text(String(call.title || 'Examen Técnico de Promoción de Grado'), 44, currentY + 17.5);
+  const callTitleText = isDaySpecific
+    ? `${String(call.title || 'Examen Técnico de Promoción')} (${dayLabel})`
+    : String(call.title || 'Examen Técnico de Promoción de Grado');
+  doc.text(callTitleText, 44, currentY + 17.5);
 
   // Columna Derecha de Ficha Técnica
   const rightColX = pageWidth / 2 + 10;
@@ -102,9 +111,17 @@ export async function generateTandasSchedulePDF({ call, tandas = [], students = 
   doc.text('Fecha:', rightColX, currentY + 5.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
-  const dateStr = call.isMultiDay && call.examEndDate
-    ? `Día 1: ${formatDateDDMMAAAA(call.examDate)} • Día 2: ${formatDateDDMMAAAA(call.examEndDate)}`
-    : formatDateDDMMAAAA(call.examDate);
+  
+  let dateStr = formatDateDDMMAAAA(call.examDate);
+  if (call.isMultiDay) {
+    if (Number(dayFilter) === 1) {
+      dateStr = `${formatDateDDMMAAAA(call.examDate)} (Día 1)`;
+    } else if (Number(dayFilter) === 2 && call.examEndDate) {
+      dateStr = `${formatDateDDMMAAAA(call.examEndDate)} (Día 2)`;
+    } else if (call.examEndDate) {
+      dateStr = `Día 1: ${formatDateDDMMAAAA(call.examDate)} • Día 2: ${formatDateDDMMAAAA(call.examEndDate)}`;
+    }
+  }
   doc.text(dateStr, rightColX + 16, currentY + 5.5);
 
   doc.setFont('helvetica', 'bold');
@@ -112,14 +129,15 @@ export async function generateTandasSchedulePDF({ call, tandas = [], students = 
   doc.text('Hora Inicio:', rightColX, currentY + 11.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
-  doc.text(String(call.startTime || '09:00 AM'), rightColX + 22, currentY + 11.5);
+  const startHour = (Number(dayFilter) === 2 && call.startTimeDay2) ? call.startTimeDay2 : (call.startTime || '09:00 AM');
+  doc.text(String(startHour), rightColX + 22, currentY + 11.5);
 
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...primaryBlue);
   doc.text('Tandas / Total:', rightColX, currentY + 17.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...darkGray);
-  doc.text(`${tandas.length} tandas • ${totalStudents} estudiantes`, rightColX + 26, currentY + 17.5);
+  doc.text(`${tandas.length} tandas • ${totalStudents} estudiantes${isDaySpecific ? ` (${dayLabel})` : ''}`, rightColX + 26, currentY + 17.5);
 
   currentY += 27;
 
@@ -225,5 +243,6 @@ export async function generateTandasSchedulePDF({ call, tandas = [], students = 
 
   // Descargar archivo PDF
   const cleanTitle = (call.title || 'Cronograma_Tandas').replace(/[^a-zA-Z0-9_-]+/g, '_');
-  doc.save(`${cleanTitle}_ISKF_Horario.pdf`);
+  const daySuffix = isDaySpecific ? `_Dia_${dayFilter}` : (call.isMultiDay ? '_Completo' : '');
+  doc.save(`${cleanTitle}${daySuffix}_ISKF_Horario.pdf`);
 }
