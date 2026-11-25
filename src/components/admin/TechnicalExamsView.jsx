@@ -2761,7 +2761,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         callId,
         studentId: sId,
         isPromoted: shouldPromote,
-        targetRank: student.currentRank
+        targetRank: getNextRank(student.currentRank) || student.currentRank
       });
 
       if (!res.success) {
@@ -2897,7 +2897,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         callId: selectedCallForDetail._id || selectedCallForDetail.id,
         studentId,
         isPromoted: true,
-        targetRank: unpromotedStudent.currentRank
+        targetRank: getNextRank(unpromotedStudent.currentRank) || unpromotedStudent.currentRank
       }).catch(err => console.error('Error al autopostular karateca:', err));
     }
 
@@ -2956,7 +2956,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         callId: selectedCallForDetail._id || selectedCallForDetail.id,
         studentId,
         isPromoted: true,
-        targetRank: unpromoted.currentRank
+        targetRank: getNextRank(unpromoted.currentRank) || unpromoted.currentRank
       }).catch(err => console.error('Error al autopostular karateca:', err));
     }
 

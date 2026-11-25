@@ -18,7 +18,7 @@ import {
   generateShotokanFeedbackBullets
 } from '../utils/shotokanCriteriaFeedback';
 import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
-import { getNextRank, compareStudentsForExam } from '../constants/kyuRanks';
+import { getNextRank, compareStudentsForExam, isSameRank, normalizeRankKey } from '../constants/kyuRanks';
 import { getExamCostConfig } from './examCosts';
 
 /**
@@ -1232,11 +1232,15 @@ export async function toggleStudentPromotionForCall({
         ? call.aspirants[existingIndex].examDay
         : 1;
 
+      const resolvedTarget = (targetRank && !isSameRank(targetRank, student.currentRank))
+        ? targetRank
+        : (getNextRank(student.currentRank) || student.currentRank);
+
       const aspirantData = {
         studentId: student._id,
         studentName: student.name,
         currentRank: student.currentRank,
-        targetRank: targetRank || student.currentRank,
+        targetRank: resolvedTarget,
         scheduleBlock: scheduleBlock || '',
         examDay: existingExamDay,
         promotedAt: new Date(),
@@ -2989,15 +2993,19 @@ export async function getTribunalProgressForCall(params) {
       dbStudentsMap.set(st._id.toString(), st);
     });
 
+    const allDbSyllabi = await ExamSyllabus.find({ isActive: true }).lean();
+    const syllabiSnapshots = (call.syllabusSnapshots && call.syllabusSnapshots.length > 0)
+      ? call.syllabusSnapshots
+      : allDbSyllabi;
+
     const aspirantsList = (call.aspirants || []).map(a => {
       const sId = a.studentId.toString();
       const dbSt = dbStudentsMap.get(sId);
       const currentRank = a.currentRank || dbSt?.currentRank || '10° Kyu (Cinta Blanca)';
-      const targetRank = a.targetRank
-        || dbSt?.targetRank
-        || getNextRank(currentRank)
-        || call.syllabusSnapshots?.[0]?.targetRank
-        || '9° Kyu (Cinta Amarilla)';
+      const rawTarget = a.targetRank || dbSt?.targetRank;
+      const targetRank = (rawTarget && !isSameRank(rawTarget, currentRank))
+        ? rawTarget
+        : (getNextRank(currentRank) || call.syllabusSnapshots?.[0]?.targetRank || '9° Kyu (Cinta Amarilla)');
       const positiveAspects = (a.positiveAspects || dbSt?.positiveAspects || '').trim();
 
       return {
@@ -3019,10 +3027,10 @@ export async function getTribunalProgressForCall(params) {
       if (!seenAspirantIds.has(stId)) {
         const dbSt = dbStudentsMap.get(stId);
         const currentRank = dbSt?.currentRank || '10° Kyu (Cinta Blanca)';
-        const targetRank = dbSt?.targetRank
-          || getNextRank(currentRank)
-          || call.syllabusSnapshots?.[0]?.targetRank
-          || '9° Kyu (Cinta Amarilla)';
+        const rawTarget = dbSt?.targetRank;
+        const targetRank = (rawTarget && !isSameRank(rawTarget, currentRank))
+          ? rawTarget
+          : (getNextRank(currentRank) || call.syllabusSnapshots?.[0]?.targetRank || '9° Kyu (Cinta Amarilla)');
         const positiveAspects = (dbSt?.positiveAspects || '').trim();
 
         aspirantsList.push({
@@ -3054,6 +3062,8 @@ export async function getTribunalProgressForCall(params) {
       },
       syllabusTechniques: (call.syllabusSnapshots?.[0]?.techniques || []),
       syllabusAspects: (call.syllabusSnapshots?.[0]?.technicalAspects || []),
+      syllabiSnapshots,
+      allSyllabi: allDbSyllabi,
       consolidationsByStudent,
       aspirants: aspirantsList.sort(compareStudentsForExam),
       progressByEvaluator,

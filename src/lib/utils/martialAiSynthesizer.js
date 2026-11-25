@@ -13,6 +13,7 @@
  */
 
 import { getKataForRank, getKumiteForRank, getPrimaryStance } from './shotokanCriteriaFeedback.js';
+import { normalizeRankKey } from '../constants/kyuRanks.js';
 
 // Normalizar texto para comparación semántica (sin acentos, minúsculas, sin puntuación)
 function normalizeText(str = '') {
@@ -314,10 +315,49 @@ export function synthesizePhaseBulletsWithAI({
   specificKataName = '',
   aspectScores = [] // Array of { techniqueName, criterion, stars, score, key }
 }) {
+  // 1. Detectar si alguna nota de evaluador menciona un Kata conocido explícitamente
+  const KNOWN_KATAS = [
+    'Heian Shodan', 'Heian Nidan', 'Heian Sandan', 'Heian Yondan', 'Heian Godan',
+    'Tekki Shodan', 'Tekki Nidan', 'Tekki Sandan',
+    'Bassai Dai', 'Bassai Sho', 'Kanku Dai', 'Kanku Sho',
+    'Jion', 'Jiin', 'Jitte', 'Enpi', 'Empi', 'Hangetsu',
+    'Gankaku', 'Sochin', 'Nijushiho', 'Meikyo', 'Unsu', 'Wankan',
+    'Gojushiho Dai', 'Gojushiho Sho', 'Chinte'
+  ];
+
+  let detectedKataFromNotes = '';
+  if (phase === 'kata') {
+    const combinedNotes = (notesList || []).map(nItem => (typeof nItem === 'string' ? nItem : (nItem.note || ''))).join(' ');
+    for (const k of KNOWN_KATAS) {
+      const regex = new RegExp(`\\b${k.replace(' ', '\\s+')}\\b`, 'i');
+      if (regex.test(combinedNotes)) {
+        detectedKataFromNotes = k;
+        break;
+      }
+    }
+  }
+
+  const expectedKataForRank = getKataForRank(targetRank);
   const resolvedKataFromTech = (phase === 'kata' && techniqueScores.length === 1 && techniqueScores[0]?.name)
     ? techniqueScores[0].name
     : '';
-  const kataName = specificKataName || resolvedKataFromTech || getKataForRank(targetRank);
+
+  // Determinar kataName evitando cruce indebido de temarios incompatibles
+  let kataName = specificKataName || detectedKataFromNotes;
+  if (!kataName) {
+    if (resolvedKataFromTech) {
+      const rankKey = normalizeRankKey(targetRank);
+      const isMismatch = (rankKey === '5-kyu' && resolvedKataFromTech.toLowerCase().includes('tekki'))
+        || (rankKey === '6-kyu' && !resolvedKataFromTech.toLowerCase().includes('yondan'))
+        || (rankKey === '7-kyu' && !resolvedKataFromTech.toLowerCase().includes('sandan'))
+        || (rankKey === '8-kyu' && !resolvedKataFromTech.toLowerCase().includes('nidan'))
+        || (rankKey === '9-kyu' && !resolvedKataFromTech.toLowerCase().includes('shodan'));
+
+      kataName = isMismatch ? expectedKataForRank : resolvedKataFromTech;
+    } else {
+      kataName = expectedKataForRank;
+    }
+  }
   const kumiteName = getKumiteForRank(targetRank);
   const primaryStance = getPrimaryStance(targetRank);
 
@@ -544,7 +584,7 @@ export function synthesizePhaseBulletsWithAI({
           }
         } else if (tNorm.includes('kata') || tNorm.includes('shodan') || tNorm.includes('heian') || tNorm.includes('bassai') || tNorm.includes('kanku') || tNorm.includes('jion') || tNorm.includes('empi')) {
           aspectHeader = 'Aspecto Técnico - Kata (Forma y Embusen)';
-          const activeKataTitle = tName || kataName;
+          const activeKataTitle = kataName || tName;
           if (tScore < 75) {
             flawDirective = `En Kata ${activeKataTitle} (${Math.round(tScore)}%): No fija las posturas bajas ni mantiene el ritmo continuo, debe repasar el embusen y sostener la vista al frente sin tocarse la vestimenta.`;
           } else {
