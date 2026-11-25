@@ -31,7 +31,7 @@ import {
 import { getTribunalProgressForCall, saveConsolidatedVerdict } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
-import { getNextRank, isKyuExemptFromWrittenExam, isSameRank, normalizeRankKey } from '../../lib/constants/kyuRanks';
+import { getNextRank, isKyuExemptFromWrittenExam, isSameRank, normalizeRankKey, findSyllabusForStudent, getKatasFromSyllabus } from '../../lib/constants/kyuRanks';
 import { getKataForRank } from '../../lib/utils/shotokanCriteriaFeedback';
 import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
 
@@ -344,8 +344,17 @@ function StudentMonitorDrawer({
     || getNextRank(student?.currentRank)
     || '8° Kyu (Cinta Naranja)';
 
+  // Resolver temario oficial y Katas exactos del estudiante desde los temarios guardados en base de datos
+  const allAvailableSyllabi = progressData?.syllabiSnapshots || progressData?.allSyllabi || call?.syllabusSnapshots || [];
+  const studentSyllabus = findSyllabusForStudent(allAvailableSyllabi, student)
+    || (student?.syllabusTechniques ? { techniques: student.syllabusTechniques, name: student.syllabusName } : null)
+    || (syllabusTechniques.length ? { techniques: syllabusTechniques } : null);
+
+  const studentTechs = studentSyllabus?.techniques || syllabusTechniques || [];
+  const studentKatas = getKatasFromSyllabus(studentSyllabus);
+
   // Extraer promedios por técnica del temario según las notas asignadas
-  const kihonTechScores = (syllabusTechniques || [])
+  const kihonTechScores = studentTechs
     .filter(t => (t.group || t.phase || 'kihon').toLowerCase() === 'kihon')
     .map(t => {
       const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
@@ -353,32 +362,22 @@ function StudentMonitorDrawer({
       return { id: t.id, name: t.name, score: avg };
     });
 
-  const expectedKataName = getKataForRank(targetRankStr);
-  const rawKataScores = (syllabusTechniques || [])
-    .filter(t => (t.group || t.phase || '').toLowerCase() === 'kata')
-    .map(t => {
-      const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
-      const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
-      return { id: t.id, name: t.name, score: avg };
-    });
-
-  // Si las técnicas del temario corresponden a otro grado incompatible (ej. temario global snapshot es de 4° Kyu Tekki Shodan,
-  // pero el estudiante opta a 5° Kyu Heian Godan), corregir el nombre al Kata oficial que corresponde a su grado
-  const kataTechScores = rawKataScores.map(k => {
-    const rKey = normalizeRankKey(targetRankStr);
-    const isMismatch = (rKey === '5-kyu' && k.name.toLowerCase().includes('tekki'))
-      || (rKey === '6-kyu' && !k.name.toLowerCase().includes('yondan'))
-      || (rKey === '7-kyu' && !k.name.toLowerCase().includes('sandan'))
-      || (rKey === '8-kyu' && !k.name.toLowerCase().includes('nidan'))
-      || (rKey === '9-kyu' && !k.name.toLowerCase().includes('shodan'));
-    return isMismatch ? { ...k, name: expectedKataName } : k;
+  const kataTechScores = studentKatas.map(k => {
+    const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[k.id]).filter(v => typeof v === 'number');
+    const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+    return { id: k.id, name: k.name, score: avg };
   });
 
   if (kataTechScores.length === 0) {
-    kataTechScores.push({ id: 'kata-1', name: expectedKataName, score: colegiadoKata });
+    const fallbackKatas = studentTechs.filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+    fallbackKatas.forEach(k => {
+      const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[k.id]).filter(v => typeof v === 'number');
+      const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+      kataTechScores.push({ id: k.id, name: k.name, score: avg });
+    });
   }
 
-  const kumiteTechScores = (syllabusTechniques || [])
+  const kumiteTechScores = studentTechs
     .filter(t => (t.group || t.phase || '').toLowerCase() === 'kumite')
     .map(t => {
       const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
@@ -391,9 +390,18 @@ function StudentMonitorDrawer({
   }, [kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr]);
 
   const defaultKataBullets = useMemo(() => {
-    const specificKata = kataTechScores[0]?.name || expectedKataName;
+    if (kataTechScores.length > 1) {
+      return kataTechScores.map((kt, idx) => {
+        const rawNote = evalItems.map(e => {
+          const note = (idx === 1 ? e.evalRecord?.phaseNotes?.kata_2 : e.evalRecord?.phaseNotes?.kata) || e.evalRecord?.observations?.[kt.id];
+          return { evaluatorName: e.evaluator.name, note };
+        }).filter(i => i.note);
+        return getPhaseImprovementBullets('kata', rawNote.length ? rawNote : kataNotesList, [kt], kt.score || colegiadoKata, targetRankStr, kt.name);
+      }).flat();
+    }
+    const specificKata = kataTechScores[0]?.name || studentKatas[0]?.name || '';
     return getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, colegiadoKata, targetRankStr, specificKata);
-  }, [kataNotesList, kataTechScores, colegiadoKata, targetRankStr, expectedKataName]);
+  }, [kataNotesList, kataTechScores, colegiadoKata, targetRankStr, studentKatas]);
 
   const defaultKumiteBullets = useMemo(() => {
     return getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr);
@@ -1715,11 +1723,11 @@ export default function TribunalProgressMonitor({
             : (totalVals.length ? Math.round(totalVals.reduce((a, b) => a + b, 0) / totalVals.length) : 80));
 
       const allSyllabi = progressData?.syllabiSnapshots || progressData?.allSyllabi || call?.syllabusSnapshots || [];
-      const matchingSyllabus = allSyllabi.find(s => isSameRank(s.targetRank, targetRank));
-      const allTechs = matchingSyllabus?.techniques || progressData?.syllabusTechniques || [];
-      const expectedKataName = getKataForRank(targetRank);
+      const studentSyllabus = findSyllabusForStudent(allSyllabi, st);
+      const studentTechs = studentSyllabus?.techniques || progressData?.syllabusTechniques || [];
+      const studentKatas = getKatasFromSyllabus(studentSyllabus);
 
-      const kihonTechScores = allTechs
+      const kihonTechScores = studentTechs
         .filter(t => (t.group || t.phase || 'kihon').toLowerCase() === 'kihon')
         .map(t => {
           const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
@@ -1727,29 +1735,22 @@ export default function TribunalProgressMonitor({
           return { id: t.id, name: t.name, score: avg };
         });
 
-      const rawKataTechScores = allTechs
-        .filter(t => (t.group || t.phase || '').toLowerCase() === 'kata')
-        .map(t => {
-          const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
-          const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
-          return { id: t.id, name: t.name, score: avg };
-        });
-
-      const kataTechScores = rawKataTechScores.map(k => {
-        const rKey = normalizeRankKey(targetRank);
-        const isMismatch = (rKey === '5-kyu' && k.name.toLowerCase().includes('tekki'))
-          || (rKey === '6-kyu' && !k.name.toLowerCase().includes('yondan'))
-          || (rKey === '7-kyu' && !k.name.toLowerCase().includes('sandan'))
-          || (rKey === '8-kyu' && !k.name.toLowerCase().includes('nidan'))
-          || (rKey === '9-kyu' && !k.name.toLowerCase().includes('shodan'));
-        return isMismatch ? { ...k, name: expectedKataName } : k;
+      const kataTechScores = studentKatas.map(k => {
+        const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[k.id]).filter(v => typeof v === 'number');
+        const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+        return { id: k.id, name: k.name, score: avg };
       });
 
       if (kataTechScores.length === 0) {
-        kataTechScores.push({ id: 'kata-1', name: expectedKataName, score: kaScore });
+        const fallbackKatas = studentTechs.filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+        fallbackKatas.forEach(k => {
+          const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[k.id]).filter(v => typeof v === 'number');
+          const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+          kataTechScores.push({ id: k.id, name: k.name, score: avg });
+        });
       }
 
-      const kumiteTechScores = allTechs
+      const kumiteTechScores = studentTechs
         .filter(t => (t.group || t.phase || '').toLowerCase() === 'kumite')
         .map(t => {
           const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
@@ -1781,7 +1782,7 @@ export default function TribunalProgressMonitor({
       if (customKata && customKata.length > 0) {
         resolvedKataNotes = customKata.map(b => (typeof b === 'string' ? b : b.text)).join('\n');
         katasPayload = [
-          { name: kataTechScores[0]?.name || expectedKataName, score: kaScore, text: resolvedKataNotes }
+          { name: kataTechScores[0]?.name || studentKatas[0]?.name || 'Kata Oficial', score: kaScore, text: resolvedKataNotes }
         ];
       } else if (kataTechScores.length > 1) {
         // Kata 1
@@ -1820,18 +1821,18 @@ export default function TribunalProgressMonitor({
         ];
         resolvedKataNotes = `${k1Bullets}\n\n${k2Bullets}`;
       } else {
+        const k1Name = kataTechScores[0]?.name || studentKatas[0]?.name || 'Kata Oficial';
         const kataRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kata })).filter(i => i.note);
-        const resolvedKataName = kataTechScores[0]?.name || expectedKataName;
         resolvedKataNotes = synthesizePhaseBulletsWithAI({
           phase: 'kata',
           notesList: kataRawList,
           techniqueScores: kataTechScores,
           phaseAverage: kaScore,
           targetRank,
-          specificKataName: resolvedKataName
+          specificKataName: k1Name
         }).map(b => b.text).join('\n');
         katasPayload = [
-          { name: resolvedKataName, score: kaScore, text: resolvedKataNotes }
+          { name: k1Name, score: kaScore, text: resolvedKataNotes }
         ];
       }
 

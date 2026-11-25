@@ -196,3 +196,60 @@ export function compareStudentsForExam(a, b) {
 
   return (a?.name || '').localeCompare(b?.name || '', 'es', { sensitivity: 'base' });
 }
+
+/**
+ * Localiza el temario de examen oficial correspondiente a un estudiante
+ * a partir de la lista de temarios (ExamSyllabi) de la base de datos o snapshots.
+ * Prioridad marcial:
+ * 1. Coincidencia por currentRank (el grado del alumno al presentarse a examen).
+ * 2. Coincidencia por targetRank (el grado al que aspira promover).
+ * 3. Coincidencia en array targetRanks.
+ */
+export function findSyllabusForStudent(syllabi = [], student = {}) {
+  if (!student || !Array.isArray(syllabi) || syllabi.length === 0) return null;
+  const current = student.currentRank || '';
+  const target = student.targetRank || '';
+
+  // 1. Coincidencia por currentRank (ej: 6° Kyu Cinta Azul -> Temario 6° a 5°)
+  if (current) {
+    const match = syllabi.find(s => isSameRank(s.currentRank, current));
+    if (match) return match;
+  }
+
+  // 2. Coincidencia por targetRank (ej: 5° Kyu Cinta Morada -> Temario 6° a 5°)
+  if (target && !isSameRank(target, current)) {
+    const match = syllabi.find(s => isSameRank(s.targetRank, target));
+    if (match) return match;
+  }
+
+  // 3. Coincidencia en lista targetRanks
+  const match = syllabi.find(s => {
+    const list = Array.isArray(s.targetRanks) ? s.targetRanks : [];
+    return list.some(r => (current && isSameRank(r, current)) || (target && isSameRank(r, target)));
+  });
+  if (match) return match;
+
+  // 4. Si targetRank no estaba definido o coincidía con current, intentar con getNextRank
+  const next = getNextRank(current);
+  if (next) {
+    const matchNext = syllabi.find(s => isSameRank(s.targetRank, next) || isSameRank(s.currentRank, current));
+    if (matchNext) return matchNext;
+  }
+
+  return syllabi[0] || null;
+}
+
+/**
+ * Extrae los Katas oficiales definidos en el temario de examen
+ */
+export function getKatasFromSyllabus(syllabus) {
+  if (!syllabus || !Array.isArray(syllabus.techniques)) return [];
+  return syllabus.techniques
+    .filter(t => (t.group || t.phase || '').toLowerCase() === 'kata')
+    .map(t => ({
+      id: t.id,
+      name: t.name,
+      order: t.order,
+      embusen: t.embusen
+    }));
+}

@@ -18,7 +18,7 @@ import {
   generateShotokanFeedbackBullets
 } from '../utils/shotokanCriteriaFeedback';
 import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
-import { getNextRank, compareStudentsForExam, isSameRank, normalizeRankKey } from '../constants/kyuRanks';
+import { getNextRank, compareStudentsForExam, isSameRank, normalizeRankKey, findSyllabusForStudent, getKatasFromSyllabus } from '../constants/kyuRanks';
 import { getExamCostConfig } from './examCosts';
 
 /**
@@ -2993,9 +2993,9 @@ export async function getTribunalProgressForCall(params) {
       dbStudentsMap.set(st._id.toString(), st);
     });
 
-    const allDbSyllabi = await ExamSyllabus.find({ isActive: true }).lean();
+    const allDbSyllabi = await ExamSyllabus.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, name: 1 }).lean();
     const syllabiSnapshots = (call.syllabusSnapshots && call.syllabusSnapshots.length > 0)
-      ? call.syllabusSnapshots
+      ? [...call.syllabusSnapshots, ...allDbSyllabi]
       : allDbSyllabi;
 
     const aspirantsList = (call.aspirants || []).map(a => {
@@ -3008,6 +3008,11 @@ export async function getTribunalProgressForCall(params) {
         : (getNextRank(currentRank) || call.syllabusSnapshots?.[0]?.targetRank || '9° Kyu (Cinta Amarilla)');
       const positiveAspects = (a.positiveAspects || dbSt?.positiveAspects || '').trim();
 
+      // Resolver temario oficial y Katas exactos de este estudiante según su grado
+      const studentSyllabus = findSyllabusForStudent(syllabiSnapshots, { currentRank, targetRank }) || allDbSyllabi[0];
+      const syllabusTechniques = studentSyllabus?.techniques || [];
+      const syllabusKatas = getKatasFromSyllabus(studentSyllabus);
+
       return {
         studentId: sId,
         studentName: a.studentName || dbSt?.name || 'Estudiante',
@@ -3017,7 +3022,11 @@ export async function getTribunalProgressForCall(params) {
         hasSpecialCondition: Boolean(dbSt?.hasSpecialCondition || (dbSt?.specialCondition && dbSt.specialCondition.trim().length > 0)),
         specialCondition: dbSt?.specialCondition || '',
         birthDate: dbSt?.birthDate ? dbSt.birthDate.toISOString() : null,
-        scheduleBlock: a.scheduleBlock
+        scheduleBlock: a.scheduleBlock,
+        syllabusName: studentSyllabus?.name || '',
+        syllabusId: studentSyllabus?._id ? studentSyllabus._id.toString() : '',
+        syllabusTechniques,
+        syllabusKatas
       };
     });
 
@@ -3033,13 +3042,21 @@ export async function getTribunalProgressForCall(params) {
           : (getNextRank(currentRank) || call.syllabusSnapshots?.[0]?.targetRank || '9° Kyu (Cinta Amarilla)');
         const positiveAspects = (dbSt?.positiveAspects || '').trim();
 
+        const studentSyllabus = findSyllabusForStudent(syllabiSnapshots, { currentRank, targetRank }) || allDbSyllabi[0];
+        const syllabusTechniques = studentSyllabus?.techniques || [];
+        const syllabusKatas = getKatasFromSyllabus(studentSyllabus);
+
         aspirantsList.push({
           studentId: stId,
           studentName: dbSt?.name || 'Estudiante',
           currentRank,
           targetRank,
           positiveAspects,
-          scheduleBlock: ''
+          scheduleBlock: '',
+          syllabusName: studentSyllabus?.name || '',
+          syllabusId: studentSyllabus?._id ? studentSyllabus._id.toString() : '',
+          syllabusTechniques,
+          syllabusKatas
         });
         seenAspirantIds.add(stId);
       }

@@ -338,9 +338,11 @@ export function synthesizePhaseBulletsWithAI({
   }
 
   const expectedKataForRank = getKataForRank(targetRank);
-  const resolvedKataFromTech = (phase === 'kata' && techniqueScores.length === 1 && techniqueScores[0]?.name)
-    ? techniqueScores[0].name
-    : '';
+  const katasFromTech = (techniqueScores || [])
+    .filter(t => (t.group || t.phase || '').toLowerCase() === 'kata' || t.name)
+    .map(t => t.name)
+    .filter(Boolean);
+  const resolvedKataFromTech = katasFromTech.length > 0 ? katasFromTech.join(' y ') : '';
 
   // Determinar kataName evitando cruce indebido de temarios incompatibles
   let kataName = specificKataName || detectedKataFromNotes;

@@ -35,7 +35,7 @@ import {
 import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall, getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { updateStudent } from '../../lib/actions/students';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
-import { KYU_OPTIONS, getBeltBadgeClass, compareStudentsForExam, getRankSortOrder } from '../../lib/constants/kyuRanks';
+import { KYU_OPTIONS, getBeltBadgeClass, compareStudentsForExam, getRankSortOrder, findSyllabusForStudent, getKatasFromSyllabus, isSameRank } from '../../lib/constants/kyuRanks';
 import TribunalProgressMonitor from '../admin/TribunalProgressMonitor';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 import {
@@ -644,41 +644,10 @@ export default function TechnicalExamEvaluatorCore({
     return orderedList;
   }, [activeTanda, liveStudents, tandas]);
 
-  // Helper para resolver el temario aplicable de cada estudiante según su grado/cinturón
+  // Helper para resolver el temario aplicable de cada estudiante según su grado/cinturón desde MongoDB
   const getStudentSyllabus = useCallback((st) => {
     if (!st) return syllabi[0] || null;
-    const rankTarget = (st.targetRank || '').toLowerCase().trim();
-    const rankCurrent = (st.currentRank || '').toLowerCase().trim();
-
-    // 1. Prioridad: Coincidencia exacta por rango actual del estudiante (ej: Cinta Blanca -> Temario Blanco)
-    let match = syllabi.find(s => {
-      const sCurrent = (s.currentRank || '').toLowerCase().trim();
-      return rankCurrent && sCurrent === rankCurrent;
-    });
-    if (match) return match;
-
-    // 2. Prioridad: Coincidencia por rango objetivo (targetRank)
-    match = syllabi.find(s => {
-      const sTarget = (s.targetRank || '').toLowerCase().trim();
-      const targets = Array.isArray(s.targetRanks) ? s.targetRanks.map(r => (r || '').toLowerCase().trim()) : [];
-      return (
-        (rankTarget && sTarget === rankTarget) ||
-        (rankTarget && targets.includes(rankTarget))
-      );
-    });
-    if (match) return match;
-
-    // 3. Coincidencia difusa por nombre de temario
-    match = syllabi.find(s => {
-      const sName = (s.name || '').toLowerCase();
-      if (rankCurrent && (rankCurrent.includes('blanco') || rankCurrent.includes('blanca')) && (sName.includes('blanco') || sName.includes('blanca') || sName.includes('10'))) return true;
-      if (rankCurrent && rankCurrent.includes('amarill') && (sName.includes('amarill') || sName.includes('9'))) return true;
-      if (rankTarget && (rankTarget.includes('blanco') || rankTarget.includes('blanca')) && (sName.includes('blanco') || sName.includes('blanca') || sName.includes('10'))) return true;
-      if (rankTarget && rankTarget.includes('amarill') && (sName.includes('amarill') || sName.includes('9'))) return true;
-      return false;
-    });
-
-    return match || syllabi[0] || null;
+    return findSyllabusForStudent(syllabi, st) || syllabi[0] || null;
   }, [syllabi]);
 
   // Verificar si hay aspectos generales de Sección 2 (Físicos, Mentales, DO) marcados para evaluar en examen

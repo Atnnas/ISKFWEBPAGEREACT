@@ -102,7 +102,7 @@ import TribunalProgressMonitor from './TribunalProgressMonitor';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
 import { doesCriterionApplyToTechnique, sortCriteriaMartialOrder } from '../../lib/utils/evaluatorHelpers';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
-import { getNextRank, compareStudentsForExam, getRankSortOrder, isKyuExemptFromWrittenExam } from '../../lib/constants/kyuRanks';
+import { getNextRank, compareStudentsForExam, getRankSortOrder, isKyuExemptFromWrittenExam, findSyllabusForStudent, getKatasFromSyllabus } from '../../lib/constants/kyuRanks';
 import { 
   parseCustomDate, 
   calculateAge, 
@@ -3239,7 +3239,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       const kihonScore = calcGroupScore('kihon');
       const kataScore = calcGroupScore('kata');
       const kumiteScore = calcGroupScore('kumite');
-      const targetRankForCert = activeSyllabus?.targetRank || getNextRank(item.student?.currentRank) || item.student?.currentRank || '8° Kyu (Cinta Naranja)';
+      // Resolver el temario específico y los Katas oficiales del estudiante según su grado
+      const studentSyllabus = findSyllabusForStudent(syllabi, item.student);
+      const studentTechs = studentSyllabus?.techniques || examTechniques;
+      const targetRankForCert = studentSyllabus?.targetRank || getNextRank(item.student?.currentRank) || item.student?.currentRank || '8° Kyu (Cinta Naranja)';
       const isWrittenExempt = isKyuExemptFromWrittenExam(targetRankForCert);
       const writtenScore = isWrittenExempt ? null : 95;
       // El promedio colegiado técnico es estrictamente entre las tres fases finales: Kihon, Kata y Kumite
@@ -3250,7 +3253,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
       // Agrupar observaciones de texto de todos los Senseis por Kihon, Kata y Kumite
       const getGroupObservations = (grp) => {
-        const groupTechs = examTechniques.filter(t => t.group === grp);
+        const groupTechs = studentTechs.filter(t => (t.group || t.phase || '').toLowerCase() === grp);
         const notes = [];
         evals.forEach(ev => {
           groupTechs.forEach(t => {
@@ -3266,7 +3269,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         return notes.join('. ');
       };
 
-      const kataTechs = examTechniques.filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+      const studentKatas = getKatasFromSyllabus(studentSyllabus);
+      const kataTechs = studentKatas.length > 0
+        ? studentKatas
+        : studentTechs.filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
       const hasMultipleKatas = kataTechs.length > 1;
 
       const calcTechScore = (techId) => {

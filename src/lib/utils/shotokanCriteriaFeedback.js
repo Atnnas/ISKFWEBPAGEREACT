@@ -10,31 +10,32 @@ import { normalizeRankKey } from '../constants/kyuRanks.js';
  * Resuelve el Kata oficial según las técnicas del temario o el grado objetivo
  */
 export function getKataForRank(rank = '', techniques = []) {
-  const kataTech = (techniques || []).find(t => (t.group || t.phase || '').toLowerCase() === 'kata');
-  if (kataTech?.name) return kataTech.name;
+  const kataTechs = (techniques || []).filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
+  if (kataTechs.length === 1) return kataTechs[0].name;
+  if (kataTechs.length > 1) return kataTechs.map(k => k.name).join(' y ');
 
   const key = normalizeRankKey(rank);
   if (key === '10-kyu' || key === '9-kyu') return 'Heian Shodan';
-  if (key === '8-kyu') return 'Heian Nidan';
+  if (key === '8-kyu') return 'Heian Shodan y Heian Nidan';
   if (key === '7-kyu') return 'Heian Sandan';
   if (key === '6-kyu') return 'Heian Yondan';
   if (key === '5-kyu') return 'Heian Godan';
   if (key === '4-kyu') return 'Tekki Shodan';
-  if (key === '3-kyu') return 'Bassai Dai';
-  if (key === '2-kyu') return 'Empi';
-  if (key === '1-kyu') return 'Jion';
+  if (key === '3-kyu') return 'Bassai Dai y Kanku Dai';
+  if (key === '2-kyu') return 'Empi y Tekki Nidan';
+  if (key === '1-kyu') return 'Jion y Hangetsu';
   if (key.endsWith('-dan')) return 'Kata Superior Oficial';
 
   const r = String(rank || '').toLowerCase();
   if (r.includes('10°') || r.includes('9°') || r.includes('amarill') || r.includes('blanca')) return 'Heian Shodan';
-  if (r.includes('8°') || r.includes('naranja')) return 'Heian Nidan';
+  if (r.includes('8°') || r.includes('naranja')) return 'Heian Shodan y Heian Nidan';
   if (r.includes('7°') || r.includes('verde')) return 'Heian Sandan';
   if (r.includes('6°') || r.includes('azul')) return 'Heian Yondan';
   if (r.includes('5°') || (r.includes('morada') && !r.includes('linea') && !r.includes('línea') && !r.includes('blanca'))) return 'Heian Godan';
   if (r.includes('4°') || (r.includes('morada') && (r.includes('linea') || r.includes('línea') || r.includes('blanca')))) return 'Tekki Shodan';
-  if (r.includes('3°') || r.includes('marrón 3') || r.includes('marron 3')) return 'Bassai Dai';
-  if (r.includes('2°') || r.includes('marrón 2') || r.includes('marron 2')) return 'Empi';
-  if (r.includes('1°') || r.includes('marrón 1') || r.includes('marron 1')) return 'Jion';
+  if (r.includes('3°') || r.includes('marrón 3') || r.includes('marron 3')) return 'Bassai Dai y Kanku Dai';
+  if (r.includes('2°') || r.includes('marrón 2') || r.includes('marron 2')) return 'Empi y Tekki Nidan';
+  if (r.includes('1°') || r.includes('marrón 1') || r.includes('marron 1')) return 'Jion y Hangetsu';
   if (r.includes('dan') || r.includes('negra')) return 'Kata Superior Oficial';
   return 'Heian Shodan';
 }
@@ -45,6 +46,32 @@ export function getKataForRank(rank = '', techniques = []) {
 export function getKatasForRank(rank = '', techniques = []) {
   const kataTechs = (techniques || []).filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
   if (kataTechs.length > 0) return kataTechs.map(t => ({ id: t.id, name: t.name }));
+
+  const key = normalizeRankKey(rank);
+  if (key === '8-kyu') {
+    return [
+      { id: 'kata-1', name: 'Heian Shodan' },
+      { id: 'kata-2', name: 'Heian Nidan' }
+    ];
+  }
+  if (key === '3-kyu') {
+    return [
+      { id: 'kata-1', name: 'Bassai Dai' },
+      { id: 'kata-2', name: 'Kanku Dai' }
+    ];
+  }
+  if (key === '2-kyu') {
+    return [
+      { id: 'kata-1', name: 'Empi' },
+      { id: 'kata-2', name: 'Tekki Nidan' }
+    ];
+  }
+  if (key === '1-kyu') {
+    return [
+      { id: 'kata-1', name: 'Jion' },
+      { id: 'kata-2', name: 'Hangetsu' }
+    ];
+  }
   return [{ id: 'kata-1', name: getKataForRank(rank, techniques) }];
 }
 
