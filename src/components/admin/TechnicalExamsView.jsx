@@ -93,6 +93,7 @@ import {
 } from '../../lib/actions/technicalExams';
 import { getExamCostConfig } from '../../lib/actions/examCosts';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
+import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import TimePickerField from '../ui/TimePickerField';
@@ -3218,56 +3219,73 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     try {
       const evals = item.evaluations || [];
 
-      // Calcular promedios por grupo técnico: Kihon, Kata, Kumite
-      const calcGroupScore = (grp) => {
-        const groupTechs = examTechniques.filter(t => (t.group || t.phase || 'kihon').toLowerCase() === grp);
-        if (groupTechs.length === 0) return 0;
-        let total = 0;
-        let count = 0;
-        evals.forEach(ev => {
-          groupTechs.forEach(t => {
-            const score = ev.techniqueAverages?.[t.id];
-            if (typeof score === 'number' && score > 0) {
-              total += (score <= 10 ? score * 10 : score);
-              count++;
-            }
-          });
-        });
-        return count > 0 ? Math.round(total / count) : 0;
-      };
-
-      const kihonScore = calcGroupScore('kihon');
-      const kataScore = calcGroupScore('kata');
-      const kumiteScore = calcGroupScore('kumite');
       // Resolver el temario específico y los Katas oficiales del estudiante según su grado
       const studentSyllabus = findSyllabusForStudent(syllabi, item.student);
       const studentTechs = studentSyllabus?.techniques || examTechniques;
       const targetRankForCert = studentSyllabus?.targetRank || getNextRank(item.student?.currentRank) || item.student?.currentRank || '8° Kyu (Cinta Naranja)';
       const isWrittenExempt = isKyuExemptFromWrittenExam(targetRankForCert);
       const writtenScore = isWrittenExempt ? null : 95;
+
+      const calcTechScore = (techId) => {
+        let total = 0;
+        let count = 0;
+        evals.forEach(ev => {
+          if (!ev?.techniqueAverages) return;
+          const avgs = ev.techniqueAverages;
+          if (typeof avgs[techId] === 'number') {
+            const v = avgs[techId];
+            total += (v <= 10 ? v * 10 : v);
+            count++;
+          } else {
+            const matchingKeys = Object.keys(avgs).filter(k => k === techId || k.startsWith(`${techId}_`));
+            if (matchingKeys.length > 0) {
+              const vals = matchingKeys.map(k => avgs[k]).filter(v => typeof v === 'number');
+              if (vals.length > 0) {
+                const subAvg = vals.reduce((a, b) => a + b, 0) / vals.length;
+                total += (subAvg <= 10 ? subAvg * 10 : subAvg);
+                count++;
+              }
+            }
+          }
+        });
+        return count > 0 ? Math.round(total / count) : null;
+      };
+
+      // Calcular promedios por grupo técnico: Kihon, Kata, Kumite
+      const calcGroupScore = (grp) => {
+        const directScores = evals.map(ev => {
+          const direct = ev.phaseScores?.[grp] ?? ev.phaseAverages?.[grp];
+          if (typeof direct === 'number' && direct > 0) return direct <= 10 ? direct * 10 : direct;
+          return null;
+        }).filter(v => v !== null);
+
+        if (directScores.length > 0) {
+          return Math.round(directScores.reduce((a, b) => a + b, 0) / directScores.length);
+        }
+
+        const groupTechs = studentTechs.filter(t => (t.group || t.phase || 'kihon').toLowerCase() === grp);
+        if (groupTechs.length > 0) {
+          const techVals = groupTechs.map(t => calcTechScore(t.id)).filter(v => typeof v === 'number');
+          if (techVals.length > 0) {
+            return Math.round(techVals.reduce((a, b) => a + b, 0) / techVals.length);
+          }
+        }
+
+        const consPhase = item.consolidation?.phaseScores?.[grp];
+        if (typeof consPhase === 'number' && consPhase > 0) return consPhase;
+
+        return item.averagePercentage || 80;
+      };
+
+      const kihonScore = calcGroupScore('kihon');
+      const kataScore = calcGroupScore('kata');
+      const kumiteScore = calcGroupScore('kumite');
+
       // El promedio colegiado técnico es estrictamente entre las tres fases finales: Kihon, Kata y Kumite
       const activePhaseScores = [kihonScore, kataScore, kumiteScore].filter(v => typeof v === 'number' && v > 0);
       const finalScore = activePhaseScores.length > 0
         ? Math.round(activePhaseScores.reduce((sum, v) => sum + v, 0) / activePhaseScores.length)
         : (item.averagePercentage || 85);
-
-      // Agrupar observaciones de texto de todos los Senseis por Kihon, Kata y Kumite
-      const getGroupObservations = (grp) => {
-        const groupTechs = studentTechs.filter(t => (t.group || t.phase || '').toLowerCase() === grp);
-        const notes = [];
-        evals.forEach(ev => {
-          groupTechs.forEach(t => {
-            const obs = ev.observations?.[t.id];
-            if (obs && String(obs).trim().length > 0) {
-              const trimmed = obs.trim();
-              if (!notes.includes(trimmed)) {
-                notes.push(trimmed);
-              }
-            }
-          });
-        });
-        return notes.join('. ');
-      };
 
       const studentKatas = getKatasFromSyllabus(studentSyllabus);
       const kataTechs = studentKatas.length > 0
@@ -3275,69 +3293,116 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         : studentTechs.filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
       const hasMultipleKatas = kataTechs.length > 1;
 
-      const calcTechScore = (techId) => {
-        let total = 0;
-        let count = 0;
-        evals.forEach(ev => {
-          const score = ev.techniqueAverages?.[techId];
-          if (typeof score === 'number' && score > 0) {
-            total += (score <= 10 ? score * 10 : score);
-            count++;
-          }
-        });
-        return count > 0 ? Math.round(total / count) : null;
-      };
+      // Extraer notas de texto por evaluador para alimentar el sintetizador marcial
+      const kihonNotes = [];
+      const kumiteNotes = [];
+      evals.forEach(ev => {
+        const evName = ev.evaluatorName || 'Sensei';
+        if (ev.phaseNotes?.kihon) kihonNotes.push({ evaluatorName: evName, note: ev.phaseNotes.kihon });
+        if (ev.phaseNotes?.kumite) kumiteNotes.push({ evaluatorName: evName, note: ev.phaseNotes.kumite });
+      });
 
-      const kihonText = getGroupObservations('kihon');
-      const kumiteText = getGroupObservations('kumite');
+      const kihonTechScores = studentTechs
+        .filter(t => (t.group || t.phase || 'kihon').toLowerCase() === 'kihon')
+        .map(t => ({ id: t.id, name: t.name, score: calcTechScore(t.id) }));
 
+      const kumiteTechScores = studentTechs
+        .filter(t => (t.group || t.phase || '').toLowerCase() === 'kumite')
+        .map(t => ({ id: t.id, name: t.name, score: calcTechScore(t.id) }));
+
+      // Kihon Text
+      const customKihon = item.consolidation?.customPhaseBullets?.kihon;
+      const kihonText = (customKihon && customKihon.length > 0)
+        ? customKihon.map(b => (typeof b === 'string' ? b : b.text)).join('\n')
+        : synthesizePhaseBulletsWithAI({
+            phase: 'kihon',
+            notesList: kihonNotes,
+            techniqueScores: kihonTechScores,
+            phaseAverage: kihonScore,
+            targetRank: targetRankForCert
+          }).map(b => b.text).join('\n');
+
+      // Kumite Text
+      const customKumite = item.consolidation?.customPhaseBullets?.kumite;
+      const kumiteText = (customKumite && customKumite.length > 0)
+        ? customKumite.map(b => (typeof b === 'string' ? b : b.text)).join('\n')
+        : synthesizePhaseBulletsWithAI({
+            phase: 'kumite',
+            notesList: kumiteNotes,
+            techniqueScores: kumiteTechScores,
+            phaseAverage: kumiteScore,
+            targetRank: targetRankForCert
+          }).map(b => b.text).join('\n');
+
+      // Katas Text y Payload
       let katasPayload = [];
       let resolvedKataText = '';
+      const customKata = item.consolidation?.customPhaseBullets?.kata;
 
-      if (hasMultipleKatas) {
+      if (customKata && customKata.length > 0) {
+        resolvedKataText = customKata.map(b => (typeof b === 'string' ? b : b.text)).join('\n');
+        katasPayload = [
+          { name: kataTechs[0]?.name || 'Kata Oficial', score: kataScore, text: resolvedKataText }
+        ];
+      } else if (hasMultipleKatas) {
         const k1 = kataTechs[0];
         const k1Score = calcTechScore(k1.id) || kataScore;
         const k1Notes = [];
         evals.forEach(ev => {
-          const obs = ev.observations?.[k1.id];
-          if (obs && String(obs).trim().length > 0) {
-            const trimmed = obs.trim();
-            if (!k1Notes.includes(trimmed)) k1Notes.push(trimmed);
-          }
-          const pNote = ev.phaseNotes?.kata || ev.phaseNotes?.kata_1;
-          if (pNote && String(pNote).trim().length > 0) {
-            const trimmed = pNote.trim();
-            if (!k1Notes.includes(trimmed)) k1Notes.push(trimmed);
-          }
+          const evName = ev.evaluatorName || 'Sensei';
+          const pNote = ev.phaseNotes?.kata || ev.phaseNotes?.kata_1 || ev.observations?.[k1.id];
+          if (pNote && String(pNote).trim().length > 0) k1Notes.push({ evaluatorName: evName, note: pNote.trim() });
         });
-        const k1Text = k1Notes.join('\n');
+        const k1Bullets = synthesizePhaseBulletsWithAI({
+          phase: 'kata',
+          notesList: k1Notes,
+          techniqueScores: [{ id: k1.id, name: k1.name, score: k1Score }],
+          phaseAverage: k1Score,
+          targetRank: targetRankForCert,
+          specificKataName: k1.name
+        }).map(b => b.text).join('\n');
 
         const k2 = kataTechs[1];
         const k2Score = calcTechScore(k2.id) || kataScore;
         const k2Notes = [];
         evals.forEach(ev => {
-          const obs = ev.observations?.[k2.id];
-          if (obs && String(obs).trim().length > 0) {
-            const trimmed = obs.trim();
-            if (!k2Notes.includes(trimmed)) k2Notes.push(trimmed);
-          }
-          const pNote = ev.phaseNotes?.kata_2;
-          if (pNote && String(pNote).trim().length > 0) {
-            const trimmed = pNote.trim();
-            if (!k2Notes.includes(trimmed)) k2Notes.push(trimmed);
-          }
+          const evName = ev.evaluatorName || 'Sensei';
+          const pNote = ev.phaseNotes?.kata_2 || ev.observations?.[k2.id];
+          if (pNote && String(pNote).trim().length > 0) k2Notes.push({ evaluatorName: evName, note: pNote.trim() });
         });
-        const k2Text = k2Notes.join('\n');
+        const k2Bullets = synthesizePhaseBulletsWithAI({
+          phase: 'kata',
+          notesList: k2Notes,
+          techniqueScores: [{ id: k2.id, name: k2.name, score: k2Score }],
+          phaseAverage: k2Score,
+          targetRank: targetRankForCert,
+          specificKataName: k2.name
+        }).map(b => b.text).join('\n');
 
         katasPayload = [
-          { name: k1.name, score: k1Score, text: k1Text },
-          { name: k2.name, score: k2Score, text: k2Text }
+          { name: k1.name, score: k1Score, text: k1Bullets },
+          { name: k2.name, score: k2Score, text: k2Bullets }
         ];
-        resolvedKataText = `${k1Text}\n\n${k2Text}`;
+        resolvedKataText = `${k1Bullets}\n\n${k2Bullets}`;
       } else {
-        resolvedKataText = getGroupObservations('kata');
+        const kataName = kataTechs[0]?.name || 'Kata Oficial';
+        const kataNotes = [];
+        evals.forEach(ev => {
+          const evName = ev.evaluatorName || 'Sensei';
+          if (ev.phaseNotes?.kata) kataNotes.push({ evaluatorName: evName, note: ev.phaseNotes.kata });
+        });
+        const kataTechScores = [{ id: kataTechs[0]?.id || 'kata', name: kataName, score: kataScore }];
+        resolvedKataText = synthesizePhaseBulletsWithAI({
+          phase: 'kata',
+          notesList: kataNotes,
+          techniqueScores: kataTechScores,
+          phaseAverage: kataScore,
+          targetRank: targetRankForCert,
+          specificKataName: kataName
+        }).map(b => b.text).join('\n');
+
         katasPayload = [
-          { name: kataTechs[0]?.name || 'Kata Oficial', score: kataScore, text: resolvedKataText }
+          { name: kataName, score: kataScore, text: resolvedKataText }
         ];
       }
 

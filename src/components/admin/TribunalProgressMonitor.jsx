@@ -136,6 +136,56 @@ function getPhaseImprovementBullets(phase, notesList, techniqueScores = [], phas
   });
 }
 
+// Helper robusto para extraer la nota de una técnica desde techniqueAverages (soporta claves exactas o compuestas tech_aspecto)
+export function getTechScoreFromEvalRecord(evalRecord, techId) {
+  if (!evalRecord?.techniqueAverages || !techId) return null;
+  const avgs = evalRecord.techniqueAverages;
+  if (typeof avgs[techId] === 'number') {
+    const v = avgs[techId];
+    return v <= 10 ? v * 10 : v;
+  }
+  const matchingKeys = Object.keys(avgs).filter(k => k === techId || k.startsWith(`${techId}_`));
+  if (matchingKeys.length > 0) {
+    const vals = matchingKeys.map(k => {
+      const v = avgs[k];
+      return typeof v === 'number' ? (v <= 10 ? v * 10 : v) : null;
+    }).filter(v => v !== null);
+    if (vals.length > 0) {
+      return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    }
+  }
+  return null;
+}
+
+// Helper robusto para extraer el promedio de una fase desde phaseAverages o recalcularlo desde techniqueAverages
+export function getPhaseAvgFromEvalRecord(evalRecord, phaseKey) {
+  if (!evalRecord) return null;
+  const direct = evalRecord.phaseAverages?.[phaseKey] ?? evalRecord.phaseScores?.[phaseKey];
+  if (typeof direct === 'number') {
+    return direct <= 10 ? direct * 10 : direct;
+  }
+  if (evalRecord.techniqueAverages && typeof evalRecord.techniqueAverages === 'object') {
+    const entries = Object.entries(evalRecord.techniqueAverages);
+    const phaseEntries = entries.filter(([k, v]) => {
+      if (typeof v !== 'number') return false;
+      const lk = k.toLowerCase();
+      if (phaseKey === 'kihon') return !lk.includes('-ka') && !lk.includes('-ku') && !lk.includes('kata') && !lk.includes('kumite') && !lk.startsWith('aspect');
+      if (phaseKey === 'kata') return lk.includes('-ka') || lk.includes('kata') || lk.includes('heian') || lk.includes('tekki') || lk.includes('bassai');
+      if (phaseKey === 'kumite') return lk.includes('-ku') || lk.includes('kumite') || lk.includes('sambon') || lk.includes('gohon');
+      if (phaseKey === 'aspectos') return lk.startsWith('aspect');
+      return false;
+    });
+    if (phaseEntries.length > 0) {
+      const sum = phaseEntries.reduce((acc, [, v]) => acc + (v <= 10 ? v * 10 : v), 0);
+      return Math.round(sum / phaseEntries.length);
+    }
+  }
+  if (typeof evalRecord.percentage === 'number' && evalRecord.percentage > 0) {
+    return evalRecord.percentage;
+  }
+  return null;
+}
+
 // Helper para clasificar el origen de una viñeta para la visualización del Director Técnico (Shihan Roy Gatjens)
 function getOriginBadgeData(itemOrText) {
   if (itemOrText && typeof itemOrText === 'object') {
@@ -225,29 +275,10 @@ function StudentMonitorDrawer({
   }));
 
   // Promedios colegiados entre todos los evaluadores (normalizados a 0-100%)
-  const kihonVals = evalItems.map(e => {
-    const val = e.evalRecord?.phaseAverages?.kihon;
-    if (typeof val !== 'number') return null;
-    return val <= 10 ? val * 10 : val;
-  }).filter(v => v !== null);
-
-  const kataVals = evalItems.map(e => {
-    const val = e.evalRecord?.phaseAverages?.kata;
-    if (typeof val !== 'number') return null;
-    return val <= 10 ? val * 10 : val;
-  }).filter(v => v !== null);
-
-  const kumiteVals = evalItems.map(e => {
-    const val = e.evalRecord?.phaseAverages?.kumite;
-    if (typeof val !== 'number') return null;
-    return val <= 10 ? val * 10 : val;
-  }).filter(v => v !== null);
-
-  const aspectosVals = evalItems.map(e => {
-    const val = e.evalRecord?.phaseAverages?.aspectos;
-    if (typeof val !== 'number') return null;
-    return val <= 10 ? val * 10 : val;
-  }).filter(v => v !== null);
+  const kihonVals = evalItems.map(e => getPhaseAvgFromEvalRecord(e.evalRecord, 'kihon')).filter(v => typeof v === 'number');
+  const kataVals = evalItems.map(e => getPhaseAvgFromEvalRecord(e.evalRecord, 'kata')).filter(v => typeof v === 'number');
+  const kumiteVals = evalItems.map(e => getPhaseAvgFromEvalRecord(e.evalRecord, 'kumite')).filter(v => typeof v === 'number');
+  const aspectosVals = evalItems.map(e => getPhaseAvgFromEvalRecord(e.evalRecord, 'aspectos')).filter(v => typeof v === 'number');
 
   const colegiadoKihon = kihonVals.length ? Math.round(kihonVals.reduce((a, b) => a + b, 0) / kihonVals.length) : null;
   const colegiadoKata = kataVals.length ? Math.round(kataVals.reduce((a, b) => a + b, 0) / kataVals.length) : null;
@@ -357,13 +388,13 @@ function StudentMonitorDrawer({
   const kihonTechScores = studentTechs
     .filter(t => (t.group || t.phase || 'kihon').toLowerCase() === 'kihon')
     .map(t => {
-      const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+      const vals = evalItems.map(e => getTechScoreFromEvalRecord(e.evalRecord, t.id)).filter(v => typeof v === 'number');
       const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
       return { id: t.id, name: t.name, score: avg };
     });
 
   const kataTechScores = studentKatas.map(k => {
-    const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[k.id]).filter(v => typeof v === 'number');
+    const vals = evalItems.map(e => getTechScoreFromEvalRecord(e.evalRecord, k.id)).filter(v => typeof v === 'number');
     const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
     return { id: k.id, name: k.name, score: avg };
   });
@@ -371,7 +402,7 @@ function StudentMonitorDrawer({
   if (kataTechScores.length === 0) {
     const fallbackKatas = studentTechs.filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
     fallbackKatas.forEach(k => {
-      const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[k.id]).filter(v => typeof v === 'number');
+      const vals = evalItems.map(e => getTechScoreFromEvalRecord(e.evalRecord, k.id)).filter(v => typeof v === 'number');
       const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
       kataTechScores.push({ id: k.id, name: k.name, score: avg });
     });
@@ -380,35 +411,39 @@ function StudentMonitorDrawer({
   const kumiteTechScores = studentTechs
     .filter(t => (t.group || t.phase || '').toLowerCase() === 'kumite')
     .map(t => {
-      const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+      const vals = evalItems.map(e => getTechScoreFromEvalRecord(e.evalRecord, t.id)).filter(v => typeof v === 'number');
       const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
       return { id: t.id, name: t.name, score: avg };
     });
 
   const defaultKihonBullets = useMemo(() => {
-    return getPhaseImprovementBullets('kihon', kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr);
-  }, [kihonNotesList, kihonTechScores, colegiadoKihon, targetRankStr]);
+    const effScore = colegiadoKihon || baseKihon || 80;
+    return getPhaseImprovementBullets('kihon', kihonNotesList, kihonTechScores, effScore, targetRankStr);
+  }, [kihonNotesList, kihonTechScores, colegiadoKihon, baseKihon, targetRankStr]);
 
   const defaultKataBullets = useMemo(() => {
+    const effScore = colegiadoKata || baseKata || 80;
     if (kataTechScores.length > 1) {
       return kataTechScores.map((kt, idx) => {
         const rawNote = evalItems.map(e => {
           const note = (idx === 1 ? e.evalRecord?.phaseNotes?.kata_2 : e.evalRecord?.phaseNotes?.kata) || e.evalRecord?.observations?.[kt.id];
           return { evaluatorName: e.evaluator.name, note };
         }).filter(i => i.note);
-        return getPhaseImprovementBullets('kata', rawNote.length ? rawNote : kataNotesList, [kt], kt.score || colegiadoKata, targetRankStr, kt.name);
+        return getPhaseImprovementBullets('kata', rawNote.length ? rawNote : kataNotesList, [kt], kt.score || effScore, targetRankStr, kt.name);
       }).flat();
     }
     const specificKata = kataTechScores[0]?.name || studentKatas[0]?.name || '';
-    return getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, colegiadoKata, targetRankStr, specificKata);
-  }, [kataNotesList, kataTechScores, colegiadoKata, targetRankStr, studentKatas]);
+    return getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, effScore, targetRankStr, specificKata);
+  }, [kataNotesList, kataTechScores, colegiadoKata, baseKata, targetRankStr, studentKatas]);
 
   const defaultKumiteBullets = useMemo(() => {
-    return getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr);
-  }, [kumiteNotesList, kumiteTechScores, colegiadoKumite, targetRankStr]);
+    const effScore = colegiadoKumite || baseKumite || 80;
+    return getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, effScore, targetRankStr);
+  }, [kumiteNotesList, kumiteTechScores, colegiadoKumite, baseKumite, targetRankStr]);
 
   const defaultAspectosBullets = useMemo(() => {
-    return getPhaseImprovementBullets('aspectos', aspectosNotesList, [], colegiadoAspectos, targetRankStr);
+    const effScore = colegiadoAspectos || 80;
+    return getPhaseImprovementBullets('aspectos', aspectosNotesList, [], effScore, targetRankStr);
   }, [aspectosNotesList, colegiadoAspectos, targetRankStr]);
 
   // Viñetas oficiales editables directamente por Shihan Roy para cada fase
@@ -1699,9 +1734,9 @@ export default function TribunalProgressMonitor({
         : (call?.examDate || new Date());
       const examDate = formatDateDDMMAAAA(rawExamDate);
 
-      const kihonVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kihon).filter(v => typeof v === 'number');
-      const kataVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kata).filter(v => typeof v === 'number');
-      const kumiteVals = evalItems.map(e => e.evalRecord?.phaseAverages?.kumite).filter(v => typeof v === 'number');
+      const kihonVals = evalItems.map(e => getPhaseAvgFromEvalRecord(e.evalRecord, 'kihon')).filter(v => typeof v === 'number');
+      const kataVals = evalItems.map(e => getPhaseAvgFromEvalRecord(e.evalRecord, 'kata')).filter(v => typeof v === 'number');
+      const kumiteVals = evalItems.map(e => getPhaseAvgFromEvalRecord(e.evalRecord, 'kumite')).filter(v => typeof v === 'number');
       const totalVals = evalItems.map(e => e.evalRecord?.percentage).filter(v => typeof v === 'number' && v > 0);
 
       const kScore = cons?.phaseScores?.kihon !== undefined
@@ -1730,13 +1765,13 @@ export default function TribunalProgressMonitor({
       const kihonTechScores = studentTechs
         .filter(t => (t.group || t.phase || 'kihon').toLowerCase() === 'kihon')
         .map(t => {
-          const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+          const vals = evalItems.map(e => getTechScoreFromEvalRecord(e.evalRecord, t.id)).filter(v => typeof v === 'number');
           const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
           return { id: t.id, name: t.name, score: avg };
         });
 
       const kataTechScores = studentKatas.map(k => {
-        const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[k.id]).filter(v => typeof v === 'number');
+        const vals = evalItems.map(e => getTechScoreFromEvalRecord(e.evalRecord, k.id)).filter(v => typeof v === 'number');
         const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
         return { id: k.id, name: k.name, score: avg };
       });
@@ -1744,7 +1779,7 @@ export default function TribunalProgressMonitor({
       if (kataTechScores.length === 0) {
         const fallbackKatas = studentTechs.filter(t => (t.group || t.phase || '').toLowerCase() === 'kata');
         fallbackKatas.forEach(k => {
-          const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[k.id]).filter(v => typeof v === 'number');
+          const vals = evalItems.map(e => getTechScoreFromEvalRecord(e.evalRecord, k.id)).filter(v => typeof v === 'number');
           const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
           kataTechScores.push({ id: k.id, name: k.name, score: avg });
         });
@@ -1753,7 +1788,7 @@ export default function TribunalProgressMonitor({
       const kumiteTechScores = studentTechs
         .filter(t => (t.group || t.phase || '').toLowerCase() === 'kumite')
         .map(t => {
-          const vals = evalItems.map(e => e.evalRecord?.techniqueAverages?.[t.id]).filter(v => typeof v === 'number');
+          const vals = evalItems.map(e => getTechScoreFromEvalRecord(e.evalRecord, t.id)).filter(v => typeof v === 'number');
           const avg = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
           return { id: t.id, name: t.name, score: avg };
         });
@@ -2764,7 +2799,7 @@ export default function TribunalProgressMonitor({
                                             <StudentMonitorDrawer
                                               call={call}
                                               student={{ ...st, targetRank: studentTargetRank }}
-                                              evaluatorsProgress={evaluatorsProgress}
+                                              evaluatorsProgress={rawEvaluatorsProgress}
                                               syllabusTechniques={studentSpecificTechs}
                                               consolidation={progressData?.consolidationsByStudent?.[sId] || null}
                                               onDownloadPdf={handleDownloadCertificateForStudent}

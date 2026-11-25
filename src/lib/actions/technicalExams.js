@@ -2530,8 +2530,8 @@ export async function saveEvaluatorAtomicGrade({
       const resolvePhaseForTech = (tKey) => {
         if (!tKey) return 'kihon';
         const tk = String(tKey).toLowerCase();
-        if (tk.includes('-ka') || tk.includes('kata') || tk.includes('heian') || tk.includes('tekki') || tk.includes('bassai')) return 'kata';
-        if (tk.includes('-ku') || tk.includes('kumite') || tk.includes('sambon') || tk.includes('gohon')) return 'kumite';
+        if (tk.includes('-ka') || tk.includes('kata') || tk.includes('heian') || tk.includes('tekki') || tk.includes('bassai') || tk.includes('kanku') || tk.includes('jion') || tk.includes('empi') || tk.includes('hangetsu') || tk.includes('gankaku') || tk.includes('jitte') || tk.includes('sochin')) return 'kata';
+        if (tk.includes('-ku') || tk.includes('kumite') || tk.includes('sambon') || tk.includes('gohon') || tk.includes('ippon') || tk.includes('jiyu')) return 'kumite';
         if (tk.startsWith('aspect')) return 'aspectos';
         return 'kihon';
       };
@@ -2592,9 +2592,9 @@ export async function saveEvaluatorAtomicGrade({
       techniqueAverages: mergedTechniqueAverages,
       observations: mergedObservations,
       phaseNotes: mergedPhaseNotes,
-      phaseAverages: phaseAverages || existing?.phaseAverages || {},
-      phaseAdjustments: phaseAdjustments || existing?.phaseAdjustments || { kihon: 0, kata: 0, kumite: 0 },
-      phaseScores: phaseScores || existing?.phaseScores || {},
+      phaseAverages: (phaseAverages && Object.keys(phaseAverages).length > 0) ? phaseAverages : (calculatedPhaseAverages || existing?.phaseAverages || {}),
+      phaseAdjustments: safePhaseAdjustments,
+      phaseScores: (phaseScores && Object.keys(phaseScores).length > 0) ? phaseScores : (calculatedPhaseScores || existing?.phaseScores || {}),
       percentage: Math.max(0, Math.min(100, Math.round(Number(calculatedPercentage) || 0))),
       pointsEarned: Math.max(0, Math.min(5000, Number(pointsEarned) || 0)),
       pointsPossible: Math.max(0, Math.min(5000, Number(pointsPossible) || 0)),
