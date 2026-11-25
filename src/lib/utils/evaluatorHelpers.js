@@ -59,7 +59,7 @@ export function getBeltBadge(rankStr) {
 
 export function getTandasRosterSignature(schedules) {
   if (!Array.isArray(schedules)) return '';
-  return schedules.map(s => `${s.blockName || ''}@${(s.studentIds || []).map(String).join(',')}`).join('||');
+  return schedules.map((s, idx) => `${s.id || idx}:${s.blockName || ''}:${s.day || 1}:${s.startTime || ''}:${s.endTime || ''}@${(s.studentIds || []).map(String).join(',')}`).join('||');
 }
 
 export function parseAspectPoint(pointItem, idx, prefix, isSection2 = false) {

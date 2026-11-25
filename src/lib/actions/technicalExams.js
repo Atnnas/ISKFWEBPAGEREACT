@@ -3057,10 +3057,12 @@ export async function getTribunalProgressForCall(params) {
       consolidationsByStudent,
       aspirants: aspirantsList.sort(compareStudentsForExam),
       progressByEvaluator,
-      schedules: (call.schedules || []).map(s => ({
-        blockName: s.blockName,
-        startTime: s.startTime,
-        endTime: s.endTime,
+      schedules: (call.schedules || []).map((s, idx) => ({
+        id: s._id ? s._id.toString() : (s.id || `tanda_${idx}`),
+        blockName: s.blockName || `Tanda ${idx + 1}`,
+        startTime: s.startTime || '',
+        endTime: s.endTime || '',
+        day: Number(s.day) === 2 ? 2 : 1,
         studentIds: (s.studentIds || []).map(String)
       }))
     };
@@ -3111,10 +3113,12 @@ export async function getCallSchedulesLatest({ callId, accessToken }) {
       status: call.status,
       isUnlocked: Boolean(call.isUnlocked),
       maxPerTanda: call.maxPerTanda || 6,
-      schedules: (call.schedules || []).map(s => ({
-        blockName: s.blockName,
-        startTime: s.startTime,
+      schedules: (call.schedules || []).map((s, idx) => ({
+        id: s._id ? s._id.toString() : (s.id || `tanda_${idx}`),
+        blockName: s.blockName || `Tanda ${idx + 1}`,
+        startTime: s.startTime || '',
         endTime: s.endTime || '',
+        day: Number(s.day) === 2 ? 2 : 1,
         targetRanks: s.targetRanks || [],
         studentIds: (s.studentIds || []).map(String)
       })),

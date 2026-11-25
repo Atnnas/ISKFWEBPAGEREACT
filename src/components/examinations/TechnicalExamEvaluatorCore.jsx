@@ -85,6 +85,14 @@ export default function TechnicalExamEvaluatorCore({
     }
   }, [students]);
 
+  // Sincronizar tandas y orden en vivo si la prop call.schedules se actualiza desde el exterior (ej: reacomodo en panel)
+  useEffect(() => {
+    if (Array.isArray(call?.schedules)) {
+      setLiveSchedules(call.schedules);
+      prevSignatureRef.current = getTandasRosterSignature(call.schedules);
+    }
+  }, [call?.schedules]);
+
   // Auto-ocultar alerta de actualización de tandas
   useEffect(() => {
     if (rosterAlert) {
@@ -120,33 +128,35 @@ export default function TechnicalExamEvaluatorCore({
         const oldSig = prevSignatureRef.current;
 
         // Detectar si hubo un cambio real en las tandas o en la distribución de karatecas
-        if (oldSig && newSig !== oldSig) {
+        if (newSig !== oldSig) {
           prevSignatureRef.current = newSig;
           setLiveSchedules(res.schedules);
           if (Array.isArray(res.students) && res.students.length > 0) {
             setLiveStudents([...res.students].sort(compareStudentsForExam));
           }
-          setRosterAlert('¡Tandas y lista de karatecas actualizadas en vivo por la administración!');
+          if (oldSig) {
+            setRosterAlert('¡Tandas y orden de karatecas actualizados en vivo por la administración!');
 
-          // Feedback de audio marcial suave (campanilla de tatami)
-          try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (AudioCtx) {
-              const ctx = new AudioCtx();
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = 'triangle';
-              osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-              osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15); // E5
-              gain.gain.setValueAtTime(0.08, ctx.currentTime);
-              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start();
-              osc.stop(ctx.currentTime + 0.35);
+            // Feedback de audio marcial suave (campanilla de tatami)
+            try {
+              const AudioCtx = window.AudioContext || window.webkitAudioContext;
+              if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.35);
+              }
+            } catch {
+              // Silencioso si el navegador bloquea audio
             }
-          } catch {
-            // Silencioso si el navegador bloquea audio
           }
         } else {
           // Mantener sincronía de datos
@@ -166,7 +176,7 @@ export default function TechnicalExamEvaluatorCore({
     }
   }, [callId, call?.accessToken]);
 
-  // Intervalo de sincronización en vivo cada 5s (sólo con pestaña activa) + ejecución inmediata al enfocar
+  // Intervalo de sincronización en vivo cada 3.5s (sólo con pestaña activa) + ejecución inmediata al enfocar
   useEffect(() => {
     if (!call?.accessToken && !callId) return;
 
@@ -177,7 +187,7 @@ export default function TechnicalExamEvaluatorCore({
     const interval = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
       pollCallRoster(false);
-    }, 5000);
+    }, 3500);
 
     const handleVisibility = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
@@ -626,12 +636,12 @@ export default function TechnicalExamEvaluatorCore({
       studentMap.set(String(s._id || s.id), s);
     });
 
-    // Mapear y ordenar por cinturón (10° Kyu Blanca -> 9° Kyu Amarilla...) y por edad (menor edad primero)
+    // Mapear respetando estrictamente el orden configurado por el admin en la tanda
     const orderedList = activeTanda.studentIds
       .map(id => studentMap.get(String(id)))
       .filter(Boolean);
 
-    return orderedList.sort(compareStudentsForExam);
+    return orderedList;
   }, [activeTanda, liveStudents, tandas]);
 
   // Helper para resolver el temario aplicable de cada estudiante según su grado/cinturón
@@ -975,11 +985,7 @@ export default function TechnicalExamEvaluatorCore({
       return orderA - orderB;
     });
 
-    // Ordenar estudiantes dentro de cada cinturón por edad (menor edad a mayor edad: niños primero)
-    groups.forEach(g => {
-      g.students.sort(compareStudentsForExam);
-    });
-
+    // Los estudiantes dentro de cada grupo conservan el orden exacto de la tanda
     return groups;
   }, [tandaStudents, getStudentSyllabus, getStudentTechniques, effectivePhase]);
 
@@ -2299,6 +2305,13 @@ export default function TechnicalExamEvaluatorCore({
                     }`}
                   >
                     <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
+                    {call?.isMultiDay && (
+                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono font-bold ${
+                        Number(tanda.day) === 2 ? 'bg-red-500/20 text-rose-300' : 'bg-blue-500/20 text-blue-300'
+                      }`}>
+                        D{Number(tanda.day) === 2 ? 2 : 1}
+                      </span>
+                    )}
                     <span className={`text-[10px] px-1 py-0.2 rounded-full font-mono ${
                       isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
                     }`}>
@@ -2307,6 +2320,17 @@ export default function TechnicalExamEvaluatorCore({
                   </button>
                 );
               })}
+
+              {/* Botón de Sincronización en Tiempo Real */}
+              <button
+                type="button"
+                onClick={() => pollCallRoster(true)}
+                disabled={isSyncingRoster}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all cursor-pointer active:scale-95"
+                title="Sincronizar tandas y orden de karatecas en vivo"
+              >
+                <RefreshCw className={`w-3 h-3 ${isSyncingRoster ? 'animate-spin text-amber-400' : 'text-slate-400'}`} />
+              </button>
             </div>
           </div>
 

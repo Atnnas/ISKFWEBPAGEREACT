@@ -5260,7 +5260,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           {callDetailSubTab === 'evaluation' && (
             <div className="space-y-2.5">
               <TechnicalExamEvaluatorCore
-                call={selectedCallForDetail}
+                call={{
+                  ...selectedCallForDetail,
+                  schedules: callTandas.length > 0 ? callTandas : selectedCallForDetail?.schedules
+                }}
                 evaluator={adminEvaluator}
                 students={callEvaluationStudents}
                 syllabi={syllabi}
@@ -5275,7 +5278,10 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           {callDetailSubTab === 'monitor' && (
             <div className="space-y-4">
               <TribunalProgressMonitor
-                call={selectedCallForDetail}
+                call={{
+                  ...selectedCallForDetail,
+                  schedules: callTandas.length > 0 ? callTandas : selectedCallForDetail?.schedules
+                }}
                 students={callEvaluationStudents}
                 onEditTribunal={() => handleOpenEditTribunal(selectedCallForDetail)}
               />
