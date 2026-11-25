@@ -630,16 +630,15 @@ export function synthesizePhaseBulletsWithAI({
     }
   });
 
-  // 5. Deduplicación secundaria estricta entre viñetas generadas
-  // Elimina cualquier indicación residual que comparta más de 50% de palabras clave
+  // 5. Deduplicación secundaria inteligente entre viñetas generadas
+  // Elimina duplicados directos si comparten más del 65% de similitud semántica en el mismo aspecto
   const uniqueBullets = [];
   synthesizedBullets.forEach(b => {
     const bStems = extractSemanticStems(b.text);
     const isDuplicate = uniqueBullets.some(u => {
       const uStems = extractSemanticStems(u.text);
       const sim = calculateStemSimilarity(bStems, uStems);
-      const sharesPrimaryNouns = bStems.filter(s => uStems.includes(s) && (s === 'kiai' || s === 'cabell' || s === 'talon' || s === 'guardi' || s === 'hikite' || s === 'distanc')).length > 0;
-      return sim >= 0.45 || sharesPrimaryNouns;
+      return sim >= 0.65;
     });
 
     if (!isDuplicate) {
@@ -647,83 +646,179 @@ export function synthesizePhaseBulletsWithAI({
     }
   });
 
-  // 6. Si no hubo notas manuales ni técnicas específicas flagged, proporcionar la indicación correctiva Shotokan oficial para alcanzar el 100%
-  if (uniqueBullets.length === 0) {
-    if (phase === 'kihon') {
-      if (phaseAverage < 75) {
-        uniqueBullets.push({
-          text: `Aspecto Técnico - Posturas (Dachi Waza): En ${primaryStance}, flexiona la pierna de atrás y despega el talón del suelo al avanzar. Debe corregir estirando completamente la pierna posterior y anclar el Hikite firme sobre el cinturón para no anular el Kime.`,
-          coincidenceCount: 0,
-          isCoincidence: false,
-          evaluators: [],
-          phase,
-          sourceType: 'stars_only',
-          sourceIcon: '⭐',
-          sourceLabel: 'Rúbrica Oficial ISKF'
-        });
-      } else {
-        uniqueBullets.push({
-          text: `Aspecto Técnico - Posturas y Kime (Dachi Waza): Para alcanzar el 100%, en ${primaryStance} falta descender medio puño más el centro de gravedad sin oscilar la cadera, y sincronizar el tirón máximo del Hikite en el instante exacto del impacto.`,
-          coincidenceCount: 0,
-          isCoincidence: false,
-          evaluators: [],
-          phase,
-          sourceType: 'stars_only',
-          sourceIcon: '⭐',
-          sourceLabel: 'Rúbrica Oficial ISKF'
-        });
+  // Catálogo oficial de aspectos técnicos por fase según estándares ISKF Shotokan
+  const ASPECT_CATALOG = {
+    kihon: [
+      {
+        key: 'dachi',
+        label: 'Aspecto Técnico - Posturas (Dachi Waza)',
+        keywords: ['dachi', 'postura', 'base', 'zenkutsu', 'kiba', 'kokutsu', 'talon', 'desplazamiento'],
+        lowText: `Aspecto Técnico - Posturas (Dachi Waza): En ${primaryStance}, flexiona la pierna de atrás y despega el talón del suelo al avanzar. Debe corregir estirando completamente la pierna posterior y fijar la base sólida antes de iniciar el impacto.`,
+        highText: `Aspecto Técnico - Posturas (Dachi Waza): Para alcanzar el 100%, en ${primaryStance} falta descender medio puño más el centro de gravedad sin oscilar la altura durante los avances en media luna y anclar firmemente el canto externo del pie de apoyo.`
+      },
+      {
+        key: 'tsuki',
+        label: 'Aspecto Técnico - Puño y Hikite (Tsuki Waza)',
+        keywords: ['tsuki', 'zuki', 'golpe', 'puño', 'hikite', 'kime'],
+        lowText: `Aspecto Técnico - Puño y Hikite (Tsuki Waza): Desvía la trayectoria recta en los golpes y deja el puño de Hikite flojo sin anclar. Debe corregir jalando el puño con fuerza a la cintura sobre el cinturón y alinear la muñeca totalmente recta.`,
+        highText: `Aspecto Técnico - Puño y Hikite (Tsuki Waza): Para alcanzar el 100%, falta aceleración explosiva en el tirón del Hikite en el instante exacto del impacto final y fijar el Kime con máxima contracción sin elevar los hombros.`
+      },
+      {
+        key: 'uke',
+        label: 'Aspecto Técnico - Defensas (Uke Waza)',
+        keywords: ['uke', 'defensa', 'bloqueo', 'codo', 'antebrazo', 'barai'],
+        lowText: `Aspecto Técnico - Defensas (Uke Waza): Abre los codos al armar y no rota el antebrazo en las defensas. Debe corregir cubriendo el centro del pecho a un puño de distancia del cuerpo y rotar con potencia al final del bloqueo.`,
+        highText: `Aspecto Técnico - Defensas (Uke Waza): Para alcanzar el 100%, falta mayor rotación de antebrazo en el instante final del bloqueo y mantener el codo a la distancia reglamentaria de un puño sin despegarlo del tronco al armar.`
+      },
+      {
+        key: 'geri',
+        label: 'Aspecto Técnico - Patadas (Geri Waza)',
+        keywords: ['geri', 'patada', 'rodilla', 'snap', 'hikiashi'],
+        lowText: `Aspecto Técnico - Patadas (Geri Waza): No eleva adecuadamente la rodilla antes de patear y deja caer la pierna sin recoger. Debe elevar la rodilla al pecho, golpear con la parte correcta del pie y recoger velozmente con Hikiashi antes de apoyar.`,
+        highText: `Aspecto Técnico - Patadas (Geri Waza): Para alcanzar el 100%, falta mayor velocidad al recoger la pierna con Hikiashi tras el impacto y sostener la flexión y equilibrio de la rodilla de apoyo.`
+      },
+      {
+        key: 'mental',
+        label: 'Aspecto Técnico - Kiai y Respiración (Capacidades Mentales)',
+        keywords: ['kiai', 'respiracion', 'grito', 'tanden', 'mental', 'aire'],
+        lowText: `Aspecto Técnico - Kiai y Respiración (Capacidades Mentales): No realiza Kiai sonoro en las técnicas reglamentarias o contiene el aire. Debe proyectar la voz con potencia desde el bajo vientre (Tanden) y sincronizar la exhalación enérgica con el Kime.`,
+        highText: `Aspecto Técnico - Kiai y Respiración (Capacidades Mentales): Para alcanzar el 100%, falta mayor explosividad sonora en el Kiai de remate y sincronizar la contracción abdominal instantánea al término de la exhalación.`
       }
-    } else if (phase === 'kata') {
-      if (phaseAverage < 75) {
-        uniqueBullets.push({
-          text: `Aspecto Técnico - Kata (Forma y Embusen): Duda en las secuencias del kata ${kataName} y pierde la dirección de la mirada al girar. Debe corregir repasando el embusen oficial y sostener la vista al frente (Chakugan) sin tocarse la vestimenta.`,
-          coincidenceCount: 0,
-          isCoincidence: false,
-          evaluators: [],
-          phase,
-          sourceType: 'stars_only',
-          sourceIcon: '⭐',
-          sourceLabel: 'Rúbrica Oficial ISKF'
-        });
-      } else {
-        uniqueBullets.push({
-          text: `Aspecto Técnico - Kata (Chakugan y Enfoque): Para alcanzar el 100%, en ${kataName} falta fijar la mirada (Chakugan) al frente en cada pausa sin desviar los ojos, sostener la profundidad de las posturas y mantener absoluta inmovilidad tras el Kiai.`,
-          coincidenceCount: 0,
-          isCoincidence: false,
-          evaluators: [],
-          phase,
-          sourceType: 'stars_only',
-          sourceIcon: '⭐',
-          sourceLabel: 'Rúbrica Oficial ISKF'
-        });
+    ],
+    kata: [
+      {
+        key: 'chakugan',
+        label: 'Aspecto Técnico - Kata (Chakugan y Mirada)',
+        keywords: ['chakugan', 'mirada', 'ojos', 'vista', 'enfoque'],
+        lowText: `Aspecto Técnico - Kata (Chakugan y Mirada): En ${kataName}, desvía los ojos del objetivo y no fija la mirada antes de girar. Debe corregir dirigiendo primero la vista en dirección al objetivo antes del desplazamiento y sostenerla fijamente en cada pausa.`,
+        highText: `Aspecto Técnico - Kata (Chakugan y Enfoque): Para alcanzar el 100%, en ${kataName} falta fijar la mirada (Chakugan) al frente en cada pausa sin desviar los ojos en las transiciones.`
+      },
+      {
+        key: 'embusen',
+        label: 'Aspecto Técnico - Kata (Ritmo y Embusen)',
+        keywords: ['embusen', 'ritmo', 'cadencia', 'secuencia', 'pausa', 'tiempo'],
+        lowText: `Aspecto Técnico - Kata (Ritmo y Embusen): En ${kataName}, duda en la secuencia oficial y apresura las técnicas sin respetar los tiempos marciales. Debe repasar el diagrama (Embusen) y marcar con claridad las pausas reglamentarias.`,
+        highText: `Aspecto Técnico - Kata (Ritmo y Embusen): Para alcanzar el 100%, en ${kataName} falta diferenciar con mayor precisión los cambios de velocidad: técnicas continuas rápidas versus pausas marcadas de dos segundos.`
+      },
+      {
+        key: 'dachi',
+        label: 'Aspecto Técnico - Kata (Posturas y Transiciones)',
+        keywords: ['postura', 'dachi', 'giro', 'profundidad', 'transicion', 'centro'],
+        lowText: `Aspecto Técnico - Kata (Posturas y Transiciones): En ${kataName}, pierde la estabilidad en los giros y sube la cadera en los desplazamientos. Debe descender el centro de gravedad, sostener la profundidad en giros y no oscilar la altura.`,
+        highText: `Aspecto Técnico - Kata (Posturas y Transiciones): Para alcanzar el 100%, en ${kataName} falta mayor descenso milimétrico en las posturas bajas y mantener el eje vertical del tronco perfectamente alineado en los cambios de dirección.`
+      },
+      {
+        key: 'kime',
+        label: 'Aspecto Técnico - Kata (Kime, Kiai e Inmovilidad)',
+        keywords: ['kime', 'kiai', 'inmovilidad', 'zanshin', 'karategui', 'vestimenta', 'descanso'],
+        lowText: `Aspecto Técnico - Kata (Kime, Kiai e Inmovilidad): En ${kataName}, Kime débil en los movimientos finales y rompe la postura tras el saludo o realiza ajustes a la vestimenta. Debe clavar el Kime, proyectar un Kiai explosivo y mantener inmovilidad total en tatami.`,
+        highText: `Aspecto Técnico - Kata (Kime, Kiai e Inmovilidad): Para alcanzar el 100%, en ${kataName} falta sostener la inmovilidad absoluta y estado de alerta (Zanshin) tras el Kiai final, sin realizar el más mínimo reajuste al karategui hasta la orden oficial de descanso.`
       }
-    } else if (phase === 'kumite') {
-      if (phaseAverage < 75) {
-        uniqueBullets.push({
-          text: `Aspecto Técnico - Combate (Distancia y Guardia): En ${kumiteName}, pierde la distancia reglamentaria (Ma-ai) y desarma la guardia (Kamae) tras bloquear. Debe corregir calculando el alcance y no bajar los brazos tras la defensa.`,
-          coincidenceCount: 0,
-          isCoincidence: false,
-          evaluators: [],
-          phase,
-          sourceType: 'stars_only',
-          sourceIcon: '⭐',
-          sourceLabel: 'Rúbrica Oficial ISKF'
-        });
-      } else {
-        uniqueBullets.push({
-          text: `Aspecto Técnico - Combate (Kumite): Para alcanzar el 100%, en ${kumiteName} falta mayor rotación explosiva de cadera en la respuesta de contraataque inmediatamente tras el bloqueo y sostener el espíritu alerta (Zanshin).`,
-          coincidenceCount: 0,
-          isCoincidence: false,
-          evaluators: [],
-          phase,
-          sourceType: 'stars_only',
-          sourceIcon: '⭐',
-          sourceLabel: 'Rúbrica Oficial ISKF'
-        });
+    ],
+    kumite: [
+      {
+        key: 'maai',
+        label: 'Aspecto Técnico - Combate (Distancia y Ma-ai)',
+        keywords: ['ma-ai', 'maai', 'distancia', 'alcance', 'espacio'],
+        lowText: `Aspecto Técnico - Combate (Distancia y Ma-ai): En ${kumiteName}, pierde la distancia reglamentaria de seguridad retrocediendo antes de tiempo o quedando expuesto. Debe calcular con exactitud el alcance de los ataques y mantener el Ma-ai.`,
+        highText: `Aspecto Técnico - Combate (Distancia y Ma-ai): Para alcanzar el 100%, en ${kumiteName} falta calibrar la distancia milimétrica en el contraataque final para quedar exactamente a la distancia de impacto efectivo con control.`
+      },
+      {
+        key: 'kamae',
+        label: 'Aspecto Técnico - Combate (Guardia y Kamae)',
+        keywords: ['kamae', 'guardia', 'brazos', 'manos', 'desarmar'],
+        lowText: `Aspecto Técnico - Combate (Guardia y Kamae): En ${kumiteName}, desarma o baja los brazos tras bloquear y deja desprotegido el centro del cuerpo. Debe sostener la guardia alta de Kamae firme en todo momento antes, durante y después del intercambio.`,
+        highText: `Aspecto Técnico - Combate (Guardia y Kamae): Para alcanzar el 100%, en ${kumiteName} falta recuperar la guardia (Kamae) de manera instantánea tras el contraataque sin descuidar la protección del rostro y el plexo solar.`
+      },
+      {
+        key: 'cadera',
+        label: 'Aspecto Técnico - Combate (Velocidad y Rotación de Cadera)',
+        keywords: ['cadera', 'velocidad', 'reaccion', 'contraataque', 'respuesta', 'rotacion'],
+        lowText: `Aspecto Técnico - Combate (Velocidad y Rotación de Cadera): En ${kumiteName}, respuesta tardía tras la defensa y bloqueo sin impulso de cadera. Debe reaccionar con velocidad explosiva e imprimir rotación de cadera para que el contraataque tenga potencia real de impacto.`,
+        highText: `Aspecto Técnico - Combate (Velocidad y Rotación de Cadera): Para alcanzar el 100%, en ${kumiteName} falta mayor velocidad explosiva y rotación instantánea de cadera en la respuesta de contraataque inmediatamente al término del bloqueo.`
+      },
+      {
+        key: 'zanshin',
+        label: 'Aspecto Técnico - Combate (Control y Zanshin)',
+        keywords: ['control', 'zanshin', 'contacto', 'sun-dome', 'alerta', 'separacion'],
+        lowText: `Aspecto Técnico - Combate (Control y Zanshin): En ${kumiteName}, falta de control en la distancia de impacto o relajación prematura de la atención. Debe aplicar control absoluto sin contacto excesivo (Sun-dome) y sostener la vista fija en el oponente.`,
+        highText: `Aspecto Técnico - Combate (Control y Zanshin): Para alcanzar el 100%, en ${kumiteName} falta sostener la actitud alerta de Zanshin tras el contraataque, fijando la mirada en el adversario hasta la orden oficial de separación.`
       }
-    } else {
+    ],
+    aspectos: [
+      {
+        key: 'etiqueta',
+        label: 'Aspecto Técnico - Etiqueta y Saludo (Reigi)',
+        keywords: ['saludo', 'etiqueta', 'rei', 'reigi', 'respeto', 'inclinacion'],
+        lowText: `Aspecto Técnico - Etiqueta y Saludo (Reigi): Saludo formal incompleto. Debe ejecutar la inclinación reglamentaria a 30 grados, vista respetuosa y máxima marcialidad en la entrada y salida de tatami.`,
+        highText: `Aspecto Técnico - Etiqueta y Saludo (Reigi): Para alcanzar el 100%, formalizar el saludo con postura firme, inclinación marcial reglamentaria y etiqueta intachable en tatami.`
+      },
+      {
+        key: 'disciplina',
+        label: 'Aspecto Técnico - Disciplina y Uniforme (Karategui)',
+        keywords: ['karategui', 'uniforme', 'cinturon', 'presencia', 'disciplina', 'acomoda'],
+        lowText: `Aspecto Técnico - Disciplina y Uniforme (Karategui): Pérdida de disciplina marcial al acomodarse el uniforme o tocarse el rostro. Debe mantener disciplina corporal absoluta: cero movimientos innecesarios o ajustes al karategui durante el examen.`,
+        highText: `Aspecto Técnico - Disciplina y Uniforme (Karategui): Para alcanzar el 100%, mantener compostura y disciplina corporal absoluta sin tocar la vestimenta hasta la orden oficial de descanso.`
+      }
+    ]
+  };
+
+  // Helper para clasificar semánticamente a qué aspecto técnico pertenece una viñeta
+  function detectAspectKey(text = '', targetPhase = 'kihon') {
+    const norm = (text || '').toLowerCase();
+    if (targetPhase === 'kihon') {
+      // 1. Prioridad por encabezado formal o término técnico marcial principal
+      if (norm.includes('uke waza') || norm.includes('defensa') || norm.includes('bloqueo')) return 'uke';
+      if (norm.includes('geri waza') || norm.includes('patada') || norm.includes('hikiashi') || norm.includes('snap')) return 'geri';
+      if (norm.includes('tsuki waza') || norm.includes('puño y hikite') || norm.includes('tsuki') || norm.includes('zuki') || norm.includes('hikite')) return 'tsuki';
+      if (norm.includes('dachi waza') || norm.includes('posturas') || norm.includes('zenkutsu') || norm.includes('kokutsu') || norm.includes('kiba') || norm.includes('talon')) return 'dachi';
+      if (norm.includes('kiai') || norm.includes('respiracion') || norm.includes('grito') || norm.includes('tanden') || norm.includes('mental')) return 'mental';
+      if (norm.includes('puño') || norm.includes('golpe')) return 'tsuki';
+      if (norm.includes('postura') || norm.includes('base')) return 'dachi';
+      return null;
+    }
+    if (targetPhase === 'kata') {
+      if (norm.includes('chakugan') || norm.includes('mirada') || norm.includes('ojos')) return 'chakugan';
+      if (norm.includes('embusen') || norm.includes('ritmo') || norm.includes('cadencia') || norm.includes('secuencia')) return 'embusen';
+      if (norm.includes('dachi waza') || norm.includes('posturas y transiciones') || norm.includes('postura') || norm.includes('giro') || norm.includes('profundidad')) return 'dachi';
+      if (norm.includes('kime') || norm.includes('kiai') || norm.includes('inmovilidad') || norm.includes('karategui') || norm.includes('vestimenta') || norm.includes('zanshin')) return 'kime';
+      return null;
+    }
+    if (targetPhase === 'kumite') {
+      if (norm.includes('ma-ai') || norm.includes('maai') || norm.includes('distancia') || norm.includes('alcance')) return 'maai';
+      if (norm.includes('kamae') || norm.includes('guardia') || norm.includes('brazos')) return 'kamae';
+      if (norm.includes('cadera') || norm.includes('velocidad') || norm.includes('reaccion') || norm.includes('contraataque')) return 'cadera';
+      if (norm.includes('zanshin') || norm.includes('control') || norm.includes('sun-dome') || norm.includes('contacto')) return 'zanshin';
+      return null;
+    }
+    if (targetPhase === 'aspectos') {
+      if (norm.includes('saludo') || norm.includes('etiqueta') || norm.includes('rei')) return 'etiqueta';
+      if (norm.includes('karategui') || norm.includes('uniforme') || norm.includes('disciplina')) return 'disciplina';
+      return null;
+    }
+    return null;
+  }
+
+  const phaseCatalog = ASPECT_CATALOG[phase] || [];
+
+  // Asignar aspectKey a las viñetas existentes derivadas de notas de evaluadores o estrellas
+  uniqueBullets.forEach(b => {
+    if (!b.aspectKey) {
+      b.aspectKey = detectAspectKey(b.text, phase);
+    }
+  });
+
+  // 6. Asegurar cobertura COMPLETA de cada aspecto técnico oficial de la fase
+  // Si un aspecto técnico no fue cubierto por notas de evaluadores o técnicas flags,
+  // se incorpora la indicación oficial correspondiente al nivel obtenido (>= 75% detalle fino para 100%, < 75% corrección de base)
+  phaseCatalog.forEach(aspectDef => {
+    const isAlreadyCovered = uniqueBullets.some(b => b.aspectKey === aspectDef.key);
+
+    if (!isAlreadyCovered) {
+      const text = phaseAverage < 75 ? aspectDef.lowText : aspectDef.highText;
       uniqueBullets.push({
-        text: 'Aspecto Técnico - Etiqueta y DO: Falta mayor energía y marcialidad en el saludo; para alcanzar el 100% debe mantener la postura firme, concentración y etiqueta intachable en tatami.',
+        text,
+        aspectKey: aspectDef.key,
         coincidenceCount: 0,
         isCoincidence: false,
         evaluators: [],
@@ -733,7 +828,7 @@ export function synthesizePhaseBulletsWithAI({
         sourceLabel: 'Rúbrica Oficial ISKF'
       });
     }
-  }
+  });
 
   // Ordenar priorizando las indicaciones que tuvieron mayor consenso de evaluadores
   return uniqueBullets.sort((a, b) => b.coincidenceCount - a.coincidenceCount);
