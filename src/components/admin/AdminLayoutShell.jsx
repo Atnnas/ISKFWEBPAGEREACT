@@ -132,16 +132,16 @@ export default function AdminLayoutShell({ children, user }) {
           exact: true 
         },
         { 
+          label: 'Temario examenes ISKF', 
+          href: '/admin/examinations/syllabi', 
+          exact: true 
+        },
+        { 
           label: 'Montos Examen', 
           href: '/admin/dojo/sensei', 
           exact: true 
         },
       ]
-    },
-    { 
-      label: 'Temarios Exámenes Técnicos', 
-      href: '/admin/examinations/syllabi', 
-      icon: BookOpen, 
     },
   ] : isInstructor ? [
     { 
@@ -162,16 +162,16 @@ export default function AdminLayoutShell({ children, user }) {
           exact: true 
         },
         { 
+          label: 'Temario examenes ISKF', 
+          href: '/admin/examinations/syllabi', 
+          exact: true 
+        },
+        { 
           label: 'Montos Examen', 
           href: '/admin/dojo/sensei', 
           exact: true 
         },
       ]
-    },
-    { 
-      label: 'Temarios Exámenes Técnicos', 
-      href: '/admin/examinations/syllabi', 
-      icon: BookOpen, 
     },
   ] : [
     { 
@@ -189,6 +189,11 @@ export default function AdminLayoutShell({ children, user }) {
         { 
           label: 'Lista de Estudiantes', 
           href: '/admin/students', 
+          exact: true 
+        },
+        { 
+          label: 'Temario examenes ISKF', 
+          href: '/admin/examinations/syllabi', 
           exact: true 
         },
         { 

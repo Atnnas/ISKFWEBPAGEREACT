@@ -184,6 +184,8 @@ function KyuCombobox({ selectedRank, onSelectRank, syllabi }) {
 
 export default function ExamSyllabiView({ initialSyllabi = [], currentUser = null }) {
   const isAdmin = currentUser?.role === 'admin';
+  const isSensei = currentUser?.role === 'sensei';
+  const canEdit = !isSensei && (isAdmin || currentUser?.role === 'editor');
 
   // Control de pestaña principal: 'temario' | 'aspectos'
   const [activeMainTab, setActiveMainTab] = useState('temario');
@@ -1109,11 +1111,11 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-[#2D2E83] tracking-tight mt-1.5">
-            Temarios y Parámetros de Examen
+            {isSensei ? 'Temario de Exámenes ISKF' : 'Temarios y Parámetros de Examen'}
           </h1>
         </div>
 
-        {activeMainTab === 'temario' && (
+        {canEdit && activeMainTab === 'temario' && (
           <button
             type="button"
             onClick={handleOpenCreateModal}
@@ -1124,7 +1126,14 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
           </button>
         )}
 
-        {activeMainTab === 'aspectos' && selectedAspectSyllabus && (
+        {isSensei && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200 text-xs font-bold text-[#2D2E83]">
+            <Shield className="w-4 h-4 text-[#2D2E83] shrink-0" />
+            <span>Consulta Oficial de Temarios y Aspectos (Solo Lectura)</span>
+          </div>
+        )}
+
+        {canEdit && activeMainTab === 'aspectos' && selectedAspectSyllabus && (
           <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700">
             {isSavingAspects ? (
               <>
@@ -1287,25 +1296,29 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                           <span>Ver Aspectos Técnicos</span>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDuplicate(syllabus)}
-                          className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                          title="Duplicar para usar como base de otro examen"
-                        >
-                          <Copy className="w-3.5 h-3.5 text-slate-500" />
-                          <span>Duplicar</span>
-                        </button>
+                        {canEdit && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicate(syllabus)}
+                              className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                              title="Duplicar para usar como base de otro examen"
+                            >
+                              <Copy className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Duplicar</span>
+                            </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditModal(syllabus)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#2D2E83] text-xs font-bold border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
-                          title="Editar temario"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-[#2D2E83]" />
-                          <span>Editar</span>
-                        </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(syllabus)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#2D2E83] text-xs font-bold border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                              title="Editar temario"
+                            >
+                              <Edit3 className="w-3.5 h-3.5 text-[#2D2E83]" />
+                              <span>Editar</span>
+                            </button>
+                          </>
+                        )}
 
                         {isAdmin && (
                           <button
@@ -1357,22 +1370,26 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       <span className="text-xs font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
                                         {tech.stance}
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOpenEditTechModal(syllabus, tech)}
-                                        className="p-1 rounded-md text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 transition-colors cursor-pointer"
-                                        title="Modificar parámetros de esta técnica"
-                                      >
-                                        <Edit3 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteIndividualTech(syllabus, tech)}
-                                        className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                                        title="Eliminar esta técnica del temario"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
+                                      {canEdit && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenEditTechModal(syllabus, tech)}
+                                            className="p-1 rounded-md text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 transition-colors cursor-pointer"
+                                            title="Modificar parámetros de esta técnica"
+                                          >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteIndividualTech(syllabus, tech)}
+                                            className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                            title="Eliminar esta técnica del temario"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
 
@@ -1387,25 +1404,39 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       <span>{tech.direction}</span>
                                     </span>
 
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenEditTechModal(syllabus, tech)}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 transition-colors cursor-pointer"
-                                      title="Clic para cambiar número de repeticiones"
-                                    >
-                                      <Repeat className="w-3.5 h-3.5 text-slate-500" />
-                                      <span className="font-semibold">{tech.repetitions} reps</span>
-                                    </button>
+                                    {canEdit ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEditTechModal(syllabus, tech)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 transition-colors cursor-pointer"
+                                        title="Clic para cambiar número de repeticiones"
+                                      >
+                                        <Repeat className="w-3.5 h-3.5 text-slate-500" />
+                                        <span className="font-semibold">{tech.repetitions} reps</span>
+                                      </button>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 border border-slate-200 text-slate-800">
+                                        <Repeat className="w-3.5 h-3.5 text-slate-500" />
+                                        <span className="font-semibold">{tech.repetitions} reps</span>
+                                      </span>
+                                    )}
 
-                                    <button
-                                      type="button"
-                                      onClick={() => handleQuickToggleTripType(syllabus, tech.id)}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 transition-all cursor-pointer"
-                                      title="Clic para alternar entre 'Ida y Vuelta' y 'Solo Ida'"
-                                    >
-                                      <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                                      <span>{tech.tripType === 'ida_y_vuelta' ? 'Ida y Vuelta (Mawatte)' : 'Solo Ida'}</span>
-                                    </button>
+                                    {canEdit ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleQuickToggleTripType(syllabus, tech.id)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 transition-all cursor-pointer"
+                                        title="Clic para alternar entre 'Ida y Vuelta' y 'Solo Ida'"
+                                      >
+                                        <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                                        <span>{tech.tripType === 'ida_y_vuelta' ? 'Ida y Vuelta (Mawatte)' : 'Solo Ida'}</span>
+                                      </button>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 border border-slate-200 text-slate-800">
+                                        <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                                        <span>{tech.tripType === 'ida_y_vuelta' ? 'Ida y Vuelta (Mawatte)' : 'Solo Ida'}</span>
+                                      </span>
+                                    )}
 
                                     <button
                                       type="button"
@@ -1424,14 +1455,16 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                         </div>
 
                         {/* Botón Agregar Técnica de Kihon */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenAddTechModal(syllabus, 'kihon')}
-                          className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-[#2D2E83]/40 hover:border-[#2D2E83] bg-white hover:bg-[#2D2E83]/5 text-[#2D2E83] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>+ Agregar Técnica de Kihon</span>
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAddTechModal(syllabus, 'kihon')}
+                            className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-[#2D2E83]/40 hover:border-[#2D2E83] bg-white hover:bg-[#2D2E83]/5 text-[#2D2E83] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Agregar Técnica de Kihon</span>
+                          </button>
+                        )}
                       </div>
 
                       {/* GRUPO 2: KUMITE */}
@@ -1469,22 +1502,26 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       <span className="text-xs font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
                                         {tech.stance}
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOpenEditTechModal(syllabus, tech)}
-                                        className="p-1 rounded-md text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 transition-colors cursor-pointer"
-                                        title="Modificar este ejercicio de Kumite"
-                                      >
-                                        <Edit3 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteIndividualTech(syllabus, tech)}
-                                        className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                                        title="Eliminar este ejercicio de Kumite del temario"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
+                                      {canEdit && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenEditTechModal(syllabus, tech)}
+                                            className="p-1 rounded-md text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 transition-colors cursor-pointer"
+                                            title="Modificar este ejercicio de Kumite"
+                                          >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteIndividualTech(syllabus, tech)}
+                                            className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                            title="Eliminar este ejercicio de Kumite del temario"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
 
@@ -1495,14 +1532,16 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                         </div>
 
                         {/* Botón Agregar Ejercicio de Kumite */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenAddTechModal(syllabus, 'kumite')}
-                          className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-[#BE1622]/40 hover:border-[#BE1622] bg-white hover:bg-[#BE1622]/5 text-[#BE1622] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>+ Agregar Ejercicio de Kumite</span>
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAddTechModal(syllabus, 'kumite')}
+                            className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-[#BE1622]/40 hover:border-[#BE1622] bg-white hover:bg-[#BE1622]/5 text-[#BE1622] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Agregar Ejercicio de Kumite</span>
+                          </button>
+                        )}
                       </div>
 
                       {/* GRUPO 3: KATA */}
@@ -1540,22 +1579,26 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       <span className="text-xs font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
                                         {tech.stance}
                                       </span>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOpenEditTechModal(syllabus, tech)}
-                                        className="p-1 rounded-md text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 transition-colors cursor-pointer"
-                                        title="Modificar Embusen o datos de este Kata"
-                                      >
-                                        <Edit3 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeleteIndividualTech(syllabus, tech)}
-                                        className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                                        title="Eliminar este Kata del temario"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
+                                      {canEdit && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenEditTechModal(syllabus, tech)}
+                                            className="p-1 rounded-md text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 transition-colors cursor-pointer"
+                                            title="Modificar Embusen o datos de este Kata"
+                                          >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteIndividualTech(syllabus, tech)}
+                                            className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                            title="Eliminar este Kata del temario"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
 
@@ -1575,14 +1618,16 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                         </div>
 
                         {/* Botón Agregar Kata */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenAddTechModal(syllabus, 'kata')}
-                          className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-slate-300 hover:border-slate-800 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>+ Agregar Kata</span>
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAddTechModal(syllabus, 'kata')}
+                            className="w-full mt-3 py-2 px-3 rounded-xl border border-dashed border-slate-300 hover:border-slate-800 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Agregar Kata</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1771,35 +1816,39 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       >
                                         {/* Drag handle, botones subir/bajar y badge de número */}
                                         <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-                                          <div
-                                            draggable={!isEditing}
-                                            onDragStart={(e) => handlePointDragStart(e, aspect.id, pIdx)}
-                                            onDragEnd={handlePointDragEnd}
-                                            className="p-1 rounded text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors"
-                                            title="Arrastrar para mover este criterio de posición"
-                                          >
-                                            <GripVertical className="w-3.5 h-3.5" />
-                                          </div>
-                                          <div className="flex flex-col opacity-60 group-hover/point:opacity-100 transition-opacity">
-                                            <button
-                                              type="button"
-                                              disabled={pIdx === 0}
-                                              onClick={() => handleMovePointStep(aspect.id, pIdx, -1)}
-                                              className="p-0.5 text-slate-400 hover:text-[#2D2E83] disabled:opacity-20 disabled:pointer-events-none rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                                              title="Subir de orden"
-                                            >
-                                              <ChevronUp className="w-3 h-3" />
-                                            </button>
-                                            <button
-                                              type="button"
-                                              disabled={pIdx === (aspect.points || []).length - 1}
-                                              onClick={() => handleMovePointStep(aspect.id, pIdx, 1)}
-                                              className="p-0.5 text-slate-400 hover:text-[#2D2E83] disabled:opacity-20 disabled:pointer-events-none rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                                              title="Bajar de orden"
-                                            >
-                                              <ChevronDown className="w-3 h-3" />
-                                            </button>
-                                          </div>
+                                          {canEdit && (
+                                            <>
+                                              <div
+                                                draggable={!isEditing}
+                                                onDragStart={(e) => handlePointDragStart(e, aspect.id, pIdx)}
+                                                onDragEnd={handlePointDragEnd}
+                                                className="p-1 rounded text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors"
+                                                title="Arrastrar para mover este criterio de posición"
+                                              >
+                                                <GripVertical className="w-3.5 h-3.5" />
+                                              </div>
+                                              <div className="flex flex-col opacity-60 group-hover/point:opacity-100 transition-opacity">
+                                                <button
+                                                  type="button"
+                                                  disabled={pIdx === 0}
+                                                  onClick={() => handleMovePointStep(aspect.id, pIdx, -1)}
+                                                  className="p-0.5 text-slate-400 hover:text-[#2D2E83] disabled:opacity-20 disabled:pointer-events-none rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                                                  title="Subir de orden"
+                                                >
+                                                  <ChevronUp className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  disabled={pIdx === (aspect.points || []).length - 1}
+                                                  onClick={() => handleMovePointStep(aspect.id, pIdx, 1)}
+                                                  className="p-0.5 text-slate-400 hover:text-[#2D2E83] disabled:opacity-20 disabled:pointer-events-none rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                                                  title="Bajar de orden"
+                                                >
+                                                  <ChevronDown className="w-3 h-3" />
+                                                </button>
+                                              </div>
+                                            </>
+                                          )}
                                           <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-black flex items-center justify-center shrink-0 border border-slate-200">
                                             {pIdx + 1}
                                           </span>
@@ -1922,24 +1971,26 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                                 </div>
                                               )}
                                             </div>
-                                            <div className="flex items-center gap-1 shrink-0">
-                                              <button
-                                                type="button"
-                                                onClick={() => handleStartEditPoint(aspect.id, pIdx, pointData)}
-                                                className="text-slate-400 hover:text-[#2D2E83] p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-slate-100"
-                                                title="Modificar texto y asignación de técnicas del criterio"
-                                              >
-                                                <Edit3 className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => handleRemovePointFromAspect(aspect.id, pIdx, pointData.text)}
-                                                className="text-slate-400 hover:text-red-600 p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-red-50"
-                                                title="Remover parámetro"
-                                              >
-                                                <X className="w-3.5 h-3.5" />
-                                              </button>
-                                            </div>
+                                            {canEdit && (
+                                              <div className="flex items-center gap-1 shrink-0">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleStartEditPoint(aspect.id, pIdx, pointData)}
+                                                  className="text-slate-400 hover:text-[#2D2E83] p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-slate-100"
+                                                  title="Modificar texto y asignación de técnicas del criterio"
+                                                >
+                                                  <Edit3 className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleRemovePointFromAspect(aspect.id, pIdx, pointData.text)}
+                                                  className="text-slate-400 hover:text-red-600 p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-red-50"
+                                                  title="Remover parámetro"
+                                                >
+                                                  <X className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
+                                            )}
                                           </>
                                         )}
                                       </li>
@@ -1949,7 +2000,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                               )}
 
                               {/* Input para agregar un nuevo parámetro a este aspecto */}
-                              <div className="pt-2 border-t border-slate-100 space-y-2">
+                              {canEdit && (
+                                <div className="pt-2 border-t border-slate-100 space-y-2">
                                 {availableTechs.length > 0 && (
                                   <div className="flex items-center gap-1.5 flex-wrap text-xs">
                                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Asignar nuevo criterio a:</span>
@@ -2012,6 +2064,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                   </button>
                                 </div>
                               </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -2137,35 +2190,39 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                       >
                                         {/* Drag handle, botones subir/bajar y badge de número */}
                                         <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-                                          <div
-                                            draggable={!isEditing}
-                                            onDragStart={(e) => handlePointDragStart(e, aspect.id, pIdx)}
-                                            onDragEnd={handlePointDragEnd}
-                                            className="p-1 rounded text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors"
-                                            title="Arrastrar para mover este criterio de posición"
-                                          >
-                                            <GripVertical className="w-3.5 h-3.5" />
-                                          </div>
-                                          <div className="flex flex-col opacity-60 group-hover/point:opacity-100 transition-opacity">
-                                            <button
-                                              type="button"
-                                              disabled={pIdx === 0}
-                                              onClick={() => handleMovePointStep(aspect.id, pIdx, -1)}
-                                              className="p-0.5 text-slate-400 hover:text-[#2D2E83] disabled:opacity-20 disabled:pointer-events-none rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                                              title="Subir de orden"
-                                            >
-                                              <ChevronUp className="w-3 h-3" />
-                                            </button>
-                                            <button
-                                              type="button"
-                                              disabled={pIdx === (aspect.points || []).length - 1}
-                                              onClick={() => handleMovePointStep(aspect.id, pIdx, 1)}
-                                              className="p-0.5 text-slate-400 hover:text-[#2D2E83] disabled:opacity-20 disabled:pointer-events-none rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                                              title="Bajar de orden"
-                                            >
-                                              <ChevronDown className="w-3 h-3" />
-                                            </button>
-                                          </div>
+                                          {canEdit && (
+                                            <>
+                                              <div
+                                                draggable={!isEditing}
+                                                onDragStart={(e) => handlePointDragStart(e, aspect.id, pIdx)}
+                                                onDragEnd={handlePointDragEnd}
+                                                className="p-1 rounded text-slate-400 hover:text-[#2D2E83] hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors"
+                                                title="Arrastrar para mover este criterio de posición"
+                                              >
+                                                <GripVertical className="w-3.5 h-3.5" />
+                                              </div>
+                                              <div className="flex flex-col opacity-60 group-hover/point:opacity-100 transition-opacity">
+                                                <button
+                                                  type="button"
+                                                  disabled={pIdx === 0}
+                                                  onClick={() => handleMovePointStep(aspect.id, pIdx, -1)}
+                                                  className="p-0.5 text-slate-400 hover:text-[#2D2E83] disabled:opacity-20 disabled:pointer-events-none rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                                                  title="Subir de orden"
+                                                >
+                                                  <ChevronUp className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  disabled={pIdx === (aspect.points || []).length - 1}
+                                                  onClick={() => handleMovePointStep(aspect.id, pIdx, 1)}
+                                                  className="p-0.5 text-slate-400 hover:text-[#2D2E83] disabled:opacity-20 disabled:pointer-events-none rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                                                  title="Bajar de orden"
+                                                >
+                                                  <ChevronDown className="w-3 h-3" />
+                                                </button>
+                                              </div>
+                                            </>
+                                          )}
                                           <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-black flex items-center justify-center shrink-0 border border-slate-200">
                                             {pIdx + 1}
                                           </span>
@@ -2220,40 +2277,52 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                               </div>
                                             </div>
                                             <div className="flex items-center gap-1.5 shrink-0">
-                                              <button
-                                                type="button"
-                                                onClick={() => handleTogglePointEvaluable(aspect.id, pIdx)}
-                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                                              {canEdit ? (
+                                                <>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleTogglePointEvaluable(aspect.id, pIdx)}
+                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                                                      pointData.isEvaluable
+                                                        ? 'bg-emerald-100/80 text-emerald-800 border-emerald-300 hover:bg-emerald-200/80 shadow-2xs'
+                                                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/70 hover:text-slate-800'
+                                                    }`}
+                                                    title={pointData.isEvaluable ? 'Aparecerá en la evaluación del tatami para calificar con estrellas' : 'Criterio sólo formativo para el sensei que instruye (no aparece en examen)'}
+                                                  >
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={pointData.isEvaluable}
+                                                      readOnly
+                                                      className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer pointer-events-none accent-emerald-600"
+                                                    />
+                                                    <span>{pointData.isEvaluable ? 'Evaluar en examen' : 'Sólo preparatorio'}</span>
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleStartEditPoint(aspect.id, pIdx, pointData)}
+                                                    className="text-slate-400 hover:text-[#2D2E83] p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-slate-100"
+                                                    title="Modificar texto del criterio"
+                                                  >
+                                                    <Edit3 className="w-3.5 h-3.5" />
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleRemovePointFromAspect(aspect.id, pIdx, pointData.text)}
+                                                    className="text-slate-400 hover:text-red-600 p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer shrink-0 hover:bg-red-50"
+                                                    title="Remover parámetro"
+                                                  >
+                                                    <X className="w-3.5 h-3.5" />
+                                                  </button>
+                                                </>
+                                              ) : (
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
                                                   pointData.isEvaluable
-                                                    ? 'bg-emerald-100/80 text-emerald-800 border-emerald-300 hover:bg-emerald-200/80 shadow-2xs'
-                                                    : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/70 hover:text-slate-800'
-                                                }`}
-                                                title={pointData.isEvaluable ? 'Aparecerá en la evaluación del tatami para calificar con estrellas' : 'Criterio sólo formativo para el sensei que instruye (no aparece en examen)'}
-                                              >
-                                                <input
-                                                  type="checkbox"
-                                                  checked={pointData.isEvaluable}
-                                                  readOnly
-                                                  className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer pointer-events-none accent-emerald-600"
-                                                />
-                                                <span>{pointData.isEvaluable ? 'Evaluar en examen' : 'Sólo preparatorio'}</span>
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => handleStartEditPoint(aspect.id, pIdx, pointData)}
-                                                className="text-slate-400 hover:text-[#2D2E83] p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer hover:bg-slate-100"
-                                                title="Modificar texto del criterio"
-                                              >
-                                                <Edit3 className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => handleRemovePointFromAspect(aspect.id, pIdx, pointData.text)}
-                                                className="text-slate-400 hover:text-red-600 p-1 rounded-lg opacity-60 group-hover/point:opacity-100 transition-opacity cursor-pointer shrink-0 hover:bg-red-50"
-                                                title="Remover parámetro"
-                                              >
-                                                <X className="w-3.5 h-3.5" />
-                                              </button>
+                                                    ? 'bg-emerald-100/80 text-emerald-800 border-emerald-300'
+                                                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                                                }`}>
+                                                  <span>{pointData.isEvaluable ? '✓ Evaluable en examen' : 'Sólo preparatorio'}</span>
+                                                </span>
+                                              )}
                                             </div>
                                           </>
                                         )}
@@ -2264,7 +2333,8 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                               )}
 
                               {/* Input y Checkbox para agregar un nuevo aspecto/criterio */}
-                              <div className="space-y-2 pt-1 bg-white p-2.5 rounded-xl border border-slate-200">
+                              {canEdit && (
+                                <div className="space-y-2 pt-1 bg-white p-2.5 rounded-xl border border-slate-200">
                                 <div className="flex items-center gap-2">
                                   <input
                                     type="text"
@@ -2309,6 +2379,7 @@ export default function ExamSyllabiView({ initialSyllabi = [], currentUser = nul
                                   </span>
                                 </div>
                               </div>
+                              )}
                             </div>
                           )}
                         </div>

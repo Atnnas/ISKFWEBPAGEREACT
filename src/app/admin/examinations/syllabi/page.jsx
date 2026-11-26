@@ -14,7 +14,7 @@ export const metadata = {
 export default async function AdminExamSyllabiPage() {
   const session = await auth();
 
-  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'editor')) {
+  if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'editor' && session.user.role !== 'sensei')) {
     redirect('/');
   }
 
