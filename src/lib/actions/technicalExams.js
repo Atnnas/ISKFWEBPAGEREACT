@@ -1024,7 +1024,7 @@ export async function getTechnicalExamCallByToken(accessToken) {
       console.debug('Error obteniendo costos para la convocatoria:', costErr);
     }
 
-    return {
+    const callPayload = {
       success: true,
       costConfig,
       call: {
@@ -1132,6 +1132,7 @@ export async function getTechnicalExamCallByToken(accessToken) {
         }))
       }))
     };
+    return JSON.parse(JSON.stringify(callPayload));
   } catch (error) {
     console.error('Error al obtener convocatoria por token:', error);
     return { success: false, error: 'Ocurrió un error al cargar la convocatoria.' };
@@ -2215,7 +2216,7 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
     }
     let evaluations = await TechnicalExamEvaluation.find(evalQuery).lean();
 
-    return {
+    const evaluatorCallPayload = {
       success: true,
       call: {
         _id: call._id.toString(),
@@ -2328,6 +2329,7 @@ export async function getExamCallForEvaluator({ accessToken, evaluatorToken }) {
         evaluatedAt: ev.evaluatedAt ? ev.evaluatedAt.toISOString() : null
       }))
     };
+    return JSON.parse(JSON.stringify(evaluatorCallPayload));
   } catch (error) {
     console.error('Error al obtener datos para evaluador:', error);
     return { success: false, error: error.message || 'Error al conectar con la convocatoria de examen.' };
@@ -2658,7 +2660,7 @@ export async function getEvaluatorGradesForCall({ callId, evaluatorEmail }) {
       evaluatorEmail: safeEmail
     }).lean();
 
-    return {
+    const evalPayload = {
       success: true,
       evaluations: evals.map(ev => ({
         _id: ev._id.toString(),
@@ -2678,6 +2680,7 @@ export async function getEvaluatorGradesForCall({ callId, evaluatorEmail }) {
         evaluatedAt: ev.evaluatedAt ? ev.evaluatedAt.toISOString() : null
       }))
     };
+    return JSON.parse(JSON.stringify(evalPayload));
   } catch (error) {
     console.error('Error al obtener evaluaciones del evaluador:', error);
     return { success: false, evaluations: [] };
@@ -2993,10 +2996,70 @@ export async function getTribunalProgressForCall(params) {
       dbStudentsMap.set(st._id.toString(), st);
     });
 
-    const allDbSyllabi = await ExamSyllabus.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, name: 1 }).lean();
-    const syllabiSnapshots = (call.syllabusSnapshots && call.syllabusSnapshots.length > 0)
-      ? [...call.syllabusSnapshots, ...allDbSyllabi]
-      : allDbSyllabi;
+    const cleanCallSyllabusSnapshots = (call.syllabusSnapshots || []).map(s => ({
+      _id: String(s.syllabusId || s._id || s.id || ''),
+      id: String(s.id || s.syllabusId || s._id || ''),
+      syllabusId: String(s.syllabusId || s._id || s.id || ''),
+      targetRank: String(s.targetRank || ''),
+      name: String(s.name || ''),
+      version: Number(s.version) || 1,
+      techniques: (s.techniques || []).map(t => ({
+        id: String(t.id || ''),
+        name: String(t.name || ''),
+        group: String(t.group || ''),
+        stance: String(t.stance || ''),
+        direction: String(t.direction || ''),
+        repetitions: Number(t.repetitions) || 3,
+        tripType: String(t.tripType || ''),
+        order: Number(t.order) || 0,
+        embusen: String(t.embusen || ''),
+        notes: String(t.notes || '')
+      })),
+      technicalAspects: (s.technicalAspects || []).map(a => ({
+        id: String(a.id || ''),
+        category: String(a.category || ''),
+        categoryLabel: String(a.categoryLabel || ''),
+        title: String(a.title || ''),
+        subtitle: String(a.subtitle || ''),
+        points: Array.isArray(a.points) ? a.points.map(String) : [],
+        order: Number(a.order) || 0
+      }))
+    }));
+
+    const rawDbSyllabi = await ExamSyllabus.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, name: 1 }).lean();
+    const cleanAllDbSyllabi = rawDbSyllabi.map(s => ({
+      _id: String(s._id || s.id || ''),
+      id: String(s.id || s._id || ''),
+      name: String(s.name || ''),
+      targetRank: String(s.targetRank || ''),
+      currentRank: String(s.currentRank || ''),
+      version: Number(s.version) || 1,
+      techniques: (s.techniques || []).map(t => ({
+        id: String(t.id || ''),
+        name: String(t.name || ''),
+        group: String(t.group || ''),
+        stance: String(t.stance || ''),
+        direction: String(t.direction || ''),
+        repetitions: Number(t.repetitions) || 3,
+        tripType: String(t.tripType || ''),
+        order: Number(t.order) || 0,
+        embusen: String(t.embusen || ''),
+        notes: String(t.notes || '')
+      })),
+      technicalAspects: (s.technicalAspects || []).map(a => ({
+        id: String(a.id || ''),
+        category: String(a.category || ''),
+        categoryLabel: String(a.categoryLabel || ''),
+        title: String(a.title || ''),
+        subtitle: String(a.subtitle || ''),
+        points: Array.isArray(a.points) ? a.points.map(String) : [],
+        order: Number(a.order) || 0
+      }))
+    }));
+
+    const syllabiSnapshots = cleanCallSyllabusSnapshots.length > 0
+      ? [...cleanCallSyllabusSnapshots, ...cleanAllDbSyllabi]
+      : cleanAllDbSyllabi;
 
     const aspirantsList = (call.aspirants || []).map(a => {
       const sId = a.studentId.toString();
@@ -3009,7 +3072,7 @@ export async function getTribunalProgressForCall(params) {
       const positiveAspects = (a.positiveAspects || dbSt?.positiveAspects || '').trim();
 
       // Resolver temario oficial y Katas exactos de este estudiante según su grado
-      const studentSyllabus = findSyllabusForStudent(syllabiSnapshots, { currentRank, targetRank }) || allDbSyllabi[0];
+      const studentSyllabus = findSyllabusForStudent(syllabiSnapshots, { currentRank, targetRank }) || cleanAllDbSyllabi[0];
       const syllabusTechniques = studentSyllabus?.techniques || [];
       const syllabusKatas = getKatasFromSyllabus(studentSyllabus);
 
@@ -3042,7 +3105,7 @@ export async function getTribunalProgressForCall(params) {
           : (getNextRank(currentRank) || call.syllabusSnapshots?.[0]?.targetRank || '9° Kyu (Cinta Amarilla)');
         const positiveAspects = (dbSt?.positiveAspects || '').trim();
 
-        const studentSyllabus = findSyllabusForStudent(syllabiSnapshots, { currentRank, targetRank }) || allDbSyllabi[0];
+        const studentSyllabus = findSyllabusForStudent(syllabiSnapshots, { currentRank, targetRank }) || cleanAllDbSyllabi[0];
         const syllabusTechniques = studentSyllabus?.techniques || [];
         const syllabusKatas = getKatasFromSyllabus(studentSyllabus);
 
@@ -3062,7 +3125,7 @@ export async function getTribunalProgressForCall(params) {
       }
     });
 
-    return {
+    const progressPayload = {
       success: true,
       callId: call._id.toString(),
       title: call.title,
@@ -3077,10 +3140,10 @@ export async function getTribunalProgressForCall(params) {
         kumiteCount: expectedKumite,
         totalTechniques: totalExpectedTechniques
       },
-      syllabusTechniques: (call.syllabusSnapshots?.[0]?.techniques || []),
-      syllabusAspects: (call.syllabusSnapshots?.[0]?.technicalAspects || []),
+      syllabusTechniques: (cleanCallSyllabusSnapshots?.[0]?.techniques || []),
+      syllabusAspects: (cleanCallSyllabusSnapshots?.[0]?.technicalAspects || []),
       syllabiSnapshots,
-      allSyllabi: allDbSyllabi,
+      allSyllabi: cleanAllDbSyllabi,
       consolidationsByStudent,
       aspirants: aspirantsList.sort(compareStudentsForExam),
       progressByEvaluator,
@@ -3093,6 +3156,7 @@ export async function getTribunalProgressForCall(params) {
         studentIds: (s.studentIds || []).map(String)
       }))
     };
+    return JSON.parse(JSON.stringify(progressPayload));
   } catch (error) {
     console.error('Error al obtener progreso del tribunal:', error);
     return { success: false, error: error.message || 'Error al obtener progreso del tribunal.' };
