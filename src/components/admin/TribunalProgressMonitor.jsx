@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { getTribunalProgressForCall, saveConsolidatedVerdict } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
-import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
+import { synthesizePhaseBulletsWithAI, extractAspectScoresFromEvaluations } from '../../lib/utils/martialAiSynthesizer';
 import { getNextRank, isKyuExemptFromWrittenExam, isSameRank, normalizeRankKey, findSyllabusForStudent, getKatasFromSyllabus } from '../../lib/constants/kyuRanks';
 import { getKataForRank } from '../../lib/utils/shotokanCriteriaFeedback';
 import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
@@ -125,14 +125,15 @@ function getEvalPhaseMetrics(evData, syllabusSummary = null) {
 }
 
 // Helper inteligente para comparar y sintetizar viñetas consensuadas por fase entre todos los evaluadores
-function getPhaseImprovementBullets(phase, notesList, techniqueScores = [], phaseAverage = 75, targetRank = '9° Kyu (Cinta Amarilla)', specificKataName = '') {
+function getPhaseImprovementBullets(phase, notesList, techniqueScores = [], phaseAverage = 75, targetRank = '9° Kyu (Cinta Amarilla)', specificKataName = '', aspectScores = []) {
   return synthesizePhaseBulletsWithAI({
     phase,
     notesList,
     techniqueScores,
     phaseAverage,
     targetRank,
-    specificKataName
+    specificKataName,
+    aspectScores
   });
 }
 
@@ -416,10 +417,46 @@ function StudentMonitorDrawer({
       return { id: t.id, name: t.name, score: avg };
     });
 
+  const kihonAspectScores = useMemo(() => {
+    return extractAspectScoresFromEvaluations({
+      evaluations: evalItems.map(e => e.evalRecord).filter(Boolean),
+      phase: 'kihon',
+      techniques: studentTechs,
+      technicalAspects: studentSyllabus?.technicalAspects || []
+    });
+  }, [evalItems, studentTechs, studentSyllabus]);
+
+  const kataAspectScores = useMemo(() => {
+    return extractAspectScoresFromEvaluations({
+      evaluations: evalItems.map(e => e.evalRecord).filter(Boolean),
+      phase: 'kata',
+      techniques: studentTechs,
+      technicalAspects: studentSyllabus?.technicalAspects || []
+    });
+  }, [evalItems, studentTechs, studentSyllabus]);
+
+  const kumiteAspectScores = useMemo(() => {
+    return extractAspectScoresFromEvaluations({
+      evaluations: evalItems.map(e => e.evalRecord).filter(Boolean),
+      phase: 'kumite',
+      techniques: studentTechs,
+      technicalAspects: studentSyllabus?.technicalAspects || []
+    });
+  }, [evalItems, studentTechs, studentSyllabus]);
+
+  const aspectosAspectScores = useMemo(() => {
+    return extractAspectScoresFromEvaluations({
+      evaluations: evalItems.map(e => e.evalRecord).filter(Boolean),
+      phase: 'aspectos',
+      techniques: studentTechs,
+      technicalAspects: studentSyllabus?.technicalAspects || []
+    });
+  }, [evalItems, studentTechs, studentSyllabus]);
+
   const defaultKihonBullets = useMemo(() => {
     const effScore = colegiadoKihon || baseKihon || 80;
-    return getPhaseImprovementBullets('kihon', kihonNotesList, kihonTechScores, effScore, targetRankStr);
-  }, [kihonNotesList, kihonTechScores, colegiadoKihon, baseKihon, targetRankStr]);
+    return getPhaseImprovementBullets('kihon', kihonNotesList, kihonTechScores, effScore, targetRankStr, '', kihonAspectScores);
+  }, [kihonNotesList, kihonTechScores, colegiadoKihon, baseKihon, targetRankStr, kihonAspectScores]);
 
   const defaultKataBullets = useMemo(() => {
     const effScore = colegiadoKata || baseKata || 80;
@@ -429,22 +466,22 @@ function StudentMonitorDrawer({
           const note = (idx === 1 ? e.evalRecord?.phaseNotes?.kata_2 : e.evalRecord?.phaseNotes?.kata) || e.evalRecord?.observations?.[kt.id];
           return { evaluatorName: e.evaluator.name, note };
         }).filter(i => i.note);
-        return getPhaseImprovementBullets('kata', rawNote.length ? rawNote : kataNotesList, [kt], kt.score || effScore, targetRankStr, kt.name);
+        return getPhaseImprovementBullets('kata', rawNote.length ? rawNote : kataNotesList, [kt], kt.score || effScore, targetRankStr, kt.name, kataAspectScores);
       }).flat();
     }
     const specificKata = kataTechScores[0]?.name || studentKatas[0]?.name || '';
-    return getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, effScore, targetRankStr, specificKata);
-  }, [kataNotesList, kataTechScores, colegiadoKata, baseKata, targetRankStr, studentKatas]);
+    return getPhaseImprovementBullets('kata', kataNotesList, kataTechScores, effScore, targetRankStr, specificKata, kataAspectScores);
+  }, [kataNotesList, kataTechScores, colegiadoKata, baseKata, targetRankStr, studentKatas, kataAspectScores]);
 
   const defaultKumiteBullets = useMemo(() => {
     const effScore = colegiadoKumite || baseKumite || 80;
-    return getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, effScore, targetRankStr);
-  }, [kumiteNotesList, kumiteTechScores, colegiadoKumite, baseKumite, targetRankStr]);
+    return getPhaseImprovementBullets('kumite', kumiteNotesList, kumiteTechScores, effScore, targetRankStr, '', kumiteAspectScores);
+  }, [kumiteNotesList, kumiteTechScores, colegiadoKumite, baseKumite, targetRankStr, kumiteAspectScores]);
 
   const defaultAspectosBullets = useMemo(() => {
     const effScore = colegiadoAspectos || 80;
-    return getPhaseImprovementBullets('aspectos', aspectosNotesList, [], effScore, targetRankStr);
-  }, [aspectosNotesList, colegiadoAspectos, targetRankStr]);
+    return getPhaseImprovementBullets('aspectos', aspectosNotesList, [], effScore, targetRankStr, '', aspectosAspectScores);
+  }, [aspectosNotesList, colegiadoAspectos, targetRankStr, aspectosAspectScores]);
 
   // Viñetas oficiales editables directamente por Shihan Roy para cada fase
   const [phaseBullets, setPhaseBullets] = useState({
@@ -1796,6 +1833,28 @@ export default function TribunalProgressMonitor({
       const kihonRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kihon })).filter(i => i.note);
       const kumiteRawList = evalItems.map(e => ({ evaluatorName: e.evaluator.name, note: e.evalRecord?.phaseNotes?.kumite })).filter(i => i.note);
 
+      // Extraer aspectos puntuados < 10 para garantizar retroalimentación técnica en el certificado
+      const certAspectScoresKihon = extractAspectScoresFromEvaluations({
+        evaluations: evalItems.map(e => e.evalRecord).filter(Boolean),
+        phase: 'kihon',
+        techniques: studentTechs,
+        technicalAspects: studentSyllabus?.technicalAspects || []
+      });
+
+      const certAspectScoresKata = extractAspectScoresFromEvaluations({
+        evaluations: evalItems.map(e => e.evalRecord).filter(Boolean),
+        phase: 'kata',
+        techniques: studentTechs,
+        technicalAspects: studentSyllabus?.technicalAspects || []
+      });
+
+      const certAspectScoresKumite = extractAspectScoresFromEvaluations({
+        evaluations: evalItems.map(e => e.evalRecord).filter(Boolean),
+        phase: 'kumite',
+        techniques: studentTechs,
+        technicalAspects: studentSyllabus?.technicalAspects || []
+      });
+
       // Priorizar viñetas personalizadas/editadas por Shihan Roy si existen
       const customKihon = cons?.customPhaseBullets?.kihon || progressData?.consolidationsByStudent?.[sId]?.customPhaseBullets?.kihon;
       const customKata = cons?.customPhaseBullets?.kata || progressData?.consolidationsByStudent?.[sId]?.customPhaseBullets?.kata;
@@ -1808,7 +1867,8 @@ export default function TribunalProgressMonitor({
             notesList: kihonRawList,
             techniqueScores: kihonTechScores,
             phaseAverage: kScore,
-            targetRank
+            targetRank,
+            aspectScores: certAspectScoresKihon
           }).map(b => b.text).join('\n');
 
       let katasPayload = [];
@@ -1832,7 +1892,8 @@ export default function TribunalProgressMonitor({
           techniqueScores: [k1],
           phaseAverage: k1.score || kaScore,
           targetRank,
-          specificKataName: k1.name
+          specificKataName: k1.name,
+          aspectScores: certAspectScoresKata
         }).map(b => b.text).join('\n');
 
         // Kata 2
@@ -1847,7 +1908,8 @@ export default function TribunalProgressMonitor({
           techniqueScores: [k2],
           phaseAverage: k2.score || kaScore,
           targetRank,
-          specificKataName: k2.name
+          specificKataName: k2.name,
+          aspectScores: certAspectScoresKata
         }).map(b => b.text).join('\n');
 
         katasPayload = [
@@ -1864,7 +1926,8 @@ export default function TribunalProgressMonitor({
           techniqueScores: kataTechScores,
           phaseAverage: kaScore,
           targetRank,
-          specificKataName: k1Name
+          specificKataName: k1Name,
+          aspectScores: certAspectScoresKata
         }).map(b => b.text).join('\n');
         katasPayload = [
           { name: k1Name, score: kaScore, text: resolvedKataNotes }
@@ -1878,7 +1941,8 @@ export default function TribunalProgressMonitor({
             notesList: kumiteRawList,
             techniqueScores: kumiteTechScores,
             phaseAverage: kuScore,
-            targetRank
+            targetRank,
+            aspectScores: certAspectScoresKumite
           }).map(b => b.text).join('\n');
 
       // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno

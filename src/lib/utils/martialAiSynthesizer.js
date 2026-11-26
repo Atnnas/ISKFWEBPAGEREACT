@@ -73,6 +73,63 @@ export function resolveAspectTextFromKey(criterionKey = '', technicalAspects = [
 }
 
 // Extraer tokens semánticos significativos aplicando stemming ligero en español
+export function extractAspectScoresFromEvaluations({
+  evaluations = [],
+  phase = null,
+  techniques = [],
+  technicalAspects = []
+}) {
+  const aspectScores = [];
+  const seenKeys = new Set();
+
+  evaluations.forEach(ev => {
+    const rawScores = ev?.scores || ev?.evalRecord?.scores || {};
+    if (!rawScores || typeof rawScores !== 'object') return;
+
+    Object.entries(rawScores).forEach(([key, val]) => {
+      const scoreNum = Number(val);
+      // Solo aspectos evaluados con menos de 10 (1 a 9)
+      if (!scoreNum || scoreNum <= 0 || scoreNum >= 10) return;
+
+      const dedupeKey = `${key}_${scoreNum}`;
+      if (seenKeys.has(dedupeKey)) return;
+      seenKeys.add(dedupeKey);
+
+      const lk = key.toLowerCase();
+      const isKataKey = lk.includes('-ka') || lk.includes('kata') || lk.includes('heian') || lk.includes('tekki') || lk.includes('bassai') || lk.includes('kanku') || lk.includes('jion') || lk.includes('empi');
+      const isKumiteKey = lk.includes('-ku') || lk.includes('kumite') || lk.includes('sambon') || lk.includes('gohon') || lk.includes('ippon') || lk.includes('jiyu');
+      const isAspectKey = lk.startsWith('aspect_');
+
+      if (phase === 'kata' && !isKataKey) return;
+      if (phase === 'kumite' && !isKumiteKey) return;
+      if (phase === 'aspectos' && !isAspectKey) return;
+      if (phase === 'kihon' && (isKataKey || isKumiteKey || isAspectKey)) return;
+
+      // Técnica
+      const techId = key.split('_')[0];
+      const matchedTech = (techniques || []).find(t => t.id === techId || key.startsWith(t.id));
+      const techniqueName = matchedTech?.name || '';
+
+      // Criterio
+      const criterionText = resolveAspectTextFromKey(key, technicalAspects, techniques);
+      if (!criterionText) return;
+
+      aspectScores.push({
+        key,
+        techniqueId: techId,
+        techniqueName,
+        criterion: criterionText,
+        stars: scoreNum,
+        score: scoreNum * 10,
+        evaluatorName: ev.evaluatorName || ev.evaluator?.name || 'Sensei'
+      });
+    });
+  });
+
+  return aspectScores;
+}
+
+// Extraer tokens semánticos significativos aplicando stemming ligero en español
 function extractSemanticStems(str = '') {
   const norm = normalizeText(str);
   const stopWords = new Set([
@@ -508,44 +565,98 @@ export function synthesizePhaseBulletsWithAI({
     });
   });
 
-  // 4. Integrar con falencias e indicaciones correctivas derivadas de calificaciones por estrellas (técnicas y aspectos específicos < 100%)
-  // Filosofía Marcial ISKF: Siempre correctivo explicando qué está haciendo mal según el aspecto evaluado
+  // 4. Integrar con falencias e indicaciones correctivas derivadas de calificaciones por estrellas (técnicas y aspectos específicos < 10)
+  // Filosofía Marcial ISKF: Siempre correctivo explicando qué debe corregir según el criterio evaluado
+  // Si coincide temáticamente con una observación previa de Sensei, se FUSIONA armónicamente
   (aspectScores || []).forEach(asp => {
     const rawVal = typeof asp.stars === 'number' ? asp.stars : (typeof asp.score === 'number' ? asp.score / 10 : null);
-    if (rawVal === null || rawVal >= 10) return;
+    if (rawVal === null || rawVal >= 10) return; // Un 10/10 es perfecto, NO genera comentario de corrección
 
     const stars = Math.round(rawVal);
-    const critText = (asp.criterion || '').trim();
-    if (!critText) return;
+    const rawCritText = (asp.criterion || '').trim();
+    if (!rawCritText) return;
+
+    const cleanCrit = rawCritText
+      .replace(/[?¿]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
 
     const tName = asp.techniqueName || 'Técnica de examen';
-    let severityTag = '';
-    let directiveText = '';
+    const aspStems = extractSemanticStems(`${cleanCrit} ${tName}`);
 
-    if (stars <= 3) {
-      severityTag = `Falla crítica en ${tName}`;
-      directiveText = `En el aspecto "${critText}" (${stars}/10 estrellas): Deficiencia severa en la ejecución marcial. Debe corregir de inmediato la alineación, estabilidad y mecánica básica antes del próximo grado.`;
-    } else if (stars <= 6) {
-      severityTag = `Deficiencia técnica en ${tName}`;
-      directiveText = `En el aspecto "${critText}" (${stars}/10 estrellas): No cumple con la solidez y precisión biomecánica requerida. Debe ajustar la posición, trayectoria y fijación del punto focal.`;
-    } else if (stars <= 8) {
-      severityTag = `Margen de mejora en ${tName}`;
-      directiveText = `En el aspecto "${critText}" (${stars}/10 estrellas): Para alcanzar la calificación máxima de 10 estrellas, debe perfeccionar la coordinación con la respiración y fijar el impacto con mayor Kime y firmeza.`;
-    } else {
-      severityTag = `Ajuste fino en ${tName}`;
-      directiveText = `En el aspecto "${critText}" (9/10 estrellas): Detalle milimétrico en el cierre final y control postural para alcanzar el 100% de excelencia técnica.`;
+    // Resolver encabezado técnico formal
+    const normCrit = cleanCrit.toLowerCase();
+    let aspectHeader = 'Aspecto Técnico';
+    let aspectKey = 'general';
+
+    if (normCrit.includes('dachi') || normCrit.includes('zenkutsu') || normCrit.includes('kokutsu') || normCrit.includes('kiba') || normCrit.includes('talon') || normCrit.includes('suri ashi') || normCrit.includes('mawatte')) {
+      aspectHeader = 'Aspecto Técnico - Posturas (Dachi Waza)';
+      aspectKey = 'dachi';
+    } else if (normCrit.includes('tsuki') || normCrit.includes('puno') || normCrit.includes('puño') || normCrit.includes('hikite') || normCrit.includes('chudan') || normCrit.includes('jodan')) {
+      aspectHeader = 'Aspecto Técnico - Puño y Hikite (Tsuki Waza)';
+      aspectKey = 'tsuki';
+    } else if (normCrit.includes('uke') || normCrit.includes('defensa') || normCrit.includes('bloqueo') || normCrit.includes('barai')) {
+      aspectHeader = 'Aspecto Técnico - Defensas (Uke Waza)';
+      aspectKey = 'uke';
+    } else if (normCrit.includes('geri') || normCrit.includes('patada') || normCrit.includes('snap') || normCrit.includes('rodilla') || normCrit.includes('hikiashi')) {
+      aspectHeader = 'Aspecto Técnico - Patadas (Geri Waza)';
+      aspectKey = 'geri';
+    } else if (normCrit.includes('kiai') || normCrit.includes('respiracion') || normCrit.includes('grito') || normCrit.includes('tanden')) {
+      aspectHeader = 'Aspecto Técnico - Kiai y Respiración (Capacidades Mentales)';
+      aspectKey = 'mental';
+    } else if (normCrit.includes('chakugan') || normCrit.includes('mirada') || normCrit.includes('ojos') || normCrit.includes('embusen') || normCrit.includes('ritmo')) {
+      aspectHeader = 'Aspecto Técnico - Kata (Chakugan y Embusen)';
+      aspectKey = 'chakugan';
+    } else if (normCrit.includes('distancia') || normCrit.includes('ma-ai') || normCrit.includes('maai') || normCrit.includes('guardia') || normCrit.includes('kamae') || normCrit.includes('zanshin')) {
+      aspectHeader = 'Aspecto Técnico - Combate (Kumite)';
+      aspectKey = 'maai';
+    } else if (normCrit.includes('saludo') || normCrit.includes('etiqueta') || normCrit.includes('rei') || normCrit.includes('karategui') || normCrit.includes('disciplina')) {
+      aspectHeader = 'Aspecto Técnico - Protocolo y Disciplina (DO)';
+      aspectKey = 'disciplina';
     }
 
-    synthesizedBullets.push({
-      text: `${severityTag}: ${directiveText}`,
-      coincidenceCount: 1,
-      isCoincidence: false,
-      evaluators: ['Consenso de estrellas'],
-      phase,
-      sourceType: 'stars_only',
-      sourceIcon: '⭐',
-      sourceLabel: `Estrellas por Criterio (${stars}/10)`
-    });
+    // Comprobar si ya existe una viñeta previa (de un Sensei) que aborde este mismo tema
+    let matchingBullet = null;
+    for (const b of synthesizedBullets) {
+      const bStems = extractSemanticStems(b.text);
+      const sim = calculateStemSimilarity(aspStems, bStems);
+      const sharesKey = (aspectKey && b.aspectKey === aspectKey) || aspStems.some(s => bStems.includes(s) && s.length >= 4);
+      if (sim >= 0.35 || sharesKey) {
+        matchingBullet = b;
+        break;
+      }
+    }
+
+    if (matchingBullet) {
+      // FUSIÓN HÍBRIDA: Unificar la observación del Sensei con la directiva biomecánica del criterio evaluado
+      if (!matchingBullet.text.includes(cleanCrit) && !matchingBullet.text.includes(tName)) {
+        matchingBullet.text += ` Para alcanzar el 100% en ${tName}, debe corregir: ${cleanCrit}.`;
+      }
+      matchingBullet.sourceType = 'hybrid';
+      matchingBullet.sourceIcon = '⭐👤';
+      matchingBullet.sourceLabel = `Estrellas (${stars}/10) + Comentario de Sensei`;
+      matchingBullet.aspectKey = aspectKey;
+    } else {
+      // Directiva 100% técnica individual
+      let directiveText = '';
+      if (stars <= 6) {
+        directiveText = `${aspectHeader}: En ${tName} (${stars}/10), no cumple plenamente con "${cleanCrit}". Debe corregir la mecánica, trayectoria y fijar el punto focal con solidez.`;
+      } else {
+        directiveText = `${aspectHeader}: Para alcanzar el 100% en ${tName} (${stars}/10), debe corregir "${cleanCrit}" con mayor Kime y firmeza.`;
+      }
+
+      synthesizedBullets.push({
+        text: directiveText,
+        coincidenceCount: 1,
+        isCoincidence: false,
+        evaluators: ['Consenso de estrellas'],
+        phase,
+        sourceType: 'stars_only',
+        sourceIcon: '⭐',
+        sourceLabel: `Criterio Evaluado (${stars}/10)`,
+        aspectKey
+      });
+    }
   });
 
   // Integrar técnicas generales con < 100% que no hayan sido cubiertas

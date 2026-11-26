@@ -93,7 +93,7 @@ import {
 } from '../../lib/actions/technicalExams';
 import { getExamCostConfig } from '../../lib/actions/examCosts';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
-import { synthesizePhaseBulletsWithAI } from '../../lib/utils/martialAiSynthesizer';
+import { synthesizePhaseBulletsWithAI, extractAspectScoresFromEvaluations } from '../../lib/utils/martialAiSynthesizer';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
 import TimePickerField from '../ui/TimePickerField';
@@ -3310,6 +3310,28 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         .filter(t => (t.group || t.phase || '').toLowerCase() === 'kumite')
         .map(t => ({ id: t.id, name: t.name, score: calcTechScore(t.id) }));
 
+      // Extraer aspectos puntuados < 10 para garantizar retroalimentación técnica en el certificado
+      const aspectScoresKihon = extractAspectScoresFromEvaluations({
+        evaluations: evals,
+        phase: 'kihon',
+        techniques: studentTechs,
+        technicalAspects: studentSyllabus?.technicalAspects || []
+      });
+
+      const aspectScoresKata = extractAspectScoresFromEvaluations({
+        evaluations: evals,
+        phase: 'kata',
+        techniques: studentTechs,
+        technicalAspects: studentSyllabus?.technicalAspects || []
+      });
+
+      const aspectScoresKumite = extractAspectScoresFromEvaluations({
+        evaluations: evals,
+        phase: 'kumite',
+        techniques: studentTechs,
+        technicalAspects: studentSyllabus?.technicalAspects || []
+      });
+
       // Kihon Text
       const customKihon = item.consolidation?.customPhaseBullets?.kihon;
       const kihonText = (customKihon && customKihon.length > 0)
@@ -3319,7 +3341,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             notesList: kihonNotes,
             techniqueScores: kihonTechScores,
             phaseAverage: kihonScore,
-            targetRank: targetRankForCert
+            targetRank: targetRankForCert,
+            aspectScores: aspectScoresKihon
           }).map(b => b.text).join('\n');
 
       // Kumite Text
@@ -3331,7 +3354,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
             notesList: kumiteNotes,
             techniqueScores: kumiteTechScores,
             phaseAverage: kumiteScore,
-            targetRank: targetRankForCert
+            targetRank: targetRankForCert,
+            aspectScores: aspectScoresKumite
           }).map(b => b.text).join('\n');
 
       // Katas Text y Payload
@@ -3359,7 +3383,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           techniqueScores: [{ id: k1.id, name: k1.name, score: k1Score }],
           phaseAverage: k1Score,
           targetRank: targetRankForCert,
-          specificKataName: k1.name
+          specificKataName: k1.name,
+          aspectScores: aspectScoresKata
         }).map(b => b.text).join('\n');
 
         const k2 = kataTechs[1];
@@ -3376,7 +3401,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           techniqueScores: [{ id: k2.id, name: k2.name, score: k2Score }],
           phaseAverage: k2Score,
           targetRank: targetRankForCert,
-          specificKataName: k2.name
+          specificKataName: k2.name,
+          aspectScores: aspectScoresKata
         }).map(b => b.text).join('\n');
 
         katasPayload = [
@@ -3398,7 +3424,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           techniqueScores: kataTechScores,
           phaseAverage: kataScore,
           targetRank: targetRankForCert,
-          specificKataName: kataName
+          specificKataName: kataName,
+          aspectScores: aspectScoresKata
         }).map(b => b.text).join('\n');
 
         katasPayload = [
