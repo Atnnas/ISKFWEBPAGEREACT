@@ -18,7 +18,7 @@ import {
   generateShotokanFeedbackBullets
 } from '../utils/shotokanCriteriaFeedback';
 import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
-import { getNextRank, compareStudentsForExam, isSameRank, normalizeRankKey, findSyllabusForStudent, getKatasFromSyllabus } from '../constants/kyuRanks';
+import { getNextRank, compareStudentsForExam, isSameRank, findSyllabusForStudent, getKatasFromSyllabus } from '../constants/kyuRanks';
 import { getExamCostConfig } from './examCosts';
 
 /**
@@ -2528,6 +2528,14 @@ export async function saveEvaluatorAtomicGrade({
 
     // Calcular porcentaje balanceado general sobre todas las técnicas evaluadas
     let calculatedPercentage = Number(percentage) || 0;
+    let calculatedPhaseAverages = null;
+    let safePhaseAdjustments = {
+      kihon: Number(phaseAdjustments?.kihon !== undefined ? phaseAdjustments.kihon : (existing?.phaseAdjustments?.kihon || 0)),
+      kata: Number(phaseAdjustments?.kata !== undefined ? phaseAdjustments.kata : (existing?.phaseAdjustments?.kata || 0)),
+      kumite: Number(phaseAdjustments?.kumite !== undefined ? phaseAdjustments.kumite : (existing?.phaseAdjustments?.kumite || 0))
+    };
+    let calculatedPhaseScores = null;
+
     if (Object.keys(mergedTechniqueAverages).length > 0) {
       const resolvePhaseForTech = (tKey) => {
         if (!tKey) return 'kihon';
@@ -2551,20 +2559,14 @@ export async function saveEvaluatorAtomicGrade({
         }
       });
 
-      const calculatedPhaseAverages = {
+      calculatedPhaseAverages = {
         kihon: phaseCounts.kihon > 0 ? Math.round(phaseSums.kihon / phaseCounts.kihon) : (phaseAverages?.kihon ?? existing?.phaseAverages?.kihon ?? null),
         kata: phaseCounts.kata > 0 ? Math.round(phaseSums.kata / phaseCounts.kata) : (phaseAverages?.kata ?? existing?.phaseAverages?.kata ?? null),
         kumite: phaseCounts.kumite > 0 ? Math.round(phaseSums.kumite / phaseCounts.kumite) : (phaseAverages?.kumite ?? existing?.phaseAverages?.kumite ?? null),
         aspectos: phaseCounts.aspectos > 0 ? Math.round(phaseSums.aspectos / phaseCounts.aspectos) : (phaseAverages?.aspectos ?? existing?.phaseAverages?.aspectos ?? null)
       };
 
-      const safePhaseAdjustments = {
-        kihon: Number(phaseAdjustments?.kihon !== undefined ? phaseAdjustments.kihon : (existing?.phaseAdjustments?.kihon || 0)),
-        kata: Number(phaseAdjustments?.kata !== undefined ? phaseAdjustments.kata : (existing?.phaseAdjustments?.kata || 0)),
-        kumite: Number(phaseAdjustments?.kumite !== undefined ? phaseAdjustments.kumite : (existing?.phaseAdjustments?.kumite || 0))
-      };
-
-      const calculatedPhaseScores = {
+      calculatedPhaseScores = {
         kihon: calculatedPhaseAverages.kihon !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kihon + (safePhaseAdjustments.kihon || 0))) : null,
         kata: calculatedPhaseAverages.kata !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kata + (safePhaseAdjustments.kata || 0))) : null,
         kumite: calculatedPhaseAverages.kumite !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kumite + (safePhaseAdjustments.kumite || 0))) : null,

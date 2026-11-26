@@ -31,8 +31,7 @@ import {
 import { getTribunalProgressForCall, saveConsolidatedVerdict } from '../../lib/actions/technicalExams';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import { synthesizePhaseBulletsWithAI, extractAspectScoresFromEvaluations } from '../../lib/utils/martialAiSynthesizer';
-import { getNextRank, isKyuExemptFromWrittenExam, isSameRank, normalizeRankKey, findSyllabusForStudent, getKatasFromSyllabus } from '../../lib/constants/kyuRanks';
-import { getKataForRank } from '../../lib/utils/shotokanCriteriaFeedback';
+import { getNextRank, isKyuExemptFromWrittenExam, isSameRank, findSyllabusForStudent, getKatasFromSyllabus } from '../../lib/constants/kyuRanks';
 import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
 
 // Helper para formatear tiempo relativo transcurrido
@@ -232,6 +231,7 @@ function StudentMonitorDrawer({
   evaluatorsProgress,
   syllabusTechniques = [],
   consolidation = null,
+  progressData = null,
   onDownloadPdf,
   isDownloading,
   onRefresh
@@ -2866,6 +2866,7 @@ export default function TribunalProgressMonitor({
                                               evaluatorsProgress={rawEvaluatorsProgress}
                                               syllabusTechniques={studentSpecificTechs}
                                               consolidation={progressData?.consolidationsByStudent?.[sId] || null}
+                                              progressData={progressData}
                                               onDownloadPdf={handleDownloadCertificateForStudent}
                                               isDownloading={downloadingStudentId === sId}
                                               onRefresh={() => fetchProgress(true)}

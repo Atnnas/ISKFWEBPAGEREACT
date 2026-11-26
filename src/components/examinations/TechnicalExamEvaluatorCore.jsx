@@ -35,7 +35,7 @@ import {
 import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall, getTribunalProgressForCall } from '../../lib/actions/technicalExams';
 import { updateStudent } from '../../lib/actions/students';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
-import { KYU_OPTIONS, getBeltBadgeClass, compareStudentsForExam, getRankSortOrder, findSyllabusForStudent, getKatasFromSyllabus, isSameRank } from '../../lib/constants/kyuRanks';
+import { KYU_OPTIONS, getBeltBadgeClass, compareStudentsForExam, getRankSortOrder, findSyllabusForStudent } from '../../lib/constants/kyuRanks';
 import TribunalProgressMonitor from '../admin/TribunalProgressMonitor';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 import {
