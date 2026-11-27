@@ -41,7 +41,6 @@ export default function PublicTandasLiveView({
   const [isLiveSyncing, setIsLiveSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
-  const [copiedToast, setCopiedToast] = useState(null);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isExportingXLS, setIsExportingXLS] = useState(false);
 
@@ -111,11 +110,8 @@ export default function PublicTandasLiveView({
     }
     navigator.clipboard.writeText(url.toString());
     setCopied(true);
-    const dayName = (call?.isMultiDay && activeDay !== 'all') ? `del Día ${activeDay}` : 'completo';
-    setCopiedToast(`✓ Enlace ${dayName} copiado`);
     setTimeout(() => {
       setCopied(false);
-      setCopiedToast(null);
     }, 3000);
   };
 
@@ -417,64 +413,6 @@ export default function PublicTandasLiveView({
           </div>
         </div>
 
-        {/* 3.1. BARRA DE COMPARTIR POR DÍA RÁPIDO (EN CASO DE EVENTOS MULTIDÍA - MÁS GRANDE) */}
-        {call?.isMultiDay && (
-          <div className="flex items-center justify-between gap-4 flex-wrap p-3.5 sm:p-5 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-950 border-2 border-slate-800/90 rounded-2xl sm:rounded-3xl shadow-lg">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-400 flex items-center gap-2 font-mono">
-                <Share2 className="w-4 h-4 text-amber-400" />
-                Compartir Horario por Día:
-              </span>
-              <button
-                type="button"
-                onClick={() => handleCopyLink(1)}
-                className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer active:scale-95 border-2 shadow-md ${
-                  Number(dayFilter) === 1
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-400 shadow-blue-500/30 ring-2 ring-blue-400/30'
-                    : 'bg-blue-950/70 hover:bg-blue-900/80 text-blue-200 border-blue-800/80'
-                }`}
-                title="Copiar enlace directo exclusivamente para la tabla del Día 1"
-              >
-                <span className="text-base">📋</span>
-                <span>Enlace Día 1</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCopyLink(2)}
-                className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer active:scale-95 border-2 shadow-md ${
-                  Number(dayFilter) === 2
-                    ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-400 shadow-rose-500/30 ring-2 ring-rose-400/30'
-                    : 'bg-rose-950/70 hover:bg-rose-900/80 text-rose-200 border-rose-800/80'
-                }`}
-                title="Copiar enlace directo exclusivamente para la tabla del Día 2"
-              >
-                <span className="text-base">📋</span>
-                <span>Enlace Día 2</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCopyLink('all')}
-                className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer active:scale-95 border-2 shadow-md ${
-                  dayFilter === 'all'
-                    ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-300 shadow-amber-400/30 font-black'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                }`}
-                title="Copiar enlace completo de ambos días"
-              >
-                <span className="text-base">📋</span>
-                <span>Enlace Ambos Días</span>
-              </button>
-            </div>
-
-            {copiedToast && (
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold animate-pulse">
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{copiedToast}</span>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* 4. LISTA DE TANDAS CON HORA INICIO, HORA FINAL Y ESTUDIANTES */}
         {filteredTandas.length === 0 ? (
           <div className="bg-slate-950 border border-slate-800 rounded-3xl p-12 text-center text-slate-400 space-y-3">
@@ -508,25 +446,25 @@ export default function PublicTandasLiveView({
               return (
                 <div
                   key={tanda.id || tIdx}
-                  className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all"
+                  className="bg-slate-950 border border-slate-800 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl transition-all"
                 >
-                  {/* Encabezado de la Tanda: Nombre, Día, Hora Inicio y Hora Final */}
-                  <div className="bg-slate-900/90 border-b border-slate-800/80 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-sm shadow-sm font-mono shrink-0">
+                  {/* Encabezado de la Tanda: Nombre, Día, Hora Inicio y Hora Final (Fuentes Grandes) */}
+                  <div className="bg-slate-900/90 border-b border-slate-800/80 p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <span className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-base sm:text-xl shadow-md font-mono shrink-0">
                         {tIdx + 1}
                       </span>
                       <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-base font-black text-white">{tandaName}</h4>
+                        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                          <h4 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight">{tandaName}</h4>
                           {call?.isMultiDay && (
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase font-mono border ${
-                              dayNum === 2 ? 'bg-red-500/15 text-rose-300 border-rose-500/30' : 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase font-mono border ${
+                              dayNum === 2 ? 'bg-red-500/20 text-rose-300 border-rose-500/40' : 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                             }`}>
                               Día {dayNum}
                             </span>
                           )}
-                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono font-bold">
+                          <span className="text-xs sm:text-sm px-3 py-1 rounded-lg bg-slate-800 text-slate-200 font-mono font-bold border border-slate-700">
                             {studentList.length} estudiantes
                           </span>
                         </div>
@@ -535,34 +473,34 @@ export default function PublicTandasLiveView({
 
                     {/* Horario: Hora Inicio y Hora Final */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-mono font-bold">
-                        <Clock className="w-4 h-4 text-amber-400" />
+                      <div className="flex items-center gap-2.5 px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-slate-800/90 border border-slate-700 text-xs sm:text-sm font-mono font-bold shadow-inner">
+                        <Clock className="w-4 h-4 text-amber-400 shrink-0" />
                         <span className="text-slate-400">Hora Inicio:</span>
-                        <span className="text-white font-black">{tanda.startTime || 'Por definir'}</span>
+                        <span className="text-white font-black text-sm sm:text-base">{tanda.startTime || 'Por definir'}</span>
                         <span className="text-slate-500 mx-1">•</span>
                         <span className="text-slate-400">Hora Final:</span>
-                        <span className="text-amber-300 font-black">{tanda.endTime || 'Por definir'}</span>
+                        <span className="text-amber-300 font-black text-sm sm:text-base">{tanda.endTime || 'Por definir'}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Tabla de Estudiantes de la Tanda */}
+                  {/* Tabla de Estudiantes de la Tanda (Fuentes Grandes y Legibles) */}
                   {studentList.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-slate-500 font-medium italic">
+                    <div className="p-8 text-center text-sm sm:text-base text-slate-400 font-medium italic">
                       No hay estudiantes asignados a esta tanda.
                     </div>
                   ) : (
                     <div className="overflow-x-auto custom-scrollbar">
-                      <table className="w-full text-left border-collapse min-w-[500px]">
+                      <table className="w-full text-left border-collapse min-w-[550px]">
                         <thead>
-                          <tr className="bg-slate-900/40 border-b border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                            <th className="py-2.5 px-3 w-12 text-center">#</th>
-                            <th className="py-2.5 px-3 min-w-[220px]">Estudiante</th>
-                            <th className="py-2.5 px-3 min-w-[160px]">Grado Actual</th>
-                            <th className="py-2.5 px-3 min-w-[160px]">Aspira a</th>
+                          <tr className="bg-slate-900/60 border-b border-slate-800 text-xs sm:text-sm font-black uppercase tracking-wider text-slate-400">
+                            <th className="py-3.5 px-4 sm:px-5 w-14 text-center">#</th>
+                            <th className="py-3.5 px-4 sm:px-5 min-w-[260px]">Estudiante</th>
+                            <th className="py-3.5 px-4 sm:px-5 min-w-[200px]">Grado Actual</th>
+                            <th className="py-3.5 px-4 sm:px-5 min-w-[180px]">Aspira a</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/60 text-xs">
+                        <tbody className="divide-y divide-slate-800/70 text-sm sm:text-base">
                           {studentList.map((st, sIdx) => {
                             const sId = String(st._id || st.id);
                             const studentAspirant = (call?.aspirants || []).find(a => String(a.studentId) === sId);
@@ -577,36 +515,36 @@ export default function PublicTandasLiveView({
                             return (
                               <tr
                                 key={sId}
-                                className="transition-colors hover:bg-slate-800/30"
+                                className="transition-colors hover:bg-slate-800/40"
                               >
-                                <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-400">
+                                <td className="py-3.5 sm:py-4 px-4 sm:px-5 text-center font-mono font-black text-slate-400 text-sm sm:text-base">
                                   {sIdx + 1}
                                 </td>
 
-                                <td className="py-2.5 px-3">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-xs text-slate-300 overflow-hidden shrink-0">
+                                <td className="py-3.5 sm:py-4 px-4 sm:px-5">
+                                  <div className="flex items-center gap-3 sm:gap-3.5">
+                                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-black text-xs sm:text-sm text-slate-300 overflow-hidden shrink-0 shadow-xs">
                                       {st.photo ? (
                                         <img src={st.photo} alt={st.name} className="w-full h-full object-cover" />
                                       ) : (
                                         st.name ? st.name.substring(0, 2).toUpperCase() : 'E'
                                       )}
                                     </div>
-                                    <span className="font-bold text-white block truncate">
+                                    <span className="font-black text-white text-sm sm:text-base md:text-lg block tracking-tight">
                                       {st.name}
                                     </span>
                                   </div>
                                 </td>
 
-                                <td className="py-2.5 px-3">
-                                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border ${belt.bg}`}>
-                                    <span className={`w-2 h-2 rounded-full shrink-0 ${belt.dot}`} />
+                                <td className="py-3.5 sm:py-4 px-4 sm:px-5">
+                                  <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border ${belt.bg}`}>
+                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${belt.dot}`} />
                                     <span>{belt.label}</span>
                                   </span>
                                 </td>
 
-                                <td className="py-2.5 px-3">
-                                  <span className="text-xs text-amber-300 font-mono font-bold">
+                                <td className="py-3.5 sm:py-4 px-4 sm:px-5">
+                                  <span className="text-sm sm:text-base text-amber-300 font-mono font-black">
                                     ➔ {targetRank}
                                   </span>
                                 </td>
