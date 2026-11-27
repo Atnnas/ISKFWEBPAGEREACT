@@ -3210,8 +3210,11 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     persistTandasEvent(list);
   };
 
+  const [togglingCallId, setTogglingCallId] = useState(null);
+
   // Cerrar oficialmente una convocatoria con validación de completitud
   const handleCloseExamCall = async (callId, force = false) => {
+    setTogglingCallId(callId);
     try {
       const res = await closeExamCall({ callId, force });
       if (res.success) {
@@ -3235,6 +3238,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     } catch (err) {
       console.error(err);
       showAlert('Error al procesar el cierre del examen.', 'Error', true);
+    } finally {
+      setTogglingCallId(null);
     }
   };
 
@@ -3247,6 +3252,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       cancelText: 'Cancelar',
       isDanger: false,
       onConfirm: async () => {
+        setTogglingCallId(callId);
         try {
           const res = await reopenExamCall({ callId, targetStatus: 'en_tatami' });
           if (res.success) {
@@ -3259,9 +3265,22 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         } catch (err) {
           console.error(err);
           showAlert('Error al reabrir la convocatoria.', 'Error', true);
+        } finally {
+          setTogglingCallId(null);
         }
       }
     });
+  };
+
+  // Alternador de estado interactivo (Abierta / Cerrada)
+  const handleToggleCallStatus = async (call, e) => {
+    e?.stopPropagation();
+    const callId = call._id || call.id;
+    if (call.status === 'cerrado') {
+      await handleReopenExamCall(callId);
+    } else {
+      await handleCloseExamCall(callId);
+    }
   };
 
   // Eliminar convocatoria permanentemente con confirmación
@@ -4048,17 +4067,41 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                   </div>
                                 </td>
 
-                                {/* Col 4: Estado */}
+                                {/* Col 4: Estado (Toggle Switch Abierta / Cerrada) */}
                                 <td className="py-4 px-4 align-middle text-center">
-                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border inline-block ${
-                                    call.status === 'cerrado'
-                                      ? 'bg-gray-100 text-gray-600 border-gray-300'
-                                      : call.status === 'en_tatami'
-                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                      : 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                  }`}>
-                                    {call.status}
-                                  </span>
+                                  <div className="inline-flex flex-col items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      role="switch"
+                                      aria-checked={call.status !== 'cerrado'}
+                                      onClick={(e) => handleToggleCallStatus(call, e)}
+                                      disabled={togglingCallId === (call._id || call.id)}
+                                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#2D2E83] focus:ring-offset-1 select-none disabled:opacity-60 ${
+                                        call.status !== 'cerrado' ? 'bg-emerald-600' : 'bg-gray-300'
+                                      }`}
+                                      title={`Convocatoria ${call.status !== 'cerrado' ? 'Abierta (Clic para cerrar)' : 'Cerrada (Clic para reabrir)'}`}
+                                    >
+                                      <span
+                                        className={`pointer-events-none flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                          call.status !== 'cerrado' ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                      >
+                                        {togglingCallId === (call._id || call.id) ? (
+                                          <Loader2 className="w-3 h-3 text-[#2D2E83] animate-spin" />
+                                        ) : (
+                                          <span className={`w-1.5 h-1.5 rounded-full ${call.status !== 'cerrado' ? 'bg-emerald-600' : 'bg-gray-400'}`} />
+                                        )}
+                                      </span>
+                                    </button>
+
+                                    <span className={`text-[10px] font-black uppercase tracking-wider font-mono px-2 py-0.5 rounded-md border shadow-2xs ${
+                                      call.status !== 'cerrado'
+                                        ? 'text-emerald-800 bg-emerald-50 border-emerald-300'
+                                        : 'text-gray-600 bg-gray-100 border-gray-200'
+                                    }`}>
+                                      {call.status !== 'cerrado' ? 'Abierta' : 'Cerrada'}
+                                    </span>
+                                  </div>
                                 </td>
 
                                 {/* Col 5: Padrón & Tandas */}
@@ -4095,25 +4138,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                                       <ArrowRight className="w-4 h-4" />
                                     </Link>
 
-                                    {call.status !== 'cerrado' ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCloseExamCall(call._id || call.id)}
-                                        className="px-2 py-1 text-[11px] text-amber-700 hover:text-amber-900 hover:bg-amber-50 rounded-lg transition-colors font-medium cursor-pointer"
-                                        title="Cerrar examen"
-                                      >
-                                        Cerrar
-                                      </button>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleReopenExamCall(call._id || call.id)}
-                                        className="px-2 py-1 text-[11px] text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-lg transition-colors font-medium cursor-pointer"
-                                        title="Reabrir convocatoria de examen"
-                                      >
-                                        Reabrir
-                                      </button>
-                                    )}
 
                                     <button
                                       type="button"
