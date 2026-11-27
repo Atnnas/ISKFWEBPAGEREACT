@@ -33,6 +33,7 @@ import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExam
 import { synthesizePhaseBulletsWithAI, extractAspectScoresFromEvaluations } from '../../lib/utils/martialAiSynthesizer';
 import { getNextRank, isKyuExemptFromWrittenExam, isSameRank, findSyllabusForStudent, getKatasFromSyllabus } from '../../lib/constants/kyuRanks';
 import { formatDateDDMMAAAA } from '../../lib/utils/dateFormatter';
+import { getMinPassingScore, extractBulletText } from '../../lib/utils/gradeConfigHelper';
 
 // Helper para formatear tiempo relativo transcurrido
 function formatTimeAgo(dateStr) {
@@ -232,6 +233,7 @@ function StudentMonitorDrawer({
   syllabusTechniques = [],
   consolidation = null,
   progressData = null,
+  gradeConfig = null,
   onDownloadPdf,
   isDownloading,
   onRefresh
@@ -305,9 +307,16 @@ function StudentMonitorDrawer({
   // Promedio técnico base sin ajustes
   const baseTechnicalScore = Math.round((baseKihon + baseKata + baseKumite) / 3);
 
+  // Grado objetivo del alumno y nota mínima oficial configurada
+  const targetRankStr = consolidation?.promotedRank
+    || (student?.targetRank && !isSameRank(student?.targetRank, student?.currentRank) ? student?.targetRank : null)
+    || getNextRank(student?.currentRank)
+    || '8° Kyu (Cinta Naranja)';
+  const minPassingGrade = getMinPassingScore(targetRankStr, gradeConfig);
+
   // El promedio final se calcula solo automáticamente a partir de las 3 fases
   const calculatedFinalScore = Math.round((finalKihon + finalKata + finalKumite) / 3);
-  const calculatedIsPassed = calculatedFinalScore >= 70;
+  const calculatedIsPassed = calculatedFinalScore >= minPassingGrade;
   const netAdjustment = calculatedFinalScore - baseTechnicalScore;
   const hasAnyAdjustment = (phaseAdjustments.kihon !== 0 || phaseAdjustments.kata !== 0 || phaseAdjustments.kumite !== 0);
 
@@ -371,10 +380,6 @@ function StudentMonitorDrawer({
     .filter(item => item.note && item.note.trim().length > 0);
 
   const selectedEvalItem = evalItems.find(e => e.key === activeTab);
-  const targetRankStr = consolidation?.promotedRank
-    || (student?.targetRank && !isSameRank(student?.targetRank, student?.currentRank) ? student?.targetRank : null)
-    || getNextRank(student?.currentRank)
-    || '8° Kyu (Cinta Naranja)';
 
   // Resolver temario oficial y Katas exactos del estudiante desde los temarios guardados en base de datos
   const allAvailableSyllabi = progressData?.syllabiSnapshots || progressData?.allSyllabi || call?.syllabusSnapshots || [];
@@ -567,7 +572,7 @@ function StudentMonitorDrawer({
         evaluatorName: e.evaluator.name,
         evaluatorEmail: e.evaluator.email,
         percentage: e.evalRecord?.percentage || 0,
-        isPassed: (e.evalRecord?.percentage || 0) >= 70
+        isPassed: (e.evalRecord?.percentage || 0) >= minPassingGrade
       }));
 
       const res = await saveConsolidatedVerdict({
@@ -679,7 +684,8 @@ function StudentMonitorDrawer({
               aspectos: currentAspectosBullets
             },
             finalGrade: calculatedFinalScore,
-            isPassed: calculatedIsPassed
+            isPassed: calculatedIsPassed,
+            minPassingScore: minPassingGrade
           })}
           disabled={isDownloading}
           className="px-4 py-2 bg-[#BE1622] hover:bg-[#9E121C] text-white rounded-xl font-bold transition-all shadow-md shadow-red-600/20 flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
@@ -858,22 +864,35 @@ function StudentMonitorDrawer({
             </div>
 
             {/* NOTA TOTAL COLEGIADA (Se calcula sola automáticamente) */}
-            <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-300 shadow-2xs flex flex-col justify-between">
+            <div className={`p-3.5 rounded-xl border shadow-2xs flex flex-col justify-between transition-colors ${
+              calculatedIsPassed ? 'bg-emerald-50/80 border-emerald-300' : 'bg-rose-50/90 border-rose-300'
+            }`}>
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900">Nota Total Colegiada</span>
-                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${calculatedIsPassed ? 'bg-emerald-200/90 text-emerald-900' : 'bg-red-200 text-red-900'}`}>
-                    {calculatedIsPassed ? 'Aprobado' : 'Pendiente'}
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${calculatedIsPassed ? 'text-emerald-900' : 'text-rose-900'}`}>
+                    Nota Total Colegiada
+                  </span>
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${
+                    calculatedIsPassed
+                      ? 'bg-emerald-200/90 text-emerald-900 border-emerald-300'
+                      : 'bg-rose-200 text-rose-900 border-rose-300'
+                  }`}>
+                    {calculatedIsPassed ? '✓ Aprobado' : '✗ Reprobado'}
                   </span>
                 </div>
-                <div className="text-2xl font-black text-emerald-950 mt-1 font-mono">
-                  {calculatedFinalScore}%
+                <div className="flex items-baseline justify-between mt-1">
+                  <div className={`text-2xl font-black font-mono ${calculatedIsPassed ? 'text-emerald-950' : 'text-rose-950'}`}>
+                    {calculatedFinalScore}%
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 font-mono">
+                    Mínimo: {minPassingGrade}%
+                  </span>
                 </div>
               </div>
-              <div className="text-[10px] text-emerald-800 font-medium mt-1.5 pt-1 border-t border-emerald-200">
-                {hasAnyAdjustment
-                  ? `Promedio auto: (${finalKihon} + ${finalKata} + ${finalKumite}) ÷ 3 | Ajuste neto: ${netAdjustment >= 0 ? `+${netAdjustment}%` : `${netAdjustment}%`}`
-                  : `Promedio exacto automático de las 3 fases (${baseTechnicalScore}%)`}
+              <div className={`text-[10px] font-medium mt-1.5 pt-1 border-t ${calculatedIsPassed ? 'text-emerald-800 border-emerald-200' : 'text-rose-800 border-rose-200'}`}>
+                {calculatedIsPassed
+                  ? `Cumple nota mínima oficial para ${targetRankStr} (≥ ${minPassingGrade}%)`
+                  : `Reprobado: requiere un mínimo oficial de ${minPassingGrade}% para ${targetRankStr}`}
               </div>
             </div>
           </div>
@@ -1013,7 +1032,7 @@ function StudentMonitorDrawer({
 
                   <div className="mt-2.5 space-y-2 bg-white p-3 rounded-lg border border-blue-100 shadow-2xs">
                     {currentKihonBullets.map((bItem, bIdx) => {
-                      const text = typeof bItem === 'string' ? bItem : bItem.text;
+                      const text = extractBulletText(bItem);
                       const badge = getOriginBadgeData(bItem);
                       const isEditingThis = editingBullet?.phase === 'kihon' && editingBullet?.index === bIdx;
 
@@ -1149,7 +1168,7 @@ function StudentMonitorDrawer({
 
                   <div className="mt-2.5 space-y-1.5 bg-white p-3 rounded-lg border border-purple-100 shadow-2xs">
                     {currentKataBullets.map((bItem, bIdx) => {
-                      const text = typeof bItem === 'string' ? bItem : bItem.text;
+                      const text = extractBulletText(bItem);
                       const isKarategui = text.toLowerCase().includes('karategui') || text.toLowerCase().includes('cabello') || text.toLowerCase().includes('uniforme');
                       const badge = getOriginBadgeData(bItem);
                       const isEditingThis = editingBullet?.phase === 'kata' && editingBullet?.index === bIdx;
@@ -1291,7 +1310,7 @@ function StudentMonitorDrawer({
 
                   <div className="mt-2.5 space-y-2 bg-white p-3 rounded-lg border border-amber-100 shadow-2xs">
                     {currentKumiteBullets.map((bItem, bIdx) => {
-                      const text = typeof bItem === 'string' ? bItem : bItem.text;
+                      const text = extractBulletText(bItem);
                       const badge = getOriginBadgeData(bItem);
                       const isEditingThis = editingBullet?.phase === 'kumite' && editingBullet?.index === bIdx;
 
@@ -1469,9 +1488,13 @@ function StudentMonitorDrawer({
 
               {/* Renderizar cada viñeta/enunciado de manera ejecutiva con su respectivo badge de origen */}
               <div className="space-y-1.5 pt-1">
-                {(consolidation.aiAnalysis || consolidation.observations || 'Evaluación técnica completada.')
+                {(typeof consolidation.aiAnalysis === 'string' && consolidation.aiAnalysis.trim()
+                  ? consolidation.aiAnalysis
+                  : typeof consolidation.observations === 'string' && consolidation.observations.trim()
+                  ? consolidation.observations
+                  : 'Evaluación técnica completada.')
                   .split('\n')
-                  .filter(line => line && line.trim().length > 0)
+                  .filter(line => line && line.trim().length > 0 && line.trim() !== '[object Object]')
                   .map((line, lIdx) => {
                     const cleanLine = line
                       .replace(/^\*\s*/, '')
@@ -1732,12 +1755,14 @@ export default function TribunalProgressMonitor({
   students = [],
   currentEvaluatorEmail = null,
   currentEvaluatorToken = null,
-  onEditTribunal = null
+  onEditTribunal = null,
+  gradeConfig: propGradeConfig = null
 }) {
   const callId = call?._id || call?.id;
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [progressData, setProgressData] = useState(null);
+  const gradeConfig = propGradeConfig || progressData?.gradeConfig || null;
   const [copiedToken, setCopiedToken] = useState(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
   const [selectedTandaIndex, setSelectedTandaIndex] = useState('all');
@@ -1861,7 +1886,7 @@ export default function TribunalProgressMonitor({
       const customKumite = cons?.customPhaseBullets?.kumite || progressData?.consolidationsByStudent?.[sId]?.customPhaseBullets?.kumite;
 
       const resolvedKihonNotes = (customKihon && customKihon.length > 0)
-        ? customKihon.map(b => (typeof b === 'string' ? b : b.text)).join('\n')
+        ? customKihon.map(b => extractBulletText(b)).filter(Boolean).join('\n')
         : synthesizePhaseBulletsWithAI({
             phase: 'kihon',
             notesList: kihonRawList,
@@ -1869,13 +1894,13 @@ export default function TribunalProgressMonitor({
             phaseAverage: kScore,
             targetRank,
             aspectScores: certAspectScoresKihon
-          }).map(b => b.text).join('\n');
+          }).map(b => extractBulletText(b)).filter(Boolean).join('\n');
 
       let katasPayload = [];
       let resolvedKataNotes = '';
 
       if (customKata && customKata.length > 0) {
-        resolvedKataNotes = customKata.map(b => (typeof b === 'string' ? b : b.text)).join('\n');
+        resolvedKataNotes = customKata.map(b => extractBulletText(b)).filter(Boolean).join('\n');
         katasPayload = [
           { name: kataTechScores[0]?.name || studentKatas[0]?.name || 'Kata Oficial', score: kaScore, text: resolvedKataNotes }
         ];
@@ -1935,7 +1960,7 @@ export default function TribunalProgressMonitor({
       }
 
       const resolvedKumiteNotes = (customKumite && customKumite.length > 0)
-        ? customKumite.map(b => (typeof b === 'string' ? b : b.text)).join('\n')
+        ? customKumite.map(b => extractBulletText(b)).filter(Boolean).join('\n')
         : synthesizePhaseBulletsWithAI({
             phase: 'kumite',
             notesList: kumiteRawList,
@@ -1943,7 +1968,7 @@ export default function TribunalProgressMonitor({
             phaseAverage: kuScore,
             targetRank,
             aspectScores: certAspectScoresKumite
-          }).map(b => b.text).join('\n');
+          }).map(b => extractBulletText(b)).filter(Boolean).join('\n');
 
       // Aspectos Positivos: Únicamente lo que el sensei colocó al agregar al atleta uno a uno
       const positiveText = (st?.positiveAspects || '').trim();
@@ -1953,6 +1978,7 @@ export default function TribunalProgressMonitor({
       const adjustedFinalScore = Math.min(100, Math.max(0, Math.round(baseTechnical + adj)));
       const isWrittenExempt = isKyuExemptFromWrittenExam(targetRank || st?.currentRank);
       const writtenScore = isWrittenExempt ? null : 95;
+      const minPassingGrade = getMinPassingScore(targetRank, gradeConfig);
 
       await generateTechnicalExamCertificatePDF({
         studentName,
@@ -1968,7 +1994,8 @@ export default function TribunalProgressMonitor({
         finalScore: adjustedFinalScore,
         martialAdjustment: adj,
         martialAdjustmentReason: cons?.martialAdjustmentReason || '',
-        isPassed: adjustedFinalScore >= 70,
+        isPassed: adjustedFinalScore >= minPassingGrade,
+        minPassingScore: minPassingGrade,
         kihonText: resolvedKihonNotes,
         kataText: resolvedKataNotes,
         kumiteText: resolvedKumiteNotes,
@@ -2831,11 +2858,24 @@ export default function TribunalProgressMonitor({
                                       <td className="py-2.5 px-3 text-center font-bold font-mono">
                                         {avg !== null ? (
                                           <div className="inline-flex flex-col items-center gap-0.5">
-                                            <span className={`px-2 py-0.5 rounded-lg text-xs ${
-                                              (cons?.finalGrade || avg) >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                            }`}>
-                                              {cons?.finalGrade || avg}%
-                                            </span>
+                                            {(() => {
+                                              const stRank = st?.targetRank || st?.currentRank;
+                                              const stMinScore = getMinPassingScore(stRank, gradeConfig);
+                                              const finalVal = cons?.finalGrade || avg;
+                                              const isStPassed = finalVal >= stMinScore;
+                                              return (
+                                                <>
+                                                  <span className={`px-2 py-0.5 rounded-lg text-xs font-black border ${
+                                                    isStPassed ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'
+                                                  }`}>
+                                                    {finalVal}% {isStPassed ? '✓' : '✗'}
+                                                  </span>
+                                                  <span className="text-[8.5px] text-gray-500 font-sans">
+                                                    mín. {stMinScore}%
+                                                  </span>
+                                                </>
+                                              );
+                                            })()}
                                             {cons?.martialAdjustment ? (
                                               <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
                                                 🥋 {cons.martialAdjustment > 0 ? `+${cons.martialAdjustment}%` : `${cons.martialAdjustment}%`}
@@ -2867,6 +2907,7 @@ export default function TribunalProgressMonitor({
                                               syllabusTechniques={studentSpecificTechs}
                                               consolidation={progressData?.consolidationsByStudent?.[sId] || null}
                                               progressData={progressData}
+                                              gradeConfig={gradeConfig}
                                               onDownloadPdf={handleDownloadCertificateForStudent}
                                               isDownloading={downloadingStudentId === sId}
                                               onRefresh={() => fetchProgress(true)}

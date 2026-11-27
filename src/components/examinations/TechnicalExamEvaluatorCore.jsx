@@ -33,6 +33,8 @@ import {
   Zap
 } from 'lucide-react';
 import { saveEvaluatorAtomicGrade, getCallSchedulesLatest, getEvaluatorGradesForCall, getTribunalProgressForCall } from '../../lib/actions/technicalExams';
+import { getExamGradeConfig } from '../../lib/actions/gradeConfig';
+import { getMinPassingScore } from '../../lib/utils/gradeConfigHelper';
 import { updateStudent } from '../../lib/actions/students';
 import { DEFAULT_TECHNICAL_ASPECTS } from '../../lib/constants/technicalAspects';
 import { KYU_OPTIONS, getBeltBadgeClass, compareStudentsForExam, getRankSortOrder, findSyllabusForStudent } from '../../lib/constants/kyuRanks';
@@ -61,8 +63,19 @@ export default function TechnicalExamEvaluatorCore({
   students = [],
   syllabi = [],
   initialEvaluations = [],
-  isAdmin = false
+  isAdmin = false,
+  gradeConfig: propGradeConfig = null
 }) {
+  const [gradeConfig, setGradeConfig] = useState(() => propGradeConfig || null);
+
+  useEffect(() => {
+    if (!gradeConfig) {
+      getExamGradeConfig().then(res => {
+        if (res?.success && res.config) setGradeConfig(res.config);
+      });
+    }
+  }, [gradeConfig]);
+
   const callId = call?._id || call?.id || '';
   const evaluatorEmail = evaluator?.email || '';
   const safeKeyId = String(callId || '').replace(/[^a-zA-Z0-9_-]/g, '');
@@ -1194,7 +1207,9 @@ export default function TechnicalExamEvaluatorCore({
     const percentage = evaluatedPhases.length > 0
       ? Math.round(evaluatedPhases.reduce((acc, v) => acc + v, 0) / evaluatedPhases.length)
       : (scoreValues.length > 0 ? Math.round((avg / 10) * 100) : 0);
-    const isPassed = percentage >= 70;
+    const targetKyu = student?.targetRank || student?.currentRank;
+    const minPassing = getMinPassingScore(targetKyu, gradeConfig);
+    const isPassed = percentage >= minPassing;
 
     const updatedData = {
       ...prevEval,
@@ -1543,17 +1558,20 @@ export default function TechnicalExamEvaluatorCore({
       ? Math.round(activeScores.reduce((a, b) => a + b, 0) / activeScores.length)
       : (prevEval.percentage || 80);
 
+    const targetKyu = student?.targetRank || student?.currentRank;
+    const minPassing = getMinPassingScore(targetKyu, gradeConfig);
+
     const updatedData = {
       ...prevEval,
       phaseAverages: updatedPhaseAverages,
       phaseAdjustments: updatedPhaseAdjustments,
       phaseScores: updatedPhaseScores,
       percentage: newPercentage,
-      isPassed: newPercentage >= 70
+      isPassed: newPercentage >= minPassing
     };
 
     persistStudentGrade(sId, updatedData, student);
-  }, [evaluationsByStudent, getStudentPhaseSummary, persistStudentGrade]);
+  }, [evaluationsByStudent, getStudentPhaseSummary, persistStudentGrade, gradeConfig]);
 
   // Comparativa colegiada para alertas de discrepancia en fin de fase (Sensei Roy / Tribunal)
   const collegiatePhaseComparison = useMemo(() => {

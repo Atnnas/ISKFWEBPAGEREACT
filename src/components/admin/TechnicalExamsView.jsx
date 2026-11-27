@@ -45,6 +45,7 @@ import {
   Database,
   MessageSquare,
   SlidersHorizontal,
+  Sliders,
   Bot,
   UserPlus,
   FileCheck,
@@ -93,6 +94,9 @@ import {
   transferStudentExamDay
 } from '../../lib/actions/technicalExams';
 import { getExamCostConfig } from '../../lib/actions/examCosts';
+import { getExamGradeConfig } from '../../lib/actions/gradeConfig';
+import { getMinPassingScore, extractBulletText } from '../../lib/utils/gradeConfigHelper';
+import BeltGradeConfigModal from './BeltGradeConfigModal';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import { synthesizePhaseBulletsWithAI, extractAspectScoresFromEvaluations } from '../../lib/utils/martialAiSynthesizer';
 import ConfirmModal from '../ui/ConfirmModal';
@@ -730,8 +734,21 @@ function StudentEvaluationBreakdown({ item, examTechniques = [], onGenerateAI, i
   );
 }
 
-export default function TechnicalExamsView({ initialDojos = [], initialSyllabi = [], currentUser = null, initialExamCosts = null }) {
+export default function TechnicalExamsView({ initialDojos = [], initialSyllabi = [], currentUser = null, initialExamCosts = null, initialGradeConfig = null }) {
   const isInstructor = currentUser?.role === 'editor';
+  const isAdmin = currentUser?.role === 'admin' || !currentUser;
+
+  // Configuración oficial de notas mínimas de aprobación por cinturón
+  const [gradeConfig, setGradeConfig] = useState(() => initialGradeConfig);
+  const [isGradeConfigModalOpen, setIsGradeConfigModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!gradeConfig) {
+      getExamGradeConfig().then(res => {
+        if (res?.success && res.config) setGradeConfig(res.config);
+      });
+    }
+  }, [gradeConfig]);
 
   // Configuración de costos oficiales para el cálculo en vivo de cobros del padrón
   const [costConfig, setCostConfig] = useState(() => initialExamCosts || {
@@ -3398,7 +3415,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       // Kihon Text
       const customKihon = item.consolidation?.customPhaseBullets?.kihon;
       const kihonText = (customKihon && customKihon.length > 0)
-        ? customKihon.map(b => (typeof b === 'string' ? b : b.text)).join('\n')
+        ? customKihon.map(b => extractBulletText(b)).filter(Boolean).join('\n')
         : synthesizePhaseBulletsWithAI({
             phase: 'kihon',
             notesList: kihonNotes,
@@ -3411,7 +3428,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       // Kumite Text
       const customKumite = item.consolidation?.customPhaseBullets?.kumite;
       const kumiteText = (customKumite && customKumite.length > 0)
-        ? customKumite.map(b => (typeof b === 'string' ? b : b.text)).join('\n')
+        ? customKumite.map(b => extractBulletText(b)).filter(Boolean).join('\n')
         : synthesizePhaseBulletsWithAI({
             phase: 'kumite',
             notesList: kumiteNotes,
@@ -3427,7 +3444,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       const customKata = item.consolidation?.customPhaseBullets?.kata;
 
       if (customKata && customKata.length > 0) {
-        resolvedKataText = customKata.map(b => (typeof b === 'string' ? b : b.text)).join('\n');
+        resolvedKataText = customKata.map(b => extractBulletText(b)).filter(Boolean).join('\n');
         katasPayload = [
           { name: kataTechs[0]?.name || 'Kata Oficial', score: kataScore, text: resolvedKataText }
         ];
@@ -3516,6 +3533,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         : (selectedCallForDetail?.examDate || new Date());
       const studentExamDate = formatDateDDMMAAAA(rawStudentExamDate);
 
+      const targetMinPassingScore = getMinPassingScore(targetRankForCert, gradeConfig);
+
       await generateTechnicalExamCertificatePDF({
         studentName: item.student.name,
         dojoName: selectedDojo?.name || 'Kuma',
@@ -3527,7 +3546,8 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         kumiteScore,
         writtenScore,
         finalScore,
-        isPassed: item.isPassed,
+        isPassed: item.isPassed !== undefined ? item.isPassed : (finalScore >= targetMinPassingScore),
+        minPassingScore: targetMinPassingScore,
         kihonText,
         kataText: resolvedKataText,
         kumiteText,
@@ -3661,11 +3681,15 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     });
     if (totalMax === 0) return { pct: 0, points: 0, totalMax: 0, isPassed: false };
     const pct = Math.round((totalScore / totalMax) * 100);
+    const targetStudentObj = students.find(s => (s._id || s.id) === studentId);
+    const targetRankForCalc = targetStudentObj?.targetRank || getNextRank(targetStudentObj?.currentRank) || targetStudentObj?.currentRank || '';
+    const minPassing = getMinPassingScore(targetRankForCalc, gradeConfig);
     return {
       pct,
       points: totalScore,
       totalMax,
-      isPassed: pct >= 70
+      isPassed: pct >= minPassing,
+      minPassing
     };
   };
 
@@ -4119,6 +4143,18 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           <span className="text-gray-400">/</span>
           <span className="text-[#BE1622] font-mono uppercase tracking-wider">Módulo Técnico</span>
         </div>
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setIsGradeConfigModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs border border-slate-700 transition-all cursor-pointer active:scale-95"
+            title="Configuración de notas mínimas de aprobación por cinturón (Exclusivo Administrador)"
+          >
+            <Sliders className="w-3.5 h-3.5 text-amber-400" />
+            <span>Notas Mínimas por Cinturón</span>
+          </button>
+        )}
       </div>
 
       {/* ========================================================================= */}
@@ -5609,6 +5645,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                 students={callEvaluationStudents}
                 syllabi={syllabi}
                 isAdmin={true}
+                gradeConfig={gradeConfig}
               />
             </div>
           )}
@@ -5624,6 +5661,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                   schedules: callTandas.length > 0 ? callTandas : selectedCallForDetail?.schedules
                 }}
                 students={callEvaluationStudents}
+                gradeConfig={gradeConfig}
                 onEditTribunal={() => handleOpenEditTribunal(selectedCallForDetail)}
               />
             </div>
@@ -6974,15 +7012,24 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
                           {/* Examen Total Acumulado */}
                           <td className="py-3.5 px-3 text-center align-middle">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black font-mono border ${
-                              overall.pct >= 70
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                                : overall.pct > 0
-                                ? 'bg-amber-50 text-amber-800 border-amber-300'
-                                : 'bg-gray-100 text-gray-500 border-gray-200'
-                            }`}>
-                              {overall.pct}% {overall.pct >= 70 ? '✓' : ''}
-                            </span>
+                            {overall.pct > 0 ? (
+                              <div className="inline-flex flex-col items-center gap-0.5">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black font-mono border ${
+                                  overall.isPassed
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                    : 'bg-rose-50 text-rose-800 border-rose-300'
+                                }`}>
+                                  {overall.pct}% {overall.isPassed ? '✓ Aprobado' : '✗ Reprobado'}
+                                </span>
+                                {overall.minPassing && (
+                                  <span className="text-[8.5px] font-sans text-gray-500">
+                                    mín. {overall.minPassing}%
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 font-mono text-xs">—</span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -7870,16 +7917,23 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
 
                         {/* Promedio General del Tribunal */}
                         <div className="flex items-center gap-2 self-start sm:self-auto">
-                          <div className={`px-3.5 py-1.5 rounded-xl text-xs font-black font-mono border flex items-center gap-1.5 shadow-2xs ${
-                            item.averagePercentage >= 70
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                              : item.averagePercentage > 0
-                              ? 'bg-amber-50 text-amber-800 border-amber-300'
-                              : 'bg-gray-100 text-gray-500 border-gray-200'
-                          }`}>
-                            <span className="text-sm">{item.averagePercentage}%</span>
-                            <span>{item.averagePercentage >= 70 ? '✓ APROBADO' : item.averagePercentage > 0 ? 'EN EVALUACIÓN' : 'PENDIENTE'}</span>
-                          </div>
+                          {(() => {
+                            const stTarget = activeSyllabus?.targetRank || student.targetRank || getNextRank(student.currentRank) || student.currentRank;
+                            const stMin = getMinPassingScore(stTarget, gradeConfig);
+                            const isPassing = item.averagePercentage >= stMin;
+                            return (
+                              <div className={`px-3.5 py-1.5 rounded-xl text-xs font-black font-mono border flex items-center gap-1.5 shadow-2xs ${
+                                item.averagePercentage > 0
+                                  ? isPassing
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                    : 'bg-rose-50 text-rose-800 border-rose-300'
+                                  : 'bg-gray-100 text-gray-500 border-gray-200'
+                              }`}>
+                                <span className="text-sm">{item.averagePercentage}%</span>
+                                <span>{item.averagePercentage > 0 ? (isPassing ? `✓ APROBADO (≥${stMin}%)` : `✗ REPROBADO (<${stMin}%)`) : 'PENDIENTE'}</span>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -8944,6 +8998,15 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           </div>
         </div>
       )}
+
+      {/* Modal Gráfico de Configuración de Notas Mínimas por Cinturón (Admin) */}
+      <BeltGradeConfigModal
+        isOpen={isGradeConfigModalOpen}
+        onClose={() => setIsGradeConfigModalOpen(false)}
+        initialConfig={gradeConfig}
+        onConfigSaved={(updatedConf) => setGradeConfig(updatedConf)}
+        isAdmin={isAdmin}
+      />
 
       {/* Modales Genéricos en Página */}
       <ConfirmModal

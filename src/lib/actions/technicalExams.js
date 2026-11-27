@@ -8,6 +8,7 @@ import TechnicalExamEvaluation from '../../models/TechnicalExamEvaluation';
 import TechnicalExamConsolidation from '../../models/TechnicalExamConsolidation';
 import TechnicalExamCall from '../../models/TechnicalExamCall';
 import ExamSyllabus from '../../models/ExamSyllabus';
+import ExamGradeConfig from '../../models/ExamGradeConfig';
 import Student from '../../models/Student';
 import Dojo from '../../models/Dojo';
 import { auth } from '../../auth';
@@ -20,6 +21,7 @@ import {
 import { synthesizePhaseBulletsWithAI } from '../utils/martialAiSynthesizer';
 import { getNextRank, compareStudentsForExam, isSameRank, findSyllabusForStudent, getKatasFromSyllabus } from '../constants/kyuRanks';
 import { getExamCostConfig } from './examCosts';
+import { getMinPassingScore, extractBulletText } from '../utils/gradeConfigHelper';
 
 /**
  * Obtener evaluaciones técnicas de un dojo específico (para Padrón y Tatami)
@@ -536,9 +538,18 @@ TU TAREA OBLIGATORIA:
     });
 
     const combinedList = [];
-    synK.forEach(b => combinedList.push(`* ${b.text}`));
-    synKa.forEach(b => combinedList.push(`* ${b.text}`));
-    synKu.forEach(b => combinedList.push(`* ${b.text}`));
+    synK.forEach(b => {
+      const txt = extractBulletText(b);
+      if (txt && txt !== '[object Object]') combinedList.push(`* ${txt}`);
+    });
+    synKa.forEach(b => {
+      const txt = extractBulletText(b);
+      if (txt && txt !== '[object Object]') combinedList.push(`* ${txt}`);
+    });
+    synKu.forEach(b => {
+      const txt = extractBulletText(b);
+      if (txt && txt !== '[object Object]') combinedList.push(`* ${txt}`);
+    });
 
     // Si aún con todo no hubo viñetas (ej: todas las técnicas en 100% y sin notas), emitir directiva oficial 100%
     if (combinedList.length === 0) {
@@ -652,7 +663,15 @@ export async function saveConsolidatedVerdict({
       ? Number(martialAdjustment)
       : (finalOverall - baseTechnicalScore);
 
-    const passed = isPassed !== undefined ? Boolean(isPassed) : (finalOverall >= 70);
+    let minPassingScore = 70;
+    try {
+      const gConf = await ExamGradeConfig.findOne().lean();
+      minPassingScore = getMinPassingScore(targetRank, gConf);
+    } catch {
+      minPassingScore = 70;
+    }
+
+    const passed = isPassed !== undefined ? Boolean(isPassed) : (finalOverall >= minPassingScore);
 
     const updateData = {
       ...(callId && mongoose.Types.ObjectId.isValid(callId) ? { callId: new mongoose.Types.ObjectId(callId) } : {}),
@@ -2583,6 +2602,14 @@ export async function saveEvaluatorAtomicGrade({
       }
     }
 
+    let minPassingScore = 70;
+    try {
+      const gConf = await ExamGradeConfig.findOne().lean();
+      minPassingScore = getMinPassingScore(student.targetRank || student.currentRank, gConf);
+    } catch {
+      minPassingScore = 70;
+    }
+
     const payload = {
       ...(safeCallId ? { callId: safeCallId } : {}),
       studentId: student._id,
@@ -2602,7 +2629,7 @@ export async function saveEvaluatorAtomicGrade({
       percentage: Math.max(0, Math.min(100, Math.round(Number(calculatedPercentage) || 0))),
       pointsEarned: Math.max(0, Math.min(5000, Number(pointsEarned) || 0)),
       pointsPossible: Math.max(0, Math.min(5000, Number(pointsPossible) || 0)),
-      isPassed: calculatedPercentage > 0 ? (calculatedPercentage >= 70) : Boolean(isPassed),
+      isPassed: calculatedPercentage > 0 ? (calculatedPercentage >= minPassingScore) : Boolean(isPassed),
       evaluatorName: safeEvaluatorName,
       evaluatorEmail: safeEmail,
       finalComments: typeof finalComments === 'string' && finalComments.trim() ? finalComments.trim().substring(0, 3000) : (existing?.finalComments || ''),
@@ -2775,6 +2802,7 @@ export async function getTribunalProgressForCall(params) {
     if (expectedKata === 0) expectedKata = 1;
     if (expectedKumite === 0) expectedKumite = 1;
     const totalExpectedTechniques = expectedKihon + expectedKata + expectedKumite;
+    const gradeConfigDoc = await ExamGradeConfig.findOne().lean();
 
     const progressByEvaluator = await Promise.all(configuredEvaluators.map(async (ev) => {
       const cleanEmail = String(ev.email || '').trim().toLowerCase();
@@ -2879,12 +2907,17 @@ export async function getTribunalProgressForCall(params) {
 
         phaseAverages.total = balancedPercentage;
 
+        const studentObj = (call.students || []).find(s => (s._id || s.id)?.toString() === stId);
+        const studentRank = studentObj?.targetRank || studentObj?.currentRank || item.studentRank || '10° Kyu (Cinta Blanca)';
+        const minPassingScore = getMinPassingScore(studentRank, gradeConfigDoc);
+
         evaluationsByStudent[stId] = {
           id: item._id.toString(),
           studentId: stId,
           studentName: item.studentName,
           percentage: balancedPercentage,
-          isPassed: balancedPercentage >= 70,
+          isPassed: balancedPercentage >= minPassingScore,
+          minPassingScore,
           scoresCount: scCount,
           scores: item.scores || {},
           techniqueAverages: item.techniqueAverages || {},
@@ -2925,7 +2958,7 @@ export async function getTribunalProgressForCall(params) {
           }
         };
         totalPercentage += balancedPercentage;
-        if (balancedPercentage >= 70) passedCount += 1;
+        if (balancedPercentage >= minPassingScore) passedCount += 1;
 
         if (!lastEvaluatedAt || new Date(item.evaluatedAt) > new Date(lastEvaluatedAt)) {
           lastEvaluatedAt = item.evaluatedAt ? item.evaluatedAt.toISOString() : null;
@@ -3146,6 +3179,7 @@ export async function getTribunalProgressForCall(params) {
       syllabusAspects: (cleanCallSyllabusSnapshots?.[0]?.technicalAspects || []),
       syllabiSnapshots,
       allSyllabi: cleanAllDbSyllabi,
+      gradeConfig: gradeConfigDoc,
       consolidationsByStudent,
       aspirants: aspirantsList.sort(compareStudentsForExam),
       progressByEvaluator,

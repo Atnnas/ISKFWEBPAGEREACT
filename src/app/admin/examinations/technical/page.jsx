@@ -4,6 +4,7 @@ import TechnicalExamsView from "../../../../components/admin/TechnicalExamsView"
 import { getDojosForSelector } from "../../../../lib/actions/students";
 import { getExamSyllabi } from "../../../../lib/actions/syllabi";
 import { getExamCostConfig } from "../../../../lib/actions/examCosts";
+import { getExamGradeConfig } from "../../../../lib/actions/gradeConfig";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -20,10 +21,11 @@ export default async function AdminTechnicalExamsPage() {
     redirect('/');
   }
 
-  const [initialDojos, initialSyllabi, costRes] = await Promise.all([
+  const [initialDojos, initialSyllabi, costRes, gradeRes] = await Promise.all([
     getDojosForSelector(),
     getExamSyllabi(),
-    getExamCostConfig()
+    getExamCostConfig(),
+    getExamGradeConfig()
   ]);
 
   return (
@@ -33,6 +35,7 @@ export default async function AdminTechnicalExamsPage() {
         initialSyllabi={initialSyllabi} 
         currentUser={session.user} 
         initialExamCosts={costRes?.config}
+        initialGradeConfig={gradeRes?.config}
       />
     </div>
   );

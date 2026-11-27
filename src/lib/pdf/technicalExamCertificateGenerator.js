@@ -45,6 +45,7 @@ export async function generateTechnicalExamCertificatePDF({
   positiveText = '',
   finalComments = '',
   _generalComment = '',
+  minPassingScore = 70,
   evaluators = []
 }) {
   // El promedio colegiado técnico base debe ser estrictamente el promedio entre las tres fases finales: Kihon, Kata y Kumite
@@ -57,7 +58,8 @@ export async function generateTechnicalExamCertificatePDF({
 
   const adj = Number(martialAdjustment) || 0;
   const resolvedFinalScore = Math.min(100, Math.max(0, Math.round(baseTechnicalScore + adj)));
-  const resolvedIsPassed = isPassed !== null ? isPassed : (resolvedFinalScore >= 70);
+  const resolvedMinPassingScore = Number(minPassingScore) || 70;
+  const resolvedIsPassed = isPassed !== null ? Boolean(isPassed) : (resolvedFinalScore >= resolvedMinPassingScore);
 
   const jsPdfModule = await import('jspdf');
   const JsPDF = jsPdfModule.jsPDF || jsPdfModule.default?.jsPDF || jsPdfModule.default;
@@ -239,7 +241,7 @@ export async function generateTechnicalExamCertificatePDF({
   // Resultado (Con espacio generoso de 26mm - cero colisiones)
   doc.setFontSize(8.5);
   doc.setTextColor(...(resolvedIsPassed ? COLOR_GREEN_PASS : COLOR_RED_FAIL));
-  doc.text(resolvedIsPassed ? 'APROBADO' : 'PENDIENTE', cols[6].x + cols[6].w / 2, dataRowY + 5.1, { align: 'center' });
+  doc.text(resolvedIsPassed ? 'APROBADO' : 'REPROBADO', cols[6].x + cols[6].w / 2, dataRowY + 5.1, { align: 'center' });
 
   // Nuevo Grado (Con espacio generoso de 26mm - cero colisiones)
   doc.setFontSize(8.0);
@@ -271,19 +273,39 @@ export async function generateTechnicalExamCertificatePDF({
   doc.setTextColor(255, 255, 255);
   doc.text('PUNTOS A MEJORAR POR FASE', 105, secTitleY + 4.5, { align: 'center' });
 
-  // Parsear notas en viñetas limpias para cada fase
-  function parsePhaseBullets(notesText) {
-    const rawLines = String(notesText || '')
-      .split('\n')
-      .map(l => l.trim())
-      .filter(l => l.length > 0);
+  // Parsear notas en viñetas limpias para cada fase, blindado contra [object Object]
+  function parsePhaseBullets(notesInput) {
+    let rawLines = [];
+    if (Array.isArray(notesInput)) {
+      rawLines = notesInput
+        .map(item => {
+          if (!item) return '';
+          if (typeof item === 'string') return item.trim();
+          if (typeof item.text === 'string') return item.text.trim();
+          if (typeof item.bullet === 'string') return item.bullet.trim();
+          if (typeof item.directive === 'string') return item.directive.trim();
+          if (typeof item.note === 'string') return item.note.trim();
+          if (typeof item.observation === 'string') return item.observation.trim();
+          return '';
+        })
+        .filter(l => l && l !== '[object Object]' && l.length > 0);
+    } else if (typeof notesInput === 'object' && notesInput !== null) {
+      rawLines = Object.values(notesInput)
+        .map(val => (typeof val === 'string' ? val.trim() : (val?.text || val?.observation || '')))
+        .filter(l => l && l !== '[object Object]' && l.length > 0);
+    } else {
+      rawLines = String(notesInput || '')
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 0 && l !== '[object Object]');
+    }
 
     const bulletPoints = [];
     rawLines.forEach(l => {
       const sentences = l.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 10);
       sentences.forEach(s => {
         const cleanS = s.replace(/^[•\s*-]+/, '').replace(/^ajuste t[eé]cnico:?\s*/i, '').trim();
-        if (cleanS && !bulletPoints.includes(cleanS)) {
+        if (cleanS && cleanS !== '[object Object]' && !bulletPoints.includes(cleanS)) {
           bulletPoints.push(cleanS);
         }
       });
