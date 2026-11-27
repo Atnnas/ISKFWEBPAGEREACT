@@ -53,8 +53,8 @@ export async function generateTechnicalExamCertificatePDF({
   const baseTechnicalScore = technicalScore !== null && typeof technicalScore === 'number'
     ? technicalScore
     : (phaseScores.length > 0
-        ? Math.round(phaseScores.reduce((a, b) => a + b, 0) / phaseScores.length)
-        : (finalScore || 80));
+      ? Math.round(phaseScores.reduce((a, b) => a + b, 0) / phaseScores.length)
+      : (finalScore || 80));
 
   const adj = Number(martialAdjustment) || 0;
   const resolvedFinalScore = Math.min(100, Math.max(0, Math.round(baseTechnicalScore + adj)));
@@ -554,20 +554,20 @@ export async function generateTechnicalExamCertificatePDF({
   const cleanPositiveText = (positiveText || '').trim();
   const rawBullets = cleanPositiveText
     ? cleanPositiveText
-        .split('\n')
-        .map(b => b.trim())
-        .map(b => b
-          .replace(/^[•\s*-]+/, '')
-          .replace(/^observaciones directas del [^:]+:?\s*/i, '')
-          .replace(/^observaciones directas de [^:]+:?\s*/i, '')
-          .replace(/\s*\([^)]*tribunal[^)]*\):?/gi, ':')
-          .replace(/\s*\([^)]*profesores[^)]*\):?/gi, ':')
-          .trim()
-        )
-        .filter(b => b.length > 0)
+      .split('\n')
+      .map(b => b.trim())
+      .map(b => b
+        .replace(/^[•\s*-]+/, '')
+        .replace(/^observaciones directas del [^:]+:?\s*/i, '')
+        .replace(/^observaciones directas de [^:]+:?\s*/i, '')
+        .replace(/\s*\([^)]*tribunal[^)]*\):?/gi, ':')
+        .replace(/\s*\([^)]*profesores[^)]*\):?/gi, ':')
+        .trim()
+      )
+      .filter(b => b.length > 0)
     : [
-        'Demuestra disciplina, respeto y actitud positiva constante dentro del dojo.'
-      ];
+      'Demuestra disciplina, respeto y actitud positiva constante dentro del dojo.'
+    ];
 
   // Medir altura requerida para que el contenedor de Aspectos Positivos ajuste dinámicamente al contenido
   doc.setFont('helvetica', 'normal');
@@ -738,9 +738,9 @@ export async function generateTechnicalExamCertificatePDF({
   const finalEvaluators = Array.isArray(evaluators) && evaluators.length > 0
     ? evaluators
     : [
-        { name: 'Sensei Roy Gatjens' },
-        { name: 'Sensei Andrea Maroto' }
-      ];
+      { name: 'Sensei Roy Gatjens' },
+      { name: 'Sensei Andrea Maroto' }
+    ];
 
   let evalTextY = signSecY + 12.0;
   finalEvaluators.slice(0, 5).forEach((ev) => {

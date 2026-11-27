@@ -48,6 +48,7 @@ const getSidebarServerSnapshot = () => false;
 
 export default function AdminLayoutShell({ children, user }) {
   const pathname = usePathname();
+  const isAdmin = user?.role === 'admin';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openSubmenus, setOpenSubmenus] = useState({
     'Administración Dojo': true,
@@ -243,6 +244,7 @@ export default function AdminLayoutShell({ children, user }) {
             { label: 'Temarios Exámenes Técnicos', href: '/admin/examinations/syllabi' },
             { label: 'Convocatorias de Examen Técnico', href: '/admin/examinations/technical', exact: true },
             { label: 'Configuración de Costos', href: '/admin/examinations/costs' },
+            { label: 'Notas Mínimas por Cinturón', href: '/admin/examinations/grades', adminOnly: true },
           ]
         },
       ]
@@ -357,7 +359,7 @@ export default function AdminLayoutShell({ children, user }) {
 
                                 {isThisOpen && (
                                   <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-[#2D2E83]/20 ml-3">
-                                    {sub.nestedLinks.map((nested) => {
+                                    {sub.nestedLinks.filter(nested => !nested.adminOnly || isAdmin).map((nested) => {
                                       const nestedActive = isActive(nested.href, nested.exact);
                                       return (
                                         <Link
@@ -543,7 +545,7 @@ export default function AdminLayoutShell({ children, user }) {
 
                               {isThisOpen && (
                                 <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-[#2D2E83]/20 ml-3 animate-in fade-in duration-150">
-                                  {sub.nestedLinks.map((nested) => {
+                                  {sub.nestedLinks.filter(nested => !nested.adminOnly || isAdmin).map((nested) => {
                                     const nestedActive = isActive(nested.href, nested.exact);
                                     return (
                                       <Link

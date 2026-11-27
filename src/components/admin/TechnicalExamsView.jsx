@@ -96,7 +96,6 @@ import {
 import { getExamCostConfig } from '../../lib/actions/examCosts';
 import { getExamGradeConfig } from '../../lib/actions/gradeConfig';
 import { getMinPassingScore, extractBulletText } from '../../lib/utils/gradeConfigHelper';
-import BeltGradeConfigModal from './BeltGradeConfigModal';
 import { generateTechnicalExamCertificatePDF } from '../../lib/pdf/technicalExamCertificateGenerator';
 import { synthesizePhaseBulletsWithAI, extractAspectScoresFromEvaluations } from '../../lib/utils/martialAiSynthesizer';
 import ConfirmModal from '../ui/ConfirmModal';
@@ -736,11 +735,10 @@ function StudentEvaluationBreakdown({ item, examTechniques = [], onGenerateAI, i
 
 export default function TechnicalExamsView({ initialDojos = [], initialSyllabi = [], currentUser = null, initialExamCosts = null, initialGradeConfig = null }) {
   const isInstructor = currentUser?.role === 'editor';
-  const isAdmin = currentUser?.role === 'admin' || !currentUser;
+  const _isAdmin = currentUser?.role === 'admin' || !currentUser;
 
   // Configuración oficial de notas mínimas de aprobación por cinturón
   const [gradeConfig, setGradeConfig] = useState(() => initialGradeConfig);
-  const [isGradeConfigModalOpen, setIsGradeConfigModalOpen] = useState(false);
 
   useEffect(() => {
     if (!gradeConfig) {
@@ -4143,18 +4141,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           <span className="text-gray-400">/</span>
           <span className="text-[#BE1622] font-mono uppercase tracking-wider">Módulo Técnico</span>
         </div>
-
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => setIsGradeConfigModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs border border-slate-700 transition-all cursor-pointer active:scale-95"
-            title="Configuración de notas mínimas de aprobación por cinturón (Exclusivo Administrador)"
-          >
-            <Sliders className="w-3.5 h-3.5 text-amber-400" />
-            <span>Notas Mínimas por Cinturón</span>
-          </button>
-        )}
       </div>
 
       {/* ========================================================================= */}
@@ -8998,15 +8984,6 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           </div>
         </div>
       )}
-
-      {/* Modal Gráfico de Configuración de Notas Mínimas por Cinturón (Admin) */}
-      <BeltGradeConfigModal
-        isOpen={isGradeConfigModalOpen}
-        onClose={() => setIsGradeConfigModalOpen(false)}
-        initialConfig={gradeConfig}
-        onConfigSaved={(updatedConf) => setGradeConfig(updatedConf)}
-        isAdmin={isAdmin}
-      />
 
       {/* Modales Genéricos en Página */}
       <ConfirmModal

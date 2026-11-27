@@ -85,6 +85,8 @@ export async function saveExamGradeConfig({ defaultMinScore = 70, ranks = [] }) 
     await config.save();
 
     revalidatePath('/admin/examinations');
+    revalidatePath('/admin/examinations/grades');
+    revalidatePath('/admin/examinations/technical');
     revalidatePath('/examinations');
 
     return {
