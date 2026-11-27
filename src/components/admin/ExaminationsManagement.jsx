@@ -546,12 +546,15 @@ export default function ExaminationsManagement({
     });
   };
 
+  const [togglingSessionId, setTogglingSessionId] = useState(null);
+
   const handleToggleStatus = async (sessionId, e) => {
     e?.stopPropagation();
+    setTogglingSessionId(sessionId);
     try {
       const res = await toggleExaminationSessionStatus(sessionId);
       if (res.success) {
-        setSessions(sessions.map(s => {
+        setSessions(prev => prev.map(s => {
           if (s.id === sessionId || s._id === sessionId) {
             return { ...s, status: res.status };
           }
@@ -560,6 +563,8 @@ export default function ExaminationsManagement({
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setTogglingSessionId(null);
     }
   };
 
@@ -951,20 +956,41 @@ export default function ExaminationsManagement({
                             </div>
                           </td>
 
-                          {/* Col 4: Estado */}
+                          {/* Col 4: Estado (Toggle Switch Abierta / Cerrada) */}
                           <td className="py-4 px-4 align-middle text-center">
-                            <button
-                              onClick={(e) => handleToggleStatus(sess.id || sess._id, e)}
-                              className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer ${
+                            <div className="inline-flex flex-col items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={sess.status === 'active'}
+                                onClick={(e) => handleToggleStatus(sess.id || sess._id, e)}
+                                disabled={togglingSessionId === (sess.id || sess._id)}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#2D2E83] focus:ring-offset-1 select-none disabled:opacity-60 ${
+                                  sess.status === 'active' ? 'bg-emerald-600' : 'bg-gray-300'
+                                }`}
+                                title={`Convocatoria ${sess.status === 'active' ? 'Abierta (Clic para cerrar)' : 'Cerrada (Clic para abrir)'}`}
+                              >
+                                <span
+                                  className={`pointer-events-none flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                    sess.status === 'active' ? 'translate-x-5' : 'translate-x-0'
+                                  }`}
+                                >
+                                  {togglingSessionId === (sess.id || sess._id) ? (
+                                    <Loader2 className="w-3 h-3 text-[#2D2E83] animate-spin" />
+                                  ) : (
+                                    <span className={`w-1.5 h-1.5 rounded-full ${sess.status === 'active' ? 'bg-emerald-600' : 'bg-gray-400'}`} />
+                                  )}
+                                </span>
+                              </button>
+
+                              <span className={`text-[10px] font-black uppercase tracking-wider font-mono px-2 py-0.5 rounded-md border shadow-2xs ${
                                 sess.status === 'active'
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
-                                  : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
-                              }`}
-                              title="Clic para alternar Activa / Cerrada"
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full ${sess.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                              <span>{sess.status === 'active' ? 'Activa' : 'Cerrada'}</span>
-                            </button>
+                                  ? 'text-emerald-800 bg-emerald-50 border-emerald-300'
+                                  : 'text-gray-600 bg-gray-100 border-gray-200'
+                              }`}>
+                                {sess.status === 'active' ? 'Abierta' : 'Cerrada'}
+                              </span>
+                            </div>
                           </td>
 
                           {/* Col 5: Entregas */}

@@ -1378,6 +1378,8 @@ export async function toggleExaminationSessionStatus(sessionId) {
     await session.save();
 
     revalidatePath('/admin/examinations');
+    revalidatePath('/admin/examinations/written');
+    revalidatePath('/examinations');
     return { success: true, status: session.status };
   } catch (err) {
     console.error("Error toggling session status:", err);
