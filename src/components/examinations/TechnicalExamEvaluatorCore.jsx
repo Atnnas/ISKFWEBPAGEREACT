@@ -3128,40 +3128,13 @@ export default function TechnicalExamEvaluatorCore({
                       title="Haga clic para abrir el selector de fecha"
                     >
                       <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-                      Nacimiento (DD/MM/AAAA)
+                      Nacimiento (Date Picker)
                     </span>
                   </label>
                   <div className="relative flex items-center">
                     <input
-                      type="text"
-                      maxLength={10}
-                      value={editStudentForm.birthDate}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, '');
-                        let formatted = raw;
-                        if (raw.length > 4) {
-                          formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}/${raw.slice(4, 8)}`;
-                        } else if (raw.length > 2) {
-                          formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
-                        }
-                        setEditStudentForm(prev => ({ ...prev, birthDate: formatted }));
-                      }}
-                      placeholder="DD/MM/AAAA (ej. 20/02/1995)"
-                      className="w-full pl-4 pr-11 py-2.5 bg-gray-50 border border-gray-300 focus:border-indigo-600 focus:bg-white rounded-xl text-xs md:text-sm font-mono font-bold text-gray-900 transition-all placeholder:text-gray-400 placeholder:font-sans"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleOpenDatePicker}
-                      title="Abrir selector de fecha (date picker)"
-                      className="absolute right-2 p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Calendar className="w-4 h-4 text-indigo-600" />
-                    </button>
-                    {/* Input date nativo para el popup interactivo del date picker */}
-                    <input
                       ref={birthDatePickerRef}
                       type="date"
-                      tabIndex={-1}
                       value={toIsoDate(editStudentForm.birthDate)}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -3174,12 +3147,16 @@ export default function TechnicalExamEvaluatorCore({
                           setEditStudentForm(prev => ({ ...prev, birthDate: `${parts[2]}/${parts[1]}/${parts[0]}` }));
                         }
                       }}
-                      className="sr-only pointer-events-none"
-                      aria-hidden="true"
+                      onClick={(e) => {
+                        if (typeof e.target.showPicker === 'function') {
+                          try { e.target.showPicker(); } catch { /* ignore */ }
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 focus:border-indigo-600 focus:bg-white rounded-xl text-xs sm:text-sm font-semibold text-gray-900 transition-all cursor-pointer shadow-2xs"
                     />
                   </div>
                   <p className="text-[10px] text-gray-500 font-medium">
-                    Haga clic en el icono de calendario para elegir fecha o escriba DD/MM/AAAA.
+                    Haga clic en el campo para desplegar el selector de fecha (calendario).
                   </p>
                 </div>
 

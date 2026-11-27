@@ -138,21 +138,23 @@ export function toCostaRicaDate(val) {
 
 export function toIsoDate(val) {
   if (!val || val === 'No registrada' || val === 'No indicada') return '';
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
   const str = String(val).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   if (str.includes('T')) {
     return str.split('T')[0];
   }
-  const match = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (match) {
-    let p1 = match[1];
-    let p2 = match[2];
-    const year = match[3];
-    // Si viene MM/DD/AAAA
-    if (parseInt(p1, 10) <= 12 && parseInt(p2, 10) > 12) {
-      return `${year}-${p1.padStart(2, '0')}-${p2.padStart(2, '0')}`;
-    }
-    return `${year}-${p2.padStart(2, '0')}-${p1.padStart(2, '0')}`;
+  const parsed = parseCustomDate(str);
+  if (parsed && !isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
   return '';
 }

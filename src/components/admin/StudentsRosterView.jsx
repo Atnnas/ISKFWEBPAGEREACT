@@ -208,16 +208,6 @@ export default function StudentsRosterView({
     }
   };
 
-  const handleNativeDateChange = (e) => {
-    const val = e.target.value;
-    if (!val) {
-      setStudentFormData(prev => ({ ...prev, birthDate: '' }));
-      return;
-    }
-    const cr = toCostaRicaDate(val);
-    setStudentFormData(prev => ({ ...prev, birthDate: cr }));
-  };
-
   // Guardar Estudiante
   const handleSaveStudent = async (e) => {
     e.preventDefault();
@@ -905,9 +895,13 @@ export default function StudentsRosterView({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                    <span
+                      onClick={handleOpenDatePicker}
+                      className="flex items-center gap-1.5 cursor-pointer hover:text-[#2D2E83] transition-colors"
+                      title="Abrir selector de fecha"
+                    >
                       <Calendar className="w-3.5 h-3.5 text-[#2D2E83]" />
-                      Nacimiento (dd/mm/aaaa)
+                      Nacimiento (Date Picker)
                     </span>
                     {calculateAge(studentFormData.birthDate) !== null && (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
@@ -917,39 +911,26 @@ export default function StudentsRosterView({
                   </label>
                   <div className="relative flex items-center">
                     <input
-                      type="text"
-                      maxLength={10}
-                      value={studentFormData.birthDate}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, '');
-                        let formatted = raw;
-                        if (raw.length > 4) {
-                          formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}/${raw.slice(4, 8)}`;
-                        } else if (raw.length > 2) {
-                          formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
-                        }
-                        setStudentFormData(prev => ({ ...prev, birthDate: formatted }));
-                      }}
-                      placeholder="DD/MM/AAAA (ej: 15/04/2012)"
-                      className="w-full pl-3 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs md:text-sm font-mono font-bold text-gray-900 focus:bg-white focus:border-[#2D2E83] focus:outline-none transition-colors placeholder:text-gray-400 placeholder:font-sans"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleOpenDatePicker}
-                      title="Abrir selector de fecha (date picker)"
-                      className="absolute right-2 p-1.5 text-gray-500 hover:text-[#2D2E83] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Calendar className="w-4 h-4 text-[#2D2E83]" />
-                    </button>
-                    {/* Input date nativo para el popup interactivo del date picker */}
-                    <input
                       ref={birthDatePickerRef}
                       type="date"
-                      tabIndex={-1}
                       value={toIsoDate(studentFormData.birthDate)}
-                      onChange={handleNativeDateChange}
-                      className="sr-only pointer-events-none"
-                      aria-hidden="true"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) {
+                          setStudentFormData(prev => ({ ...prev, birthDate: '' }));
+                          return;
+                        }
+                        const parts = val.split('-');
+                        if (parts.length === 3) {
+                          setStudentFormData(prev => ({ ...prev, birthDate: `${parts[2]}/${parts[1]}/${parts[0]}` }));
+                        }
+                      }}
+                      onClick={(e) => {
+                        if (typeof e.target.showPicker === 'function') {
+                          try { e.target.showPicker(); } catch { /* ignore */ }
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs sm:text-sm font-semibold text-gray-900 focus:bg-white focus:border-[#2D2E83] focus:outline-none transition-colors cursor-pointer shadow-2xs"
                     />
                   </div>
                   <p className="text-[10px] text-gray-400 mt-1">

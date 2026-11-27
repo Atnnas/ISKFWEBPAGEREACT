@@ -7365,42 +7365,19 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-black uppercase tracking-wider text-gray-700 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                    <span
+                      onClick={handleOpenDatePicker}
+                      className="flex items-center gap-1.5 cursor-pointer hover:text-[#2D2E83] transition-colors"
+                      title="Abrir selector de fecha"
+                    >
                       <Calendar className="w-3.5 h-3.5 text-[#2D2E83]" />
-                      Nacimiento (DD/MM/AAAA) (Opcional)
+                      Nacimiento (Date Picker) (Opcional)
                     </span>
                   </label>
                   <div className="relative flex items-center">
                     <input
-                      type="text"
-                      maxLength={10}
-                      value={studentBirthDate}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, '');
-                        let formatted = raw;
-                        if (raw.length > 4) {
-                          formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}/${raw.slice(4, 8)}`;
-                        } else if (raw.length > 2) {
-                          formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
-                        }
-                        setStudentBirthDate(formatted);
-                      }}
-                      placeholder="DD/MM/AAAA (ej. 20/02/1995)"
-                      className="w-full pl-4 pr-11 py-2.5 bg-gray-50 border border-gray-300 focus:border-[#2D2E83] focus:bg-white rounded-xl text-xs md:text-sm font-mono font-bold text-gray-900 transition-all placeholder:text-gray-400 placeholder:font-sans"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleOpenDatePicker}
-                      title="Abrir selector de fecha (date picker)"
-                      className="absolute right-2 p-1.5 text-gray-500 hover:text-[#2D2E83] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Calendar className="w-4 h-4 text-[#2D2E83]" />
-                    </button>
-                    {/* Input date nativo para el popup interactivo del date picker */}
-                    <input
                       ref={birthDatePickerRef}
                       type="date"
-                      tabIndex={-1}
                       value={toIsoDate(studentBirthDate)}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -7413,8 +7390,12 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                           setStudentBirthDate(`${parts[2]}/${parts[1]}/${parts[0]}`);
                         }
                       }}
-                      className="sr-only pointer-events-none"
-                      aria-hidden="true"
+                      onClick={(e) => {
+                        if (typeof e.target.showPicker === 'function') {
+                          try { e.target.showPicker(); } catch { /* ignore */ }
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 focus:border-[#2D2E83] focus:bg-white rounded-xl text-xs sm:text-sm font-semibold text-gray-900 transition-all cursor-pointer shadow-2xs"
                     />
                   </div>
                 </div>
