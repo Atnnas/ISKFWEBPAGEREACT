@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ShieldAlert, ChevronLeft, Lock } from 'lucide-react';
 import { auth } from '../../../../auth';
 import { getExamCallForEvaluator } from '../../../../lib/actions/technicalExams';
+import { getExamGradeConfig } from '../../../../lib/actions/gradeConfig';
 import TechnicalExamEvaluatorCore from '../../../../components/examinations/TechnicalExamEvaluatorCore';
 
 export const dynamic = 'force-dynamic';
@@ -17,10 +18,13 @@ export default async function EvaluatorTatamiPage({ params }) {
   const resolvedParams = await params;
   const { callToken, senseiToken } = resolvedParams || {};
 
-  const result = await getExamCallForEvaluator({
-    accessToken: callToken,
-    evaluatorToken: senseiToken,
-  });
+  const [result, gradeRes] = await Promise.all([
+    getExamCallForEvaluator({
+      accessToken: callToken,
+      evaluatorToken: senseiToken,
+    }),
+    getExamGradeConfig()
+  ]);
 
   if (!result.success || !result.call) {
     return (
@@ -142,6 +146,7 @@ export default async function EvaluatorTatamiPage({ params }) {
         syllabi={result.syllabi || []}
         initialEvaluations={result.evaluations || []}
         isAdmin={isUserAdmin}
+        gradeConfig={gradeRes?.config}
       />
     </div>
   );

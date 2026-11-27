@@ -2774,11 +2774,17 @@ export default function TechnicalExamEvaluatorCore({
                 const hasGap = Boolean(alertInfo?.hasGapAlert);
                 const topForSenseis = collegiatePhaseComparison?.studentTopFor?.[sId] || [];
 
+                const stTarget = student?.targetRank || student?.currentRank;
+                const minPassingGrade = getMinPassingScore(stTarget, gradeConfig);
+                const isPassedPhase = summary.finalScore >= minPassingGrade;
+
                 return (
                   <div
                     key={sId}
                     className={`p-4 sm:p-5 rounded-2xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm ${
-                      hasGap
+                      !isPassedPhase
+                        ? 'bg-rose-50/70 border-2 border-rose-400 shadow-md shadow-rose-500/10'
+                        : hasGap
                         ? 'bg-amber-50/90 border-2 border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-300/60'
                         : 'bg-slate-50 border border-slate-200/90 hover:border-slate-300'
                     }`}
@@ -2850,8 +2856,19 @@ export default function TechnicalExamEvaluatorCore({
                         ▼
                       </button>
 
-                      <div className="w-20 sm:w-22 text-center font-mono text-2xl sm:text-3xl font-black text-[#2D2E83] select-none tracking-tight">
-                        {summary.finalScore}%
+                      <div className="flex flex-col items-center justify-center gap-1 min-w-[90px] sm:min-w-[110px]">
+                        <div className={`w-20 sm:w-22 text-center font-mono text-2xl sm:text-3xl font-black select-none tracking-tight ${
+                          isPassedPhase ? 'text-[#2D2E83]' : 'text-rose-600'
+                        }`}>
+                          {summary.finalScore}%
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-black uppercase tracking-wider border shadow-2xs ${
+                          isPassedPhase 
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
+                            : 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'
+                        }`}>
+                          {isPassedPhase ? 'Aprobado' : `Reprobado (< ${minPassingGrade}%)`}
+                        </span>
                       </div>
 
                       <button
