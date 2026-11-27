@@ -1030,9 +1030,28 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
       return 0;
     };
 
+    let latestTime = 0;
+    examCalls.forEach(c => {
+      const t = getTimestamp(c);
+      if (t > latestTime) latestTime = t;
+    });
+
+    const isPastCall = (call) => {
+      if (call.status === 'cerrado') return true;
+      if (call.examDate) {
+        const d = parseCustomDate(call.examDate);
+        if (d) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (d < today) return true;
+        }
+      }
+      return false;
+    };
+
     const filtered = examCalls.filter(matchesSearch);
-    const active = filtered.filter(c => c.status !== 'cerrado').sort(sortFn);
-    const past = filtered.filter(c => c.status === 'cerrado').sort(sortFn);
+    const active = filtered.filter(c => !isPastCall(c)).sort(sortFn);
+    const past = filtered.filter(c => isPastCall(c)).sort(sortFn);
 
     return { activeTechCalls: active, pastTechCalls: past, totalFilteredTechCalls: filtered.length };
   }, [examCalls, techCallSearchQuery, techCallSortOrder]);

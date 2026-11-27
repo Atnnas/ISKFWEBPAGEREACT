@@ -337,20 +337,23 @@ export default function PublicTandasLiveView({
 
         {/* 3. SELECTOR DE DÍAS (SI ES MULTIDÍA) Y BUSCADOR ÁGIL */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Selector de Días con Exclusión Mutua */}
+          {/* Selector de Días con Exclusión Mutua (Más grande y visible) */}
           {call?.isMultiDay ? (
-            <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-bold shadow-inner">
+            <div className="flex items-center gap-2 p-1.5 sm:p-2 bg-slate-950 rounded-2xl sm:rounded-3xl border-2 border-slate-800/90 shadow-xl flex-wrap">
               <button
                 type="button"
                 onClick={() => handleDayChange(1)}
-                className={`px-3 sm:px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                className={`px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-3 text-xs sm:text-base font-black shadow-md ${
                   Number(dayFilter) === 1
-                    ? 'bg-[#2D2E83] text-white shadow-md font-black'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-gradient-to-r from-blue-700 via-[#2D2E83] to-indigo-900 text-white border-2 border-blue-400 shadow-blue-900/50 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800'
                 }`}
               >
-                <span>🥋 Día 1: {formatDateDDMMAAAA(call.examDate)}</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20 text-white font-mono">
+                <span className="text-sm sm:text-lg">🥋</span>
+                <span>Día 1: {formatDateDDMMAAAA(call.examDate)}</span>
+                <span className={`text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                  Number(dayFilter) === 1 ? 'bg-white/25 text-white' : 'bg-slate-800 text-slate-400'
+                }`}>
                   {tandas.filter(t => (Number(t.day) === 2 ? 2 : 1) === 1).length} tandas
                 </span>
               </button>
@@ -358,14 +361,17 @@ export default function PublicTandasLiveView({
               <button
                 type="button"
                 onClick={() => handleDayChange(2)}
-                className={`px-3 sm:px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                className={`px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl transition-all cursor-pointer flex items-center gap-2 sm:gap-3 text-xs sm:text-base font-black shadow-md ${
                   Number(dayFilter) === 2
-                    ? 'bg-[#BE1622] text-white shadow-md font-black'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-gradient-to-r from-red-700 via-[#BE1622] to-rose-900 text-white border-2 border-red-400 shadow-red-900/50 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800'
                 }`}
               >
-                <span>🥋 Día 2: {formatDateDDMMAAAA(call.examEndDate)}</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20 text-white font-mono">
+                <span className="text-sm sm:text-lg">🥋</span>
+                <span>Día 2: {formatDateDDMMAAAA(call.examEndDate)}</span>
+                <span className={`text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                  Number(dayFilter) === 2 ? 'bg-white/25 text-white' : 'bg-slate-800 text-slate-400'
+                }`}>
                   {tandas.filter(t => (Number(t.day) === 2 ? 2 : 1) === 2).length} tandas
                 </span>
               </button>
@@ -373,10 +379,10 @@ export default function PublicTandasLiveView({
               <button
                 type="button"
                 onClick={() => handleDayChange('all')}
-                className={`px-3 py-2 rounded-xl transition-all cursor-pointer ${
+                className={`px-4 sm:px-5 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl transition-all cursor-pointer text-xs sm:text-base font-black shadow-md ${
                   dayFilter === 'all'
-                    ? 'bg-amber-400 text-slate-950 shadow-md font-black'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 border-2 border-amber-300 shadow-amber-400/30 scale-[1.02]'
+                    : 'bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800'
                 }`}
               >
                 <span>Ambos Días</span>
@@ -411,49 +417,52 @@ export default function PublicTandasLiveView({
           </div>
         </div>
 
-        {/* 3.1. BARRA DE COMPARTIR POR DÍA RÁPIDO (EN CASO DE EVENTOS MULTIDÍA) */}
+        {/* 3.1. BARRA DE COMPARTIR POR DÍA RÁPIDO (EN CASO DE EVENTOS MULTIDÍA - MÁS GRANDE) */}
         {call?.isMultiDay && (
-          <div className="flex items-center justify-between gap-3 flex-wrap p-2.5 sm:px-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 font-mono">
-                <Share2 className="w-3.5 h-3.5 text-amber-400" />
-                Compartir Tabla por Día:
+          <div className="flex items-center justify-between gap-4 flex-wrap p-3.5 sm:p-5 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-950 border-2 border-slate-800/90 rounded-2xl sm:rounded-3xl shadow-lg">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-400 flex items-center gap-2 font-mono">
+                <Share2 className="w-4 h-4 text-amber-400" />
+                Compartir Horario por Día:
               </span>
               <button
                 type="button"
                 onClick={() => handleCopyLink(1)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border ${
+                className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer active:scale-95 border-2 shadow-md ${
                   Number(dayFilter) === 1
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-400 shadow-sm'
-                    : 'bg-blue-950/50 hover:bg-blue-900/60 text-blue-200 border-blue-800/60'
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-400 shadow-blue-500/30 ring-2 ring-blue-400/30'
+                    : 'bg-blue-950/70 hover:bg-blue-900/80 text-blue-200 border-blue-800/80'
                 }`}
                 title="Copiar enlace directo exclusivamente para la tabla del Día 1"
               >
-                <span>📋 Enlace Día 1</span>
+                <span className="text-base">📋</span>
+                <span>Enlace Día 1</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleCopyLink(2)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border ${
+                className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer active:scale-95 border-2 shadow-md ${
                   Number(dayFilter) === 2
-                    ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-400 shadow-sm'
-                    : 'bg-rose-950/50 hover:bg-rose-900/60 text-rose-200 border-rose-800/60'
+                    ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-400 shadow-rose-500/30 ring-2 ring-rose-400/30'
+                    : 'bg-rose-950/70 hover:bg-rose-900/80 text-rose-200 border-rose-800/80'
                 }`}
                 title="Copiar enlace directo exclusivamente para la tabla del Día 2"
               >
-                <span>📋 Enlace Día 2</span>
+                <span className="text-base">📋</span>
+                <span>Enlace Día 2</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleCopyLink('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 border ${
+                className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer active:scale-95 border-2 shadow-md ${
                   dayFilter === 'all'
-                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm font-black'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                    ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-300 shadow-amber-400/30 font-black'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
                 }`}
                 title="Copiar enlace completo de ambos días"
               >
-                <span>📋 Enlace Ambos Días</span>
+                <span className="text-base">📋</span>
+                <span>Enlace Ambos Días</span>
               </button>
             </div>
 

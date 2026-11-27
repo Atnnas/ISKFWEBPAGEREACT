@@ -63,7 +63,7 @@ import {
 } from '../../lib/actions/examinations';
 import ConfirmModal from '../ui/ConfirmModal';
 import AlertModal from '../ui/AlertModal';
-import { formatDateTimeDDMMAAAA } from '../../lib/utils/dateFormatter';
+import { formatDateTimeDDMMAAAA, parseCustomDate } from '../../lib/utils/dateFormatter';
 import fondoInicioNuevo from '../../assets/images/Fondo-inicio-nuevo.jpg';
 import { handleBulletInputChange, handleBulletKeyDown } from '../../lib/utils/bulletNotes';
 
@@ -86,6 +86,8 @@ export default function ExaminationsManagement({
   // Filtros, búsqueda y ordenación de convocatorias
   const [sessionSearchQuery, setSessionSearchQuery] = useState('');
   const [sessionSortOrder, setSessionSortOrder] = useState('date-desc'); // 'date-desc' | 'date-asc' | 'alpha-asc' | 'alpha-desc'
+  const [sessionScope, setSessionScope] = useState('cycle'); // 'cycle' | 'latest' | 'all'
+  const [isCurrentSessionsExpanded, setIsCurrentSessionsExpanded] = useState(true);
   const [isPastSessionsExpanded, setIsPastSessionsExpanded] = useState(false);
 
   const { activeSessions, pastSessions } = useMemo(() => {
@@ -116,12 +118,42 @@ export default function ExaminationsManagement({
       return 0;
     };
 
+    let latestTime = 0;
+    sessions.forEach(s => {
+      const t = getTimestamp(s);
+      if (t > latestTime) latestTime = t;
+    });
+
+    const isPastSession = (s) => {
+      if (s.status === 'closed') return true;
+      if (s.examDate) {
+        const d = parseCustomDate(s.examDate);
+        if (d) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (d < today) return true;
+        }
+      }
+      if (sessionScope === 'all') return false;
+      if (sessionScope === 'latest') {
+        const t = getTimestamp(s);
+        return t < latestTime;
+      }
+      // 'cycle': vigentes las creadas dentro de la ventana de 10 días del ciclo más reciente
+      const t = getTimestamp(s);
+      if (latestTime > 0) {
+        const diffDays = (latestTime - t) / (1000 * 60 * 60 * 24);
+        if (diffDays > 10) return true;
+      }
+      return false;
+    };
+
     const filtered = sessions.filter(matchesSearch);
-    const active = filtered.filter(s => s.status !== 'closed').sort(sortFn);
-    const past = filtered.filter(s => s.status === 'closed').sort(sortFn);
+    const active = filtered.filter(s => !isPastSession(s)).sort(sortFn);
+    const past = filtered.filter(s => isPastSession(s)).sort(sortFn);
 
     return { activeSessions: active, pastSessions: past };
-  }, [sessions, sessionSearchQuery, sessionSortOrder]);
+  }, [sessions, sessionSearchQuery, sessionSortOrder, sessionScope]);
 
   // Estados de carga de datos iniciales
   useEffect(() => {
@@ -1090,6 +1122,21 @@ export default function ExaminationsManagement({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              {/* Selector de Alcance / Encapsulado Histórico */}
+              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 shadow-2xs">
+                <Filter className="w-3.5 h-3.5 text-[#2D2E83] shrink-0" />
+                <span className="text-[11px] font-bold text-gray-500 hidden sm:inline">Mostrar:</span>
+                <select
+                  value={sessionScope}
+                  onChange={(e) => setSessionScope(e.target.value)}
+                  className="bg-transparent border-none text-xs font-bold text-gray-800 focus:outline-hidden cursor-pointer"
+                >
+                  <option value="cycle">Ciclo actual / recientes (Defecto)</option>
+                  <option value="latest">Solo la más reciente</option>
+                  <option value="all">Todas las creadas</option>
+                </select>
+              </div>
+
               {/* Selector de Orden */}
               <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 shadow-2xs">
                 <ArrowUpDown className="w-3.5 h-3.5 text-[#2D2E83] shrink-0" />
@@ -1139,51 +1186,68 @@ export default function ExaminationsManagement({
             <div className="space-y-5">
               {/* Bloque 1: Convocatorias Actuales */}
               <div className="bg-white/95 border border-gray-200/90 rounded-3xl overflow-hidden shadow-sm backdrop-blur-md">
-                <div className="px-5 py-3.5 border-b border-gray-100 bg-gradient-to-r from-blue-50/40 via-white to-gray-50/50 flex items-center justify-between gap-3">
+                <div 
+                  onClick={() => setIsCurrentSessionsExpanded(prev => !prev)}
+                  className="px-5 py-3.5 border-b border-gray-100 bg-gradient-to-r from-blue-50/40 via-white to-gray-50/50 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-blue-50/60 transition-colors group"
+                  title={isCurrentSessionsExpanded ? "Clic para colapsar esta sección" : "Clic para expandir esta sección"}
+                >
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-wide">
+                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-wide group-hover:text-[#2D2E83] transition-colors">
                       Convocatorias Actuales en Curso ({activeSessions.length})
                     </h3>
                   </div>
-                  {sessionSearchQuery && (
-                    <span className="text-xs text-gray-500 font-medium">
-                      Filtrando por: &ldquo;{sessionSearchQuery}&rdquo;
-                    </span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {sessionSearchQuery && (
+                      <span className="text-xs text-gray-500 font-medium hidden sm:inline">
+                        Filtrando por: &ldquo;{sessionSearchQuery}&rdquo;
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold text-[#2D2E83] bg-white border border-blue-200 shadow-2xs hover:bg-blue-50 transition-colors cursor-pointer"
+                    >
+                      <span>{isCurrentSessionsExpanded ? 'Colapsar' : `Expandir (${activeSessions.length})`}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isCurrentSessionsExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
                 </div>
 
-                {activeSessions.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50/90 text-[11px] uppercase tracking-wider font-mono text-gray-700">
-                          <th className="py-4 px-5 font-bold">Convocatoria & Examen</th>
-                          <th className="py-4 px-4 font-bold">Dojos Convocados</th>
-                          <th className="py-4 px-4 font-bold">Configuración & Seguridad</th>
-                          <th className="py-4 px-4 font-bold text-center">Estado</th>
-                          <th className="py-4 px-4 font-bold text-center">Entregas</th>
-                          <th className="py-4 px-5 font-bold text-right">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 text-xs text-gray-800">
-                        {activeSessions.map((sess) => renderSessionRow(sess, false))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="p-8 text-center space-y-2">
-                    <p className="text-sm font-bold text-gray-700">
-                      {sessionSearchQuery
-                        ? 'No se encontraron convocatorias actuales que coincidan con la búsqueda.'
-                        : 'No hay convocatorias activas en este momento.'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {pastSessions.length > 0
-                        ? 'Las convocatorias cerradas están organizadas en el agrupador histórico inferior para no estorbar.'
-                        : 'Puedes convocar a un nuevo examen con el botón superior.'}
-                    </p>
-                  </div>
+                {isCurrentSessionsExpanded && (
+                  <>
+                    {activeSessions.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-gray-200 bg-gray-50/90 text-[11px] uppercase tracking-wider font-mono text-gray-700">
+                              <th className="py-4 px-5 font-bold">Convocatoria & Examen</th>
+                              <th className="py-4 px-4 font-bold">Dojos Convocados</th>
+                              <th className="py-4 px-4 font-bold">Configuración & Seguridad</th>
+                              <th className="py-4 px-4 font-bold text-center">Estado</th>
+                              <th className="py-4 px-4 font-bold text-center">Entregas</th>
+                              <th className="py-4 px-5 font-bold text-right">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 text-xs text-gray-800">
+                            {activeSessions.map((sess) => renderSessionRow(sess, false))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center space-y-2">
+                        <p className="text-sm font-bold text-gray-700">
+                          {sessionSearchQuery
+                            ? 'No se encontraron convocatorias actuales que coincidan con la búsqueda.'
+                            : 'No hay convocatorias activas en este momento.'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {pastSessions.length > 0
+                            ? 'Las convocatorias cerradas están organizadas en el agrupador histórico inferior para no estorbar.'
+                            : 'Puedes convocar a un nuevo examen con el botón superior.'}
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
