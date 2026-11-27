@@ -1040,6 +1040,18 @@ export default function TechnicalExamEvaluatorCore({
         phaseNotes: {
           ...(prevStudentEval.phaseNotes || {}),
           ...(newEvalData.phaseNotes || {})
+        },
+        phaseAverages: {
+          ...(prevStudentEval.phaseAverages || {}),
+          ...(newEvalData.phaseAverages || {})
+        },
+        phaseAdjustments: {
+          ...(prevStudentEval.phaseAdjustments || {}),
+          ...(newEvalData.phaseAdjustments || {})
+        },
+        phaseScores: {
+          ...(prevStudentEval.phaseScores || {}),
+          ...(newEvalData.phaseScores || {})
         }
       };
 
@@ -1093,6 +1105,9 @@ export default function TechnicalExamEvaluatorCore({
           pointsPossible: Number(latestStudentEval.pointsPossible) || 0,
           isPassed: Boolean(latestStudentEval.isPassed),
           phaseNotes: latestStudentEval.phaseNotes || {},
+          phaseAverages: latestStudentEval.phaseAverages || {},
+          phaseAdjustments: latestStudentEval.phaseAdjustments || {},
+          phaseScores: latestStudentEval.phaseScores || {},
           finalComments: latestStudentEval.finalComments || latestStudentEval.phaseNotes?.promedio_final || '',
           notes: String(latestStudentEval.notes || '')
         });

@@ -158,10 +158,10 @@ export function getTechScoreFromEvalRecord(evalRecord, techId) {
   return null;
 }
 
-// Helper robusto para extraer el promedio de una fase desde phaseAverages o recalcularlo desde techniqueAverages
+// Helper robusto para extraer la nota de una fase: siempre prioriza la nota ajustada (phaseScores) sobre el promedio base (phaseAverages)
 export function getPhaseAvgFromEvalRecord(evalRecord, phaseKey) {
   if (!evalRecord) return null;
-  const direct = evalRecord.phaseAverages?.[phaseKey] ?? evalRecord.phaseScores?.[phaseKey];
+  const direct = evalRecord.phaseScores?.[phaseKey] ?? evalRecord.phaseAverages?.[phaseKey];
   if (typeof direct === 'number') {
     return direct <= 10 ? direct * 10 : direct;
   }
@@ -1639,8 +1639,8 @@ function StudentMonitorDrawer({
             <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
               <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Kihon</div>
               <div className="text-xl font-black text-gray-800 mt-0.5">
-                {selectedEvalItem.evalRecord?.phaseAverages?.kihon !== null && selectedEvalItem.evalRecord?.phaseAverages?.kihon !== undefined
-                  ? `${selectedEvalItem.evalRecord.phaseAverages.kihon}%`
+                {(selectedEvalItem.evalRecord?.phaseScores?.kihon ?? selectedEvalItem.evalRecord?.phaseAverages?.kihon) !== null && (selectedEvalItem.evalRecord?.phaseScores?.kihon ?? selectedEvalItem.evalRecord?.phaseAverages?.kihon) !== undefined
+                  ? `${selectedEvalItem.evalRecord?.phaseScores?.kihon ?? selectedEvalItem.evalRecord.phaseAverages.kihon}%`
                   : '—'}
               </div>
               <div className="text-[10px] text-gray-500">Evaluado por {selectedEvalItem.evaluator.name.split(' ')[0]}</div>
@@ -1649,8 +1649,8 @@ function StudentMonitorDrawer({
             <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
               <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Kata</div>
               <div className="text-xl font-black text-gray-800 mt-0.5">
-                {selectedEvalItem.evalRecord?.phaseAverages?.kata !== null && selectedEvalItem.evalRecord?.phaseAverages?.kata !== undefined
-                  ? `${selectedEvalItem.evalRecord.phaseAverages.kata}%`
+                {(selectedEvalItem.evalRecord?.phaseScores?.kata ?? selectedEvalItem.evalRecord?.phaseAverages?.kata) !== null && (selectedEvalItem.evalRecord?.phaseScores?.kata ?? selectedEvalItem.evalRecord?.phaseAverages?.kata) !== undefined
+                  ? `${selectedEvalItem.evalRecord?.phaseScores?.kata ?? selectedEvalItem.evalRecord.phaseAverages.kata}%`
                   : '—'}
               </div>
               <div className="text-[10px] text-gray-500">Evaluado por {selectedEvalItem.evaluator.name.split(' ')[0]}</div>
@@ -1659,8 +1659,8 @@ function StudentMonitorDrawer({
             <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
               <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Kumite</div>
               <div className="text-xl font-black text-gray-800 mt-0.5">
-                {selectedEvalItem.evalRecord?.phaseAverages?.kumite !== null && selectedEvalItem.evalRecord?.phaseAverages?.kumite !== undefined
-                  ? `${selectedEvalItem.evalRecord.phaseAverages.kumite}%`
+                {(selectedEvalItem.evalRecord?.phaseScores?.kumite ?? selectedEvalItem.evalRecord?.phaseAverages?.kumite) !== null && (selectedEvalItem.evalRecord?.phaseScores?.kumite ?? selectedEvalItem.evalRecord?.phaseAverages?.kumite) !== undefined
+                  ? `${selectedEvalItem.evalRecord?.phaseScores?.kumite ?? selectedEvalItem.evalRecord.phaseAverages.kumite}%`
                   : '—'}
               </div>
               <div className="text-[10px] text-gray-500">Evaluado por {selectedEvalItem.evaluator.name.split(' ')[0]}</div>
@@ -2760,13 +2760,13 @@ export default function TribunalProgressMonitor({
 
                                 // Promedio colegiado entre las tres fases finales (Kihon, Kata y Kumite) para este aspirante
                                 const stKihonVals = evaluatorsProgress
-                                  .map(item => item.evaluationsByStudent[sId]?.phaseAverages?.kihon)
+                                  .map(item => item.evaluationsByStudent[sId]?.phaseScores?.kihon ?? item.evaluationsByStudent[sId]?.phaseAverages?.kihon)
                                   .filter(v => typeof v === 'number');
                                 const stKataVals = evaluatorsProgress
-                                  .map(item => item.evaluationsByStudent[sId]?.phaseAverages?.kata)
+                                  .map(item => item.evaluationsByStudent[sId]?.phaseScores?.kata ?? item.evaluationsByStudent[sId]?.phaseAverages?.kata)
                                   .filter(v => typeof v === 'number');
                                 const stKumiteVals = evaluatorsProgress
-                                  .map(item => item.evaluationsByStudent[sId]?.phaseAverages?.kumite)
+                                  .map(item => item.evaluationsByStudent[sId]?.phaseScores?.kumite ?? item.evaluationsByStudent[sId]?.phaseAverages?.kumite)
                                   .filter(v => typeof v === 'number');
 
                                 const stKihonAvg = stKihonVals.length ? (stKihonVals.reduce((a, b) => a + b, 0) / stKihonVals.length) : null;

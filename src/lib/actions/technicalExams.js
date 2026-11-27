@@ -2585,20 +2585,39 @@ export async function saveEvaluatorAtomicGrade({
         aspectos: phaseCounts.aspectos > 0 ? Math.round(phaseSums.aspectos / phaseCounts.aspectos) : (phaseAverages?.aspectos ?? existing?.phaseAverages?.aspectos ?? null)
       };
 
+      // Si se proporcionaron phaseScores explícitos ajustados manualmente, derivar el ajuste o respetarlos
+      if (typeof phaseScores?.kihon === 'number' && phaseScores.kihon > 0 && calculatedPhaseAverages.kihon !== null && phaseAdjustments?.kihon === undefined) {
+        safePhaseAdjustments.kihon = phaseScores.kihon - calculatedPhaseAverages.kihon;
+      }
+      if (typeof phaseScores?.kata === 'number' && phaseScores.kata > 0 && calculatedPhaseAverages.kata !== null && phaseAdjustments?.kata === undefined) {
+        safePhaseAdjustments.kata = phaseScores.kata - calculatedPhaseAverages.kata;
+      }
+      if (typeof phaseScores?.kumite === 'number' && phaseScores.kumite > 0 && calculatedPhaseAverages.kumite !== null && phaseAdjustments?.kumite === undefined) {
+        safePhaseAdjustments.kumite = phaseScores.kumite - calculatedPhaseAverages.kumite;
+      }
+
       calculatedPhaseScores = {
-        kihon: calculatedPhaseAverages.kihon !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kihon + (safePhaseAdjustments.kihon || 0))) : null,
-        kata: calculatedPhaseAverages.kata !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kata + (safePhaseAdjustments.kata || 0))) : null,
-        kumite: calculatedPhaseAverages.kumite !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kumite + (safePhaseAdjustments.kumite || 0))) : null,
+        kihon: typeof phaseScores?.kihon === 'number' && phaseScores.kihon > 0
+          ? Math.min(100, Math.max(0, phaseScores.kihon))
+          : (calculatedPhaseAverages.kihon !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kihon + (safePhaseAdjustments.kihon || 0))) : null),
+        kata: typeof phaseScores?.kata === 'number' && phaseScores.kata > 0
+          ? Math.min(100, Math.max(0, phaseScores.kata))
+          : (calculatedPhaseAverages.kata !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kata + (safePhaseAdjustments.kata || 0))) : null),
+        kumite: typeof phaseScores?.kumite === 'number' && phaseScores.kumite > 0
+          ? Math.min(100, Math.max(0, phaseScores.kumite))
+          : (calculatedPhaseAverages.kumite !== null ? Math.min(100, Math.max(0, calculatedPhaseAverages.kumite + (safePhaseAdjustments.kumite || 0))) : null),
       };
 
       const evaluatedPhases = [
         calculatedPhaseScores.kihon,
         calculatedPhaseScores.kata,
         calculatedPhaseScores.kumite
-      ].filter(v => v !== null);
+      ].filter(v => typeof v === 'number');
 
       if (evaluatedPhases.length > 0) {
         calculatedPercentage = Math.round(evaluatedPhases.reduce((a, b) => a + b, 0) / evaluatedPhases.length);
+      } else if (typeof percentage === 'number' && percentage > 0) {
+        calculatedPercentage = percentage;
       }
     }
 
@@ -2891,16 +2910,43 @@ export async function getTribunalProgressForCall(params) {
           }
         });
 
+        const savedPhaseScores = item.phaseScores || {};
+        const savedPhaseAdjustments = item.phaseAdjustments || {};
+
+        const rawKihon = phaseCounts.kihon > 0 ? Math.round(phaseSums.kihon / phaseCounts.kihon) : null;
+        const rawKata = phaseCounts.kata > 0 ? Math.round(phaseSums.kata / phaseCounts.kata) : null;
+        const rawKumite = phaseCounts.kumite > 0 ? Math.round(phaseSums.kumite / phaseCounts.kumite) : null;
+        const rawAspectos = phaseCounts.aspectos > 0 ? Math.round(phaseSums.aspectos / phaseCounts.aspectos) : null;
+
+        const effectiveKihon = typeof savedPhaseScores.kihon === 'number' && savedPhaseScores.kihon > 0
+          ? savedPhaseScores.kihon
+          : (rawKihon !== null ? Math.min(100, Math.max(0, rawKihon + Number(savedPhaseAdjustments.kihon || 0))) : null);
+
+        const effectiveKata = typeof savedPhaseScores.kata === 'number' && savedPhaseScores.kata > 0
+          ? savedPhaseScores.kata
+          : (rawKata !== null ? Math.min(100, Math.max(0, rawKata + Number(savedPhaseAdjustments.kata || 0))) : null);
+
+        const effectiveKumite = typeof savedPhaseScores.kumite === 'number' && savedPhaseScores.kumite > 0
+          ? savedPhaseScores.kumite
+          : (rawKumite !== null ? Math.min(100, Math.max(0, rawKumite + Number(savedPhaseAdjustments.kumite || 0))) : null);
+
+        const effectivePhaseScores = {
+          kihon: effectiveKihon !== null ? Math.min(100, Math.max(0, effectiveKihon)) : null,
+          kata: effectiveKata !== null ? Math.min(100, Math.max(0, effectiveKata)) : null,
+          kumite: effectiveKumite !== null ? Math.min(100, Math.max(0, effectiveKumite)) : null
+        };
+
         const phaseAverages = {
-          kihon: phaseCounts.kihon > 0 ? Math.round(phaseSums.kihon / phaseCounts.kihon) : null,
-          kata: phaseCounts.kata > 0 ? Math.round(phaseSums.kata / phaseCounts.kata) : null,
-          kumite: phaseCounts.kumite > 0 ? Math.round(phaseSums.kumite / phaseCounts.kumite) : null,
-          aspectos: phaseCounts.aspectos > 0 ? Math.round(phaseSums.aspectos / phaseCounts.aspectos) : null,
+          kihon: rawKihon,
+          kata: rawKata,
+          kumite: rawKumite,
+          aspectos: rawAspectos,
           total: item.percentage || 0
         };
 
         // El promedio colegiado de este evaluador se equilibra equitativamente entre las 3 fases finales (Kihon, Kata y Kumite)
-        const evaluatedPhaseAvgs = [phaseAverages.kihon, phaseAverages.kata, phaseAverages.kumite].filter(v => typeof v === 'number');
+        // usando estrictamente las notas ajustadas oficiales por fase (effectivePhaseScores)
+        const evaluatedPhaseAvgs = [effectivePhaseScores.kihon, effectivePhaseScores.kata, effectivePhaseScores.kumite].filter(v => typeof v === 'number');
         const balancedPercentage = evaluatedPhaseAvgs.length > 0
           ? Math.round(evaluatedPhaseAvgs.reduce((a, b) => a + b, 0) / evaluatedPhaseAvgs.length)
           : (item.percentage || 0);
@@ -2924,8 +2970,8 @@ export async function getTribunalProgressForCall(params) {
           techniquesCount: Object.keys(item.techniqueAverages || {}).length,
           phaseNotes: item.phaseNotes || {},
           phaseAverages,
-          phaseAdjustments: item.phaseAdjustments || { kihon: 0, kata: 0, kumite: 0 },
-          phaseScores: item.phaseScores || {},
+          phaseAdjustments: savedPhaseAdjustments,
+          phaseScores: effectivePhaseScores,
           grades: item.grades || [],
           evaluatorName: ev.name,
           evaluatorRole: ev.role || 'Sinodal',

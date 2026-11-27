@@ -440,12 +440,17 @@ function getEvaluatorPhaseDetails(ev, techniques = []) {
   const result = {};
   Object.keys(phases).forEach(k => {
     const list = phases[k].techniques;
-    const avg = list.length > 0
+    const rawAvg = list.length > 0
       ? Math.round(list.reduce((sum, t) => sum + t.score, 0) / list.length)
       : 0;
+    const adjusted = typeof ev.phaseScores?.[k] === 'number' && ev.phaseScores[k] > 0
+      ? Number(ev.phaseScores[k])
+      : (typeof ev.phaseAdjustments?.[k] === 'number' && ev.phaseAdjustments[k] !== 0
+          ? Math.min(100, Math.max(0, rawAvg + Number(ev.phaseAdjustments[k])))
+          : rawAvg);
     result[k] = {
       ...phases[k],
-      average: avg
+      average: adjusted
     };
   });
 
@@ -1945,6 +1950,11 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           student: st,
           evaluations: evals,
           evaluatorCount: evals.length,
+          phaseScores: {
+            kihon: consolidatedPhases.kihon?.average || 0,
+            kata: consolidatedPhases.kata?.average || 0,
+            kumite: consolidatedPhases.kumite?.average || 0
+          },
           averagePercentage: avgPct,
           isPassed: avgPct >= 70,
           rawObservations: rawObs,
@@ -2084,6 +2094,7 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
         syllabusId: activeSyllabus?._id || activeSyllabus?.id,
         syllabusName: activeSyllabus?.name || 'Temario Oficial ISKF',
         evaluators: evaluatorsList,
+        phaseScores: item.phaseScores || {},
         technicalPercentage: item.averagePercentage,
         martialAdjustment: item.martialAdjustment || 0,
         martialAdjustmentReason: item.martialAdjustmentReason || '',
