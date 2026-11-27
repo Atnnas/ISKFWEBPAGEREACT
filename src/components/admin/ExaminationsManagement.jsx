@@ -105,9 +105,22 @@ export default function ExaminationsManagement({
     const getTimestamp = (s) => {
       if (s.createdAt) {
         const t = new Date(s.createdAt).getTime();
-        if (!isNaN(t)) return t;
+        if (!isNaN(t) && t > 0) return t;
       }
-      return 0;
+      if (s.updatedAt) {
+        const t = new Date(s.updatedAt).getTime();
+        if (!isNaN(t) && t > 0) return t;
+      }
+      const idStr = String(s.id || s._id || '');
+      if (idStr.length === 24) {
+        try {
+          const t = parseInt(idStr.substring(0, 8), 16) * 1000;
+          if (!isNaN(t) && t > 0) return t;
+        } catch {
+          // Si el ID no es hexadecimal válido, continuar con fallback
+        }
+      }
+      return Date.now();
     };
 
     const sortFn = (a, b) => {
@@ -134,16 +147,18 @@ export default function ExaminationsManagement({
           if (d < today) return true;
         }
       }
+      // Toda sesión creada en las últimas 48 horas SIEMPRE se muestra arriba en activas
+      const t = getTimestamp(s);
+      if (t > 0 && (Date.now() - t) < 48 * 60 * 60 * 1000) return false;
+
       if (sessionScope === 'all') return false;
       if (sessionScope === 'latest') {
-        const t = getTimestamp(s);
         return t < latestTime;
       }
-      // 'cycle': vigentes las creadas dentro de la ventana de 10 días del ciclo más reciente
-      const t = getTimestamp(s);
-      if (latestTime > 0) {
+      // 'cycle': vigentes las creadas dentro de la ventana de 14 días del ciclo más reciente
+      if (latestTime > 0 && t > 0) {
         const diffDays = (latestTime - t) / (1000 * 60 * 60 * 24);
-        if (diffDays > 10) return true;
+        if (diffDays > 14) return true;
       }
       return false;
     };
@@ -155,7 +170,41 @@ export default function ExaminationsManagement({
     return { activeSessions: active, pastSessions: past };
   }, [sessions, sessionSearchQuery, sessionSortOrder, sessionScope]);
 
-  // Estados de carga de datos iniciales
+  // Sincronizar estado cuando el servidor envía datos frescos por revalidación o navegación
+  useEffect(() => {
+    if (Array.isArray(initialSessions)) {
+      setSessions(initialSessions);
+    }
+  }, [initialSessions]);
+
+  useEffect(() => {
+    if (Array.isArray(initialWrittenExams)) {
+      setWrittenExams(initialWrittenExams);
+    }
+  }, [initialWrittenExams]);
+
+  useEffect(() => {
+    if (Array.isArray(initialDojos)) {
+      setDojos(initialDojos);
+    }
+  }, [initialDojos]);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefreshSessions = async () => {
+    setIsRefreshing(true);
+    try {
+      const fresh = await getExaminationSessions();
+      if (Array.isArray(fresh)) {
+        setSessions(fresh);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Estados de carga de datos iniciales en caso de fallback
   useEffect(() => {
     async function init() {
       try {
@@ -397,8 +446,17 @@ export default function ExaminationsManagement({
       });
 
       if (res.success && res.session) {
-        setSessions([res.session, ...sessions]);
+        const enriched = {
+          ...res.session,
+          createdAt: res.session.createdAt || new Date().toISOString(),
+          assignedDojos
+        };
+        setSessions(prev => [enriched, ...prev.filter(s => (s.id || s._id) !== (enriched.id || enriched._id))]);
         setIsCreateModalOpen(false);
+        setNewTitle('');
+        setNewWrittenExamId('');
+        setSelectedDojoIds([]);
+        setNewNotes('');
         showAlert("La examinación ha sido creada con éxito. Ya puedes copiar el link y enviarlo a los estudiantes.", "¡Examinación Creada!", false);
       } else {
         showAlert("Error al crear examinación: " + (res.error || ""), "Error", true);
@@ -1086,6 +1144,17 @@ export default function ExaminationsManagement({
                   A++
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={handleRefreshSessions}
+                disabled={isRefreshing}
+                className="flex items-center gap-1.5 px-3.5 py-3 rounded-2xl border border-gray-200 bg-white hover:bg-gray-50 text-[#2D2E83] text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-50 shrink-0"
+                title="Sincronizar convocatorias con la base de datos"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refrescar</span>
+              </button>
 
               <button
                 onClick={handleOpenCreateModal}

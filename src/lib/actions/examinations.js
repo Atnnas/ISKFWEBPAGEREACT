@@ -1316,6 +1316,8 @@ export async function createExaminationSession(data) {
 
     await newSession.save();
     revalidatePath('/admin/examinations');
+    revalidatePath('/admin/examinations/written');
+    revalidatePath('/examinations');
 
     const plain = newSession.toObject();
     return {
@@ -1334,6 +1336,7 @@ export async function createExaminationSession(data) {
         passingPercentage: plain.passingPercentage || 70,
         weightPercentage: plain.weightPercentage || 15,
         notes: plain.notes,
+        createdAt: plain.createdAt ? plain.createdAt.toISOString() : new Date().toISOString(),
         totalSubmissions: 0,
         pendingSubmissions: 0,
         gradedSubmissions: 0
