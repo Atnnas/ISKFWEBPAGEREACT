@@ -767,8 +767,7 @@ export default function ExaminationsManagement({
   };
 
   const renderSessionRow = (sess, isPast = false) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const linkUrl = `${origin}/examinations/take/${sess.accessCode}`;
+    const displayPath = `/examinations/take/${sess.accessCode}`;
     const isCopied = copiedSessionId === (sess.id || sess._id);
 
     return (
@@ -788,7 +787,7 @@ export default function ExaminationsManagement({
                               </div>
                               <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-500 select-all pt-0.5">
                                 <ExternalLink className="w-3 h-3 text-gray-400 shrink-0" />
-                                <span className="truncate max-w-[200px]" title={linkUrl}>{linkUrl}</span>
+                                <span className="truncate max-w-[200px]" title={displayPath}>{displayPath}</span>
                               </div>
                             </div>
                           </td>
