@@ -13,7 +13,9 @@ import {
   Sparkles, 
   RotateCcw,
   Minus,
-  Plus
+  Plus,
+  Search,
+  Check
 } from 'lucide-react';
 import { saveExamGradeConfig } from '../../lib/actions/gradeConfig';
 import { ALL_RANKS_DEFINITIONS, KYU_DEFINITIONS, DAN_DEFINITIONS } from '../../lib/constants/kyuRanks';
@@ -43,27 +45,39 @@ export default function BeltGradeConfigView({ initialConfig, _currentUser }) {
   });
 
   const [filterTab, setFilterTab] = useState('all'); // 'all', 'kyu', 'dan'
+  const [searchQuery, setSearchQuery] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
 
-  // Filtrado de grados para la vista
+  // Filtrado de grados para la tabla
   const visibleRanks = useMemo(() => {
+    let list = ranks;
     if (filterTab === 'kyu') {
       const kyuIds = new Set(KYU_DEFINITIONS.map(k => k.id));
-      return ranks.filter(r => kyuIds.has(r.rankKey));
-    }
-    if (filterTab === 'dan') {
+      list = list.filter(r => kyuIds.has(r.rankKey));
+    } else if (filterTab === 'dan') {
       const danIds = new Set(DAN_DEFINITIONS.map(d => d.id));
-      return ranks.filter(r => danIds.has(r.rankKey));
+      list = list.filter(r => danIds.has(r.rankKey));
     }
-    return ranks;
-  }, [ranks, filterTab]);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(r => 
+        r.digit?.toLowerCase().includes(q) ||
+        r.name?.toLowerCase().includes(q) ||
+        r.rankLabel?.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [ranks, filterTab, searchQuery]);
 
   // Actualizar nota mínima de un grado individual
   const updateRankScore = useCallback((rankKey, deltaOrValue, isAbsolute = false) => {
     setRanks(prev => prev.map(r => {
       if (r.rankKey !== rankKey) return r;
       let nextVal = isAbsolute ? Number(deltaOrValue) : r.minScore + Number(deltaOrValue);
+      if (isNaN(nextVal)) nextVal = 70;
       nextVal = Math.min(100, Math.max(50, nextVal));
       return { ...r, minScore: nextVal };
     }));
@@ -163,10 +177,10 @@ export default function BeltGradeConfigView({ initialConfig, _currentUser }) {
             </div>
             <div>
               <h1 className="text-2xl font-black text-[#2D2E83] tracking-tight">
-                Notas Mínimas por Cinturón
+                Tabla de Notas Mínimas por Cinturón
               </h1>
               <p className="text-xs text-gray-500 font-medium">
-                Parametrización gráfica de la nota mínima aprobatoria para cada grado en evaluaciones técnicas, tribunal y actas oficiales.
+                Edite de forma ordenada y precisa el porcentaje mínimo exigido para cada grado Kyu y Dan en evaluaciones oficiales.
               </p>
             </div>
           </div>
@@ -212,27 +226,27 @@ export default function BeltGradeConfigView({ initialConfig, _currentUser }) {
         </div>
       )}
 
-      {/* Panel Superior: Criterio Gráfico y Presets Rápidos */}
+      {/* Panel Superior: Regla Dinámica y Presets Rápidos */}
       <div className="bg-white/95 backdrop-blur-md border border-gray-200/90 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Explicación Gráfica del Criterio Aprobado / Reprobado */}
+          {/* Criterio Visual Aprobado / Reprobado */}
           <div className="space-y-1.5">
             <span className="text-xs font-extrabold uppercase tracking-wider text-gray-500">
-              Regla de Evaluación Marcial Dinámica
+              Regla de Evaluación en Tribunal y Certificados
             </span>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-50 border border-emerald-300 text-emerald-800 shadow-2xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span>Nota ≥ Mínimo: <strong>Aprobado</strong></span>
+                <span>Nota Obtenida ≥ Mínimo: <strong>Aprobado</strong></span>
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-red-50 border border-red-300 text-red-800 shadow-2xs">
                 <span className="w-2 h-2 rounded-full bg-red-500" />
-                <span>Nota &lt; Mínimo: <strong>Reprobado</strong> (Marca en rojo en actas y PDF)</span>
+                <span>Nota Obtenida &lt; Mínimo: <strong>Reprobado</strong> (Marca en rojo en actas y PDF)</span>
               </span>
             </div>
           </div>
 
-          {/* Presets Rápidos Oficiales */}
+          {/* Plantillas Rápidas Oficiales */}
           <div className="space-y-1.5">
             <span className="text-xs font-extrabold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -275,173 +289,260 @@ export default function BeltGradeConfigView({ initialConfig, _currentUser }) {
           </div>
         </div>
 
-        {/* Selector de Pestañas: Todos, Kyu, Dan */}
-        <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-          <button
-            type="button"
-            onClick={() => setFilterTab('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              filterTab === 'all'
-                ? 'bg-[#2D2E83] text-white shadow-xs'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Todos los Grados ({ranks.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterTab('kyu')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              filterTab === 'kyu'
-                ? 'bg-[#2D2E83] text-white shadow-xs'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Grados Kyu ({KYU_DEFINITIONS.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterTab('dan')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              filterTab === 'dan'
-                ? 'bg-[#2D2E83] text-white shadow-xs'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            Grados Dan ({DAN_DEFINITIONS.length})
-          </button>
+        {/* Barra de Filtros y Búsqueda */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFilterTab('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                filterTab === 'all'
+                  ? 'bg-[#2D2E83] text-white shadow-xs'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Todos los Grados ({ranks.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterTab('kyu')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                filterTab === 'kyu'
+                  ? 'bg-[#2D2E83] text-white shadow-xs'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Kyu ({KYU_DEFINITIONS.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterTab('dan')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                filterTab === 'dan'
+                  ? 'bg-[#2D2E83] text-white shadow-xs'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Dan ({DAN_DEFINITIONS.length})
+            </button>
+          </div>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar cinturón o kyu..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2D2E83] focus:border-[#2D2E83]"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Grid de Tarjetas Gráficas por Cinturón */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {visibleRanks.map((rank) => {
-          const score = rank.minScore;
+      {/* Tabla Oficial de Configuración de Notas Mínimas */}
+      <div className="bg-white/95 backdrop-blur-md border border-gray-200/90 rounded-2xl shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/90 border-b border-gray-200 text-gray-600 text-[11px] font-black uppercase tracking-wider">
+                <th className="py-3 px-5">Cinturón / Grado</th>
+                <th className="py-3 px-5 text-center">Tipo</th>
+                <th className="py-3 px-5 text-center min-w-[200px]">Nota Mínima Requerida</th>
+                <th className="py-3 px-5 min-w-[220px]">Ajuste Deslizante</th>
+                <th className="py-3 px-5 text-center">Criterio en Tribunal & PDF</th>
+                <th className="py-3 px-5 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-xs">
+              {visibleRanks.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-gray-400 font-medium">
+                    No se encontraron grados que coincidan con la búsqueda.
+                  </td>
+                </tr>
+              ) : (
+                visibleRanks.map((rank) => {
+                  const score = rank.minScore;
+                  const isDan = rank.rankKey.includes('dan');
 
-          return (
-            <div
-              key={rank.rankKey}
-              className="bg-white/95 backdrop-blur-md border border-gray-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all space-y-4"
-            >
-              {/* Encabezado de la Tarjeta del Cinturón */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {/* Cinta / Cinta Marcial Gráfica */}
-                  <div 
-                    className={`w-10 h-7 rounded-md shadow-xs border border-gray-300/80 shrink-0 ${rank.solidClass}`}
-                    title={rank.rankLabel}
-                  >
-                    {rank.hasStripe && (
-                      <div className="w-full h-1.5 bg-white mt-2.5 shadow-2xs" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-gray-900 leading-tight">
-                      {rank.digit}
-                    </h3>
-                    <p className="text-[11px] font-semibold text-gray-500">
-                      {rank.name}
-                    </p>
-                  </div>
-                </div>
+                  return (
+                    <tr 
+                      key={rank.rankKey} 
+                      className="hover:bg-slate-50/60 transition-colors"
+                    >
+                      {/* 1. Grado / Cinta Visual */}
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className={`w-9 h-6 rounded-md shadow-2xs border border-gray-300/80 shrink-0 ${rank.solidClass}`}
+                            title={rank.rankLabel}
+                          >
+                            {rank.hasStripe && (
+                              <div className="w-full h-1.5 bg-white mt-2 shadow-2xs" />
+                            )}
+                          </div>
+                          <div>
+                            <span className="font-black text-gray-900 text-sm block">
+                              {rank.digit}
+                            </span>
+                            <span className="text-[11px] font-medium text-gray-500">
+                              {rank.name}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
 
-                {/* Badge Gráfico del Porcentaje Mínimo */}
-                <div className="text-right">
-                  <div className="inline-flex items-baseline gap-0.5 px-3 py-1 rounded-xl bg-blue-50 border border-blue-200 text-[#2D2E83]">
-                    <span className="text-lg font-black tracking-tight">{score}</span>
-                    <span className="text-xs font-extrabold">%</span>
-                  </div>
-                </div>
-              </div>
+                      {/* 2. Tipo (Kyu / Dan) */}
+                      <td className="py-3.5 px-5 text-center">
+                        <span 
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                            isDan 
+                              ? 'bg-gray-900 text-amber-300 border border-gray-800'
+                              : 'bg-blue-50 text-[#2D2E83] border border-blue-200'
+                          }`}
+                        >
+                          {isDan ? 'Grado Dan' : 'Grado Kyu'}
+                        </span>
+                      </td>
 
-              {/* Controles de Ajuste Rápido (-5, -1, +1, +5) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-gray-500 font-bold">
-                  <span>Nota Mínima Requerida:</span>
-                  <span className="text-[#2D2E83] font-mono">{score}% / 100%</span>
-                </div>
+                      {/* 3. Input Numérico + Botones Stepper */}
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateRankScore(rank.rankKey, -5)}
+                            className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[11px] transition-all cursor-pointer active:scale-95 border border-gray-200"
+                            title="Restar 5%"
+                          >
+                            -5%
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateRankScore(rank.rankKey, -1)}
+                            className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-all cursor-pointer active:scale-95 border border-gray-200"
+                            title="Restar 1%"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
 
-                {/* Slider Gráfico */}
-                <input
-                  type="range"
-                  min="50"
-                  max="100"
-                  step="1"
-                  value={score}
-                  onChange={(e) => updateRankScore(rank.rankKey, e.target.value, true)}
-                  className="w-full accent-[#2D2E83] cursor-pointer h-2 bg-gray-200 rounded-lg"
-                />
+                          {/* Campo de entrada editable directamente */}
+                          <div className="relative inline-flex items-center">
+                            <input
+                              type="number"
+                              min="50"
+                              max="100"
+                              value={score}
+                              onChange={(e) => updateRankScore(rank.rankKey, e.target.value, true)}
+                              className="w-18 text-center font-black font-mono text-sm py-1 px-1 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D2E83] text-[#2D2E83]"
+                            />
+                            <span className="text-xs font-black text-gray-400 ml-1">%</span>
+                          </div>
 
-                {/* Botonera de Steppers */}
-                <div className="grid grid-cols-4 gap-1.5 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => updateRankScore(rank.rankKey, -5)}
-                    className="py-1 px-1 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold transition-all text-center cursor-pointer active:scale-95"
-                    title="Restar 5%"
-                  >
-                    -5%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateRankScore(rank.rankKey, -1)}
-                    className="py-1 px-1 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold transition-all text-center cursor-pointer active:scale-95 flex items-center justify-center"
-                    title="Restar 1%"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateRankScore(rank.rankKey, 1)}
-                    className="py-1 px-1 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold transition-all text-center cursor-pointer active:scale-95 flex items-center justify-center"
-                    title="Sumar 1%"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateRankScore(rank.rankKey, 5)}
-                    className="py-1 px-1 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold transition-all text-center cursor-pointer active:scale-95"
-                    title="Sumar 5%"
-                  >
-                    +5%
-                  </button>
-                </div>
-              </div>
+                          <button
+                            type="button"
+                            onClick={() => updateRankScore(rank.rankKey, 1)}
+                            className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-all cursor-pointer active:scale-95 border border-gray-200"
+                            title="Sumar 1%"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateRankScore(rank.rankKey, 5)}
+                            className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[11px] transition-all cursor-pointer active:scale-95 border border-gray-200"
+                            title="Sumar 5%"
+                          >
+                            +5%
+                          </button>
+                        </div>
+                      </td>
 
-              {/* Indicador de Estado del Cinturón */}
-              <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-gray-500">Criterio en acta:</span>
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Aprobado ≥ {score}%
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                      {/* 4. Slider Deslizante */}
+                      <td className="py-3.5 px-5">
+                        <div className="space-y-1">
+                          <input
+                            type="range"
+                            min="50"
+                            max="100"
+                            step="1"
+                            value={score}
+                            onChange={(e) => updateRankScore(rank.rankKey, e.target.value, true)}
+                            className="w-full accent-[#2D2E83] cursor-pointer h-2 bg-gray-200 rounded-lg"
+                          />
+                          <div className="flex justify-between text-[10px] text-gray-400 font-bold">
+                            <span>50%</span>
+                            <span className="text-[#2D2E83] font-mono">{score}%</span>
+                            <span>100%</span>
+                          </div>
+                        </div>
+                      </td>
 
-      {/* Botón Flotante Inferior de Guardado Rápido */}
-      <div className="flex items-center justify-end pt-4 border-t border-gray-200/80">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="px-6 py-2.5 rounded-xl bg-[#2D2E83] hover:bg-[#1E1F5A] text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-        >
-          {isSaving ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin text-white" />
-              <span>Guardando configuración...</span>
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 text-white" />
-              <span>Guardar Notas Mínimas</span>
-            </>
-          )}
-        </button>
+                      {/* 5. Criterio Visual en Tribunal */}
+                      <td className="py-3.5 px-5 text-center">
+                        <div className="inline-flex flex-col items-center gap-1">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span>≥ {score}% Aprobado</span>
+                          </span>
+                          <span className="text-[10px] text-red-600 font-semibold">
+                            &lt; {score}% Reprobado
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* 6. Acción de Restablecer */}
+                      <td className="py-3.5 px-5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => updateRankScore(rank.rankKey, defaultMinScore, true)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-[#2D2E83] hover:bg-gray-100 transition-colors cursor-pointer"
+                          title={`Restablecer al valor por defecto (${defaultMinScore}%)`}
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer de la Tabla con Resumen y Guardado */}
+        <div className="p-4 bg-gray-50/90 border-t border-gray-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-xs text-gray-500 font-medium flex items-center gap-4">
+            <span>
+              Mostrando <strong>{visibleRanks.length}</strong> de <strong>{ranks.length}</strong> grados configurados.
+            </span>
+            <span className="hidden sm:inline text-gray-300">|</span>
+            <span className="hidden sm:inline">
+              Promedio de notas mínimas: <strong>
+                {Math.round(visibleRanks.reduce((sum, r) => sum + r.minScore, 0) / (visibleRanks.length || 1))}%
+              </strong>
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-6 py-2.5 rounded-xl bg-[#2D2E83] hover:bg-[#1E1F5A] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+          >
+            {isSaving ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                <span>Guardando cambios...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 text-white" />
+                <span>Guardar Notas Mínimas</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
