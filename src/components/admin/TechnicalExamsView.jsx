@@ -59,6 +59,7 @@ import {
   ShieldAlert,
   Lock,
   Unlock,
+  Archive,
   ExternalLink,
   Share2
 } from 'lucide-react';
@@ -992,6 +993,49 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
   // CONVOCATORIAS OFICIALES PARA EL DOJO (ETAPAS 1, 2 Y 3)
   // ==========================================
   const [examCalls, setExamCalls] = useState([]);
+  const [techCallSearchQuery, setTechCallSearchQuery] = useState('');
+  const [techCallSortOrder, setTechCallSortOrder] = useState('date-desc'); // 'date-desc' | 'date-asc' | 'alpha-asc' | 'alpha-desc'
+  const [isPastTechCallsExpanded, setIsPastTechCallsExpanded] = useState(false);
+
+  const { activeTechCalls, pastTechCalls, totalFilteredTechCalls } = useMemo(() => {
+    const q = techCallSearchQuery.trim().toLowerCase();
+    const matchesSearch = (call) => {
+      if (!q) return true;
+      const titleMatch = (call.title || '').toLowerCase().includes(q);
+      const dojoMatch = (call.dojoName || '').toLowerCase().includes(q);
+      const senseiMatch = (call.dojoSensei || '').toLowerCase().includes(q);
+      const locationMatch = (call.location || '').toLowerCase().includes(q);
+      const dateMatch = (call.examDate || '').toLowerCase().includes(q);
+      const evaluatorsMatch = (call.evaluators || []).some(e => (e.name || '').toLowerCase().includes(q));
+      return titleMatch || dojoMatch || senseiMatch || locationMatch || dateMatch || evaluatorsMatch;
+    };
+
+    const getTimestamp = (call) => {
+      if (call.examDate) {
+        const d = parseCustomDate(call.examDate);
+        if (d && !isNaN(d.getTime())) return d.getTime();
+      }
+      if (call.createdAt) {
+        const t = new Date(call.createdAt).getTime();
+        if (!isNaN(t)) return t;
+      }
+      return 0;
+    };
+
+    const sortFn = (a, b) => {
+      if (techCallSortOrder === 'date-desc') return getTimestamp(b) - getTimestamp(a);
+      if (techCallSortOrder === 'date-asc') return getTimestamp(a) - getTimestamp(b);
+      if (techCallSortOrder === 'alpha-asc') return (a.title || a.dojoName || '').localeCompare(b.title || b.dojoName || '');
+      if (techCallSortOrder === 'alpha-desc') return (b.title || b.dojoName || '').localeCompare(a.title || a.dojoName || '');
+      return 0;
+    };
+
+    const filtered = examCalls.filter(matchesSearch);
+    const active = filtered.filter(c => c.status !== 'cerrado').sort(sortFn);
+    const past = filtered.filter(c => c.status === 'cerrado').sort(sortFn);
+
+    return { activeTechCalls: active, pastTechCalls: past, totalFilteredTechCalls: filtered.length };
+  }, [examCalls, techCallSearchQuery, techCallSortOrder]);
   const [isLoadingExamCalls, setIsLoadingExamCalls] = useState(false);
   const [showNewCallModal, setShowNewCallModal] = useState(false);
   const [isCreatingCall, setIsCreatingCall] = useState(false);
@@ -3864,6 +3908,186 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     return calculateAge(studentBirthDate);
   }, [studentBirthDate]);
 
+  const renderCallRow = (call, isPast = false) => {
+    const matchedDojo = dojos.find(d => 
+      String(d.id || d._id) === String(call.dojoId) || 
+      d.name?.toLowerCase().trim() === call.dojoName?.toLowerCase().trim()
+    );
+
+    return (
+      <tr 
+        key={call._id || call.id} 
+        className={`transition-colors group ${isPast ? 'hover:bg-slate-100/70 bg-slate-50/40 text-slate-700' : 'hover:bg-blue-50/20'}`}
+      >
+<td className="py-4 px-5 align-middle">
+                                    <div className="space-y-1.5 max-w-xs sm:max-w-sm">
+                                      <div className="font-black text-sm text-gray-900 group-hover:text-[#2D2E83] transition-colors leading-snug">
+                                        {call.title?.replace(/^Convocatoria Oficial de Examen Técnico\s*[-—–:]\s*/i, '') || call.title || call.dojoName}
+                                      </div>
+                                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                        <span className="flex items-center gap-1 font-bold">
+                                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                          {call.isMultiDay ? `${formatDateDDMMAAAA(call.examDate)} y ${formatDateDDMMAAAA(call.examEndDate) || 'Día 2'}` : formatDateDDMMAAAA(call.examDate)}
+                                        </span>
+                                        {call.isMultiDay && (
+                                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-[#2D2E83] border border-blue-200">
+                                            2 Días
+                                          </span>
+                                        )}
+                                        <span>•</span>
+                                        <span className="flex items-center gap-1 text-gray-500">
+                                          <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                          {call.startTime}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                {/* Col 2: Dojo Sede con Logo a la Izquierda */}
+                                <td className="py-4 px-4 align-middle">
+                                  <div className="flex items-center gap-2.5 min-w-0 max-w-[220px]">
+                                    <div className="w-9 h-9 rounded-xl overflow-hidden border border-gray-200 bg-white shrink-0 flex items-center justify-center shadow-2xs">
+                                      <img
+                                        src={matchedDojo?.logo || '/images/dojos/default_logo.jpg'}
+                                        alt={`Logo ${call.dojoName}`}
+                                        className="w-full h-full object-contain p-0.5"
+                                        onError={(e) => {
+                                          e.currentTarget.onerror = null;
+                                          e.currentTarget.src = '/images/dojos/default_logo.jpg';
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-bold text-gray-900 truncate">
+                                          {call.dojoName || 'Dojo'}
+                                        </span>
+                                        {matchedDojo?.province && (
+                                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-[#2D2E83] border border-blue-200/60 shrink-0">
+                                            {matchedDojo.province}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-[10px] text-gray-500 font-medium truncate mt-0.5">
+                                        Sensei: {matchedDojo?.sensei || call.dojoSensei || 'Sensei Titular'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Col 3: Tribunal de Senseis */}
+                                <td className="py-4 px-4 align-middle">
+                                  <div className="space-y-1.5 max-w-[220px]">
+                                    <div className="flex flex-wrap gap-1">
+                                      {(call.evaluators && call.evaluators.length > 0) ? (
+                                        call.evaluators.map((ev, evIdx) => (
+                                          <span
+                                            key={evIdx}
+                                            className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 truncate max-w-[180px]"
+                                            title={`${ev.name} (${ev.role || 'Sinodal'})`}
+                                          >
+                                            🥋 {ev.name}
+                                          </span>
+                                        ))
+                                      ) : (
+                                        <span className="text-gray-400 text-[11px] italic">
+                                          {call.evaluatorCount || 1} Senseis
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEditTribunal(call)}
+                                      className="text-[10px] text-[#2D2E83] hover:text-[#BE1622] font-black flex items-center gap-1 transition-colors cursor-pointer hover:underline"
+                                      title="Modificar Senseis del tribunal"
+                                    >
+                                      <Edit3 className="w-3 h-3" />
+                                      <span>Editar Senseis ({call.evaluators?.length || call.evaluatorCount || 0})</span>
+                                    </button>
+                                  </div>
+                                </td>
+
+                                {/* Col 4: Estado */}
+                                <td className="py-4 px-4 align-middle text-center">
+                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border inline-block ${
+                                    call.status === 'cerrado'
+                                      ? 'bg-gray-100 text-gray-600 border-gray-300'
+                                      : call.status === 'en_tatami'
+                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                      : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                  }`}>
+                                    {call.status}
+                                  </span>
+                                </td>
+
+                                {/* Col 5: Padrón & Tandas */}
+                                <td className="py-4 px-4 align-middle text-center">
+                                  <div className="inline-flex flex-col items-center gap-1">
+                                    <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-xs">
+                                      {call.aspirantsCount || 0} aspirantes
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-mono">
+                                      {call.schedulesCount || (call.schedules?.length) || 0} tandas (máx {call.maxPerTanda || 6})
+                                    </span>
+                                  </div>
+                                </td>
+
+                                {/* Col 6: Acciones */}
+                                <td className="py-4 px-5 align-middle text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenCallDetail(call)}
+                                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+                                      title={`Configurar tandas de ${call.maxPerTanda || 6} y examinandos`}
+                                    >
+                                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                                      <span>Configurar</span>
+                                    </button>
+
+                                    <Link
+                                      href={`/convocatoria/${call.accessToken}`}
+                                      target="_blank"
+                                      className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-200 cursor-pointer"
+                                      title="Abrir vista pública del Dojo"
+                                    >
+                                      <ArrowRight className="w-4 h-4" />
+                                    </Link>
+
+                                    {call.status !== 'cerrado' ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCloseExamCall(call._id || call.id)}
+                                        className="px-2 py-1 text-[11px] text-amber-700 hover:text-amber-900 hover:bg-amber-50 rounded-lg transition-colors font-medium cursor-pointer"
+                                        title="Cerrar examen"
+                                      >
+                                        Cerrar
+                                      </button>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleReopenExamCall(call._id || call.id)}
+                                        className="px-2 py-1 text-[11px] text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-lg transition-colors font-medium cursor-pointer"
+                                        title="Reabrir convocatoria de examen"
+                                      >
+                                        Reabrir
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteExamCall(call)}
+                                      className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200 cursor-pointer"
+                                      title="Eliminar convocatoria"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+    );
+  };
+
   return (
     <div className="w-full space-y-2.5 pt-0.5 pb-12 font-sans text-gray-900">
       {/* Breadcrumb Principal */}
@@ -5417,222 +5641,197 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Barra Superior de la Lista */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black uppercase tracking-wider text-gray-500">
-                        Convocatorias Registradas
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        {examCalls.length}
-                      </span>
+                  {/* Barra Superior de la Lista: Título, Filtros, Búsqueda y Ordenación */}
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black uppercase tracking-wider text-gray-500">
+                          Convocatorias Registradas
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          {totalFilteredTechCalls}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleOpenNewCallModal}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer self-start sm:self-auto active:scale-95"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Convocar a Examen</span>
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={handleOpenNewCallModal}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer self-start sm:self-auto active:scale-95"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Convocar a Examen</span>
-                    </button>
+                    {/* Barra de Búsqueda y Ordenación */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/90 p-3 sm:p-4 rounded-2xl border border-gray-200 shadow-2xs">
+                      {/* Buscador reactivo */}
+                      <div className="relative flex-1 min-w-[240px]">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={techCallSearchQuery}
+                          onChange={(e) => setTechCallSearchQuery(e.target.value)}
+                          placeholder="Buscar por convocatoria, dojo sede, sensei o fecha..."
+                          className="w-full pl-9 pr-8 py-2 bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 focus:border-indigo-600 rounded-xl text-xs font-medium text-gray-900 transition-all outline-hidden shadow-2xs"
+                        />
+                        {techCallSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setTechCallSearchQuery('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-0.5 rounded-full cursor-pointer"
+                            title="Limpiar búsqueda"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Selector de Orden */}
+                        <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 shadow-2xs">
+                          <ArrowUpDown className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                          <span className="text-[11px] font-bold text-gray-500 hidden sm:inline">Orden:</span>
+                          <select
+                            value={techCallSortOrder}
+                            onChange={(e) => setTechCallSortOrder(e.target.value)}
+                            className="bg-transparent border-none text-xs font-bold text-gray-800 focus:outline-hidden cursor-pointer"
+                          >
+                            <option value="date-desc">Más recientes primero (Defecto)</option>
+                            <option value="date-asc">Más antiguas primero</option>
+                            <option value="alpha-asc">Dojo / Título (A - Z)</option>
+                            <option value="alpha-desc">Dojo / Título (Z - A)</option>
+                          </select>
+                        </div>
+
+                        {/* Resumen de Conteo */}
+                        <div className="flex items-center gap-1.5 text-xs font-mono">
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold" title="Convocatorias activas / en tatami">
+                            🟢 {activeTechCalls.length} Activas
+                          </span>
+                          <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-bold" title="Convocatorias cerradas">
+                            ⚪ {pastTechCalls.length} Pasadas
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Tabla / Lista de Convocatorias estilo Exámenes Escritos */}
-                  <div className="bg-white/95 border border-gray-200/90 rounded-2xl overflow-hidden shadow-xs backdrop-blur-md">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-gray-200 bg-gray-50/90 text-[11px] uppercase tracking-wider font-mono text-gray-700">
-                            <th className="py-3.5 px-5 font-bold">Convocatoria & Fecha</th>
-                            <th className="py-3.5 px-4 font-bold">Dojo Sede</th>
-                            <th className="py-3.5 px-4 font-bold">Tribunal Evaluador</th>
-                            <th className="py-3.5 px-4 font-bold text-center">Estado</th>
-                            <th className="py-3.5 px-4 font-bold text-center">Padrón / Tandas</th>
-                            <th className="py-3.5 px-5 font-bold text-right">Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 text-xs text-gray-800">
-                          {examCalls.map((call) => {
-                            const matchedDojo = dojos.find(d => 
-                              String(d.id || d._id) === String(call.dojoId) || 
-                              d.name?.toLowerCase().trim() === call.dojoName?.toLowerCase().trim()
-                            );
+                  {/* Listado de Convocatorias en 2 Niveles */}
+                  <div className="space-y-5">
+                    {/* Bloque 1: Convocatorias Actuales (Arriba) */}
+                    <div className="bg-white/95 border border-gray-200/90 rounded-2xl overflow-hidden shadow-xs backdrop-blur-md">
+                      <div className="px-5 py-3 border-b border-gray-100 bg-gradient-to-r from-blue-50/40 via-white to-gray-50/50 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <h3 className="text-xs sm:text-sm font-black text-gray-900 uppercase tracking-wide">
+                            Convocatorias Técnicas Actuales ({activeTechCalls.length})
+                          </h3>
+                        </div>
+                        {techCallSearchQuery && (
+                          <span className="text-xs text-gray-500 font-medium">
+                            Filtrando por: &ldquo;{techCallSearchQuery}&rdquo;
+                          </span>
+                        )}
+                      </div>
 
-                            return (
-                              <tr key={call._id || call.id} className="hover:bg-blue-50/20 transition-colors group">
-                                {/* Col 1: Convocatoria, Fecha */}
-                                <td className="py-4 px-5 align-middle">
-                                    <div className="space-y-1.5 max-w-xs sm:max-w-sm">
-                                      <div className="font-black text-sm text-gray-900 group-hover:text-[#2D2E83] transition-colors leading-snug">
-                                        {call.title?.replace(/^Convocatoria Oficial de Examen Técnico\s*[-—–:]\s*/i, '') || call.title || call.dojoName}
-                                      </div>
-                                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                                        <span className="flex items-center gap-1 font-bold">
-                                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                          {call.isMultiDay ? `${formatDateDDMMAAAA(call.examDate)} y ${formatDateDDMMAAAA(call.examEndDate) || 'Día 2'}` : formatDateDDMMAAAA(call.examDate)}
-                                        </span>
-                                        {call.isMultiDay && (
-                                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-[#2D2E83] border border-blue-200">
-                                            2 Días
-                                          </span>
-                                        )}
-                                        <span>•</span>
-                                        <span className="flex items-center gap-1 text-gray-500">
-                                          <Clock className="w-3.5 h-3.5 text-gray-400" />
-                                          {call.startTime}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </td>
-
-                                {/* Col 2: Dojo Sede con Logo a la Izquierda */}
-                                <td className="py-4 px-4 align-middle">
-                                  <div className="flex items-center gap-2.5 min-w-0 max-w-[220px]">
-                                    <div className="w-9 h-9 rounded-xl overflow-hidden border border-gray-200 bg-white shrink-0 flex items-center justify-center shadow-2xs">
-                                      <img
-                                        src={matchedDojo?.logo || '/images/dojos/default_logo.jpg'}
-                                        alt={`Logo ${call.dojoName}`}
-                                        className="w-full h-full object-contain p-0.5"
-                                        onError={(e) => {
-                                          e.currentTarget.onerror = null;
-                                          e.currentTarget.src = '/images/dojos/default_logo.jpg';
-                                        }}
-                                      />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="font-bold text-gray-900 truncate">
-                                          {call.dojoName || 'Dojo'}
-                                        </span>
-                                        {matchedDojo?.province && (
-                                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-[#2D2E83] border border-blue-200/60 shrink-0">
-                                            {matchedDojo.province}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <p className="text-[10px] text-gray-500 font-medium truncate mt-0.5">
-                                        Sensei: {matchedDojo?.sensei || call.dojoSensei || 'Sensei Titular'}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {/* Col 3: Tribunal de Senseis */}
-                                <td className="py-4 px-4 align-middle">
-                                  <div className="space-y-1.5 max-w-[220px]">
-                                    <div className="flex flex-wrap gap-1">
-                                      {(call.evaluators && call.evaluators.length > 0) ? (
-                                        call.evaluators.map((ev, evIdx) => (
-                                          <span
-                                            key={evIdx}
-                                            className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 truncate max-w-[180px]"
-                                            title={`${ev.name} (${ev.role || 'Sinodal'})`}
-                                          >
-                                            🥋 {ev.name}
-                                          </span>
-                                        ))
-                                      ) : (
-                                        <span className="text-gray-400 text-[11px] italic">
-                                          {call.evaluatorCount || 1} Senseis
-                                        </span>
-                                      )}
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenEditTribunal(call)}
-                                      className="text-[10px] text-[#2D2E83] hover:text-[#BE1622] font-black flex items-center gap-1 transition-colors cursor-pointer hover:underline"
-                                      title="Modificar Senseis del tribunal"
-                                    >
-                                      <Edit3 className="w-3 h-3" />
-                                      <span>Editar Senseis ({call.evaluators?.length || call.evaluatorCount || 0})</span>
-                                    </button>
-                                  </div>
-                                </td>
-
-                                {/* Col 4: Estado */}
-                                <td className="py-4 px-4 align-middle text-center">
-                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border inline-block ${
-                                    call.status === 'cerrado'
-                                      ? 'bg-gray-100 text-gray-600 border-gray-300'
-                                      : call.status === 'en_tatami'
-                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                      : 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                  }`}>
-                                    {call.status}
-                                  </span>
-                                </td>
-
-                                {/* Col 5: Padrón & Tandas */}
-                                <td className="py-4 px-4 align-middle text-center">
-                                  <div className="inline-flex flex-col items-center gap-1">
-                                    <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-xs">
-                                      {call.aspirantsCount || 0} aspirantes
-                                    </span>
-                                    <span className="text-[10px] text-gray-500 font-mono">
-                                      {call.schedulesCount || (call.schedules?.length) || 0} tandas (máx {call.maxPerTanda || 6})
-                                    </span>
-                                  </div>
-                                </td>
-
-                                {/* Col 6: Acciones */}
-                                <td className="py-4 px-5 align-middle text-right">
-                                  <div className="flex items-center justify-end gap-1.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenCallDetail(call)}
-                                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
-                                      title={`Configurar tandas de ${call.maxPerTanda || 6} y examinandos`}
-                                    >
-                                      <SlidersHorizontal className="w-3.5 h-3.5" />
-                                      <span>Configurar</span>
-                                    </button>
-
-                                    <Link
-                                      href={`/convocatoria/${call.accessToken}`}
-                                      target="_blank"
-                                      className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-200 cursor-pointer"
-                                      title="Abrir vista pública del Dojo"
-                                    >
-                                      <ArrowRight className="w-4 h-4" />
-                                    </Link>
-
-                                    {call.status !== 'cerrado' ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCloseExamCall(call._id || call.id)}
-                                        className="px-2 py-1 text-[11px] text-amber-700 hover:text-amber-900 hover:bg-amber-50 rounded-lg transition-colors font-medium cursor-pointer"
-                                        title="Cerrar examen"
-                                      >
-                                        Cerrar
-                                      </button>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleReopenExamCall(call._id || call.id)}
-                                        className="px-2 py-1 text-[11px] text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-lg transition-colors font-medium cursor-pointer"
-                                        title="Reabrir convocatoria de examen"
-                                      >
-                                        Reabrir
-                                      </button>
-                                    )}
-
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteExamCall(call)}
-                                      className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200 cursor-pointer"
-                                      title="Eliminar convocatoria"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </td>
+                      {activeTechCalls.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-gray-200 bg-gray-50/90 text-[11px] uppercase tracking-wider font-mono text-gray-700">
+                                <th className="py-3.5 px-5 font-bold">Convocatoria & Fecha</th>
+                                <th className="py-3.5 px-4 font-bold">Dojo Sede</th>
+                                <th className="py-3.5 px-4 font-bold">Tribunal Evaluador</th>
+                                <th className="py-3.5 px-4 font-bold text-center">Estado</th>
+                                <th className="py-3.5 px-4 font-bold text-center">Padrón / Tandas</th>
+                                <th className="py-3.5 px-5 font-bold text-right">Acciones</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 text-xs text-gray-800">
+                              {activeTechCalls.map((call) => renderCallRow(call, false))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center space-y-2">
+                          <p className="text-sm font-bold text-gray-700">
+                            {techCallSearchQuery
+                              ? 'No se encontraron convocatorias actuales para la búsqueda.'
+                              : 'No hay convocatorias técnicas activas en este momento.'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {pastTechCalls.length > 0
+                              ? 'Las convocatorias cerradas están organizadas en el agrupador histórico inferior para no estorbar.'
+                              : 'Puedes crear una convocatoria con el botón superior.'}
+                          </p>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Bloque 2: Agrupador / Wrap de Convocatorias Pasadas / Cerradas (Abajo) */}
+                    {pastTechCalls.length > 0 && (
+                      <div className="border border-slate-200/90 rounded-2xl bg-slate-50/70 overflow-hidden shadow-2xs transition-all">
+                        <button
+                          type="button"
+                          onClick={() => setIsPastTechCallsExpanded(prev => !prev)}
+                          className="w-full px-5 py-3.5 flex items-center justify-between gap-4 bg-gradient-to-r from-slate-100/90 via-white to-slate-100/80 hover:bg-slate-100 text-left transition-all cursor-pointer group"
+                          title={isPastTechCallsExpanded ? 'Clic para contraer' : 'Clic para desplegar convocatorias pasadas'}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-slate-200/90 text-slate-700 flex items-center justify-center shrink-0 group-hover:bg-[#2D2E83] group-hover:text-white transition-colors shadow-2xs">
+                              <Archive className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-[#2D2E83] transition-colors">
+                                  Convocatorias Pasadas / Cerradas
+                                </h3>
+                                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-200 text-slate-700">
+                                  {pastTechCalls.length}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500">
+                                {isPastTechCallsExpanded
+                                  ? 'Clic para contraer y ocultar del flujo principal'
+                                  : 'Historial archivado de exámenes ya finalizados (agrupado para no estorbar)'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs font-bold text-[#2D2E83] group-hover:underline hidden sm:inline">
+                              {isPastTechCallsExpanded ? 'Ocultar pasadas' : `Ver pasadas (${pastTechCalls.length})`}
+                            </span>
+                            <div className={`p-1.5 rounded-xl text-slate-400 group-hover:text-[#2D2E83] transition-transform duration-200 ${isPastTechCallsExpanded ? 'rotate-180' : ''}`}>
+                              <ChevronDown className="w-5 h-5" />
+                            </div>
+                          </div>
+                        </button>
+
+                        {isPastTechCallsExpanded && (
+                          <div className="border-t border-slate-200 bg-white animate-in fade-in duration-200">
+                            <div className="overflow-x-auto opacity-95 hover:opacity-100 transition-opacity">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr className="border-b border-gray-200 bg-gray-50/90 text-[11px] uppercase tracking-wider font-mono text-gray-600">
+                                    <th className="py-3 px-5 font-bold">Convocatoria & Fecha</th>
+                                    <th className="py-3 px-4 font-bold">Dojo Sede</th>
+                                    <th className="py-3 px-4 font-bold">Tribunal Evaluador</th>
+                                    <th className="py-3 px-4 font-bold text-center">Estado</th>
+                                    <th className="py-3 px-4 font-bold text-center">Padrón / Tandas</th>
+                                    <th className="py-3 px-5 font-bold text-right">Acciones</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 text-xs text-gray-800">
+                                  {pastTechCalls.map((call) => renderCallRow(call, true))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
