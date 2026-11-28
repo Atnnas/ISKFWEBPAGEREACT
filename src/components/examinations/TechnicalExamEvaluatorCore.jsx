@@ -421,6 +421,7 @@ export default function TechnicalExamEvaluatorCore({
   const [phaseToReview, setPhaseToReview] = useState('kihon');
   const [tribunalProgress, setTribunalProgress] = useState(null);
   const [isLoadingTribunal, setIsLoadingTribunal] = useState(false);
+  const [isConfirmingPhase, setIsConfirmingPhase] = useState(false);
 
   // Detección de Sensei Roy (Director de Evaluación ISKF / Admin)
   const isDirectorRoy = useMemo(() => {
@@ -1730,6 +1731,9 @@ export default function TechnicalExamEvaluatorCore({
           count: missing.size,
           message: `Debe completar la calificación de todos los karatecas en sus técnicas activas antes de avanzar. Las estrellas vacías han sido resaltadas en rojo.`
         });
+        if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         return;
       }
     }
@@ -1787,6 +1791,8 @@ export default function TechnicalExamEvaluatorCore({
   };
 
   const handleConfirmPhaseReview = async () => {
+    if (isConfirmingPhase) return;
+
     // 1. Validar estrictamente que TODOS los karatecas llamados a la tanda tengan nota en la fase
     if (!adminAuditMode) {
       const unrated = tandaStudents.filter(student => {
@@ -1803,7 +1809,9 @@ export default function TechnicalExamEvaluatorCore({
       }
     }
 
-    // 2. Forzar guardado atómico inmediato a MongoDB de TODOS los atletas de la tanda sin excepción
+    setIsConfirmingPhase(true);
+
+    // 2. Forzar guardado atómico en MongoDB en segundo plano (sin bloquear ni congelar la pantalla de los Senseis)
     Object.keys(saveTimeoutRefs.current).forEach(sId => {
       if (saveTimeoutRefs.current[sId]) {
         clearTimeout(saveTimeoutRefs.current[sId]);
@@ -1812,39 +1820,42 @@ export default function TechnicalExamEvaluatorCore({
     });
 
     setSaveStatus('saving');
-    try {
-      await Promise.all(tandaStudents.map(async (student) => {
-        const sId = String(student._id || student.id);
-        const evalData = latestEvaluationsRef.current[sId] || evaluationsByStudent[sId];
-        if (!evalData) return;
-        const stSyllabus = getStudentSyllabus(student);
-        await saveEvaluatorAtomicGrade({
-          callId: String(callId || call?._id || call?.id || '').trim() || null,
-          studentId: sId,
-          evaluatorEmail: String(evaluatorEmail || '').trim().toLowerCase(),
-          evaluatorName: String(evaluator?.name || 'Sensei Sinodal'),
-          syllabusId: String(stSyllabus?._id || stSyllabus?.id || 'general').trim(),
-          syllabusName: String(stSyllabus?.name || 'Temario Oficial ISKF'),
-          scores: evalData.scores || {},
-          techniqueAverages: evalData.techniqueAverages || {},
-          observations: evalData.observations || {},
-          percentage: Number(evalData.percentage) || 0,
-          pointsEarned: Number(evalData.pointsEarned) || 0,
-          pointsPossible: Number(evalData.pointsPossible) || 0,
-          isPassed: Boolean(evalData.isPassed),
-          phaseNotes: evalData.phaseNotes || {},
-          phaseAverages: evalData.phaseAverages || {},
-          phaseAdjustments: evalData.phaseAdjustments || {},
-          phaseScores: evalData.phaseScores || {},
-          finalComments: evalData.finalComments || '',
-          notes: evalData.notes || ''
-        });
-      }));
+    Promise.all(tandaStudents.map(async (student) => {
+      const sId = String(student._id || student.id);
+      const evalData = latestEvaluationsRef.current[sId] || evaluationsByStudent[sId];
+      if (!evalData) return;
+      const stSyllabus = getStudentSyllabus(student);
+      return saveEvaluatorAtomicGrade({
+        callId: String(callId || call?._id || call?.id || '').trim() || null,
+        studentId: sId,
+        evaluatorEmail: String(evaluatorEmail || '').trim().toLowerCase(),
+        evaluatorName: String(evaluator?.name || 'Sensei Sinodal'),
+        syllabusId: String(stSyllabus?._id || stSyllabus?.id || 'general').trim(),
+        syllabusName: String(stSyllabus?.name || 'Temario Oficial ISKF'),
+        scores: evalData.scores || {},
+        techniqueAverages: evalData.techniqueAverages || {},
+        observations: evalData.observations || {},
+        percentage: Number(evalData.percentage) || 0,
+        pointsEarned: Number(evalData.pointsEarned) || 0,
+        pointsPossible: Number(evalData.pointsPossible) || 0,
+        isPassed: Boolean(evalData.isPassed),
+        phaseNotes: evalData.phaseNotes || {},
+        phaseAverages: evalData.phaseAverages || {},
+        phaseAdjustments: evalData.phaseAdjustments || {},
+        phaseScores: evalData.phaseScores || {},
+        finalComments: evalData.finalComments || '',
+        notes: evalData.notes || ''
+      });
+    })).then(() => {
       setSaveStatus('saved');
-    } catch (err) {
+    }).catch(err => {
       console.error('Error al forzar guardado de tanda:', err);
-    }
+      setSaveStatus('saved');
+    }).finally(() => {
+      setIsConfirmingPhase(false);
+    });
 
+    // ⚡ Avance instantáneo en 0ms: cerrar modal y continuar a la siguiente fase o tanda
     setShowPhaseReviewModal(false);
 
     // 1. Si faltan fases en esta tanda (Kihon -> Kumite -> Kata...)
@@ -3009,10 +3020,14 @@ export default function TechnicalExamEvaluatorCore({
               <button
                 type="button"
                 onClick={handleConfirmPhaseReview}
-                className="h-13 sm:h-14 px-6 sm:px-7 rounded-xl font-bold bg-[#2D2E83] hover:bg-[#232468] text-white text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                disabled={isConfirmingPhase}
+                className="h-13 sm:h-14 px-6 sm:px-7 rounded-xl font-bold bg-[#2D2E83] hover:bg-[#232468] text-white text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
               >
+                {isConfirmingPhase && <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />}
                 <span>
-                  {!isLastPhaseInTanda ? (
+                  {isConfirmingPhase ? (
+                    'Guardando y avanzando...'
+                  ) : !isLastPhaseInTanda ? (
                     <>Aprobar {phaseToReview.toUpperCase()} y Pasar a <span className="text-amber-300 font-black uppercase text-sm sm:text-base ml-1 px-2 py-0.5 rounded-lg bg-amber-400/20 border border-amber-400/40">{availablePhaseKeys[currentPhaseIndex + 1]?.toUpperCase()}</span> ►</>
                   ) : hasNextTanda ? (
                     <>Aprobar {phaseToReview.toUpperCase()} y Pasar a <span className="text-amber-300 font-black ml-1">Siguiente Tanda</span> ►</>
