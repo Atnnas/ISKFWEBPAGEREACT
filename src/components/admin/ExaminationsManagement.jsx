@@ -871,23 +871,28 @@ export default function ExaminationsManagement({
         className={`transition-colors group ${isPast ? 'hover:bg-slate-100/70 bg-slate-50/40 text-slate-700' : 'hover:bg-blue-50/40'}`}
       >
         <td className="py-4 px-5 align-middle">
-                            <div className="space-y-1.5 max-w-xs sm:max-w-sm">
-                              <div className="font-black text-sm sm:text-base text-gray-900 group-hover:text-[#2D2E83] transition-colors">
-                                {sess.title}
-                              </div>
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="font-bold text-[11px] text-[#2D2E83] bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-md truncate max-w-[220px]" title={sess.writtenExamName}>
-                                  {sess.writtenExamName}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-500 select-all pt-0.5">
-                                <ExternalLink className="w-3 h-3 text-gray-400 shrink-0" />
-                                <span className="truncate max-w-[200px]" title={displayPath}>{displayPath}</span>
-                              </div>
-                            </div>
-                          </td>
+          <div 
+            onClick={() => handleOpenInbox(sess)}
+            className="space-y-1.5 max-w-xs sm:max-w-sm cursor-pointer group/title"
+            title="Clic para abrir la bandeja y ver todas las calificaciones de esta convocatoria"
+          >
+            <div className="font-black text-sm sm:text-base text-gray-900 group-hover/title:text-[#2D2E83] group-hover/title:underline transition-colors flex items-center gap-1.5">
+              <span>{sess.title}</span>
+              <FileText className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover/title:opacity-100 transition-opacity shrink-0" />
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-bold text-[11px] text-[#2D2E83] bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-md truncate max-w-[220px]" title={sess.writtenExamName}>
+                {sess.writtenExamName}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-500 select-all pt-0.5" onClick={(e) => e.stopPropagation()}>
+              <ExternalLink className="w-3 h-3 text-gray-400 shrink-0" />
+              <span className="truncate max-w-[200px]" title={displayPath}>{displayPath}</span>
+            </div>
+          </div>
+        </td>
 
-                          {/* Col 2: Dojos Convocados */}
+        {/* Col 2: Dojos Convocados */}
                           <td className="py-4 px-4 align-middle">
                             <div className="flex flex-wrap gap-1.5 items-center max-w-[220px]">
                               {(sess.assignedDojos || []).length > 0 ? (
@@ -995,25 +1000,40 @@ export default function ExaminationsManagement({
 
                           {/* Col 5: Entregas */}
                           <td className="py-4 px-4 align-middle text-center">
-                            <div className="inline-flex flex-col items-center gap-1">
-                              <span className="px-2.5 py-1 rounded-lg bg-gray-100 border border-gray-200 text-gray-900 font-mono font-bold text-xs">
-                                {sess.totalSubmissions || 0}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenInbox(sess)}
+                              className="inline-flex flex-col items-center gap-1 p-1.5 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer group/inbox"
+                              title="Ver entregas y calificaciones de esta convocatoria"
+                            >
+                              <span className="px-2.5 py-1 rounded-lg bg-gray-100 group-hover/inbox:bg-blue-100 group-hover/inbox:text-[#2D2E83] border border-gray-200 group-hover/inbox:border-blue-300 text-gray-900 font-mono font-bold text-xs transition-colors">
+                                {sess.totalSubmissions || 0} entregas
                               </span>
                               {sess.pendingSubmissions > 0 ? (
                                 <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold animate-pulse">
                                   {sess.pendingSubmissions} pend.
                                 </span>
                               ) : (
-                                <span className="text-[10px] text-gray-400 font-mono">
-                                  Al día
+                                <span className="text-[10px] text-gray-400 font-mono group-hover/inbox:text-blue-600">
+                                  Ver notas
                                 </span>
                               )}
-                            </div>
+                            </button>
                           </td>
 
                           {/* Col 6: Acciones */}
                           <td className="py-4 px-5 align-middle text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              {/* Ver Calificaciones / Bandeja */}
+                              <button
+                                onClick={() => handleOpenInbox(sess)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2D2E83] hover:bg-[#232468] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
+                                title="Abrir y revisar las calificaciones de este examen escrito"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-amber-300" />
+                                <span>Ver Calificaciones</span>
+                              </button>
+
                               {/* Copiar Link */}
                               <button
                                 onClick={(e) => handleCopyLink(sess, e)}
@@ -1059,16 +1079,6 @@ export default function ExaminationsManagement({
                                 </span>
                                 <Radio className="w-3.5 h-3.5" />
                                 <span className="hidden xl:inline text-[11px]">En Vivo</span>
-                              </button>
-
-                              {/* Bandeja */}
-                              <button
-                                onClick={() => handleOpenInbox(sess)}
-                                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#2D2E83] border border-blue-200 rounded-xl text-xs font-bold transition-colors shadow-sm cursor-pointer shrink-0"
-                                title="Abrir bandeja de exámenes entregados"
-                              >
-                                <FileText className="w-3.5 h-3.5 text-[#2D2E83]" />
-                                <span className="hidden lg:inline text-[11px]">Bandeja</span>
                               </button>
 
                               {/* Eliminar */}
@@ -1574,9 +1584,14 @@ export default function ExaminationsManagement({
                     const isGraded = sub.status === 'graded';
 
                     return (
-                      <tr key={sub.id || sub._id} className="hover:bg-blue-50/40 transition-colors">
+                      <tr 
+                        key={sub.id || sub._id} 
+                        onClick={() => handleOpenGrading(sub)}
+                        className="hover:bg-blue-50/60 transition-colors cursor-pointer group/row"
+                        title="Clic para ver o calificar el examen de este aspirante"
+                      >
                         <td className="p-4 font-black text-gray-900">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 group-hover/row:text-[#2D2E83] group-hover/row:underline transition-colors">
                             <User className="w-3.5 h-3.5 text-[#2D2E83] shrink-0" />
                             <span>{sub.studentName}</span>
                           </div>
