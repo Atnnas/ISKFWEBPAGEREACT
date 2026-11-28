@@ -442,8 +442,8 @@ export default function TechnicalExamEvaluatorCore({
     isDirectorRoy
   );
 
-  // Modo Auditor Admin: permite avanzar y correr técnicas libremente sin calificar estrellas obligatoriamente
-  const [adminAuditMode, setAdminAuditMode] = useState(isUserAdmin);
+  // Modo Auditor Admin: SIEMPRE inicializar en false (inactivo) para que la validación de estrellas esté activa por defecto para todos
+  const [adminAuditMode, setAdminAuditMode] = useState(false);
 
   // Función para refrescar el progreso del tribunal (manual y automático en segundo plano)
   const fetchTribunalProgress = useCallback(async (isSilent = false) => {
