@@ -1737,6 +1737,43 @@ export default function TechnicalExamEvaluatorCore({
     setUnratedStarKeys(new Set());
     setValidationWarning(null);
 
+    // Forzar guardado inmediato de cualquier nota pendiente en la técnica actual
+    Object.keys(saveTimeoutRefs.current).forEach(sId => {
+      if (saveTimeoutRefs.current[sId]) {
+        clearTimeout(saveTimeoutRefs.current[sId]);
+        delete saveTimeoutRefs.current[sId];
+      }
+    });
+
+    // Sincronizar de inmediato en MongoDB para todos los karatecas en tatami
+    tandaStudents.forEach(student => {
+      const sId = String(student._id || student.id);
+      const evalData = latestEvaluationsRef.current[sId] || evaluationsByStudent[sId];
+      if (!evalData) return;
+      const stSyllabus = getStudentSyllabus(student);
+      saveEvaluatorAtomicGrade({
+        callId: String(callId || call?._id || call?.id || '').trim() || null,
+        studentId: sId,
+        evaluatorEmail: String(evaluatorEmail || '').trim().toLowerCase(),
+        evaluatorName: String(evaluator?.name || 'Sensei Sinodal'),
+        syllabusId: String(stSyllabus?._id || stSyllabus?.id || 'general').trim(),
+        syllabusName: String(stSyllabus?.name || 'Temario Oficial ISKF'),
+        scores: evalData.scores || {},
+        techniqueAverages: evalData.techniqueAverages || {},
+        observations: evalData.observations || {},
+        percentage: Number(evalData.percentage) || 0,
+        pointsEarned: Number(evalData.pointsEarned) || 0,
+        pointsPossible: Number(evalData.pointsPossible) || 0,
+        isPassed: Boolean(evalData.isPassed),
+        phaseNotes: evalData.phaseNotes || {},
+        phaseAverages: evalData.phaseAverages || {},
+        phaseAdjustments: evalData.phaseAdjustments || {},
+        phaseScores: evalData.phaseScores || {},
+        finalComments: evalData.finalComments || '',
+        notes: evalData.notes || ''
+      }).catch(e => console.debug('Error en guardado al paso siguiente:', e));
+    });
+
     // 1. Si no es el último paso de la fase actual, avanzar al siguiente paso
     if (selectedTechniqueIndex < totalPhaseSteps - 1) {
       setSelectedTechniqueIndex(prev => prev + 1);
@@ -1749,7 +1786,65 @@ export default function TechnicalExamEvaluatorCore({
     setShowPhaseReviewModal(true);
   };
 
-  const handleConfirmPhaseReview = () => {
+  const handleConfirmPhaseReview = async () => {
+    // 1. Validar estrictamente que TODOS los karatecas llamados a la tanda tengan nota en la fase
+    if (!adminAuditMode) {
+      const unrated = tandaStudents.filter(student => {
+        const sum = getStudentPhaseSummary(student, phaseToReview);
+        return !sum || typeof sum.finalScore !== 'number' || sum.finalScore <= 0;
+      });
+
+      if (unrated.length > 0) {
+        const names = unrated.map(s => s.name).join(', ');
+        alert(
+          `⚠️ Atención: Los siguientes karatecas de la tanda no tienen notas registradas en ${phaseToReview.toUpperCase()}:\n\n${names}\n\nPor favor asígneles nota con los botones ▲ / ▼ en este recuadro o regrese a las técnicas para calificarlos con estrellas antes de aprobar la fase.`
+        );
+        return;
+      }
+    }
+
+    // 2. Forzar guardado atómico inmediato a MongoDB de TODOS los atletas de la tanda sin excepción
+    Object.keys(saveTimeoutRefs.current).forEach(sId => {
+      if (saveTimeoutRefs.current[sId]) {
+        clearTimeout(saveTimeoutRefs.current[sId]);
+        delete saveTimeoutRefs.current[sId];
+      }
+    });
+
+    setSaveStatus('saving');
+    try {
+      await Promise.all(tandaStudents.map(async (student) => {
+        const sId = String(student._id || student.id);
+        const evalData = latestEvaluationsRef.current[sId] || evaluationsByStudent[sId];
+        if (!evalData) return;
+        const stSyllabus = getStudentSyllabus(student);
+        await saveEvaluatorAtomicGrade({
+          callId: String(callId || call?._id || call?.id || '').trim() || null,
+          studentId: sId,
+          evaluatorEmail: String(evaluatorEmail || '').trim().toLowerCase(),
+          evaluatorName: String(evaluator?.name || 'Sensei Sinodal'),
+          syllabusId: String(stSyllabus?._id || stSyllabus?.id || 'general').trim(),
+          syllabusName: String(stSyllabus?.name || 'Temario Oficial ISKF'),
+          scores: evalData.scores || {},
+          techniqueAverages: evalData.techniqueAverages || {},
+          observations: evalData.observations || {},
+          percentage: Number(evalData.percentage) || 0,
+          pointsEarned: Number(evalData.pointsEarned) || 0,
+          pointsPossible: Number(evalData.pointsPossible) || 0,
+          isPassed: Boolean(evalData.isPassed),
+          phaseNotes: evalData.phaseNotes || {},
+          phaseAverages: evalData.phaseAverages || {},
+          phaseAdjustments: evalData.phaseAdjustments || {},
+          phaseScores: evalData.phaseScores || {},
+          finalComments: evalData.finalComments || '',
+          notes: evalData.notes || ''
+        });
+      }));
+      setSaveStatus('saved');
+    } catch (err) {
+      console.error('Error al forzar guardado de tanda:', err);
+    }
+
     setShowPhaseReviewModal(false);
 
     // 1. Si faltan fases en esta tanda (Kihon -> Kumite -> Kata...)
