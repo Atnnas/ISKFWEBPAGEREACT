@@ -792,8 +792,8 @@ export default function TechnicalExamEvaluatorCore({
     // 1. Fase de Aspectos Generales (Parámetros Normativos Oficiales)
     if (phase === 'aspectos') {
       const activeAspId = (technique?.id || '').toLowerCase();
-      const matchedAsp = sylAspects.find(a => 
-        (a.id || '').toLowerCase() === activeAspId || 
+      const matchedAsp = sylAspects.find(a =>
+        (a.id || '').toLowerCase() === activeAspId ||
         (a.category || '').toLowerCase() === activeAspId ||
         (a.title || '').toLowerCase() === (technique?.name || '').toLowerCase()
       );
@@ -1076,6 +1076,11 @@ export default function TechnicalExamEvaluatorCore({
     });
 
     setSaveStatus('saving');
+
+    // Timeout de seguridad: a los 2.5s garantizar que el estado visual regrese a 'saved'
+    setTimeout(() => {
+      setSaveStatus(prev => prev === 'saving' ? 'saved' : prev);
+    }, 2500);
 
     if (saveTimeoutRefs.current[studentId]) {
       clearTimeout(saveTimeoutRefs.current[studentId]);
@@ -1634,7 +1639,7 @@ export default function TechnicalExamEvaluatorCore({
     });
 
     // Solo considerar evaluadores que tengan al menos una nota válida en la tanda para esta fase
-    const activeEvaluators = evaluatorsData.filter(ev => 
+    const activeEvaluators = evaluatorsData.filter(ev =>
       Object.values(ev.scoresByStudent).some(s => typeof s === 'number' && s > 0)
     );
 
@@ -1750,12 +1755,13 @@ export default function TechnicalExamEvaluatorCore({
     });
 
     // Sincronizar de inmediato en MongoDB para todos los karatecas en tatami
-    tandaStudents.forEach(student => {
+    setSaveStatus('saving');
+    Promise.all(tandaStudents.map(student => {
       const sId = String(student._id || student.id);
       const evalData = latestEvaluationsRef.current[sId] || evaluationsByStudent[sId];
-      if (!evalData) return;
+      if (!evalData) return Promise.resolve();
       const stSyllabus = getStudentSyllabus(student);
-      saveEvaluatorAtomicGrade({
+      return saveEvaluatorAtomicGrade({
         callId: String(callId || call?._id || call?.id || '').trim() || null,
         studentId: sId,
         evaluatorEmail: String(evaluatorEmail || '').trim().toLowerCase(),
@@ -1776,7 +1782,13 @@ export default function TechnicalExamEvaluatorCore({
         finalComments: evalData.finalComments || '',
         notes: evalData.notes || ''
       }).catch(e => console.debug('Error en guardado al paso siguiente:', e));
+    })).finally(() => {
+      setSaveStatus('saved');
     });
+
+    setTimeout(() => {
+      setSaveStatus(prev => prev === 'saving' ? 'saved' : prev);
+    }, 2000);
 
     // 1. Si no es el último paso de la fase actual, avanzar al siguiente paso
     if (selectedTechniqueIndex < totalPhaseSteps - 1) {
@@ -2086,11 +2098,10 @@ export default function TechnicalExamEvaluatorCore({
                             </div>
                           </th>
                           {groupCriteria.map((criterion, cIdx) => (
-                            <th 
-                              key={criterion.key} 
-                              className={`py-2 px-1 text-center align-middle min-w-[96px] sm:min-w-[106px] ${
-                                cIdx > 0 ? 'border-l border-red-500/35' : 'border-l border-slate-800/60'
-                              }`}
+                            <th
+                              key={criterion.key}
+                              className={`py-2 px-1 text-center align-middle min-w-[96px] sm:min-w-[106px] ${cIdx > 0 ? 'border-l border-red-500/35' : 'border-l border-slate-800/60'
+                                }`}
                             >
                               <div className="flex flex-col items-center gap-0.5">
                                 <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/10 border border-amber-400/25 px-1.5 py-0.2 rounded-md whitespace-nowrap flex items-center gap-1 shadow-2xs">
@@ -2178,16 +2189,15 @@ export default function TechnicalExamEvaluatorCore({
                                   <div className="leading-snug min-w-0 flex-1">
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       <span
-                                        className={`text-xs whitespace-normal break-words transition-all font-black text-white ${
-                                          hasAspectsToConsider ? 'white-radiance-glow' : ''
-                                        }`}
+                                        className={`text-xs whitespace-normal break-words transition-all font-black text-white ${hasAspectsToConsider ? 'white-radiance-glow' : ''
+                                          }`}
                                         style={
                                           hasAspectsToConsider
                                             ? {
-                                                color: '#ffffff',
-                                                textShadow:
-                                                  '0 0 2px #ffffff, 0 0 6px rgba(255, 255, 255, 0.95), 0 0 14px rgba(255, 255, 255, 0.8), 0 0 22px rgba(255, 255, 255, 0.5)',
-                                              }
+                                              color: '#ffffff',
+                                              textShadow:
+                                                '0 0 2px #ffffff, 0 0 6px rgba(255, 255, 255, 0.95), 0 0 14px rgba(255, 255, 255, 0.8), 0 0 22px rgba(255, 255, 255, 0.5)',
+                                            }
                                             : { color: '#ffffff' }
                                         }
                                       >
@@ -2235,13 +2245,11 @@ export default function TechnicalExamEvaluatorCore({
                                 return (
                                   <td
                                     key={criterion.key}
-                                    className={`py-2 px-1 text-center transition-all ${
-                                      cIdx > 0 ? 'border-l border-red-500/30' : 'border-l border-slate-800/40'
-                                    } ${
-                                      isMissing
+                                    className={`py-2 px-1 text-center transition-all ${cIdx > 0 ? 'border-l border-red-500/30' : 'border-l border-slate-800/40'
+                                      } ${isMissing
                                         ? 'bg-rose-950/40 ring-2 ring-rose-500 rounded-xl animate-pulse shadow-sm shadow-rose-500/25'
                                         : ''
-                                    }`}
+                                      }`}
                                   >
                                     <div className="flex flex-col items-center justify-center">
                                       <div className="flex flex-col items-center justify-center gap-0.5 select-none bg-slate-900/60 p-1 rounded-xl border border-slate-800/80">
@@ -2256,9 +2264,8 @@ export default function TechnicalExamEvaluatorCore({
                                                 type="button"
                                                 onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
                                                 onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
-                                                className={`p-0.5 sm:p-1 rounded-lg transition-transform active:scale-90 cursor-pointer ${
-                                                  isMissing && !isFilled && !isHalf ? 'hover:bg-rose-900/40' : 'hover:bg-slate-800'
-                                                }`}
+                                                className={`p-0.5 sm:p-1 rounded-lg transition-transform active:scale-90 cursor-pointer ${isMissing && !isFilled && !isHalf ? 'hover:bg-rose-900/40' : 'hover:bg-slate-800'
+                                                  }`}
                                                 title={`${criterion.label}: ${starVal}/10 estrellas (Doble clic para ${starVal - 0.5} media estrella)`}
                                               >
                                                 {isHalf ? (
@@ -2268,13 +2275,12 @@ export default function TechnicalExamEvaluatorCore({
                                                   </span>
                                                 ) : (
                                                   <Star
-                                                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
-                                                      isFilled
-                                                        ? 'text-amber-400 fill-amber-400'
-                                                        : isMissing
+                                                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${isFilled
+                                                      ? 'text-amber-400 fill-amber-400'
+                                                      : isMissing
                                                         ? 'text-rose-400 hover:text-amber-300 stroke-2'
                                                         : 'text-slate-700 hover:text-amber-300'
-                                                    }`}
+                                                      }`}
                                                   />
                                                 )}
                                               </button>
@@ -2293,9 +2299,8 @@ export default function TechnicalExamEvaluatorCore({
                                                 type="button"
                                                 onClick={(e) => handleStarClick(student, criterionKey, starVal, e)}
                                                 onDoubleClick={(e) => handleStarDoubleClick(student, criterionKey, starVal, e)}
-                                                className={`p-0.5 sm:p-1 rounded-lg transition-transform active:scale-90 cursor-pointer ${
-                                                  isMissing && !isFilled && !isHalf ? 'hover:bg-rose-900/40' : 'hover:bg-slate-800'
-                                                }`}
+                                                className={`p-0.5 sm:p-1 rounded-lg transition-transform active:scale-90 cursor-pointer ${isMissing && !isFilled && !isHalf ? 'hover:bg-rose-900/40' : 'hover:bg-slate-800'
+                                                  }`}
                                                 title={`${criterion.label}: ${starVal}/10 estrellas (Doble clic para ${starVal - 0.5} media estrella)`}
                                               >
                                                 {isHalf ? (
@@ -2305,13 +2310,12 @@ export default function TechnicalExamEvaluatorCore({
                                                   </span>
                                                 ) : (
                                                   <Star
-                                                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
-                                                      isFilled
-                                                        ? 'text-amber-400 fill-amber-400'
-                                                        : isMissing
+                                                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${isFilled
+                                                      ? 'text-amber-400 fill-amber-400'
+                                                      : isMissing
                                                         ? 'text-rose-400 hover:text-amber-300 stroke-2'
                                                         : 'text-slate-700 hover:text-amber-300'
-                                                    }`}
+                                                      }`}
                                                   />
                                                 )}
                                               </button>
@@ -2331,13 +2335,12 @@ export default function TechnicalExamEvaluatorCore({
                               <td className="py-2 px-2 text-center align-middle border-l border-slate-800">
                                 <div className="flex flex-col items-center justify-center">
                                   <span
-                                    className={`text-xs font-black font-mono px-2 py-1 rounded-lg ${
-                                      techAvg === null
-                                        ? 'text-slate-600 bg-slate-800/40'
-                                        : techAvg >= 7
+                                    className={`text-xs font-black font-mono px-2 py-1 rounded-lg ${techAvg === null
+                                      ? 'text-slate-600 bg-slate-800/40'
+                                      : techAvg >= 7
                                         ? 'text-emerald-300 bg-emerald-950/60 border border-emerald-500/30'
                                         : 'text-amber-300 bg-amber-950/60 border border-amber-500/30'
-                                    }`}
+                                      }`}
                                   >
                                     {techAvg !== null ? techAvg.toFixed(1) : '-'}
                                   </span>
@@ -2349,11 +2352,10 @@ export default function TechnicalExamEvaluatorCore({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenObsModal(student)}
-                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer border active:scale-95 ${
-                                    hasPhaseNotes
-                                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
-                                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'
-                                  }`}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer border active:scale-95 ${hasPhaseNotes
+                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 hover:bg-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:bg-slate-700'
+                                    }`}
                                   title={`Notas y observaciones de ${effectivePhase} para ${student.name}`}
                                 >
                                   <MessageSquare className="w-3.5 h-3.5 shrink-0" />
@@ -2396,11 +2398,10 @@ export default function TechnicalExamEvaluatorCore({
                     setValidationWarning(null);
                     setUnratedStarKeys(new Set());
                   }}
-                  className={`ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${
-                    adminAuditMode
-                      ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-xs'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
-                  }`}
+                  className={`ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${adminAuditMode
+                    ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-xs'
+                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                    }`}
                   title={adminAuditMode ? 'Modo Auditor Admin ACTIVO (Sin estrellas)' : 'Modo Auditor Admin INACTIVO'}
                 >
                   ⚡ Admin: {adminAuditMode ? 'ON' : 'OFF'}
@@ -2422,23 +2423,20 @@ export default function TechnicalExamEvaluatorCore({
                       setSelectedTandaIndex(tIdx);
                       setSelectedTechniqueIndex(0);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-                      isSelected
-                        ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300 font-black scale-102'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                    }`}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${isSelected
+                      ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300 font-black scale-102'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                      }`}
                   >
                     <span>{tanda.blockName || `Tanda ${tIdx + 1}`}</span>
                     {call?.isMultiDay && (
-                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono font-bold ${
-                        Number(tanda.day) === 2 ? 'bg-red-500/20 text-rose-300' : 'bg-blue-500/20 text-blue-300'
-                      }`}>
+                      <span className={`text-[9px] px-1 py-0.2 rounded font-mono font-bold ${Number(tanda.day) === 2 ? 'bg-red-500/20 text-rose-300' : 'bg-blue-500/20 text-blue-300'
+                        }`}>
                         D{Number(tanda.day) === 2 ? 2 : 1}
                       </span>
                     )}
-                    <span className={`text-[10px] px-1 py-0.2 rounded-full font-mono ${
-                      isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
-                    }`}>
+                    <span className={`text-[10px] px-1 py-0.2 rounded-full font-mono ${isSelected ? 'bg-slate-950/20 text-slate-950 font-black' : 'bg-slate-700 text-slate-300'
+                      }`}>
                       {studentCount}
                     </span>
                   </button>
@@ -2475,11 +2473,10 @@ export default function TechnicalExamEvaluatorCore({
                     setSelectedPhase(phase.key);
                     setSelectedTechniqueIndex(0);
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
-                    isSelected
-                      ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer whitespace-nowrap ${isSelected
+                    ? 'bg-amber-400 text-slate-950 shadow-xs ring-1 ring-amber-300'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
                 >
                   {phase.label}
                 </button>
@@ -2635,10 +2632,10 @@ export default function TechnicalExamEvaluatorCore({
 
         const kataPhaseItems = hasMultipleKatas
           ? studentKatas.map((kt, idx) => ({
-              key: idx === 0 ? 'kata' : `kata_${idx + 1}`,
-              label: `Kata ${idx + 1}`,
-              desc: kt.name
-            }))
+            key: idx === 0 ? 'kata' : `kata_${idx + 1}`,
+            label: `Kata ${idx + 1}`,
+            desc: kt.name
+          }))
           : [{ key: 'kata', label: 'Kata', desc: studentKatas[0]?.name || 'Formas' }];
 
         const phaseList = [
@@ -2654,12 +2651,12 @@ export default function TechnicalExamEvaluatorCore({
         const phasePlaceholder = currentActivePhase === 'kihon'
           ? '• Observaciones técnicas de Kihon (posiciones, kime, postura)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Corregir rotación de cadera en Gyaku Zuki.'
           : currentActivePhase.startsWith('kata')
-          ? `• Observaciones técnicas de ${activePhaseObj.desc || activePhaseObj.label} (ritmo, embusen, postura, kime)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Corregir posturas y vista al frente en ${activePhaseObj.desc || 'Kata'}.`
-          : currentActivePhase === 'kumite'
-          ? '• Observaciones técnicas de Kumite (distancia maai, reflejos, control)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Buena distancia y guardia firme, mantener kime en ataque.'
-          : currentActivePhase === 'promedio_final'
-          ? '• Dictamen y observaciones sobre el promedio final (exclusivo Shihan Roy Gatjens)...\n• Cada línea comienza con viñeta automáticamente.\n• Enfoque 100% correctivo para pulir técnica hacia el siguiente grado.'
-          : '• Observaciones de aspectos técnicos generales...\n• Cada línea comienza con viñeta automáticamente.';
+            ? `• Observaciones técnicas de ${activePhaseObj.desc || activePhaseObj.label} (ritmo, embusen, postura, kime)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Corregir posturas y vista al frente en ${activePhaseObj.desc || 'Kata'}.`
+            : currentActivePhase === 'kumite'
+              ? '• Observaciones técnicas de Kumite (distancia maai, reflejos, control)...\n• Cada línea comienza con viñeta automáticamente.\n• Ejemplo: Buena distancia y guardia firme, mantener kime en ataque.'
+              : currentActivePhase === 'promedio_final'
+                ? '• Dictamen y observaciones sobre el promedio final (exclusivo Shihan Roy Gatjens)...\n• Cada línea comienza con viñeta automáticamente.\n• Enfoque 100% correctivo para pulir técnica hacia el siguiente grado.'
+                : '• Observaciones de aspectos técnicos generales...\n• Cada línea comienza con viñeta automáticamente.';
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
@@ -2706,11 +2703,10 @@ export default function TechnicalExamEvaluatorCore({
                         key={p.key}
                         type="button"
                         onClick={() => setObsModalPhase(p.key)}
-                        className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                          isSelected
-                            ? 'bg-amber-400 text-slate-950 shadow-xs'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800/70'
-                        }`}
+                        className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${isSelected
+                          ? 'bg-amber-400 text-slate-950 shadow-xs'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/70'
+                          }`}
                       >
                         <span>{p.label}</span>
                         {pNotes && (
@@ -2743,49 +2739,49 @@ export default function TechnicalExamEvaluatorCore({
                   </div>
                 ) : (
                   <>
-                {/* Barra superior de herramientas de viñetas */}
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <span>Notas para {activePhaseObj.label}:</span>
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleAddBullet(activeObsStudent, currentPhaseNotes, currentActivePhase)}
-                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 hover:border-amber-400/50 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                      title="Agregar un nuevo punto de viñeta"
-                    >
-                      <span>+ Nueva Viñeta (•)</span>
-                    </button>
-                    {currentPhaseNotes && !currentPhaseNotes.includes('•') && (
-                      <button
-                        type="button"
-                        onClick={() => handleFormatAllAsBullets(activeObsStudent, currentPhaseNotes, currentActivePhase)}
-                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition-all cursor-pointer"
-                        title="Convertir todas las líneas en viñetas"
-                      >
-                        Formatear con •
-                      </button>
-                    )}
-                  </div>
-                </div>
+                    {/* Barra superior de herramientas de viñetas */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                        <span>Notas para {activePhaseObj.label}:</span>
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleAddBullet(activeObsStudent, currentPhaseNotes, currentActivePhase)}
+                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 hover:border-amber-400/50 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Agregar un nuevo punto de viñeta"
+                        >
+                          <span>+ Nueva Viñeta (•)</span>
+                        </button>
+                        {currentPhaseNotes && !currentPhaseNotes.includes('•') && (
+                          <button
+                            type="button"
+                            onClick={() => handleFormatAllAsBullets(activeObsStudent, currentPhaseNotes, currentActivePhase)}
+                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition-all cursor-pointer"
+                            title="Convertir todas las líneas en viñetas"
+                          >
+                            Formatear con •
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Campo de texto independiente por fase */}
-                <textarea
-                  id="sensei-bullet-notes"
-                  key={currentActivePhase}
-                  rows={7}
-                  value={currentPhaseNotes}
-                  onChange={(e) => handleBulletInputChange(e, currentPhaseNotes, (val) => handleUpdateStudentNotes(activeObsStudent, val, currentActivePhase))}
-                  onKeyDown={(e) => handleNotesKeyDown(e, activeObsStudent, currentPhaseNotes, currentActivePhase)}
-                  placeholder={phasePlaceholder}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl p-3.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden transition-colors font-sans leading-relaxed resize-y min-h-[170px]"
-                />
+                    {/* Campo de texto independiente por fase */}
+                    <textarea
+                      id="sensei-bullet-notes"
+                      key={currentActivePhase}
+                      rows={7}
+                      value={currentPhaseNotes}
+                      onChange={(e) => handleBulletInputChange(e, currentPhaseNotes, (val) => handleUpdateStudentNotes(activeObsStudent, val, currentActivePhase))}
+                      onKeyDown={(e) => handleNotesKeyDown(e, activeObsStudent, currentPhaseNotes, currentActivePhase)}
+                      placeholder={phasePlaceholder}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-amber-400 rounded-xl p-3.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-hidden transition-colors font-sans leading-relaxed resize-y min-h-[170px]"
+                    />
 
-                <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
-                  <span>Presiona <strong>Enter</strong> para agregar una nueva viñeta automática en {activePhaseObj.label}.</span>
-                </p>
+                    <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                      <Info className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
+                      <span>Presiona <strong>Enter</strong> para agregar una nueva viñeta automática en {activePhaseObj.label}.</span>
+                    </p>
                   </>
                 )}
               </div>
@@ -2902,13 +2898,12 @@ export default function TechnicalExamEvaluatorCore({
                 return (
                   <div
                     key={sId}
-                    className={`p-4 sm:p-5 rounded-2xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm ${
-                      !isPassedPhase
-                        ? 'bg-rose-50/70 border-2 border-rose-400 shadow-md shadow-rose-500/10'
-                        : hasGap
+                    className={`p-4 sm:p-5 rounded-2xl transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm ${!isPassedPhase
+                      ? 'bg-rose-50/70 border-2 border-rose-400 shadow-md shadow-rose-500/10'
+                      : hasGap
                         ? 'bg-amber-50/90 border-2 border-amber-400 shadow-md shadow-amber-500/20 ring-2 ring-amber-300/60'
                         : 'bg-slate-50 border border-slate-200/90 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     {/* Atleta y Alertas */}
                     <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
@@ -2978,16 +2973,14 @@ export default function TechnicalExamEvaluatorCore({
                       </button>
 
                       <div className="flex flex-col items-center justify-center gap-1 min-w-[90px] sm:min-w-[110px]">
-                        <div className={`w-20 sm:w-22 text-center font-mono text-2xl sm:text-3xl font-black select-none tracking-tight ${
-                          isPassedPhase ? 'text-[#2D2E83]' : 'text-rose-600'
-                        }`}>
+                        <div className={`w-20 sm:w-22 text-center font-mono text-2xl sm:text-3xl font-black select-none tracking-tight ${isPassedPhase ? 'text-[#2D2E83]' : 'text-rose-600'
+                          }`}>
                           {summary.finalScore}%
                         </div>
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-black uppercase tracking-wider border shadow-2xs ${
-                          isPassedPhase 
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
-                            : 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'
-                        }`}>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-black uppercase tracking-wider border shadow-2xs ${isPassedPhase
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                          : 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse'
+                          }`}>
                           {isPassedPhase ? 'Aprobado' : `Reprobado (< ${minPassingGrade}%)`}
                         </span>
                       </div>
@@ -3324,11 +3317,10 @@ export default function TechnicalExamEvaluatorCore({
                   <label className="text-xs font-black uppercase tracking-wider text-gray-700">
                     Edad Verificada
                   </label>
-                  <div className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between border transition-all ${
-                    modalCalculatedAge !== null
-                      ? 'bg-blue-50/80 border-blue-200 text-indigo-900'
-                      : 'bg-gray-100/90 border-gray-200 text-gray-500'
-                  }`}>
+                  <div className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between border transition-all ${modalCalculatedAge !== null
+                    ? 'bg-blue-50/80 border-blue-200 text-indigo-900'
+                    : 'bg-gray-100/90 border-gray-200 text-gray-500'
+                    }`}>
                     <span>Años cumplidos:</span>
                     <span className="font-mono text-sm font-black">
                       {modalCalculatedAge !== null ? `${modalCalculatedAge} años` : '—'}
@@ -3406,14 +3398,12 @@ export default function TechnicalExamEvaluatorCore({
                         specialCondition: !prev.hasSpecialCondition ? (prev.specialCondition || '') : ''
                       }));
                     }}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                      editStudentForm.hasSpecialCondition ? 'bg-amber-600' : 'bg-gray-300'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${editStudentForm.hasSpecialCondition ? 'bg-amber-600' : 'bg-gray-300'
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        editStudentForm.hasSpecialCondition ? 'translate-x-5' : 'translate-x-0'
-                      }`}
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${editStudentForm.hasSpecialCondition ? 'translate-x-5' : 'translate-x-0'
+                        }`}
                     />
                   </button>
                 </div>
