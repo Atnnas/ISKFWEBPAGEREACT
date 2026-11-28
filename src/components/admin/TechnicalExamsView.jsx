@@ -2424,10 +2424,39 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
     setSelectedCallForDetail(call);
     setActiveCallDayFilter(1);
     setDetailMaxPerTanda(Number(call.maxPerTanda) || 6);
-    setIsLoadingCallStudents(true);
     setStudentListFilterTab('promoted');
     setStudentSearchQuery('');
     setCallDetailSubTab('tandas');
+
+    // ⚡ Carga inmediata en 0ms: las tandas y aspirantes ya vienen guardados en el objeto call
+    if (Array.isArray(call.schedules) && call.schedules.length > 0) {
+      setCallTandas(call.schedules.map((s, idx) => ({
+        id: s.id || (s._id ? String(s._id) : `tanda_${idx}`),
+        blockName: s.blockName || `Tanda ${idx + 1}`,
+        startTime: s.startTime || '09:00 AM',
+        endTime: s.endTime || '10:00 AM',
+        day: Number(s.day) === 2 ? 2 : 1,
+        studentIds: Array.isArray(s.studentIds) ? s.studentIds.map(String) : []
+      })));
+    } else {
+      setCallTandas([]);
+    }
+
+    if (Array.isArray(call.aspirants) && call.aspirants.length > 0) {
+      const immediateAspirants = call.aspirants.map(a => ({
+        _id: String(a.studentId || a._id || a.id),
+        id: String(a.studentId || a._id || a.id),
+        name: a.studentName || 'Karateca',
+        currentRank: a.currentRank || '10° Kyu',
+        targetRank: a.targetRank || '9° Kyu',
+        examDay: Number(a.examDay) === 2 ? 2 : 1,
+        scheduleBlock: a.scheduleBlock || '',
+        isPromotedForExam: true
+      }));
+      setCallReadyStudents(immediateAspirants.sort(compareStudentsForExam));
+    }
+
+    setIsLoadingCallStudents(true);
     try {
       const [readyStudents, allStudents, freshSyllabi] = await Promise.all([
         getStudentsReadyForExam(call.dojoId),
@@ -2441,23 +2470,12 @@ export default function TechnicalExamsView({ initialDojos = [], initialSyllabi =
           examDay: asp ? (Number(asp.examDay) === 2 ? 2 : 1) : 1
         };
       });
-      setCallReadyStudents(enrichedReady.sort(compareStudentsForExam));
+      if (enrichedReady.length > 0) {
+        setCallReadyStudents(enrichedReady.sort(compareStudentsForExam));
+      }
       setDojoAllStudents((allStudents || []).filter(s => s.status !== 'inactive'));
       if (freshSyllabi && freshSyllabi.length > 0) {
         setSyllabi(freshSyllabi);
-      }
-
-      if (Array.isArray(call.schedules) && call.schedules.length > 0) {
-        setCallTandas(call.schedules.map((s, idx) => ({
-          id: `tanda_${idx}_${Date.now()}`,
-          blockName: s.blockName || `Tanda ${idx + 1}`,
-          startTime: s.startTime || '09:00 AM',
-          endTime: s.endTime || '10:00 AM',
-          day: Number(s.day) === 2 ? 2 : 1,
-          studentIds: Array.isArray(s.studentIds) ? s.studentIds.map(String) : []
-        })));
-      } else {
-        setCallTandas([]);
       }
     } catch (err) {
       console.error("Error al abrir detalle de convocatoria:", err);
